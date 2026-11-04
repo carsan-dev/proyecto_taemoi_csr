@@ -101,12 +101,15 @@ class RegistroServiceImplTest {
 		verify(alumnos, never()).save(any(Alumno.class));
 	}
 
-	/** Decisión 428: la ficha ya tiene cuenta si tiene una fila en usuario_alumno, de cualquier origen y relación. */
+	/**
+	 * Decisiones 428 y 438: la ficha ya tiene cuenta si tiene una fila de otra cuenta que le da acceso
+	 * (VinculoFamiliaService#cuentasQueAccedenALaFicha), de cualquier origen y relación.
+	 */
 	@ParameterizedTest
 	@CsvSource({ "TUTOR,MIGRACION", "PROPIO,MIGRACION", "PROPIO,REGISTRO", "TUTOR,MANUAL" })
 	void fichaConFilaDeOtraCuentaRechazaElRegistroSinCrearNada(RelacionUsuarioAlumno relacion,
 			OrigenUsuarioAlumno origen) {
-		when(vinculos.cuentasDeLaFicha(5L, 2L))
+		when(vinculos.cuentasQueAccedenALaFicha(alumno))
 				.thenReturn(List.of(new UsuarioAlumno(3L, 5L, 2L, relacion, origen)));
 
 		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
@@ -121,7 +124,7 @@ class RegistroServiceImplTest {
 
 	@Test
 	void fichaSinFilasSeRegistra() {
-		when(vinculos.cuentasDeLaFicha(5L, 2L)).thenReturn(List.of());
+		when(vinculos.cuentasQueAccedenALaFicha(alumno)).thenReturn(List.of());
 		when(alumnos.existsByIdAndEmailIgnoreCase(5L, EMAIL)).thenReturn(true);
 
 		servicio.confirmarRegistro(TOKEN);

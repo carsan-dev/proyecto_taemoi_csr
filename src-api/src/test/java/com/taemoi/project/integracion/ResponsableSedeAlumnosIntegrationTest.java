@@ -342,6 +342,32 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	/**
+	 * Revisión E10-2 (F3): el responsable que cambia el email de una ficha con cuenta por su fila de usuario_alumno
+	 * recibe el mismo 403 que con una ficha sin cuenta (EMAIL_SOLO_GESTION, decisión 96), no «Acceso denegado.»; no
+	 * cambia nada.
+	 */
+	@Test
+	@Order(Integer.MAX_VALUE)
+	void email_fichaConCuentaPorFila_elResponsableRecibeElMotivoDeLaDecision96() throws Exception {
+		String emailFicha = "it-f3-ficha-" + e.marca + "@example.test";
+		long alumno = e.alumno("EF3" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET email = ? WHERE id = ?", emailFicha, alumno);
+		conDeporte(alumno);
+		long cuenta = cuentaFamilia(emailFicha);
+		vincularCuenta(cuenta, alumno, "TUTOR", "REGISTRO");
+
+		MvcResult cambio = peticion(editar(alumno, "it-f3-otro-" + e.marca + "@example.test", "Calle 2"), tokenA);
+
+		assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+		assertEquals(GestionPorSede.EMAIL_SOLO_GESTION,
+				json.readTree(cambio.getResponse().getContentAsString(StandardCharsets.UTF_8)).get("mensaje").asText());
+		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumno));
+		assertEquals(emailFicha, emailDeCuenta(cuenta));
+		assertEquals("Calle 1", direccionDe(alumno), "el 403 no deja cambios a medias");
+		jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", cuenta);
+	}
+
 	private long cuentaFamilia(String email) {
 		long cuenta = TenantContext.calcularCon(EscuelaConSedesDePrueba.ORG1, () -> {
 			com.taemoi.project.entities.Usuario u = new com.taemoi.project.entities.Usuario();

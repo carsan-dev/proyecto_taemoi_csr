@@ -150,9 +150,9 @@ public class RegistroServiceImpl implements RegistroService {
 		Alumno alumno = alumnoRepository.findById(registro.getAlumnoId())
 				.orElseThrow(() -> new IllegalArgumentException("Alumno no encontrado."));
 
-		// Decisión 428: la ficha ya tiene cuenta si tiene alguna fila en usuario_alumno (la cuenta nueva aún no existe,
-		// así que cualquier fila es de otra), de cualquier relación y origen.
-		if (!vinculoFamiliaService.cuentasDeLaFicha(alumno.getId(), alumno.getOrganizacionId()).isEmpty()) {
+		// Decisiones 428 y 438: la ficha ya tiene cuenta si tiene alguna fila en usuario_alumno que dé acceso a su
+		// cuenta (la cuenta nueva aún no existe, así que cualquier fila es de otra), de cualquier relación.
+		if (!vinculoFamiliaService.cuentasQueAccedenALaFicha(alumno).isEmpty()) {
 			registroPendienteRepository.delete(registro);
 			throw new IllegalArgumentException("El alumno ya tiene usuario asociado.");
 		}

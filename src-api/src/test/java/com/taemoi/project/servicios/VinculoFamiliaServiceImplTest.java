@@ -71,6 +71,29 @@ class VinculoFamiliaServiceImplTest {
 		verify(vinculos).findByAlumnoIdAndOrganizacionId(5L, 2L);
 	}
 
+	/** Decisión 438: pasa el email de la ficha tal cual (o '' si está en blanco) y el origen MANUAL a la consulta. */
+	@Test
+	void cuentasQueAccedenALaFicha_consultaConElEmailDeLaFichaYLaOrganizacion() {
+		Alumno ficha = alumno(5L, 2L, null);
+		List<UsuarioAlumno> filas = List.of(
+				new UsuarioAlumno(3L, 5L, 2L, RelacionUsuarioAlumno.TUTOR, OrigenUsuarioAlumno.MANUAL));
+		when(vinculos.filasQueDanAccesoALaFicha(5L, 2L, "familia@example.test", OrigenUsuarioAlumno.MANUAL))
+				.thenReturn(filas);
+		assertEquals(filas, servicio.cuentasQueAccedenALaFicha(ficha));
+
+		ficha.setEmail("  ");
+		servicio.cuentasQueAccedenALaFicha(ficha);
+		verify(vinculos).filasQueDanAccesoALaFicha(5L, 2L, "", OrigenUsuarioAlumno.MANUAL);
+	}
+
+	@Test
+	void cuentasQueAccedenALaFicha_sinFichaIdUOrganizacion_vacioSinConsultar() {
+		assertEquals(List.of(), servicio.cuentasQueAccedenALaFicha(null));
+		assertEquals(List.of(), servicio.cuentasQueAccedenALaFicha(alumno(null, 2L, null)));
+		assertEquals(List.of(), servicio.cuentasQueAccedenALaFicha(alumno(5L, null, null)));
+		verify(vinculos, never()).filasQueDanAccesoALaFicha(any(), any(), any(), any());
+	}
+
 	@Test
 	void cuentasDeLaFicha_sinAlumnoOSinOrganizacion_vacioSinConsultar() {
 		assertEquals(List.of(), servicio.cuentasDeLaFicha(null, 2L));

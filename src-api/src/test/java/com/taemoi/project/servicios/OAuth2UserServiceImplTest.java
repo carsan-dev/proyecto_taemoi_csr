@@ -102,8 +102,9 @@ class OAuth2UserServiceImplTest {
 	}
 
 	/**
-	 * La ficha ya tiene la cuenta Y (decisión 428): una fila de usuario_alumno de otra cuenta, de cualquier origen y
-	 * relación (aquí, la MIGRACION/TUTOR de V31, la más común en producción).
+	 * La ficha ya tiene la cuenta Y (decisiones 428 y 438): una fila de usuario_alumno de otra cuenta que le da acceso
+	 * (aquí, la MIGRACION/TUTOR de V31, la más común en producción). Qué filas dan acceso lo decide
+	 * VinculoFamiliaService (VinculoFamiliaServiceImplTest y AltasFamiliaUsuarioAlumnoIntegrationTest).
 	 */
 	private Usuario cuentaY(Alumno vinculado) {
 		return cuentaY(vinculado, RelacionUsuarioAlumno.TUTOR, OrigenUsuarioAlumno.MIGRACION);
@@ -113,7 +114,7 @@ class OAuth2UserServiceImplTest {
 		Usuario y = new Usuario();
 		y.setId(7L);
 		y.setEmail(EMAIL_Y);
-		when(vinculos.cuentasDeLaFicha(eq(vinculado.getId()), any()))
+		when(vinculos.cuentasQueAccedenALaFicha(vinculado))
 				.thenReturn(List.of(new UsuarioAlumno(y.getId(), vinculado.getId(), 1L, relacion, origen)));
 		return y;
 	}
@@ -135,7 +136,9 @@ class OAuth2UserServiceImplTest {
 				() -> servicio.processOAuth2Login(google(EMAIL_X, true), "google"));
 
 		assertEquals(MENSAJE_SIN_ALUMNO, e.getMessage());
-		assertNotNull(y);
+		// El rechazo sale de la fila de Y en la ficha (no se devuelve ni se toca la cuenta Y).
+		verify(vinculos).cuentasQueAccedenALaFicha(alumnoX);
+		assertEquals(EMAIL_Y, y.getEmail());
 		verificarSinEscrituras();
 	}
 

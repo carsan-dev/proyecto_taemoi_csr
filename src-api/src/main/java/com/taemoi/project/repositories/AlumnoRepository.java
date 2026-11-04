@@ -266,13 +266,16 @@ public interface AlumnoRepository
 	 * anonimizadas (activas o de baja), vinculadas a la cuenta: con una fila suya en {@code usuario_alumno} de esa
 	 * organización o, solo en las escuelas con {@code comportamiento_legado_taemoi} (decisión 427), con el email de la
 	 * cuenta (mismo criterio que {@link #ACCESO_FAMILIA}). No mira si la membresía está activa. {@code :email} es el
-	 * de la cuenta normalizado o {@code ''} si no puede vincular. Lo usa el borrado y la anonimización de una ficha.
+	 * de la cuenta normalizado o {@code ''} si no puede vincular. Con {@code :conEmail} distinto de {@code ''}, solo
+	 * las fichas con ese email ({@code LOWER}). Lo usan el borrado y la anonimización de una ficha (sin filtro de email)
+	 * y el cambio de email de una ficha (decisión 436, con el email viejo).
 	 */
 	@Query("""
 			SELECT COUNT(a) FROM Alumno a
 			WHERE a.organizacionId = :organizacionId
 			  AND a.id <> :alumnoId
 			  AND a.anonimizadoEn IS NULL
+			  AND (:conEmail = '' OR LOWER(a.email) = LOWER(:conEmail))
 			  AND (EXISTS (SELECT 1 FROM UsuarioAlumno ua
 			               WHERE ua.usuarioId = :usuarioId
 			                 AND ua.alumnoId = a.id
@@ -282,7 +285,8 @@ public interface AlumnoRepository
 			                       WHERE o.id = :organizacionId AND o.comportamientoLegadoTaemoi = TRUE)))
 			""")
 	long contarOtrasFichasVinculadas(@Param("usuarioId") Long usuarioId, @Param("email") String email,
-			@Param("organizacionId") Long organizacionId, @Param("alumnoId") Long alumnoId);
+			@Param("organizacionId") Long organizacionId, @Param("alumnoId") Long alumnoId,
+			@Param("conEmail") String conEmail);
 
 	/**
 	 * Carga por id como consulta (filtrada por la organización activa). A diferencia de

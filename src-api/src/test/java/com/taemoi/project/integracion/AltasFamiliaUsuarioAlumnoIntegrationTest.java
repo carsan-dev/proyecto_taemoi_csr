@@ -302,14 +302,15 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * Revisión de la 2b, caso (a), con la decisión 436 (afina la 430): en Taemoi, el hermano vinculado por Google tiene
-	 * cuenta (su fila REGISTRO) y es la única, con su mismo email, pero la cuenta ve otra ficha (el primero) que conserva
-	 * ese email: cambiar el email del hermano NO lo lleva a la cuenta. La cuenta conserva su email y su sesión y sigue
-	 * viendo al primero; el hermano, con otro email, deja de verse (la fila REGISTRO solo cuenta con el email
-	 * coincidente en las escuelas con la marca), como antes de la E10-2.
+	 * Revisión de la 2b, caso (a), con las decisiones 436 y 438: en Taemoi, el hermano vinculado por Google tiene la fila
+	 * REGISTRO de la cuenta X, que ve otra ficha (el primero) con ese email: cambiar el email del hermano NO lo lleva a
+	 * la cuenta. X conserva su email y su sesión y sigue viendo al primero; el hermano, con otro email, deja de verse
+	 * (la fila REGISTRO solo cuenta con el email coincidente). Esa fila ya no da acceso, así que la ficha no cuenta como
+	 * reclamada (438): el primer login con Google con el email NUEVO crea la cuenta y se la lleva. La fila de X no se
+	 * borra.
 	 */
 	@Test
-	void taemoi_googleHermanoQueCambiaDeEmail_laCuentaConservaElSuyo() throws Exception {
+	void taemoi_googleHermanoQueCambiaDeEmail_laCuentaConservaElSuyo_yGoogleConElNuevoLoReclama() throws Exception {
 		String email = email("google-taemoi-cambio");
 		long primero = alumno(ORG1, "GOO TC PRIMERO", email, MENOR);
 		long hermano = alumno(ORG1, "GOO TC HERMANO", email, MENOR);
@@ -331,6 +332,109 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(Set.of(primero), alumnosVisibles(token), "la sesión sigue valiendo");
 		assertEquals(200, estado("/api/alumnos/" + primero + "/deportes", token));
 		assertEquals(403, estado("/api/alumnos/" + hermano + "/deportes", token));
+
+		String tokenNuevo = loginConGoogle(ORG1, nuevo);
+		long nuevaCuenta = jdbc.queryForObject("SELECT id FROM usuario WHERE email = ?", Long.class, nuevo);
+		assertEquals(List.of(Map.of("organizacion_id", ORG1, "relacion", "TUTOR", "origen", "REGISTRO")),
+				filas(nuevaCuenta, hermano));
+		assertEquals(Set.of(hermano), alumnosVisibles(tokenNuevo));
+		assertEquals(1, filas(usuarioId, hermano).size(), "la fila de X no se borra");
+		assertEquals(Set.of(primero), alumnosVisibles(token));
+	}
+
+	/** Decisión 438: el mismo caso, pero el hermano se reclama con el registro con el email nuevo. */
+	@Test
+	void taemoi_hermanoQueCambiaDeEmail_elRegistroConElNuevoLoReclama() throws Exception {
+		String email = email("registro-taemoi-cambio");
+		long primero = alumno(ORG1, "REG TC PRIMERO", email, MENOR);
+		long hermano = alumno(ORG1, "REG TC HERMANO", email, MENOR);
+		loginConGoogle(ORG1, email);
+		long usuarioId = jdbc.queryForObject("SELECT id FROM usuario WHERE email = ?", Long.class, email);
+		String nuevo = email("registro-taemoi-cambio-y");
+		actualizarEmail(ORG1, hermano, nuevo);
+		assertEquals(email, cuenta(usuarioId).getEmail());
+
+		long nuevaCuenta = registrar(ORG1, nuevo, hermano);
+
+		assertEquals(List.of(Map.of("organizacion_id", ORG1, "relacion", "TUTOR", "origen", "REGISTRO")),
+				filas(nuevaCuenta, hermano));
+		assertEquals(Set.of(hermano), alumnosVisibles(loginConClave(nuevo)));
+		assertEquals(Set.of(primero), accesiblesEnTaemoi(cuenta(usuarioId)));
+	}
+
+	/** Decisión 438: en Taemoi, una fila MANUAL de otra cuenta (de otro email) da acceso y sigue bloqueando el alta. */
+	@Test
+	void taemoi_filaManualDeOtraCuenta_sigueBloqueandoRegistroYGoogle() throws Exception {
+		String email = email("taemoi-manual");
+		long ficha = alumno(ORG1, "T MANUAL", email, MENOR);
+		long cuentaY = cuentaConClave(email("taemoi-manual-y"), ORG1, RolMembresia.FAMILIA);
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", cuentaY, ficha, ORG1);
+
+		IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+				() -> registrar(ORG1, email, ficha));
+		assertEquals("El alumno ya tiene usuario asociado.", error.getMessage());
+
+		MockHttpServletResponse respuesta = google(ORG1, email);
+		assertTrue(respuesta.getRedirectedUrl().contains("error=no_alumno_found"), respuesta.getRedirectedUrl());
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario WHERE email = ?", Integer.class, email));
+		assertEquals(List.of(cuentaY), jdbc.queryForList("SELECT usuario_id FROM usuario_alumno WHERE alumno_id = ?",
+				Long.class, ficha));
+	}
+
+	/**
+	 * Decisión 438 frente a la regla del portal: en Taemoi, una fila da acceso a su cuenta (para «la ficha ya tiene
+	 * cuenta») exactamente cuando {@code AccesoFamiliaService} se la da, con la ficha y la membresía activas y sin
+	 * gestión. En una escuela sin la marca, cualquier fila.
+	 */
+	@Test
+	void cuentasQueAccedenALaFicha_coincideConElPortalEnTaemoi_yEnOtraEscuelaCuentaCualquierFila() {
+		for (String origen : List.of("MANUAL", "REGISTRO", "MIGRACION")) {
+			for (boolean mismoEmail : List.of(true, false)) {
+				for (long org : List.of(ORG1, org2)) {
+					String caso = "eq-" + origen.toLowerCase() + "-" + mismoEmail + "-" + org;
+					String emailFicha = email(caso);
+					long ficha = alumno(org, "EQ " + caso, emailFicha.toUpperCase(), MENOR);
+					long cuenta = cuentaConClave(mismoEmail ? emailFicha : email(caso + "-otra"), org,
+							RolMembresia.FAMILIA);
+					jdbc.update("""
+							INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+							VALUES (?, ?, ?, 'TUTOR', ?)""", cuenta, ficha, org, origen);
+					Alumno cargada = TenantContext.calcularCon(org, () -> alumnos.findById(ficha).orElseThrow());
+					boolean cuentaComoReclamada = TenantContext.calcularCon(org,
+							() -> vinculos.cuentasQueAccedenALaFicha(cargada)).stream()
+							.anyMatch(f -> f.getUsuarioId().equals(cuenta));
+					if (org == ORG1) {
+						Usuario usuario = cuenta(cuenta);
+						boolean portal = TenantContext.calcularCon(ORG1, () -> acceso.puedeAcceder(usuario, ORG1, ficha));
+						assertEquals(portal, cuentaComoReclamada, caso);
+					} else {
+						assertTrue(cuentaComoReclamada, caso + " en la escuela sin la marca");
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Decisión 436 con el criterio de la 437: un hermano DE BAJA con el email viejo, vinculado a la cuenta, también
+	 * frena la propagación (al reactivarlo, la cuenta lo vuelve a ver).
+	 */
+	@Test
+	void taemoi_hermanoDeBajaConElEmailViejo_noSePropaga() throws Exception {
+		String email = email("google-taemoi-baja");
+		long deBaja = alumno(ORG1, "GOO TB BAJA", email, MENOR);
+		long hermano = alumno(ORG1, "GOO TB HERMANO", email, MENOR);
+		loginConGoogle(ORG1, email);
+		long usuarioId = jdbc.queryForObject("SELECT id FROM usuario WHERE email = ?", Long.class, email);
+		jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", deBaja);
+
+		actualizarEmail(ORG1, hermano, email("google-taemoi-baja-y"));
+
+		assertEquals(email, cuenta(usuarioId).getEmail(), "el hermano de baja conserva el email viejo");
+		jdbc.update("UPDATE alumno SET activo = TRUE WHERE id = ?", deBaja);
+		assertEquals(Set.of(deBaja), accesiblesEnTaemoi(cuenta(usuarioId)));
 	}
 
 	/**

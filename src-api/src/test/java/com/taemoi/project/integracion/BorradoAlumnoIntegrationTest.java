@@ -411,6 +411,30 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", familia.getId()));
 	}
 
+	/**
+	 * Decisión 437 (revisión F6): una fila de la cuenta con una ficha de OTRA escuela no cuenta como ficha restante:
+	 * pierde la FAMILIA de esta escuela, conserva la de la otra (y su fila) y la cuenta sigue.
+	 */
+	@Test
+	void decision437_filaEnFichaDeOtraEscuela_noCuentaComoRestante() throws Exception {
+		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437ESC", null));
+		long ajena = TenantContext.calcularCon(org2, () -> crearAlumno("D437ESCAJENA", null));
+		Usuario familia = crearUsuario("d437-otra-escuela-" + sufijo + "@example.test");
+		dar(familia, ORG1, RolMembresia.FAMILIA);
+		dar(familia, org2, RolMembresia.FAMILIA);
+		vincular(familia.getId(), alumno, "TUTOR");
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", familia.getId(), ajena, org2);
+
+		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdmin))).andExpect(status().isOk());
+
+		assertEquals(List.of(), roles(familia.getId(), ORG1));
+		assertEquals(List.of("FAMILIA"), roles(familia.getId(), org2));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?",
+				familia.getId(), ajena));
+	}
+
 	/** Decisión 437: en una escuela sin la marca, el email no vincula: sin fila, la otra ficha no cuenta. */
 	@Test
 	void decision437_escuelaSinMarca_laFichaConElEmailSinFilaNoCuenta() throws Exception {

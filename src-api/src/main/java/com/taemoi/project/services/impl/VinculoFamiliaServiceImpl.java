@@ -18,6 +18,7 @@ import com.taemoi.project.entities.UsuarioAlumno;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioAlumnoRepository;
 import com.taemoi.project.services.VinculoFamiliaService;
+import com.taemoi.project.utils.EmailUtils;
 
 @Service
 public class VinculoFamiliaServiceImpl implements VinculoFamiliaService {
@@ -63,6 +64,16 @@ public class VinculoFamiliaServiceImpl implements VinculoFamiliaService {
 		return vinculos.findByAlumnoIdAndOrganizacionId(alumnoId, organizacionId).stream()
 				.sorted(Comparator.comparing(UsuarioAlumno::getUsuarioId))
 				.toList();
+	}
+
+	@Override
+	public List<UsuarioAlumno> cuentasQueAccedenALaFicha(Alumno ficha) {
+		if (ficha == null || ficha.getId() == null || ficha.getOrganizacionId() == null) {
+			return List.of();
+		}
+		String email = ficha.getEmail();
+		return vinculos.filasQueDanAccesoALaFicha(ficha.getId(), ficha.getOrganizacionId(),
+				EmailUtils.puedeVincularAlumnos(email) ? email : "", OrigenUsuarioAlumno.MANUAL);
 	}
 
 	@Override

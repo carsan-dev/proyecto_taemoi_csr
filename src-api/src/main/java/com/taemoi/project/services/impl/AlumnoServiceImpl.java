@@ -202,10 +202,6 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private com.taemoi.project.services.VinculoFamiliaService vinculoFamiliaService;
 
-	/** Pieza E10-2 (decisión 436): qué otras fichas ve la cuenta de una ficha que cambia de email. */
-	@Autowired
-	private com.taemoi.project.services.AccesoFamiliaService accesoFamiliaService;
-
 	/** Decisión 287 (ronda 2): cancela los cargos sin pagar del alumno que se elimina anonimizando. */
 	@Autowired
 	@org.springframework.context.annotation.Lazy
@@ -791,8 +787,8 @@ public class AlumnoServiceImpl implements AlumnoService {
 			alumnoExistente.setNif(nifNormalizado);
 			alumnoExistente.setDireccion(alumnoActualizado.getDireccion());
 			String normalizedEmail = EmailUtils.normalizeEmail(alumnoActualizado.getEmail());
-			// Pieza E10-2: las cuentas de la ficha son sus filas de usuario_alumno (decisión 428).
-			List<Usuario> cuentas = cuentasDeLaFicha(alumnoExistente);
+			// Pieza E10-2: las cuentas de la ficha son sus filas de usuario_alumno que dan acceso (decisiones 428 y 438).
+			List<Usuario> cuentas = cuentasQueAccedenALaFicha(alumnoExistente);
 			if (cuentas.isEmpty()) {
 				// Decisión 96: sin cuenta, el email da acceso de familia a la ficha; solo lo cambia la gestión.
 				gestionPorSede.exigirGestionParaCambiarEmail(alumnoExistente.getEmail(), normalizedEmail);
@@ -802,18 +798,17 @@ public class AlumnoServiceImpl implements AlumnoService {
 						.anyMatch(cuenta -> cuenta.getEmail() == null || !cuenta.getEmail().equals(normalizedEmail));
 				if (cambiaElDeAlgunaCuenta && gestionPorSede.restriccion().isPresent()) {
 					// Entrega 6-1: el responsable de sede nunca cambia el email de una cuenta (es el de acceso; con él
-					// podría apropiarse de una cuenta de gestión). Cambiar el de un alumno con cuenta: 403; sin cambio
-					// en la ficha, la cuenta no se toca.
-					if (!java.util.Objects.equals(normalizedEmail, EmailUtils.normalizeEmail(alumnoExistente.getEmail()))) {
-						throw new org.springframework.security.access.AccessDeniedException("Acceso denegado.");
-					}
+					// podría apropiarse de una cuenta de gestión). Cambiar el de un alumno con cuenta: 403, con el mismo
+					// motivo que sin cuenta (decisión 96; revisión E10-2, F3); sin cambio en la ficha, la cuenta no se
+					// toca.
+					gestionPorSede.exigirGestionParaCambiarEmail(alumnoExistente.getEmail(), normalizedEmail);
 				} else if (cuentas.size() == 1 && cambiaElDeAlgunaCuenta && java.util.Objects.equals(
 						EmailUtils.normalizeEmail(cuentas.get(0).getEmail()),
 						EmailUtils.normalizeEmail(alumnoExistente.getEmail()))
 						&& !veOtraFichaConElEmail(cuentas.get(0), alumnoExistente)) {
-					// Decisión 436 (afina la 430): el email de la ficha pasa a la cuenta solo si es la única vinculada,
-					// su email era el de la ficha y no ve (como familia) ninguna otra ficha con ese email viejo. Si no,
-					// la ficha cambia de email y la cuenta conserva el suyo.
+					// Decisión 436 (afina la 430): el email de la ficha pasa a la cuenta solo si es la única que accede
+					// (438), su email era el de la ficha y no le queda otra ficha con ese email viejo (criterio de la
+					// 437). Si no, la ficha cambia de email y la cuenta conserva el suyo.
 					Usuario usuario = cuentas.get(0);
 					// El email es de la cuenta global: solo se cambia si no pertenece a otra escuela.
 					if (!membresiaService.puedeGestionarUsuarioGlobal(usuario.getId(),
@@ -1887,35 +1882,32 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	/**
-	 * Cuentas de la ficha ({@code usuario_alumno} de su escuela, decisión 428) en orden de id. Una fila sin cuenta no
-	 * puede existir (FK en cascada); si aun así faltara, se ignora.
+	 * Cuentas de la ficha cuya fila de {@code usuario_alumno} de su escuela les da acceso (decisiones 428 y 438), en
+	 * orden de id. Una fila sin cuenta no puede existir (FK en cascada); si aun así faltara, se ignora.
 	 */
-	private List<Usuario> cuentasDeLaFicha(Alumno alumno) {
+	private List<Usuario> cuentasQueAccedenALaFicha(Alumno alumno) {
 		List<Usuario> cuentas = new ArrayList<>();
-		for (com.taemoi.project.entities.UsuarioAlumno vinculo : vinculoFamiliaService.cuentasDeLaFicha(alumno.getId(),
-				alumno.getOrganizacionId())) {
+		for (com.taemoi.project.entities.UsuarioAlumno vinculo : vinculoFamiliaService
+				.cuentasQueAccedenALaFicha(alumno)) {
 			usuarioRepository.findById(vinculo.getUsuarioId()).ifPresent(cuentas::add);
 		}
 		return cuentas;
 	}
 
 	/**
-	 * Decisión 436: si la cuenta ve como familia ({@code AccesoFamiliaService}, la regla del portal, email de Moiskimdo
-	 * incluido) alguna ficha de la escuela distinta de {@code ficha} cuyo email (normalizado) es el que {@code ficha}
-	 * tiene todavía.
+	 * Decisión 436 con el criterio de la 437 (revisión E10-2, F2): si a la cuenta le queda otra ficha de la escuela,
+	 * distinta de {@code ficha}, no anonimizada (activa o de baja) y vinculada (fila suya o, en Moiskimdo, el email de
+	 * la cuenta) cuyo email es el que {@code ficha} tiene todavía ({@link AlumnoRepository#contarOtrasFichasVinculadas}).
 	 */
 	private boolean veOtraFichaConElEmail(Usuario cuenta, Alumno ficha) {
 		String emailViejo = EmailUtils.normalizeEmail(ficha.getEmail());
 		if (!EmailUtils.puedeVincularAlumnos(emailViejo)) {
 			return false;
 		}
-		List<Long> otras = accesoFamiliaService.idsAccesibles(cuenta, ficha.getOrganizacionId()).stream()
-				.filter(id -> !id.equals(ficha.getId())).toList();
-		if (otras.isEmpty()) {
-			return false;
-		}
-		return alumnoRepository.findAllById(otras).stream()
-				.anyMatch(otra -> emailViejo.equals(EmailUtils.normalizeEmail(otra.getEmail())));
+		String emailCuenta = EmailUtils.normalizeEmail(cuenta.getEmail());
+		return alumnoRepository.contarOtrasFichasVinculadas(cuenta.getId(),
+				EmailUtils.puedeVincularAlumnos(emailCuenta) ? emailCuenta : "", ficha.getOrganizacionId(),
+				ficha.getId(), emailViejo) > 0;
 	}
 
 	/**
@@ -1941,7 +1933,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 			Usuario usuario = cuenta.get();
 			String email = EmailUtils.normalizeEmail(usuario.getEmail());
 			if (alumnoRepository.contarOtrasFichasVinculadas(usuarioId,
-					EmailUtils.puedeVincularAlumnos(email) ? email : "", organizacionId, alumnoId) > 0) {
+					EmailUtils.puedeVincularAlumnos(email) ? email : "", organizacionId, alumnoId, "") > 0) {
 				continue;
 			}
 			if (!membresiaService.retirarFamilia(usuarioId, organizacionId)) {

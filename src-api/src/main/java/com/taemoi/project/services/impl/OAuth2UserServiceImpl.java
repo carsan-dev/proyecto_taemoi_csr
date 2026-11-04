@@ -52,9 +52,9 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 	 * 1. Extrae el email del usuario OAuth2
 	 * 2. Verifica si ya existe un usuario con ese email
 	 * 3. Si no existe, busca todos los alumnos con ese email (puede haber varios)
-	 * 4. Si encuentra alumnos sin cuenta, crea automáticamente un usuario y lo vincula al primero de ellos
-	 *    (usuario.alumno_id) y escribe usuario_alumno con todos ellos y con los inactivos sin cuenta
-	 *    (los alumnos con otra cuenta, no)
+	 * 4. Si encuentra alumnos sin cuenta (ninguna fila de usuario_alumno que dé acceso a otra cuenta, decisiones 428
+	 *    y 438), crea automáticamente un usuario (escuela y nombre del primero de ellos) y escribe usuario_alumno con
+	 *    todos ellos y con los inactivos sin cuenta (los alumnos con otra cuenta, no)
 	 *
 	 * @param oauth2User El usuario OAuth2 autenticado (de Google).
 	 * @param registrationId El ID del proveedor (ej. "google").
@@ -102,9 +102,10 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 			return usuario;
 		}
 
-		// Buscar los alumnos con este email que aún no tienen cuenta (decisión 428: sin ninguna fila en
-		// usuario_alumno; la cuenta nueva aún no existe, así que cualquier fila es de otra). Un alumno ya vinculado lo
-		// está a otra cuenta (con otro email, porque no hay ninguna con este): nunca se devuelve esa cuenta.
+		// Buscar los alumnos con este email que aún no tienen cuenta (decisiones 428 y 438: sin ninguna fila en
+		// usuario_alumno que dé acceso; la cuenta nueva aún no existe, así que cualquier fila es de otra). Un alumno
+		// ya vinculado lo está a otra cuenta (con otro email, porque no hay ninguna con este): nunca se devuelve esa
+		// cuenta.
 		// Un email en blanco nunca vincula alumnos (aunque haya alumnos activos con el email vacío)
 		List<Alumno> alumnos = EmailUtils.puedeVincularAlumnos(email)
 				? alumnoRepository.findAllByEmailIgnoreCaseAndActivoTrue(email)
@@ -157,9 +158,9 @@ public class OAuth2UserServiceImpl implements OAuth2UserService {
 		return savedUser;
 	}
 
-	/** Decisión 428: la ficha no tiene ninguna cuenta vinculada en {@code usuario_alumno}. */
+	/** Decisiones 428 y 438: ninguna fila de {@code usuario_alumno} de la ficha da acceso a su cuenta. */
 	private boolean sinCuenta(Alumno alumno) {
-		return vinculoFamiliaService.cuentasDeLaFicha(alumno.getId(), alumno.getOrganizacionId()).isEmpty();
+		return vinculoFamiliaService.cuentasQueAccedenALaFicha(alumno).isEmpty();
 	}
 
 	private static boolean emailVerificado(Object emailVerified) {
