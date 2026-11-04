@@ -229,7 +229,7 @@ public class GrupoServiceImpl implements GrupoService {
 	}
 
 	private IllegalStateException nombreRepetidoEn(Long sedeId) {
-		String sede = sedeRepository.findById(sedeId).map(Sede::getNombre).orElse("la sede");
+		String sede = sedeRepository.buscarEnEscuelaActiva(sedeId).map(Sede::getNombre).orElse("la sede");
 		return new IllegalStateException(String.format(NOMBRE_REPETIDO_EN_SEDE, sede));
 	}
 
