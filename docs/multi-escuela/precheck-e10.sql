@@ -124,3 +124,12 @@ SELECT
       AND NOT EXISTS (SELECT 1 FROM usuario_alumno ua JOIN alumno a ON a.id = ua.alumno_id
                        WHERE ua.usuario_id = u.id AND ua.organizacion_id = 1 AND a.activo = TRUE
                          AND ua.origen = 'MANUAL')) AS familias_org1_sin_ficha_visible;
+
+-- Consulta 11 (antes de V32): invitaciones pendientes (sin contrasena, proveedor LOCAL) con alumno_id y sin ninguna
+-- fila en usuario_alumno. Debe ser 0: tras V32, cancelar su invitacion borraria la cuenta (el vinculo antiguo ya no
+-- la conserva).
+SELECT COUNT(*) AS invitaciones_pendientes_con_alumno_id_sin_fila
+FROM usuario u
+WHERE u.contrasena IS NULL AND (u.auth_provider IS NULL OR u.auth_provider = 'LOCAL')
+  AND u.alumno_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM usuario_alumno ua WHERE ua.usuario_id = u.id);
