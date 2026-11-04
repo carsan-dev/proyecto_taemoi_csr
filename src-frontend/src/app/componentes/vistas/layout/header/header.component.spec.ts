@@ -435,23 +435,33 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
     expect(el.textContent).toContain('Cambiar a admin');
   });
 
-  for (const [nombre, roles, capacidades, ruta] of [
-    ['Pr + F', ['ROLE_PROFESOR', 'ROLE_USER'], ['MIS_GRUPOS', 'MI_CAJA', 'ELEGIR_VISTA'], '/mis-grupos'],
-    ['R + F', ['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'], ['PANEL_SEDE', 'ELEGIR_VISTA'], '/adminpage'],
-    ['G + F', ['ROLE_ADMIN', 'ROLE_USER'], [], '/adminpage'],
+  for (const [nombre, roles, capacidades, ruta, etiqueta] of [
+    ['Pr + F', ['ROLE_PROFESOR', 'ROLE_USER'], ['MIS_GRUPOS', 'MI_CAJA', 'ELEGIR_VISTA'], '/mis-grupos', 'Cambiar a profesor'],
+    ['R + F', ['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'], ['PANEL_SEDE', 'ELEGIR_VISTA'], '/adminpage', 'Cambiar a admin'],
+    ['G + F', ['ROLE_ADMIN', 'ROLE_USER'], [], '/adminpage', 'Cambiar a admin'],
   ] as const) {
-    itSinReloj(`${nombre}: «Cambiar a admin» guarda la vista y lleva a ${ruta} (439)`, async () => {
+    itSinReloj(`${nombre}: «${etiqueta}» guarda la vista y lleva a ${ruta} (439, 440)`, async () => {
       const { el, fixture, guardarVistaPreferida } = await renderizar([...roles], '/userpage', 'user', [...capacidades]);
       const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
       expect(fixture.componentInstance.tieneAccesoDual).toBeTrue();
       fixture.componentInstance.toggleDesktopUserMenu();
       fixture.detectChanges();
-      expect(el.textContent).toContain('Cambiar a admin');
+      expect(texto(el)).toContain(etiqueta);
+      if (etiqueta === 'Cambiar a profesor') {
+        expect(texto(el)).not.toContain('Cambiar a admin');
+      } else {
+        expect(texto(el)).not.toContain('Cambiar a profesor');
+      }
       fixture.componentInstance.cambiarVistaAdmin();
       expect(guardarVistaPreferida).toHaveBeenCalledWith('admin');
       expect(navegar).toHaveBeenCalledWith([ruta]);
     });
   }
+
+  itSinReloj('la etiqueta del cambio de vista es «profesor» solo para profesor + familia (440)', async () => {
+    const pf = await renderizar(['ROLE_PROFESOR', 'ROLE_USER'], '/userpage', 'user', ['MIS_GRUPOS', 'ELEGIR_VISTA']);
+    expect(pf.fixture.componentInstance.etiquetaCambioVista).toBe('Cambiar a profesor');
+  });
 
   itSinReloj('Pr + F sin grupos: su cabecera de familia, sin «Cambiar a admin» (439)', async () => {
     const { el, fixture } = await renderizar(['ROLE_PROFESOR', 'ROLE_USER'], '/userpage', 'user', ['MI_CAJA']);

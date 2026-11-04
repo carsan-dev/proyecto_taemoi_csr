@@ -217,7 +217,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void permisos_familiaProfesor_misGruposYMiCaja() throws Exception {
+	void permisos_familiaProfesor_misGruposMiCajaYElegirVista() throws Exception {
 		JsonNode p = permisos(tFamiliaProf);
 		assertEquals(List.of("PROFESOR", "FAMILIA"), textos(p.get("roles")));
 		assertTrue(p.get("tieneGrupos").asBoolean());

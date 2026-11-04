@@ -234,7 +234,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   /**
    * Pide los permisos una vez por sesión con ROLE_PROFESOR o gestión (`pidePermisos`). «Mis grupos» sigue igual que
    * antes: solo con ROLE_PROFESOR y la capacidad MIS_GRUPOS, así que pedirlos con gestión no cambia ningún menú. Las
-   * capacidades del responsable (PANEL_SEDE y ELEGIR_VISTA) llevan su «Volver al panel» y «Cambiar a admin». Si fallan,
+   * capacidades del responsable (PANEL_SEDE y ELEGIR_VISTA) llevan su «Volver al panel» y «Cambiar a admin»; las del
+   * profesor + familia (MIS_GRUPOS y ELEGIR_VISTA, decisión 439), su «Cambiar a profesor». Si fallan,
    * sin enlace.
    */
   private actualizarPermisos(roles: readonly string[]): void {
@@ -280,6 +281,11 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Destino de «Volver al panel»: gestión y responsable siempre al panel (aunque prefieran la vista de familia); profesor, a sus grupos. */
   get destinoPanel(): string {
     return this.isAdmin || this.esPanelSede ? '/adminpage' : '/mis-grupos';
+  }
+
+  /** Texto de «Cambiar a …»: profesor + familia pasa a sus grupos («profesor»; decisión 440); gestión y responsable, al panel («admin»). */
+  get etiquetaCambioVista(): string {
+    return this.destinoPanel === '/mis-grupos' ? 'Cambiar a profesor' : 'Cambiar a admin';
   }
 
   get mostrarHeaderUser(): boolean {

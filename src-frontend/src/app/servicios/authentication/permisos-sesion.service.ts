@@ -15,7 +15,7 @@ export type Capacidad =
   | 'MI_CAJA'
   /** Responsable de sede sin gestión: la señal del menú y las pantallas de la decisión 370. */
   | 'PANEL_SEDE'
-  /** Responsable de sede y familia sin gestión: elige vista como gestión + familia (decisión 371). */
+  /** Responsable de sede y familia sin gestión: elige vista como gestión + familia (decisión 371). Profesor + familia sin gestión ni responsable también la recibe: su vista «admin» es «Mis grupos» (decisión 439). */
   | 'ELEGIR_VISTA';
 
 export interface SedeVisible {
