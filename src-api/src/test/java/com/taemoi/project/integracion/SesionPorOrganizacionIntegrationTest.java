@@ -359,8 +359,6 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of("ADMINISTRADOR"), jdbc.queryForList(
 				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = 1 AND activa = TRUE",
 				String.class, usuario.getId()));
-		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_rol WHERE usuario_id = ?", Integer.class,
-				usuario.getId()));
 		// La sesión ya abierta pasa a tener los permisos nuevos en la siguiente petición.
 		mvc.perform(get("/api/auth/roles").cookie(jwt(tokenUsuario)))
 				.andExpect(jsonPath("$[*]", containsInAnyOrder("ROLE_MANAGER")));
@@ -423,8 +421,6 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of("FAMILIA"), jdbc.queryForList(
 				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = ? AND activa = TRUE",
 				String.class, usuarioId, org2));
-		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_rol WHERE usuario_id = ?", Integer.class,
-				usuarioId));
 
 		// Fase 3: la escuela 2 no tiene comportamiento_legado_taemoi, así que solo el vínculo explícito
 		// (usuario_alumno) da acceso de familia. Desde la entrega 2b el registro escribe esa fila (origen REGISTRO;
@@ -654,7 +650,8 @@ class SesionPorOrganizacionIntegrationTest extends MySqlIntegrationTest {
 
 		assertTrue(TenantContext.calcularCon(ORG1, () -> alumnoService.eliminarAlumno(alumnoId)));
 
-		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, usuario.getId()));
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ?", Integer.class,
+				usuario.getId()));
 		assertEquals(List.of("PROPIETARIO"), jdbc.queryForList(
 				"SELECT CONCAT(rol) FROM membresia WHERE usuario_id = ? ORDER BY organizacion_id",
 				String.class, usuario.getId()));

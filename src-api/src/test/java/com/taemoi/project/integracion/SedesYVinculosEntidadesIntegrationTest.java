@@ -41,8 +41,8 @@ import com.taemoi.project.services.GrupoService;
 /**
  * Fase 3, entrega 1, con la aplicación arrancada sobre V31 ({@code ddl-auto=validate}): los grupos creados por
  * la API reciben la única sede activa de su escuela (Taemoi: «Umbrete») sin cambiar el JSON; la marca de
- * administrador de plataforma no la escribe la aplicación; borrar un usuario con filas heredadas de
- * {@code usuario_rol} funciona sin el mapeo {@code Usuario.roles}; y las entidades nuevas se guardan y leen.
+ * administrador de plataforma no la escribe la aplicación; y las entidades nuevas se guardan y leen. (La tabla
+ * heredada {@code usuario_rol} ya no existe: V32.)
  * Datos sintéticos.
  */
 @SpringBootTest
@@ -142,16 +142,6 @@ class SedesYVinculosEntidadesIntegrationTest extends MySqlIntegrationTest {
 		JsonNode json = objectMapper.readTree(objectMapper.writeValueAsString(recargado));
 		assertFalse(json.has("esAdminPlataforma") || json.has("roles"), json.toString());
 		jdbc.update("UPDATE usuario SET es_admin_plataforma = FALSE WHERE id = ?", usuario.getId());
-	}
-
-	@Test
-	void borrarUsuarioConFilasHeredadasDeUsuarioRol() {
-		Usuario usuario = crearUsuario("it-borrar-rol-" + UUID.randomUUID() + "@example.test");
-		jdbc.update("INSERT INTO usuario_rol (usuario_id, roles) VALUES (?, 'ROLE_USER')", usuario.getId());
-		TenantContext.ejecutarCon(ORG1, () -> usuarios.deleteById(usuario.getId()));
-		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario WHERE id = ?", Integer.class, usuario.getId()));
-		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_rol WHERE usuario_id = ?", Integer.class,
-				usuario.getId()));
 	}
 
 	@Test

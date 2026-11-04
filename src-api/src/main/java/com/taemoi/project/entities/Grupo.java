@@ -50,7 +50,7 @@ public class Grupo extends EntidadOrganizacion {
 	private Disciplina disciplina;
 
 	/**
-	 * Sede del grupo (V31; NULL admitido hasta V32). Solo el id, fuera del JSON: las respuestas de la API no
+	 * Sede del grupo (V31; NULL admitido hasta V32_1). Solo el id, fuera del JSON: las respuestas de la API no
 	 * cambian. Al crear un grupo sin sede se usa la única sede activa de la escuela; con varias, hay que indicarla
 	 * ({@code GestionPorSede#sedeDeAlta}). E10-4: {@code nullable = false} solo documenta la regla; Hibernate no
 	 * comprueba la nulabilidad al guardar (Bean Validation en el classpath) y un grupo heredado sin sede se sigue

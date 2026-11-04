@@ -57,7 +57,8 @@ import com.taemoi.project.utils.EmailUtils;
  * por alumno; en una escuela sin la marca solo cuenta el vínculo explícito.
  *
  * <p>{@code usuario_alumno} se rellena con la MISMA sentencia de V31 (leída del script, limitada a las cuentas
- * de este test) sobre datos que cubren cada caso de §5; después se aplican los cambios que pueden ocurrir tras
+ * de este test; el vínculo directo {@code usuario.alumno_id}, que V32 quitó, sale de {@link #vinculosDirectos})
+ * sobre datos que cubren cada caso de §5; después se aplican los cambios que pueden ocurrir tras
  * V31 (degradar a un gestor, cambiar el email de un alumno, alta de un hermano, alumnos nuevos sin fila).
  *
  * <p>La regla antigua es la de los caminos que se sustituyen: sin membresía activa en la escuela no hay sesión
@@ -93,6 +94,8 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 	final Map<String, Long> cuentas = new LinkedHashMap<>();
 	/** Alumnos por nombre, de las dos escuelas. */
 	final Map<String, Long> fichas = new LinkedHashMap<>();
+	/** El antiguo usuario.alumno_id (cuenta → alumno): la columna ya no existe (V32). */
+	final Map<Long, Long> vinculosDirectos = new LinkedHashMap<>();
 
 	@BeforeAll
 	void prepararCasosRellenarComoV31YAplicarCambiosPosteriores() {
@@ -243,7 +246,7 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 	void retirar() {
 		for (Map.Entry<String, Long> cuenta : cuentas.entrySet()) {
 			jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", cuenta.getValue());
-			jdbc.update("UPDATE usuario SET email = ?, alumno_id = NULL WHERE id = ?",
+			jdbc.update("UPDATE usuario SET email = ? WHERE id = ?",
 					"retirado-eq-" + cuenta.getKey() + "-" + sufijo + "@example.test", cuenta.getValue());
 		}
 		for (Map.Entry<String, Long> ficha : fichas.entrySet()) {
@@ -478,6 +481,13 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(inicio >= 0, "V31 ya no tiene la sentencia de relleno esperada");
 		int fin = script.indexOf(';', inicio);
 		String sentencia = script.substring(inicio, fin);
+		String r1 = "JOIN alumno x ON x.id = u.alumno_id";
+		assertTrue(sentencia.indexOf(r1) >= 0 && sentencia.indexOf(r1) == sentencia.lastIndexOf(r1),
+				"V31: no se encuentra una sola vez la regla R1");
+		String directo = vinculosDirectos.entrySet().stream()
+				.map(v -> " WHEN " + v.getKey() + " THEN " + v.getValue()).collect(Collectors.joining());
+		sentencia = sentencia.replace(r1,
+				"JOIN alumno x ON x.id = " + (directo.isEmpty() ? "NULL" : "(CASE u.id" + directo + " ELSE NULL END)"));
 		Matcher filtro = FILTRO_V31.matcher(sentencia);
 		assertTrue(filtro.find(), "V31: no se encuentra el filtro final del relleno");
 		String limitadas = cuentas.values().stream().map(String::valueOf).collect(Collectors.joining(","));
@@ -521,7 +531,7 @@ class AccesoFamiliaEquivalenciaIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private void vincularDirecto(long usuarioId, long alumnoId) {
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumnoId, usuarioId);
+		vinculosDirectos.put(usuarioId, alumnoId);
 	}
 
 	private void vincular(long usuarioId, long alumnoId, long organizacionId, String origen) {

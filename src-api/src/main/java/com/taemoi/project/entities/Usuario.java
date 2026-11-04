@@ -76,8 +76,7 @@ public class Usuario implements UserDetails {
 	private LocalDate ultimoRecordatorioRachaReset;
 
 	// Los roles globales heredados (tabla usuario_rol) ya no se mapean (fase 3, entrega 1): los permisos viven en
-	// Membresia por organización desde V20. La tabla sigue hasta V32; desde V31 su FK borra en cascada las filas
-	// de un usuario borrado.
+	// Membresia por organización desde V20. V32 borró la tabla.
 
 	/**
 	 * Administrador de plataforma (V31): marca global, no una membresía. Solo se pone con SQL fuera del
@@ -93,7 +92,7 @@ public class Usuario implements UserDetails {
 	private Long ultimaOrganizacionId;
 
 	/*
-	 * Pieza E10-2: la columna usuario.alumno_id ya no se mapea ni se escribe (sigue en la tabla hasta la V32, sin uso).
+	 * Pieza E10-2: la columna usuario.alumno_id ya no se mapea ni se escribe; V32 la borró.
 	 * El vínculo de la cuenta con sus fichas es usuario_alumno (VinculoFamiliaService y AccesoFamiliaService).
 	 */
 

@@ -105,9 +105,8 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 
 	/** Filas propias de la invitación: la cancelación las borra de esta escuela (de otra, conservan la cuenta). */
 	private static final Set<String> PROPIAS = Set.of("membresia.usuario_id", "asignacion_profesor.usuario_id");
-	/** Cualquier fila aquí conserva la cuenta: vínculos con alumnos, legado, dinero, caja y autoría. */
-	private static final Set<String> CONSERVAN = Set.of("usuario_alumno.usuario_id", "usuario_rol.usuario_id",
-			"cobro.cobrado_por_usuario_id", "cobro.anulado_por_usuario_id", "entrega_caja.entregado_por_usuario_id",
+	/** Cualquier fila aquí conserva la cuenta: vínculos con alumnos, dinero, caja y autoría. */
+	private static final Set<String> CONSERVAN = Set.of("usuario_alumno.usuario_id", "cobro.cobrado_por_usuario_id", "cobro.anulado_por_usuario_id", "entrega_caja.entregado_por_usuario_id",
 			"entrega_caja.recibido_por_usuario_id", "entrega_caja.anulada_por_usuario_id",
 			"movimiento_caja.creado_por_usuario_id", "movimiento_caja.anulado_por_usuario_id",
 			"producto_alumno.cancelado_por_usuario_id", "producto_alumno.vendido_por_usuario_id",
@@ -206,7 +205,6 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 			assertTrue(consulta.contains("FROM " + partes[0] + " x WHERE x." + partes[1]), "falta " + referencia);
 		}
 		assertTrue(consulta.contains("FROM asignacion_profesor x WHERE x.usuario_id"), "asignaciones de otra escuela");
-		assertTrue(consulta.contains("u.alumno_id IS NOT NULL"), "vínculo legado con el alumno");
 		assertTrue(consulta.contains("u.es_admin_plataforma"), "marca global de plataforma");
 	}
 
@@ -468,17 +466,6 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void alumnoLegado_conservaLaCuenta() throws Exception {
-		String correo = emailNuevo("legado");
-		long id = invitar(correo, "PROFESOR");
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", e.aB, id);
-
-		assertFalse(cancelar(id, tPropietario, 200).get("cuentaBorrada").asBoolean());
-
-		assertEquals(e.aB, jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, id));
-	}
-
-	@Test
 	void adminDePlataforma_conservaLaCuenta() throws Exception {
 		long id = invitar(emailNuevo("plataforma"), "PROFESOR");
 		jdbc.update("UPDATE usuario SET es_admin_plataforma = TRUE WHERE id = ?", id);
@@ -486,16 +473,6 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(cancelar(id, tPropietario, 200).get("cuentaBorrada").asBoolean());
 
 		assertEquals(1L, filas("usuario", "id", id));
-	}
-
-	@Test
-	void usuarioRolLegado_conservaLaCuenta() throws Exception {
-		long id = invitar(emailNuevo("usuario-rol"), "PROFESOR");
-		jdbc.update("INSERT INTO usuario_rol (usuario_id, roles) VALUES (?, 'ROLE_USER')", id);
-
-		assertFalse(cancelar(id, tPropietario, 200).get("cuentaBorrada").asBoolean());
-
-		assertEquals(1L, filas("usuario_rol", "usuario_id", id));
 	}
 
 	@Test

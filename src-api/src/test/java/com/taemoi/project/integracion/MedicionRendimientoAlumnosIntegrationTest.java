@@ -185,14 +185,14 @@ class MedicionRendimientoAlumnosIntegrationTest extends MySqlIntegrationTest {
 		jdbc.batchUpdate("""
 				INSERT INTO tutor (organizacion_id, alumno_id, nombre, nif, parentesco, responsable_legal, orden)
 				VALUES (1, ?, ?, NULL, 'TUTOR_LEGAL', TRUE, 0)""", tutores);
-		// Uno de cada 4 alumnos con cuenta de usuario vinculada.
+		// Una cuenta de familia por cada 4 alumnos (sin vínculo: el antiguo usuario.alumno_id ya no existe, V32).
 		String hash = encoder.encode(CLAVE);
 		List<Object[]> cuentas = new ArrayList<>();
 		for (int i = 0; i < ids.size(); i += 4) {
-			cuentas.add(new Object[] { "Familia", "R2 " + i, "r2-familia-" + i + "@example.test", hash, ids.get(i) });
+			cuentas.add(new Object[] { "Familia", "R2 " + i, "r2-familia-" + i + "@example.test", hash });
 		}
-		jdbc.batchUpdate("INSERT INTO usuario (nombre, apellidos, email, contrasena, auth_provider, alumno_id, "
-				+ "recordatorio_racha_email_habilitado) VALUES (?, ?, ?, ?, 'LOCAL', ?, 0)", cuentas);
+		jdbc.batchUpdate("INSERT INTO usuario (nombre, apellidos, email, contrasena, auth_provider, "
+				+ "recordatorio_racha_email_habilitado) VALUES (?, ?, ?, ?, 'LOCAL', 0)", cuentas);
 
 		alumnoMuestra = ids.get(12);
 		grupoMuestra = gruposTkd.get(2);

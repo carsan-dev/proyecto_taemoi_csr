@@ -23,7 +23,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 /**
  * V20 (membresia) sobre usuarios y roles con la forma de producción: se migra un esquema propio
- * hasta V19, se cargan usuario/usuario_rol, se migra a la última versión y se comprueba el relleno.
+ * hasta V19, se cargan usuario/usuario_rol, se migra hasta 31.21 (V32 borra usuario_rol) y se comprueba el relleno.
  */
 @Tag("migracion")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -57,7 +57,8 @@ class MembresiaMigracionIntegrationTest extends MySqlIntegrationTest {
 		jdbc.update("INSERT INTO usuario_rol (usuario_id, roles) VALUES (?, 'ROLE_USER')", familia);
 		jdbc.update("INSERT INTO usuario_rol (usuario_id, roles) VALUES (?, NULL)", sinRoles);
 
-		flyway(null).migrate();
+		// Hasta 31.21: V32 (E10-3) borra usuario_rol.
+		flyway("31.21").migrate();
 	}
 
 	@Test
