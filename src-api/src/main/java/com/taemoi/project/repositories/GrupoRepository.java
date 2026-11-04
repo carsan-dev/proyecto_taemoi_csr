@@ -33,6 +33,15 @@ public interface GrupoRepository extends JpaRepository<Grupo, Long>, JpaSpecific
 
 	List<Grupo> findByTipoIgnoreCase(String tipo);
 
+	/**
+	 * E10-4: nombre ya usado por un grupo de esa sede en la escuela activa. Compara MySQL con la colación de la columna
+	 * (sin distinguir mayúsculas ni tildes), como la clave única {@code (sede_id, nombre)} de la V32_1.
+	 */
+	boolean existsBySedeIdAndNombre(Long sedeId, String nombre);
+
+	/** Ídem, sin contar el grupo {@code id} (editar un grupo no choca consigo mismo). */
+	boolean existsBySedeIdAndNombreAndIdNot(Long sedeId, String nombre, Long id);
+
 	/** Pieza 9-1: grupos del alumno en esa sede; con {@code sedeId} nulo, sus grupos sin sede. */
 	@org.springframework.data.jpa.repository.Query("SELECT COUNT(g) FROM Grupo g JOIN g.alumnos a WHERE a.id = :alumnoId "
 			+ "AND (g.sedeId = :sedeId OR (:sedeId IS NULL AND g.sedeId IS NULL))")

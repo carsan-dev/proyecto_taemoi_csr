@@ -190,6 +190,8 @@ class MensualidadAltaYGeneradorIntegrationTest extends MySqlIntegrationTest {
 		o.setNombre("Escuela " + prefijo);
 		long org = TenantContext.calcularCon(ORG_TAEMOI, () -> organizaciones.save(o).getId());
 		assertNotEquals(ORG_TAEMOI, org);
+		// Como una escuela real tras V31: con su sede activa (sin ella, el alta da 400 desde la E10-4).
+		jdbc.update("INSERT INTO sede (organizacion_id, nombre, activa) VALUES (?, 'Sede principal', TRUE)", org);
 		TenantContext.ejecutarCon(org, () -> {
 			// Catálogo propio de la escuela (V26): grados por disciplina.
 			DisciplinasDePrueba.conGrados(disciplinas, sistemas, grados, "TAEKWONDO", 14, TipoGrado.BLANCO);

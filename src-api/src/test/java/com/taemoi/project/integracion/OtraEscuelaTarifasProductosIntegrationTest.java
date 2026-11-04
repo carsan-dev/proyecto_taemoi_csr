@@ -241,6 +241,8 @@ class OtraEscuelaTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 		o.setNombre("Escuela " + prefijo);
 		long org = TenantContext.calcularCon(ORG_TAEMOI, () -> organizaciones.save(o).getId());
 		assertNotEquals(ORG_TAEMOI, org);
+		// Como una escuela real tras V31: con su sede activa (sin ella, el alta da 400 desde la E10-4).
+		jdbc.update("INSERT INTO sede (organizacion_id, nombre, activa) VALUES (?, 'Sede principal', TRUE)", org);
 		TenantContext.ejecutarCon(org,
 				() -> DisciplinasDePrueba.conGrados(disciplinas, sistemas, grados, "TAEKWONDO", 14, TipoGrado.BLANCO));
 		return org;

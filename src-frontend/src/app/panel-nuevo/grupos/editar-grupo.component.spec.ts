@@ -144,9 +144,34 @@ describe('Editar grupo (3m-2)', () => {
   });
   it('muestra el texto real del servidor bajo Datos del grupo', () => {
     cargar(); component.guardar();
-    http.expectOne(`${api}/grupos/7`).flush({ mensaje: 'El nombre ya está utilizado' }, { status: 409, statusText: 'Conflict' });
+    http.expectOne(`${api}/grupos/7`).flush({ mensaje: 'La sede está inactiva.' }, { status: 400, statusText: 'Bad Request' });
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('#guardar-error').textContent).toContain('El nombre ya está utilizado');
+    expect(fixture.nativeElement.querySelector('#guardar-error').textContent).toContain('La sede está inactiva.');
+  });
+  it('un 409 que no es de nombre repetido (concurrencia) sigue bajo Datos del grupo', () => {
+    cargar(); component.guardar();
+    const texto = 'Otra persona ha cambiado este dato a la vez; vuelve a intentarlo';
+    http.expectOne(`${api}/grupos/7`).flush({ mensaje: texto }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('#guardar-error')?.textContent).toContain(texto);
+    expect(host.querySelector('#nombre-error')).toBeNull();
+  });
+  it('un 409 de nombre repetido se muestra junto al nombre con el texto del servidor y se borra al escribir', () => {
+    cargar(); component.guardar();
+    const texto = 'Ya hay un grupo con ese nombre en Estepa. Elige otro nombre.';
+    http.expectOne(`${api}/grupos/7`).flush({ mensaje: texto }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('#nombre-error')?.textContent).toContain(texto);
+    expect(host.querySelector('#grupo-nombre')?.getAttribute('aria-invalid')).toBe('true');
+    expect(host.querySelector('#grupo-nombre')?.getAttribute('aria-describedby')).toContain('nombre-error');
+    expect(host.querySelector('#guardar-error')).toBeNull();
+    const input = host.querySelector('#grupo-nombre') as HTMLInputElement;
+    input.value = 'Infantiles C';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(host.querySelector('#nombre-error')).toBeNull();
   });
   it('quitar pide diálogo normal con el texto exacto y avisa de éxito', async () => {
     cargar(); confirmacion.confirmar.and.resolveTo({ confirmado: true, valor: null });

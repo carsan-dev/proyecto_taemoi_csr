@@ -57,6 +57,8 @@ export class EditarGrupoComponent implements OnInit {
   errorCarga = '';
   guardando = false;
   errorGuardar = '';
+  /** E10-4: el 409 de nombre repetido en la sede, junto al campo nombre. */
+  errorNombreServidor = '';
   profesores: ProfesorDeGrupo[] = [];
   profesoresCargando = true;
   profesoresError = '';
@@ -119,6 +121,7 @@ export class EditarGrupoComponent implements OnInit {
       this.nombre.reset('');
       this.sede.reset(null);
       this.errorGuardar = '';
+      this.errorNombreServidor = '';
       this.errorAlta = '';
       this.menuAbierto = null;
       this.cambiandoRol.clear();
@@ -148,9 +151,9 @@ export class EditarGrupoComponent implements OnInit {
       turnos === undefined ? '' : `${turnos} ${turnos === 1 ? 'turno' : 'turnos'}`].filter(Boolean).join(' · ');
   }
   get errorNombre(): string {
-    if (!this.nombre.touched) return '';
-    if (this.nombre.hasError('required')) return 'El nombre del grupo es obligatorio';
-    return this.nombre.hasError('maxlength') ? 'Máximo 50 caracteres' : '';
+    if (this.nombre.touched && this.nombre.hasError('required')) return 'El nombre del grupo es obligatorio';
+    if (this.nombre.touched && this.nombre.hasError('maxlength')) return 'Máximo 50 caracteres';
+    return this.errorNombreServidor;
   }
   /** Las sedes activas y, si la del grupo está inactiva, también esa: así no se pierde su valor. */
   get sedesElegibles(): SedeVisible[] {
@@ -172,10 +175,19 @@ export class EditarGrupoComponent implements OnInit {
     if (sedeId !== null) cuerpo.sedeId = sedeId;
     this.guardando = true;
     this.errorGuardar = '';
+    this.errorNombreServidor = '';
     this.endpoints.actualizarGrupo(this.grupoId, cuerpo as GrupoDTO, contextoErrorLocal())
       .pipe(finalize(() => { this.guardando = false; }), takeUntil(this.cambioGrupo$), takeUntilDestroyed(this.destroyRef)).subscribe({
         next: () => { if (this.grupo) { this.grupo.nombre = nombre; if (sedeId !== null) this.grupo.sedeId = sedeId; } this.avisos.exito('El grupo se ha actualizado correctamente'); },
-        error: (error: unknown) => { this.errorGuardar = mensajeDeError(error) ?? 'Error al actualizar el grupo'; },
+        error: (error: unknown) => {
+          const mensaje = mensajeDeError(error) ?? 'Error al actualizar el grupo';
+          // E10-4: el nombre repetido en la sede (409) va junto al campo nombre; el resto (también otros 409, como
+          // los de concurrencia), bajo Datos del grupo.
+          const nombreRepetido = error instanceof HttpErrorResponse && error.status === 409
+            && mensaje.startsWith('Ya hay un grupo con ese nombre');
+          if (nombreRepetido) this.errorNombreServidor = mensaje;
+          else this.errorGuardar = mensaje;
+        },
       });
   }
   nombreCompleto(profesor: ProfesorDeGrupo): string { return `${profesor.nombre} ${profesor.apellidos}`.trim(); }

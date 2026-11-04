@@ -32,6 +32,7 @@ import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.EstadoPreinscripcion;
 import com.taemoi.project.entities.Grupo;
+import com.taemoi.project.entities.Sede;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoEnGrupoException;
 import com.taemoi.project.exceptions.grupo.GrupoNoEncontradoException;
@@ -40,6 +41,7 @@ import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.repositories.GrupoRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
+import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.utils.OrdenAlfabetico;
@@ -56,6 +58,9 @@ public class GrupoServiceImpl implements GrupoService {
 
 	/** Pieza 9-5: {@code POST /api/grupos} no admite id (ver {@link #crearGrupo}). */
 	static final String ALTA_CON_ID = "Un grupo nuevo no lleva id.";
+
+	/** E10-4: nombre ya usado en la sede (409); el hueco es el nombre de la sede. */
+	static final String NOMBRE_REPETIDO_EN_SEDE = "Ya hay un grupo con ese nombre en %s. Elige otro nombre.";
 
 	/**
 	 * Inyección del repositorio de grupo.
@@ -87,6 +92,9 @@ public class GrupoServiceImpl implements GrupoService {
 	/** Entrega 6: alcance y comprobaciones del responsable de sede (sin efecto para la gestión). */
 	@Autowired
 	private GestionPorSede gestionPorSede;
+
+	@Autowired
+	private SedeRepository sedeRepository;
 
 	private static final Set<EstadoPreinscripcion> ESTADOS_PREINSCRIPCION_ACTIVA =
 			Set.of(EstadoPreinscripcion.PENDIENTE, EstadoPreinscripcion.EN_LISTA_ESPERA);
@@ -166,6 +174,10 @@ public class GrupoServiceImpl implements GrupoService {
 		// D6-5: sede del cuerpo (de la escuela; del responsable, una de las suyas; activa, D6-17). Sin sede: la del
 		// responsable si tiene una; para la gestión, la única sede activa; con varias, 400 (decisiones 368 y 377).
 		grupo.setSedeId(gestionPorSede.sedeDeAlta(grupoDTO.getSedeId(), true));
+		// E10-4: nombre repetido en la sede, 409 antes de guardar.
+		if (grupoRepository.existsBySedeIdAndNombre(grupo.getSedeId(), grupo.getNombre())) {
+			throw nombreRepetidoEn(grupo.getSedeId());
+		}
 		grupo = grupoRepository.save(grupo);
 		return convertirEntidadADTO(grupo);
 	}
@@ -185,24 +197,40 @@ public class GrupoServiceImpl implements GrupoService {
 		Optional<Grupo> grupoOptional = grupoRepository.findById(id);
 		if (grupoOptional.isPresent()) {
 			Grupo grupo = grupoOptional.get();
-			grupo.setNombre(grupoDTO.getNombre());
-			grupo.setRangoEdadMin(grupoDTO.getRangoEdadMin());
-			grupo.setRangoEdadMax(grupoDTO.getRangoEdadMax());
 			// Sin sede en el cuerpo (o la misma), el grupo conserva la suya. Un cambio de sede se valida como un
 			// alta: de la escuela, del responsable si lo es, y activa (D6-5, D6-17). Un grupo sin sede la recibe como
 			// en el alta: con varias activas, 400 y la transacción se deshace entera (decisión 368). Cambiar la sede
 			// de un grupo no mueve cargos ni cobros: un cargo va con la sede del alumno.
+			Long sedeId = grupo.getSedeId();
 			if (grupoDTO.getSedeId() != null && !Objects.equals(grupoDTO.getSedeId(), grupo.getSedeId())) {
-				grupo.setSedeId(gestionPorSede.sedeDeAlta(grupoDTO.getSedeId(), true));
+				sedeId = gestionPorSede.sedeDeAlta(grupoDTO.getSedeId(), true);
 			} else if (grupo.getSedeId() == null) {
-				grupo.setSedeId(gestionPorSede.sedeDeAlta(null, true));
+				sedeId = gestionPorSede.sedeDeAlta(null, true);
 			}
+			// E10-4: nombre repetido en la sede, 409. Se comprueba antes de tocar la entidad (la consulta no vacía un
+			// cambio pendiente) y solo si cambian el nombre o la sede: editar otra cosa de un grupo con un duplicado
+			// heredado no falla.
+			boolean cambiaNombreOSede = !Objects.equals(grupoDTO.getNombre(), grupo.getNombre())
+					|| !Objects.equals(sedeId, grupo.getSedeId());
+			if (cambiaNombreOSede
+					&& grupoRepository.existsBySedeIdAndNombreAndIdNot(sedeId, grupoDTO.getNombre(), grupo.getId())) {
+				throw nombreRepetidoEn(sedeId);
+			}
+			grupo.setNombre(grupoDTO.getNombre());
+			grupo.setRangoEdadMin(grupoDTO.getRangoEdadMin());
+			grupo.setRangoEdadMax(grupoDTO.getRangoEdadMax());
+			grupo.setSedeId(sedeId);
 			grupo = grupoRepository.save(grupo);
 
 			return convertirEntidadADTO(grupo);
 		} else {
 			return null;
 		}
+	}
+
+	private IllegalStateException nombreRepetidoEn(Long sedeId) {
+		String sede = sedeRepository.buscarEnEscuelaActiva(sedeId).map(Sede::getNombre).orElse("la sede");
+		return new IllegalStateException(String.format(NOMBRE_REPETIDO_EN_SEDE, sede));
 	}
 
 	/**
