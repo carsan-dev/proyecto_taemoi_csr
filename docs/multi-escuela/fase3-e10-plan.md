@@ -346,13 +346,16 @@ SELECT
 
 SELECT version, success FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 3;
 
--- Solo tras V32_1: debe dar NO y 1.
+-- Solo tras V32_1: debe dar NO y 1 (indice_unico = 1 solo si uk_grupo_sede_nombre es único y exactamente
+-- (sede_id, nombre), en ese orden).
 SELECT
   (SELECT IS_NULLABLE FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'grupo' AND COLUMN_NAME = 'sede_id') AS sede_id_admite_null,
-  (SELECT COUNT(*) FROM information_schema.STATISTICS
-    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'grupo' AND INDEX_NAME = 'uk_grupo_sede_nombre'
-      AND SEQ_IN_INDEX = 1) AS indice_unico;
+  (SELECT COUNT(*) = 2
+          AND SUM(NON_UNIQUE = 0 AND ((SEQ_IN_INDEX = 1 AND COLUMN_NAME = 'sede_id')
+                                      OR (SEQ_IN_INDEX = 2 AND COLUMN_NAME = 'nombre'))) = 2
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'grupo' AND INDEX_NAME = 'uk_grupo_sede_nombre') AS indice_unico;
 ```
 
 `familias_org1_sin_ficha_visible` reproduce `ACCESO_FAMILIA` para la org 1 (marca de legado: email o fila MANUAL; las
