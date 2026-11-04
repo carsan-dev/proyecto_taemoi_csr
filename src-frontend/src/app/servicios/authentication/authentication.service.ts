@@ -32,6 +32,20 @@ export function esSoloProfesor(roles: readonly string[]): boolean {
 }
 
 /**
+ * Profesor + familia sin gestión ni responsable de sede (decisión 439): con «Mis grupos», el servidor le da
+ * ELEGIR_VISTA y elige entre su vista de profesor (`/mis-grupos`) y la de familia, como gestión + familia.
+ */
+export function esProfesorYFamilia(roles: readonly string[]): boolean {
+  return (
+    roles.includes('ROLE_PROFESOR') &&
+    roles.includes('ROLE_USER') &&
+    !roles.includes('ROLE_ADMIN') &&
+    !roles.includes('ROLE_MANAGER') &&
+    !roles.includes('ROLE_RESPONSABLE_SEDE')
+  );
+}
+
+/**
  * Reintentos de `GET /auth/roles` cuando el fallo no es definitivo (red, 408, 429, 5xx): esperas de 500 ms, 1 s
  * y 2 s. Al reabrir la web, el navegador puede cortar la primera petición sin que llegue al servidor (estado 0);
  * sin reintento, `roleGuard` veía `[]` y mandaba a la portada. Sin sesión (401/403) no se reintenta.
@@ -411,7 +425,7 @@ export class AuthenticationService {
     return roles.includes('ROLE_USER');
   }
 
-  /** Gestión + familia, o la capacidad ELEGIR_VISTA de responsable + familia (decisión 371). */
+  /** Gestión + familia, o la capacidad ELEGIR_VISTA de responsable + familia (371) o profesor + familia (439). */
   tieneAccesoDual(roles: string[] = this.rolesSubject.value, capacidades: readonly Capacidad[] = []): boolean {
     return (this.tieneAccesoAdmin(roles) && this.tieneAccesoUser(roles)) || capacidades.includes('ELEGIR_VISTA');
   }
@@ -436,9 +450,17 @@ export class AuthenticationService {
     return this.esPortalPreferido(valor) ? valor : null;
   }
 
-  marcarVistaPreferidaSegunRuta(url: string): void {
+  marcarVistaPreferidaSegunRuta(url: string, roles: readonly string[] = this.rolesSubject.value): void {
     const rutaNormalizada = this.normalizarRuta(url);
     if (rutaNormalizada.startsWith('/adminpage')) {
+      this.guardarVistaPreferida('admin');
+      return;
+    }
+    // Decisión 439: «Mis grupos» es la vista de profesor + familia; para el resto de cuentas no es una vista.
+    if (
+      (rutaNormalizada === '/mis-grupos' || rutaNormalizada.startsWith('/mis-grupos/')) &&
+      esProfesorYFamilia(roles)
+    ) {
       this.guardarVistaPreferida('admin');
       return;
     }
@@ -455,11 +477,27 @@ export class AuthenticationService {
     return roles.includes('ROLE_RESPONSABLE_SEDE') ? this.permisos.capacidades().pipe(take(1)) : of([]);
   }
 
-  /** Destino al entrar: el de {@link resolverRutaInicioPorRoles}, con las capacidades del responsable de sede. */
+  /**
+   * Las capacidades que deciden el destino al entrar: las del responsable de sede y, decisión 439, las de profesor +
+   * familia (su ELEGIR_VISTA). Si no se pueden leer, ninguna (falla cerrado: profesor + familia entra como familia).
+   */
+  private capacidadesDeEntrada(roles: readonly string[]): Observable<readonly Capacidad[]> {
+    return esProfesorYFamilia(roles) ? this.permisos.capacidades().pipe(take(1)) : this.capacidadesDeResponsable(roles);
+  }
+
+  /** Destino al entrar: el de {@link resolverRutaInicioPorRoles}, con las capacidades que lo deciden. */
   resolverRutaInicio(roles: string[] = this.rolesSubject.value): Observable<string> {
-    return this.capacidadesDeResponsable(roles).pipe(
+    return this.capacidadesDeEntrada(roles).pipe(
       map((capacidades) => this.resolverRutaInicioPorRoles(roles, capacidades))
     );
+  }
+
+  /**
+   * La vista que no es la de familia en una cuenta que elige vista: el panel para gestión y responsable de sede;
+   * «Mis grupos» para profesor + familia (decisión 439).
+   */
+  destinoVistaAdmin(roles: readonly string[] = this.rolesSubject.value, capacidades: readonly Capacidad[] = []): string {
+    return this.tieneAccesoAdmin([...roles]) || capacidades.includes('PANEL_SEDE') ? '/adminpage' : '/mis-grupos';
   }
 
   resolverRutaInicioPorRoles(
@@ -470,7 +508,7 @@ export class AuthenticationService {
     const tieneAccesoUser = this.tieneAccesoUser(roles);
 
     if (this.tieneAccesoDual(roles, capacidades)) {
-      return this.obtenerVistaPreferida() === 'user' ? '/userpage' : '/adminpage';
+      return this.obtenerVistaPreferida() === 'user' ? '/userpage' : this.destinoVistaAdmin(roles, capacidades);
     }
     if (tieneAccesoAdmin) {
       return '/adminpage';

@@ -19,7 +19,7 @@ import java.util.function.BooleanSupplier;
  * ({@link #abreSesion}): RESPONSABLE_SEDE, limitada a sus sedes (decisión 370); PROFESOR sin FAMILIA, gestión ni
  * RESPONSABLE_SEDE, limitada a su caja ({@link #sesionSoloProfesor}, decisión 180); RESPONSABLE_SEDE + PROFESOR entra
  * como responsable y suma Mi caja y Mis grupos (decisión 371, sustituye a la 184); con FAMILIA, PROFESOR entra como
- * familia.</li>
+ * familia y, si tiene «Mis grupos», elige vista como gestión + familia (decisión 439, capacidad ELEGIR_VISTA).</li>
  * </ul>
  */
 public enum RolMembresia {

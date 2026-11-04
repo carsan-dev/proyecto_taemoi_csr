@@ -137,10 +137,10 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 	/**
 	 * Destino tras entrar con Google, el mismo que con contraseña (decisión 384; la regla es
-	 * {@code AuthenticationService.resolverRutaInicioPorRoles} del frontend). Solo familia (con o sin profesor) y solo
-	 * gestión tienen un único destino posible y van directos, como antes. Las demás sesiones dependen de la vista
-	 * preferida del navegador (gestión + familia) o de las capacidades de responsable de sede ({@code ELEGIR_VISTA},
-	 * {@code PANEL_SEDE}), que el servidor no decide aquí: van a {@link #RUTA_ENTRADA}, que aplica esa regla.
+	 * {@code AuthenticationService.resolverRutaInicioPorRoles} del frontend). Solo familia y solo gestión tienen un único
+	 * destino posible y van directos, como antes. Las demás sesiones dependen de la vista preferida del navegador
+	 * (gestión + familia) o de las capacidades ({@code ELEGIR_VISTA} de responsable o de profesor con familia, decisiones
+	 * 371 y 439; {@code PANEL_SEDE}), que el servidor no decide aquí: van a {@link #RUTA_ENTRADA}, que aplica esa regla.
 	 */
 	private static String destino(Set<Roles> autoridades) {
 		boolean gestion = autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER);
@@ -151,7 +151,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 		if (gestion && !familia) {
 			return "/adminpage";
 		}
-		if (familia && !gestion) {
+		if (familia && !gestion && !autoridades.contains(Roles.ROLE_PROFESOR)) {
 			return "/userpage";
 		}
 		return RUTA_ENTRADA;

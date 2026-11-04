@@ -97,6 +97,19 @@ describe('entradaGoogleGuard (decisión 384)', () => {
     expect(await destino(['ROLE_RESPONSABLE_SEDE'], [])).toBe('/');
   });
 
+  it('profesor + familia con grupos elige vista como con contraseña: sin preferencia, Mis grupos (439)', async () => {
+    expect(await destino(['ROLE_PROFESOR', 'ROLE_USER'], ['MIS_GRUPOS', 'MI_CAJA', 'ELEGIR_VISTA'])).toBe('/mis-grupos');
+  });
+
+  it('profesor + familia con la vista de familia preferida va a /userpage (439)', async () => {
+    auth.guardarVistaPreferida('user');
+    expect(await destino(['ROLE_PROFESOR', 'ROLE_USER'], ['MIS_GRUPOS', 'MI_CAJA', 'ELEGIR_VISTA'])).toBe('/userpage');
+  });
+
+  it('profesor + familia sin grupos entra como familia (439)', async () => {
+    expect(await destino(['ROLE_PROFESOR', 'ROLE_USER'], ['MI_CAJA'])).toBe('/userpage');
+  });
+
   it('solo profesor va a Mis grupos', async () => {
     expect(await destino(['ROLE_PROFESOR'])).toBe('/mis-grupos');
   });

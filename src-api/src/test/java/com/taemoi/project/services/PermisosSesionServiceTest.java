@@ -24,8 +24,8 @@ class PermisosSesionServiceTest {
 		// Con PROFESOR fuera de la sesión solo-profesor, «Mis grupos» solo con grupos (217); Mi caja siempre.
 		assertEquals(List.of(Capacidad.MI_CAJA),
 				PermisosSesionService.capacidades(Set.of(Roles.ROLE_USER, Roles.ROLE_PROFESOR), false));
-		assertEquals(List.of(Capacidad.MIS_GRUPOS, Capacidad.MI_CAJA),
-				PermisosSesionService.capacidades(Set.of(Roles.ROLE_USER, Roles.ROLE_PROFESOR), true));
+		assertEquals(List.of(Capacidad.MIS_GRUPOS, Capacidad.MI_CAJA, Capacidad.ELEGIR_VISTA),
+				PermisosSesionService.capacidades(Set.of(Roles.ROLE_USER, Roles.ROLE_PROFESOR), true), "decisión 439");
 		assertEquals(List.of(Capacidad.MIEMBROS, Capacidad.DAR_GESTION, Capacidad.SEDES, Capacidad.ASIGNAR_PROFESORES,
 				Capacidad.MIS_GRUPOS, Capacidad.MI_CAJA),
 				PermisosSesionService.capacidades(Set.of(Roles.ROLE_ADMIN, Roles.ROLE_PROFESOR), true));
@@ -62,6 +62,30 @@ class PermisosSesionServiceTest {
 		assertEquals(List.of(Capacidad.MIEMBROS, Capacidad.DAR_GESTION, Capacidad.SEDES, Capacidad.ASIGNAR_PROFESORES),
 				PermisosSesionService.capacidades(
 						Set.of(Roles.ROLE_ADMIN, Roles.ROLE_RESPONSABLE_SEDE, Roles.ROLE_USER), false));
+	}
+
+	/**
+	 * Decisión 439: profesor + familia sin gestión elige vista como gestión + familia, pero solo si su vista de profesor
+	 * («Mis grupos») existe: sin grupos no tiene MIS_GRUPOS (217) y sigue entrando como familia. Con gestión, la vista
+	 * doble ya sale de los roles; con responsable, de la 371.
+	 */
+	@Test
+	void capacidades_profesorYFamilia_eligeVistaSoloConMisGrupos() {
+		assertEquals(List.of(Capacidad.MIS_GRUPOS, Capacidad.MI_CAJA, Capacidad.ELEGIR_VISTA),
+				PermisosSesionService.capacidades(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_USER), true));
+		assertEquals(List.of(Capacidad.MI_CAJA),
+				PermisosSesionService.capacidades(Set.of(Roles.ROLE_PROFESOR, Roles.ROLE_USER), false), "sin grupos");
+		assertEquals(List.of(Capacidad.MIEMBROS, Capacidad.SEDES, Capacidad.ASIGNAR_PROFESORES, Capacidad.MIS_GRUPOS,
+				Capacidad.MI_CAJA),
+				PermisosSesionService.capacidades(Set.of(Roles.ROLE_MANAGER, Roles.ROLE_PROFESOR, Roles.ROLE_USER), true),
+				"con gestión, sin ELEGIR_VISTA");
+		assertEquals(List.of(Capacidad.MIEMBROS, Capacidad.DAR_GESTION, Capacidad.SEDES, Capacidad.ASIGNAR_PROFESORES,
+				Capacidad.MIS_GRUPOS, Capacidad.MI_CAJA),
+				PermisosSesionService.capacidades(Set.of(Roles.ROLE_ADMIN, Roles.ROLE_PROFESOR, Roles.ROLE_USER), true),
+				"con gestión, sin ELEGIR_VISTA");
+		assertEquals(List.of(Capacidad.MIS_GRUPOS, Capacidad.MI_CAJA),
+				PermisosSesionService.capacidades(Set.of(Roles.ROLE_PROFESOR), true), "solo profesor, sin selector");
+		assertEquals(List.of(), PermisosSesionService.capacidades(Set.of(Roles.ROLE_USER), true), "solo familia");
 	}
 
 	/** Pieza 8b-T (§4): «Nombre A.» con la inicial del primer apellido, para el botón de cuenta. */

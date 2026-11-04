@@ -74,7 +74,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	EscuelaConSedesDePrueba e;
 	EscuelaConSedesDePrueba otra;
 	String tPropietario, tGestor, tFamilia, tRespA, tRespAC, tFamiliaProf, tSoloProf, tSoloProfSin, tRespProf,
-			tPropProf, tGestorProfSin, tPlataforma, tPropietarioOtra;
+			tPropProf, tGestorProfSin, tPlataforma, tPropietarioOtra, tFamiliaProfSin;
 
 	@BeforeAll
 	void preparar() {
@@ -89,6 +89,8 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 		long familiaProf = e.cuentaFamilia(usuarios, "familiaprof");
 		membresia(e, familiaProf, "PROFESOR");
 		asignar(e, familiaProf, e.gA2);
+		long familiaProfSin = e.cuentaFamilia(usuarios, "familiaprofsin");
+		membresia(e, familiaProfSin, "PROFESOR");
 		long soloProf = e.cuenta(usuarios, "soloprof");
 		membresia(e, soloProf, "PROFESOR");
 		asignar(e, soloProf, e.gA);
@@ -116,6 +118,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 		tRespA = e.token(jwtService, usuarios, e.respA);
 		tRespAC = e.token(jwtService, usuarios, e.respAC);
 		tFamiliaProf = e.token(jwtService, usuarios, familiaProf);
+		tFamiliaProfSin = e.token(jwtService, usuarios, familiaProfSin);
 		tSoloProf = e.token(jwtService, usuarios, soloProf);
 		tSoloProfSin = e.token(jwtService, usuarios, soloProfSin);
 		tRespProf = e.token(jwtService, usuarios, respProf);
@@ -214,12 +217,23 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void permisos_familiaProfesor_misGruposYMiCaja() throws Exception {
+	void permisos_familiaProfesor_misGruposMiCajaYElegirVista() throws Exception {
 		JsonNode p = permisos(tFamiliaProf);
 		assertEquals(List.of("PROFESOR", "FAMILIA"), textos(p.get("roles")));
 		assertTrue(p.get("tieneGrupos").asBoolean());
 		assertEquals(0, p.get("sedes").size());
-		assertEquals(PROFESOR, textos(p.get("capacidades")));
+		List<String> esperadas = new ArrayList<>(PROFESOR);
+		esperadas.add("ELEGIR_VISTA");
+		assertEquals(esperadas, textos(p.get("capacidades")), "decisión 439: elige vista");
+	}
+
+	/** Decisión 439: sin grupos no hay vista de profesor («Mis grupos», 217) que elegir; entra como familia. */
+	@Test
+	void permisos_familiaProfesorSinGrupos_sinElegirVista() throws Exception {
+		JsonNode p = permisos(tFamiliaProfSin);
+		assertEquals(List.of("PROFESOR", "FAMILIA"), textos(p.get("roles")));
+		assertFalse(p.get("tieneGrupos").asBoolean());
+		assertEquals(List.of("MI_CAJA"), textos(p.get("capacidades")));
 	}
 
 	// ------------------------------------------------------------------ sesión solo-profesor (180 y 184)

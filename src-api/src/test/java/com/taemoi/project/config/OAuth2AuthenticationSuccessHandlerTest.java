@@ -89,14 +89,16 @@ class OAuth2AuthenticationSuccessHandlerTest {
 
 	/**
 	 * Decisión 384. Solo familia y solo gestión tienen un único destino posible, el mismo que con contraseña, y van
-	 * directos como hasta ahora. Las demás combinaciones (dos vistas, responsable de sede, solo profesor, plataforma sin
+	 * directos como hasta ahora. Las demás combinaciones (dos vistas, también profesor + familia por la 439, responsable
+	 * de sede, solo profesor, plataforma sin
 	 * roles de escuela) dependen de la vista preferida o de las capacidades: van a la entrada del frontend que aplica la
 	 * regla del login con contraseña.
 	 */
 	static Stream<Arguments> destinoSegunAutoridades() {
 		return Stream.of(
 				Arguments.of(EnumSet.of(Roles.ROLE_USER), "/userpage"),
-				Arguments.of(EnumSet.of(Roles.ROLE_USER, Roles.ROLE_PROFESOR), "/userpage"),
+				// Decisión 439: profesor + familia elige vista (con grupos) y va a la entrada, como gestión + familia.
+				Arguments.of(EnumSet.of(Roles.ROLE_USER, Roles.ROLE_PROFESOR), OAuth2AuthenticationSuccessHandler.RUTA_ENTRADA),
 				Arguments.of(EnumSet.of(Roles.ROLE_ADMIN), "/adminpage"),
 				Arguments.of(EnumSet.of(Roles.ROLE_MANAGER), "/adminpage"),
 				Arguments.of(EnumSet.of(Roles.ROLE_ADMIN, Roles.ROLE_PROFESOR), "/adminpage"),

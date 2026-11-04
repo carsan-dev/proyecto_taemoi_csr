@@ -284,7 +284,7 @@
             <button class="mobile-user-quick-menu-item" type="button"
               (click)="cambiarVistaAdmin(); closeMobileUserQuickMenu()">
               <i class="bi bi-shield-lock"></i>
-              <span>Cambiar a admin</span>
+              <span>{{ etiquetaCambioVista }}</span>
             </button>
             }
             <button class="mobile-user-quick-menu-item logout" type="button"
@@ -418,7 +418,7 @@
                 <button class="user-desktop-menu-item" type="button"
                   (click)="cambiarVistaAdmin(); closeDesktopUserMenu()">
                   <i class="bi bi-shield-lock"></i>
-                  <span>Cambiar a admin</span>
+                  <span>{{ etiquetaCambioVista }}</span>
                 </button>
                 }
                 <button class="user-desktop-menu-item logout" type="button"
@@ -520,7 +520,7 @@
       @if (tieneAccesoDual) {
       <button class="mobile-header-link" type="button" (click)="cambiarVistaAdmin(); closeMobileMenu()">
         <i class="bi bi-shield-lock" aria-hidden="true"></i>
-        <span>Cambiar a admin</span>
+        <span>{{ etiquetaCambioVista }}</span>
       </button>
       }
       <button class="mobile-header-link logout" type="button" (click)="cerrarSesion(); closeMobileMenu()">

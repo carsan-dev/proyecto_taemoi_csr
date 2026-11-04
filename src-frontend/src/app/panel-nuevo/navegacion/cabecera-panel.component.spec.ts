@@ -641,6 +641,25 @@ describe('CabeceraPanelComponent (8b-N)', () => {
         expect(abrirCuenta().textContent).toContain('Cambiar a familia');
       });
 
+      itSinReloj('Pr + F: «Cambiar a familia» con ELEGIR_VISTA (439)', async () => {
+        roles = ['ROLE_PROFESOR', 'ROLE_USER'];
+        datosPermisos = permisos({ roles: ['PROFESOR', 'FAMILIA'], capacidades: ['MIS_GRUPOS', 'MI_CAJA', 'ELEGIR_VISTA'] });
+        await montar();
+        responderMarca();
+        // Sus dos accesos directos de profesor, como hoy (decisión 326), y el selector en la cuenta.
+        expect(fixture.componentInstance.soloProfesor()).toBeTrue();
+        expect(fixture.componentInstance.secciones().map((s) => s.etiqueta)).toEqual(['Mis grupos', 'Mi caja']);
+        expect(abrirCuenta().textContent).toContain('Cambiar a familia');
+      });
+
+      itSinReloj('Pr + F sin grupos: sin «Cambiar a familia»', async () => {
+        roles = ['ROLE_PROFESOR', 'ROLE_USER'];
+        datosPermisos = permisos({ roles: ['PROFESOR', 'FAMILIA'], capacidades: ['MI_CAJA'] });
+        await montar();
+        responderMarca();
+        expect(abrirCuenta().textContent).not.toContain('Cambiar a familia');
+      });
+
       itSinReloj('solo profesor y gestión siguen igual', async () => {
         roles = ['ROLE_PROFESOR'];
         datosPermisos = permisos({ roles: ['PROFESOR'], capacidades: ['MIS_GRUPOS', 'MI_CAJA'] });

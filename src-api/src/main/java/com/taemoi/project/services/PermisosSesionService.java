@@ -155,8 +155,9 @@ public class PermisosSesionService {
 	/**
 	 * Capacidades por autoridades (D8-14): MIEMBROS, SEDES y ASIGNAR_PROFESORES con gestión; DAR_GESTION solo el
 	 * propietario (D8); MIS_GRUPOS en la sesión solo-profesor y con responsable + profesor sin gestión siempre (371) y,
-	 * fuera de ellas, con PROFESOR y grupos (217); MI_CAJA con PROFESOR; PANEL_SEDE con responsable sin gestión (370) y
-	 * ELEGIR_VISTA si además es familia (371). En el orden de {@link Capacidad}.
+	 * fuera de ellas, con PROFESOR y grupos (217); MI_CAJA con PROFESOR; PANEL_SEDE con responsable sin gestión (370);
+	 * ELEGIR_VISTA con familia sin gestión si tiene otra vista a la que ir: su panel de sede (371) o, como profesor,
+	 * «Mis grupos» (439). En el orden de {@link Capacidad}.
 	 */
 	static List<Capacidad> capacidades(Set<Roles> autoridades, boolean tieneGrupos) {
 		boolean gestion = autoridades.contains(Roles.ROLE_ADMIN) || autoridades.contains(Roles.ROLE_MANAGER);
@@ -171,7 +172,8 @@ public class PermisosSesionService {
 		if (autoridades.contains(Roles.ROLE_ADMIN)) {
 			resultado.add(Capacidad.DAR_GESTION);
 		}
-		if (RolMembresia.sesionSoloProfesor(autoridades) || (profesor && (tieneGrupos || panelDeSede))) {
+		boolean misGrupos = RolMembresia.sesionSoloProfesor(autoridades) || (profesor && (tieneGrupos || panelDeSede));
+		if (misGrupos) {
 			resultado.add(Capacidad.MIS_GRUPOS);
 		}
 		if (profesor) {
@@ -179,9 +181,9 @@ public class PermisosSesionService {
 		}
 		if (panelDeSede) {
 			resultado.add(Capacidad.PANEL_SEDE);
-			if (autoridades.contains(Roles.ROLE_USER)) {
-				resultado.add(Capacidad.ELEGIR_VISTA);
-			}
+		}
+		if (!gestion && autoridades.contains(Roles.ROLE_USER) && (panelDeSede || (profesor && misGrupos))) {
+			resultado.add(Capacidad.ELEGIR_VISTA);
 		}
 		return List.copyOf(resultado);
 	}
