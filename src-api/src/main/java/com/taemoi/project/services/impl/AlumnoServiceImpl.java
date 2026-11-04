@@ -202,7 +202,7 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Autowired
 	private com.taemoi.project.services.VinculoFamiliaService vinculoFamiliaService;
 
-	/** Pieza E10-2 (decisión 429): qué fichas sigue viendo una cuenta al borrar o anonimizar otra. */
+	/** Pieza E10-2 (decisión 436): qué otras fichas ve la cuenta de una ficha que cambia de email. */
 	@Autowired
 	private com.taemoi.project.services.AccesoFamiliaService accesoFamiliaService;
 
@@ -809,9 +809,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 					}
 				} else if (cuentas.size() == 1 && cambiaElDeAlgunaCuenta && java.util.Objects.equals(
 						EmailUtils.normalizeEmail(cuentas.get(0).getEmail()),
-						EmailUtils.normalizeEmail(alumnoExistente.getEmail()))) {
-					// Decisión 430: el email de la ficha pasa a la cuenta solo si es la única vinculada y su email
-					// era el de la ficha. Con varias cuentas, u otro email, la cuenta no se toca.
+						EmailUtils.normalizeEmail(alumnoExistente.getEmail()))
+						&& !veOtraFichaConElEmail(cuentas.get(0), alumnoExistente)) {
+					// Decisión 436 (afina la 430): el email de la ficha pasa a la cuenta solo si es la única vinculada,
+					// su email era el de la ficha y no ve (como familia) ninguna otra ficha con ese email viejo. Si no,
+					// la ficha cambia de email y la cuenta conserva el suyo.
 					Usuario usuario = cuentas.get(0);
 					// El email es de la cuenta global: solo se cambia si no pertenece a otra escuela.
 					if (!membresiaService.puedeGestionarUsuarioGlobal(usuario.getId(),
@@ -1898,10 +1900,32 @@ public class AlumnoServiceImpl implements AlumnoService {
 	}
 
 	/**
-	 * Decisión 429 (borrar y anonimizar): cada cuenta vinculada a la ficha (cualquier relación y origen) que, sin ella,
-	 * no ve ninguna otra ficha de la escuela como familia ({@code AccesoFamiliaService}, la misma regla del portal,
-	 * email de Moiskimdo incluido) pierde su membresía FAMILIA en esa escuela; si no le queda ninguna membresía en
-	 * ninguna escuela, se borra la cuenta. Las que siguen viendo otra ficha no se tocan, y la gestión se conserva.
+	 * Decisión 436: si la cuenta ve como familia ({@code AccesoFamiliaService}, la regla del portal, email de Moiskimdo
+	 * incluido) alguna ficha de la escuela distinta de {@code ficha} cuyo email (normalizado) es el que {@code ficha}
+	 * tiene todavía.
+	 */
+	private boolean veOtraFichaConElEmail(Usuario cuenta, Alumno ficha) {
+		String emailViejo = EmailUtils.normalizeEmail(ficha.getEmail());
+		if (!EmailUtils.puedeVincularAlumnos(emailViejo)) {
+			return false;
+		}
+		List<Long> otras = accesoFamiliaService.idsAccesibles(cuenta, ficha.getOrganizacionId()).stream()
+				.filter(id -> !id.equals(ficha.getId())).toList();
+		if (otras.isEmpty()) {
+			return false;
+		}
+		return alumnoRepository.findAllById(otras).stream()
+				.anyMatch(otra -> emailViejo.equals(EmailUtils.normalizeEmail(otra.getEmail())));
+	}
+
+	/**
+	 * Decisión 437 (afina la 429; borrar y anonimizar): cada cuenta vinculada a la ficha (cualquier relación y origen)
+	 * a la que no le queda ninguna otra ficha vinculada en la escuela, activa o de baja, pierde su membresía FAMILIA en
+	 * esa escuela; si no le queda ninguna membresía en ninguna escuela, se borra la cuenta (todas las claves ajenas hacia
+	 * {@code usuario} son CASCADE o SET NULL). «Vinculada»: una fila suya en {@code usuario_alumno} de la escuela o, solo
+	 * en Moiskimdo (decisión 427), el email de la cuenta; las fichas anonimizadas no cuentan y la membresía inactiva no
+	 * cambia nada ({@link AlumnoRepository#contarOtrasFichasVinculadas}). Las demás no se tocan, y la gestión se
+	 * conserva.
 	 */
 	private void retirarFamiliaDeCuentasSinOtraFicha(List<com.taemoi.project.entities.UsuarioAlumno> vinculos,
 			Alumno alumno) {
@@ -1915,9 +1939,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 				continue;
 			}
 			Usuario usuario = cuenta.get();
-			boolean veOtraFicha = accesoFamiliaService.idsAccesibles(usuario, organizacionId).stream()
-					.anyMatch(id -> !id.equals(alumnoId));
-			if (veOtraFicha) {
+			String email = EmailUtils.normalizeEmail(usuario.getEmail());
+			if (alumnoRepository.contarOtrasFichasVinculadas(usuarioId,
+					EmailUtils.puedeVincularAlumnos(email) ? email : "", organizacionId, alumnoId) > 0) {
 				continue;
 			}
 			if (!membresiaService.retirarFamilia(usuarioId, organizacionId)) {

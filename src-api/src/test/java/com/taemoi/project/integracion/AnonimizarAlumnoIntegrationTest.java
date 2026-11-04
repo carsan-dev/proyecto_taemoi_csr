@@ -527,6 +527,35 @@ class AnonimizarAlumnoIntegrationTest extends MySqlIntegrationTest {
 				otra.org));
 	}
 
+	/**
+	 * Decisión 437 (afina la 429): al anonimizar, la otra ficha vinculada cuenta aunque esté de baja (la cuenta conserva
+	 * FAMILIA); una anonimizada no cuenta (la cuenta pierde FAMILIA y, sin membresías, cae).
+	 */
+	@Test
+	void anonimizar_decision437_otraFichaDeBajaCuenta_yLaAnonimizadaNo() throws Exception {
+		long alumno = e.alumno("IT8B3LBISD437" + e.marca, e.sA, true);
+		cargo(alumno, "30.00", true);
+		long deBaja = e.alumno("IT8B3LBISD437B" + e.marca, e.sA, false);
+		long anonimizada = e.alumno("IT8B3LBISD437A" + e.marca, e.sA, false);
+		jdbc.update("UPDATE alumno SET anonimizado_en = NOW() WHERE id = ?", anonimizada);
+		long conBaja = e.cuenta(usuarios, "d437-con-baja");
+		membresia(conBaja, "FAMILIA");
+		vinculo(conBaja, alumno, "TUTOR", "MANUAL");
+		vinculo(conBaja, deBaja, "TUTOR", "MANUAL");
+		long conAnonimizada = e.cuenta(usuarios, "d437-con-anon");
+		membresia(conAnonimizada, "FAMILIA");
+		vinculo(conAnonimizada, alumno, "TUTOR", "MANUAL");
+		vinculo(conAnonimizada, anonimizada, "TUTOR", "MANUAL");
+
+		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), tokenPropietario));
+
+		assertEquals(List.of("FAMILIA"), jdbc.queryForList(
+				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = ?", String.class, conBaja, e.org));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?", conBaja,
+				deBaja));
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", conAnonimizada));
+	}
+
 	@Test
 	void anonimizar_gestor_403ConMensaje_yNoCambiaNada() throws Exception {
 		long alumno = e.alumno("IT8B3LBISGESTOR" + e.marca, e.sA, true);

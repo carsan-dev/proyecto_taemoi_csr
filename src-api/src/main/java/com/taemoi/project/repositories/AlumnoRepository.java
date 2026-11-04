@@ -262,6 +262,29 @@ public interface AlumnoRepository
 			@Param("organizacionId") Long organizacionId, @Param("alumnoId") Long alumnoId);
 
 	/**
+	 * Decisión 437 (pieza E10-2): número de fichas de la organización, distintas de {@code :alumnoId} y no
+	 * anonimizadas (activas o de baja), vinculadas a la cuenta: con una fila suya en {@code usuario_alumno} de esa
+	 * organización o, solo en las escuelas con {@code comportamiento_legado_taemoi} (decisión 427), con el email de la
+	 * cuenta (mismo criterio que {@link #ACCESO_FAMILIA}). No mira si la membresía está activa. {@code :email} es el
+	 * de la cuenta normalizado o {@code ''} si no puede vincular. Lo usa el borrado y la anonimización de una ficha.
+	 */
+	@Query("""
+			SELECT COUNT(a) FROM Alumno a
+			WHERE a.organizacionId = :organizacionId
+			  AND a.id <> :alumnoId
+			  AND a.anonimizadoEn IS NULL
+			  AND (EXISTS (SELECT 1 FROM UsuarioAlumno ua
+			               WHERE ua.usuarioId = :usuarioId
+			                 AND ua.alumnoId = a.id
+			                 AND ua.organizacionId = :organizacionId)
+			       OR (:email <> '' AND LOWER(a.email) = LOWER(:email)
+			           AND EXISTS (SELECT 1 FROM Organizacion o
+			                       WHERE o.id = :organizacionId AND o.comportamientoLegadoTaemoi = TRUE)))
+			""")
+	long contarOtrasFichasVinculadas(@Param("usuarioId") Long usuarioId, @Param("email") String email,
+			@Param("organizacionId") Long organizacionId, @Param("alumnoId") Long alumnoId);
+
+	/**
 	 * Carga por id como consulta (filtrada por la organización activa). A diferencia de
 	 * {@code findById}, si ya hay un proxy sin inicializar de otra organización en el contexto de
 	 * persistencia devuelve vacío en lugar de intentar inicializarlo.

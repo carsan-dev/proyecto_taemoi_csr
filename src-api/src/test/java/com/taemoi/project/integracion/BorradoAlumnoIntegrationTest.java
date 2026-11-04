@@ -295,25 +295,174 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(1, contar("SELECT COUNT(*) FROM alumno WHERE id = ?", hermano));
 	}
 
+	// ------------------------------------------------------------------ decisión 437 (afina la 429)
+
 	/**
-	 * «Visible» es la regla del portal: una ficha inactiva no lo es. La cuenta cuya única otra ficha está de baja pierde
-	 * FAMILIA (decisión 429); su fila con la ficha inactiva cae con la cuenta.
+	 * Decisión 437: la otra ficha vinculada cuenta aunque esté de baja. La cuenta cuya única otra ficha está de baja
+	 * conserva FAMILIA, la cuenta y su fila con esa ficha.
 	 */
 	@Test
-	void decision429_otraFichaInactiva_noCuentaComoVisible() throws Exception {
-		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("D429ACTIVA", null));
-		long inactiva = TenantContext.calcularCon(ORG1, () -> crearAlumno("D429BAJA", null));
-		jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", inactiva);
-		Usuario familia = crearUsuario("d429-baja-" + sufijo + "@example.test");
+	void decision437_otraFichaDeBaja_conservaFamiliaYCuenta() throws Exception {
+		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437ACTIVA", null));
+		long deBaja = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437BAJA", null));
+		jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", deBaja);
+		Usuario familia = crearUsuario("d437-baja-" + sufijo + "@example.test");
 		dar(familia, ORG1, RolMembresia.FAMILIA);
 		vincular(familia.getId(), alumno, "TUTOR");
-		vincular(familia.getId(), inactiva, "TUTOR");
+		vincular(familia.getId(), deBaja, "TUTOR");
 
 		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdmin))).andExpect(status().isOk());
 
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", familia.getId()));
+		assertEquals(List.of("FAMILIA"), roles(familia.getId(), ORG1));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?",
+				familia.getId(), deBaja));
+	}
+
+	/**
+	 * Decisión 437: una ficha anonimizada no cuenta, aunque le quedara una fila. La cuenta pierde FAMILIA y cae. En la
+	 * otra escuela: una ficha anonimizada en Moiskimdo cambiaría los totales que comparan otros tests.
+	 */
+	@Test
+	void decision437_otraFichaAnonimizada_pierdeFamilia() throws Exception {
+		long alumno = TenantContext.calcularCon(org2, () -> crearAlumno("D437CONANON", null));
+		long anonimizada = TenantContext.calcularCon(org2, () -> crearAlumno("D437ANON", null));
+		jdbc.update("UPDATE alumno SET activo = FALSE, anonimizado_en = NOW() WHERE id = ?", anonimizada);
+		Usuario familia = crearUsuario("d437-anon-" + sufijo + "@example.test");
+		dar(familia, org2, RolMembresia.FAMILIA);
+		for (long ficha : List.of(alumno, anonimizada)) {
+			jdbc.update("""
+					INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+					VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", familia.getId(), ficha, org2);
+		}
+
+		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdminOtra))).andExpect(status().isOk());
+
+		assertEquals(0, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ?", familia.getId()));
 		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", familia.getId()));
-		assertEquals(0, contar("SELECT COUNT(*) FROM usuario_alumno WHERE alumno_id = ?", inactiva));
-		assertEquals(1, contar("SELECT COUNT(*) FROM alumno WHERE id = ?", inactiva));
+	}
+
+	/** Decisión 437: sin otra ficha y con gestión, pierde FAMILIA, conserva la gestión y la cuenta no se borra. */
+	@Test
+	void decision437_sinOtraFichaConGestion_pierdeFamiliaYConservaGestion() throws Exception {
+		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437GESTION", null));
+		Usuario gestora = crearUsuario("d437-gestora-" + sufijo + "@example.test");
+		dar(gestora, ORG1, RolMembresia.ADMINISTRADOR);
+		dar(gestora, ORG1, RolMembresia.FAMILIA);
+		vincular(gestora.getId(), alumno, "PROPIO");
+
+		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdmin))).andExpect(status().isOk());
+
+		assertEquals(List.of("ADMINISTRADOR"), roles(gestora.getId(), ORG1));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", gestora.getId()));
+	}
+
+	/** Decisión 437: hermanos activos vinculados: la cuenta no cambia (FAMILIA, cuenta y fila del hermano). */
+	@Test
+	void decision437_hermanoActivo_nadaCambia() throws Exception {
+		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437H1", null));
+		long hermano = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437H2", null));
+		Usuario familia = crearUsuario("d437-hermanos-" + sufijo + "@example.test");
+		dar(familia, ORG1, RolMembresia.FAMILIA);
+		vincular(familia.getId(), alumno, "TUTOR");
+		vincular(familia.getId(), hermano, "TUTOR");
+
+		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdmin))).andExpect(status().isOk());
+
+		assertEquals(List.of("FAMILIA"), roles(familia.getId(), ORG1));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?",
+				familia.getId(), hermano));
+	}
+
+	/** Decisión 437: una membresía FAMILIA inactiva no cambia la regla: con otra ficha vinculada, se conserva. */
+	@Test
+	void decision437_membresiaInactiva_conOtraFicha_seConserva() throws Exception {
+		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437MI1", null));
+		long hermano = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437MI2", null));
+		Usuario familia = crearUsuario("d437-inactiva-" + sufijo + "@example.test");
+		dar(familia, ORG1, RolMembresia.FAMILIA);
+		jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", familia.getId());
+		vincular(familia.getId(), alumno, "TUTOR");
+		vincular(familia.getId(), hermano, "TUTOR");
+
+		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdmin))).andExpect(status().isOk());
+
+		assertEquals(List.of("FAMILIA"), roles(familia.getId(), ORG1));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", familia.getId()));
+	}
+
+	/**
+	 * Decisión 437 en Moiskimdo (decisión 427): la otra ficha con el email de la cuenta cuenta aunque esté de baja y no
+	 * tenga fila; una anonimizada (sin email) no.
+	 */
+	@Test
+	void decision437_moiskimdo_otraFichaDeBajaConElEmail_conservaFamilia() throws Exception {
+		String email = "d437-email-" + sufijo + "@example.test";
+		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437EMAIL", email));
+		long deBaja = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437EMAILBAJA", email.toUpperCase()));
+		jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", deBaja);
+		Usuario familia = crearUsuario(email);
+		dar(familia, ORG1, RolMembresia.FAMILIA);
+		vincular(familia.getId(), alumno, "TUTOR");
+
+		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdmin))).andExpect(status().isOk());
+
+		assertEquals(List.of("FAMILIA"), roles(familia.getId(), ORG1));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", familia.getId()));
+	}
+
+	/** Decisión 437: en una escuela sin la marca, el email no vincula: sin fila, la otra ficha no cuenta. */
+	@Test
+	void decision437_escuelaSinMarca_laFichaConElEmailSinFilaNoCuenta() throws Exception {
+		String email = "d437-sin-marca-" + sufijo + "@example.test";
+		long alumno = TenantContext.calcularCon(org2, () -> crearAlumno("D437SM", email));
+		TenantContext.calcularCon(org2, () -> crearAlumno("D437SMH", email));
+		Usuario familia = crearUsuario(email);
+		dar(familia, org2, RolMembresia.FAMILIA);
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", familia.getId(), alumno, org2);
+
+		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdminOtra))).andExpect(status().isOk());
+
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", familia.getId()));
+	}
+
+	/**
+	 * Al borrar una cuenta (sin membresías tras perder FAMILIA), ninguna clave ajena hacia {@code usuario} la bloquea:
+	 * todas son CASCADE o SET NULL (V20, V31, V31_5, V31_6, V31_8, V31_15). Si aparece una que no lo sea,
+	 * decide antes cómo la trata {@code AlumnoServiceImpl#retirarFamiliaDeCuentasSinOtraFicha}.
+	 */
+	@Test
+	void lasClavesAjenasHaciaUsuarioNoImpidenBorrarLaCuenta() {
+		List<String> bloqueantes = jdbc.queryForList("""
+				SELECT CONCAT(k.TABLE_NAME, '.', k.COLUMN_NAME, ' ', r.DELETE_RULE)
+				FROM information_schema.KEY_COLUMN_USAGE k
+				JOIN information_schema.REFERENTIAL_CONSTRAINTS r
+				  ON r.CONSTRAINT_SCHEMA = k.CONSTRAINT_SCHEMA AND r.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+				 AND r.TABLE_NAME = k.TABLE_NAME
+				WHERE k.TABLE_SCHEMA = DATABASE() AND k.REFERENCED_TABLE_NAME = 'usuario'
+				  AND r.DELETE_RULE NOT IN ('CASCADE', 'SET NULL')
+				ORDER BY 1""", String.class);
+		assertEquals(List.of(), bloqueantes, "Clave ajena hacia usuario que impediría borrar la cuenta");
+	}
+
+	/**
+	 * Decisión 437: la cuenta tutora que se borra al quedarse sin membresías se borra aunque otras tablas la apunten
+	 * (aquí, sus roles globales de usuario_rol, que caen con ella; las SET NULL las cubre el inventario de arriba).
+	 */
+	@Test
+	void decision437_tutoraConReferencias_seBorraSinFallar() throws Exception {
+		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("D437REF", null));
+		Usuario tutora = crearUsuario("d437-ref-" + sufijo + "@example.test");
+		dar(tutora, ORG1, RolMembresia.FAMILIA);
+		vincular(tutora.getId(), alumno, "TUTOR");
+		jdbc.update("INSERT INTO usuario_rol (usuario_id, roles) VALUES (?, 'ROLE_USER')", tutora.getId());
+
+		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdmin))).andExpect(status().isOk());
+
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", tutora.getId()));
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario_rol WHERE usuario_id = ?", tutora.getId()));
 	}
 
 	/**

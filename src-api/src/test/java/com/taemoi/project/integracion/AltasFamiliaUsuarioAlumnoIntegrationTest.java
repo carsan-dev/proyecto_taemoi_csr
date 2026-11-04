@@ -302,14 +302,14 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	/**
-	 * Revisión de la 2b, caso (a), con la pieza E10-2: en Taemoi, el hermano vinculado por Google ya TIENE cuenta (su
-	 * fila REGISTRO, decisión 428) y es la única, con su mismo email: cambiar el email del hermano lo lleva a la cuenta
-	 * (decisión 430), como antes con la ficha de usuario.alumno_id. La familia sigue viendo, con el email nuevo, la
-	 * ficha que lo tiene; la otra, que conserva el anterior, deja de verse (la fila REGISTRO solo cuenta con el email
-	 * coincidente en las escuelas con la marca).
+	 * Revisión de la 2b, caso (a), con la decisión 436 (afina la 430): en Taemoi, el hermano vinculado por Google tiene
+	 * cuenta (su fila REGISTRO) y es la única, con su mismo email, pero la cuenta ve otra ficha (el primero) que conserva
+	 * ese email: cambiar el email del hermano NO lo lleva a la cuenta. La cuenta conserva su email y su sesión y sigue
+	 * viendo al primero; el hermano, con otro email, deja de verse (la fila REGISTRO solo cuenta con el email
+	 * coincidente en las escuelas con la marca), como antes de la E10-2.
 	 */
 	@Test
-	void taemoi_googleHermanoQueCambiaDeEmail_seLlevaLaCuenta() throws Exception {
+	void taemoi_googleHermanoQueCambiaDeEmail_laCuentaConservaElSuyo() throws Exception {
 		String email = email("google-taemoi-cambio");
 		long primero = alumno(ORG1, "GOO TC PRIMERO", email, MENOR);
 		long hermano = alumno(ORG1, "GOO TC HERMANO", email, MENOR);
@@ -324,13 +324,53 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		String nuevo = email("google-taemoi-cambio-y");
 		actualizarEmail(ORG1, hermano, nuevo);
 
+		assertEquals(nuevo, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, hermano));
 		Usuario usuario = cuenta(usuarioId);
-		assertEquals(nuevo, usuario.getEmail(), "única cuenta vinculada y con el email de la ficha: se propaga");
+		assertEquals(email, usuario.getEmail(), "ve otra ficha con el email viejo: no se propaga (decisión 436)");
 		assertEquals(reglaDeEmail(usuario, ORG1), accesiblesEnTaemoi(usuario));
-		assertEquals(Set.of(hermano), accesiblesEnTaemoi(usuario));
-		String otraVez = loginConGoogle(ORG1, nuevo);
-		assertEquals(Set.of(hermano), alumnosVisibles(otraVez));
-		assertEquals(403, estado("/api/alumnos/" + primero + "/deportes", otraVez));
+		assertEquals(Set.of(primero), alumnosVisibles(token), "la sesión sigue valiendo");
+		assertEquals(200, estado("/api/alumnos/" + primero + "/deportes", token));
+		assertEquals(403, estado("/api/alumnos/" + hermano + "/deportes", token));
+	}
+
+	/**
+	 * Decisión 436 en una escuela sin la marca: el hermano vinculado por Google cambia de email y la cuenta, que ve al
+	 * otro con el email viejo, conserva el suyo y sigue viendo a ambos (la fila REGISTRO cuenta siempre).
+	 */
+	@Test
+	void escuelaSinMarca_googleHermanoQueCambiaDeEmail_laCuentaConservaElSuyoYVeAAmbos() throws Exception {
+		String email = email("google-sin-marca-cambio");
+		long primero = alumno(org2, "GOO SMC PRIMERO", email, ADULTO);
+		long hermano = alumno(org2, "GOO SMC HERMANO", email, MENOR);
+		String token = loginConGoogle(org2, email);
+		long usuarioId = jdbc.queryForObject("SELECT id FROM usuario WHERE email = ?", Long.class, email);
+		assertEquals(Set.of(primero, hermano), alumnosVisibles(token));
+
+		actualizarEmail(org2, hermano, email("google-sin-marca-cambio-y"));
+
+		assertEquals(email, cuenta(usuarioId).getEmail());
+		assertEquals(Set.of(primero, hermano), alumnosVisibles(token));
+	}
+
+	/**
+	 * Decisión 436: con hijo único (la cuenta no ve ninguna otra ficha con el email viejo), el email de la ficha pasa a
+	 * la cuenta, como hasta ahora. La familia entra con el email nuevo y sigue viendo la ficha.
+	 */
+	@Test
+	void taemoi_googleHijoUnicoQueCambiaDeEmail_seLlevaLaCuenta() throws Exception {
+		String email = email("google-taemoi-unico");
+		long unico = alumno(ORG1, "GOO TU UNICO", email, MENOR);
+		String token = loginConGoogle(ORG1, email);
+		long usuarioId = jdbc.queryForObject("SELECT id FROM usuario WHERE email = ?", Long.class, email);
+		assertEquals(Set.of(unico), alumnosVisibles(token));
+
+		String nuevo = email("google-taemoi-unico-y");
+		actualizarEmail(ORG1, unico, nuevo);
+
+		Usuario usuario = cuenta(usuarioId);
+		assertEquals(nuevo, usuario.getEmail(), "única cuenta, con el email de la ficha y sin otra ficha: se propaga");
+		assertEquals(Set.of(unico), accesiblesEnTaemoi(usuario));
+		assertEquals(Set.of(unico), alumnosVisibles(loginConGoogle(ORG1, nuevo)));
 	}
 
 	/**
