@@ -2,10 +2,10 @@
 --
 -- Qué hace: con el id que da o14-buscar-cuenta-prueba.sql, y dentro de una transacción, borra la cuenta y sus
 -- filas propias, en este orden: sus sedes de membresía (membresia_sede), sus asignaciones de profesor a grupos
--- (asignacion_profesor), sus vínculos con fichas (usuario_alumno), sus membresías (membresia) y la fila de usuario
--- (que lleva también su token de invitación o restablecimiento). Nunca borra alumnos, grupos, turnos ni sedes, ni
--- toca auditoria_evento (no tiene clave ajena a usuario: se conserva como histórico). No desactiva las claves
--- ajenas.
+-- (asignacion_profesor), sus membresías (membresia) y la fila de usuario (que lleva también su token de invitación
+-- o restablecimiento). Nunca borra alumnos, grupos, turnos ni sedes, ni vínculos con fichas (usuario_alumno: si la
+-- cuenta tiene alguno, para), ni toca auditoria_evento (no tiene clave ajena a usuario: se conserva como
+-- histórico). No desactiva las claves ajenas.
 --
 -- Guardas: antes de borrar nada, el script se DETIENE con un error «Table '...o14_parada_<motivo>' doesn't exist»
 -- (el cliente mysql en batch para en el primer error y la transacción, sin COMMIT, se deshace al cerrar) si:
@@ -15,22 +15,35 @@
 --   tiene_otro_rol_o_es_admin          alguna membresía con otro rol, o marca de admin de plataforma
 --   tiene_membresia_en_otra_escuela    alguna membresía fuera de la org 1
 --   es_la_cuenta_de_una_ficha_propio   alguna fila PROPIO en usuario_alumno
+--   tiene_vinculos_con_fichas          CUALQUIER fila en usuario_alumno (TUTOR, REGISTRO, MIGRACION, MANUAL): la
+--                                      invitación y el marcado de familia nunca la escriben, así que es de una
+--                                      familia real (la app tampoco borra una cuenta con vínculos al cancelar)
 --   tiene_historico                    filas suyas en cobros, caja, ventas, solicitudes, asistencias, o
 --                                      asignaciones en otra escuela (sus claves son ON DELETE SET NULL: borrar
 --                                      la cuenta perdería el autor)
 --   alta_anterior_al_2026_11_04        su membresía más antigua es anterior al 2026-11-04 (usuario no tiene
 --                                      fecha de alta; se usa membresia.creada_en)
+--   no_nacio_por_invitacion            no hay auditoria_evento MIEMBRO_INVITADO de la cuenta en la org 1 (la
+--                                      escribe el alta solo cuando crea la cuenta pendiente; invitar a una cuenta
+--                                      que ya existía no lo escribe)
+--   asignaciones_distintas_de_las_esperadas
+--                                      solo si se fija @esperado_asignaciones: el número de grupos como profesor
+--                                      de la cuenta no es ese
 -- Después de borrar, si los recuentos no cuadran (la cuenta no queda a 0, se borró algo de más, o cambian
--- alumnos, grupos, turnos o sedes) se detiene con o14_parada_recuentos_no_cuadran y la transacción se deshace.
+-- vínculos con fichas, alumnos, grupos, turnos o sedes) se detiene con o14_parada_recuentos_no_cuadran y la
+-- transacción se deshace.
 --
--- Cómo se ejecuta (bash, desde /opt/taemoi; N es el usuario_id del buscador):
---   { echo "SET @usuario_id := N;"; cat docs/multi-escuela/o14-borrar-cuenta-prueba.sql; } | docker exec -i taemoi-mysql-prod sh -c 'mysql -t -h 127.0.0.1 -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE'
+-- Cómo se ejecuta (bash, desde /opt/taemoi; N es el usuario_id y M el grupos_profesor del buscador):
+--   { echo "SET @usuario_id := N; SET @esperado_asignaciones := M;"; cat docs/multi-escuela/o14-borrar-cuenta-prueba.sql; } | docker exec -i taemoi-mysql-prod sh -c 'mysql -t -h 127.0.0.1 -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE'
+-- @esperado_asignaciones es opcional (sin él no se comprueba), pero se recomienda: para si la cuenta no tiene
+-- exactamente los M grupos que enseñó el buscador.
 -- Los literales no llevan tildes: no hace falta --default-character-set.
 --
--- Qué debe dar: una fila «guardas superadas», la fila «antes» (con membresias_cuenta = 2 y asignaciones_cuenta = 3
--- para la cuenta de prueba), la fila «borradas» (filas borradas por tabla, usuario = 1), la fila «despues» con
--- todas las columnas *_cuenta a 0 y los totales bajados exactamente en lo borrado, alumnos, grupos, turnos y
--- sedes iguales que antes, y la fila final «COMMIT hecho». Si sale un error o14_parada_*, no ha cambiado nada.
+-- Qué debe dar: una fila «guardas superadas», la fila «antes» (con membresias_cuenta = 2, asignaciones_cuenta = M
+-- y usuario_alumno_cuenta = 0 para la cuenta de prueba), la fila «borradas» (filas borradas por tabla,
+-- usuario = 1), la fila «despues» con todas las columnas *_cuenta a 0, los totales bajados exactamente en lo
+-- borrado, usuario_alumno, alumnos, grupos, turnos y sedes iguales que antes, y la fila final «COMMIT hecho». Si
+-- sale un error o14_parada_*, no ha cambiado nada.
 --
 -- Vuelta atrás: hasta el COMMIT, automática (cualquier error deshace la transacción). Después del COMMIT, solo
 -- restaurando una copia de seguridad tomada justo antes: la copia de desplegar_migrar no aplica (aquí no hay
@@ -55,6 +68,7 @@ SET @o14_otro_rol = (SELECT COUNT(*) FROM membresia
                   + (SELECT COUNT(*) FROM usuario WHERE id = @usuario_id AND es_admin_plataforma = TRUE);
 SET @o14_otra_escuela = (SELECT COUNT(*) FROM membresia WHERE usuario_id = @usuario_id AND organizacion_id <> 1);
 SET @o14_propio = (SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = @usuario_id AND relacion = 'PROPIO');
+SET @o14_vinculos = (SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = @usuario_id);
 SET @o14_historico =
     (SELECT COUNT(*) FROM cobro WHERE cobrado_por_usuario_id = @usuario_id)
   + (SELECT COUNT(*) FROM cobro WHERE anulado_por_usuario_id = @usuario_id)
@@ -73,6 +87,14 @@ SET @o14_historico =
   + (SELECT COUNT(*) FROM clase_asistencia WHERE modificado_por_usuario_id = @usuario_id)
   + (SELECT COUNT(*) FROM asignacion_profesor WHERE usuario_id = @usuario_id AND organizacion_id <> 1);
 SET @o14_alta = (SELECT MIN(creada_en) FROM membresia WHERE usuario_id = @usuario_id);
+-- El evento que deja el alta al crear la cuenta pendiente (GestionMiembrosService.alta, Cambios.rol):
+-- accion CREATE, modulo miembros, recurso_id = la cuenta, organizacion de la sesion y
+-- resumen «MIEMBROS MIEMBRO_INVITADO usuario=#<id> rol=<ROL>».
+SET @o14_invitada = (SELECT COUNT(*) FROM auditoria_evento
+                      WHERE organizacion_id = 1 AND modulo = 'miembros' AND accion = 'CREATE'
+                        AND recurso_id = @usuario_id
+                        AND resumen LIKE CONCAT('MIEMBROS MIEMBRO_INVITADO usuario=#', @usuario_id, ' %'));
+SET @o14_asignaciones = (SELECT COUNT(*) FROM asignacion_profesor WHERE usuario_id = @usuario_id);
 
 SET @o14_motivo = CASE
   WHEN @usuario_id IS NULL THEN 'usuario_id_nulo'
@@ -81,8 +103,12 @@ SET @o14_motivo = CASE
   WHEN @o14_otro_rol > 0 THEN 'tiene_otro_rol_o_es_admin'
   WHEN @o14_otra_escuela > 0 THEN 'tiene_membresia_en_otra_escuela'
   WHEN @o14_propio > 0 THEN 'es_la_cuenta_de_una_ficha_propio'
+  WHEN @o14_vinculos > 0 THEN 'tiene_vinculos_con_fichas'
   WHEN @o14_historico > 0 THEN 'tiene_historico'
   WHEN @o14_alta IS NULL OR @o14_alta < '2026-11-04' THEN 'alta_anterior_al_2026_11_04'
+  WHEN @o14_invitada = 0 THEN 'no_nacio_por_invitacion'
+  WHEN @esperado_asignaciones IS NOT NULL AND @o14_asignaciones <> @esperado_asignaciones
+    THEN 'asignaciones_distintas_de_las_esperadas'
   ELSE NULL
 END;
 
@@ -133,9 +159,6 @@ SET @b_membresia_sede = ROW_COUNT();
 DELETE FROM asignacion_profesor WHERE usuario_id = @usuario_id;
 SET @b_asignaciones = ROW_COUNT();
 
-DELETE FROM usuario_alumno WHERE usuario_id = @usuario_id;
-SET @b_usuario_alumno = ROW_COUNT();
-
 DELETE FROM membresia WHERE usuario_id = @usuario_id;
 SET @b_membresias = ROW_COUNT();
 
@@ -143,8 +166,7 @@ DELETE FROM usuario WHERE id = @usuario_id AND es_admin_plataforma = FALSE;
 SET @b_usuario = ROW_COUNT();
 
 SELECT 'borradas' AS filas, @b_usuario AS usuario, @b_membresias AS membresias,
-       @b_membresia_sede AS membresia_sede, @b_asignaciones AS asignaciones,
-       @b_usuario_alumno AS usuario_alumno;
+       @b_membresia_sede AS membresia_sede, @b_asignaciones AS asignaciones;
 
 -- ============================================================================
 -- 4. Recuentos después y comprobación final (si no cuadra, se detiene y se deshace)
@@ -185,8 +207,7 @@ SET @o14_cuadra =
   AND @d_membresia_sede = @a_membresia_sede - @a_membresia_sede_cuenta
   AND @b_membresia_sede = @a_membresia_sede_cuenta
   AND @d_asignaciones = @a_asignaciones - @a_asignaciones_cuenta AND @b_asignaciones = @a_asignaciones_cuenta
-  AND @d_usuario_alumno = @a_usuario_alumno - @a_usuario_alumno_cuenta
-  AND @b_usuario_alumno = @a_usuario_alumno_cuenta
+  AND @a_usuario_alumno_cuenta = 0 AND @d_usuario_alumno = @a_usuario_alumno
   AND @d_alumnos = @a_alumnos AND @d_grupos = @a_grupos AND @d_turnos = @a_turnos AND @d_sedes = @a_sedes;
 
 SET @sql = IF(@o14_cuadra = 1,
