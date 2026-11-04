@@ -16,7 +16,7 @@
         <form (submit)="$event.preventDefault(); guardar()">
           <label for="grupo-nombre">Nombre del grupo <span>(obligatorio)</span></label>
           <input id="grupo-nombre" type="text" [formControl]="nombre" maxlength="50" required
-            placeholder="Infantiles cinturón blanco" (input)="errorGuardar = ''" [attr.aria-invalid]="errorNombre ? 'true' : null"
+            placeholder="Infantiles cinturón blanco" (input)="errorGuardar = ''; errorNombreServidor = ''" [attr.aria-invalid]="errorNombre ? 'true' : null"
             [attr.aria-describedby]="'nombre-ayuda nombre-contador' + (errorNombre ? ' nombre-error' : '')" />
           @if (errorNombre) { <p class="editar-grupo__error" id="nombre-error" role="alert">{{ errorNombre }}</p> }
           <div class="editar-grupo__ayuda-fila">
@@ -25,7 +25,7 @@
           </div>
           @if (pedirSede) {
             <label for="grupo-sede">Sede <span>(obligatorio)</span></label>
-            <select id="grupo-sede" [formControl]="sede" aria-required="true" (change)="errorGuardar = ''" [attr.aria-invalid]="errorSede ? 'true' : null"
+            <select id="grupo-sede" [formControl]="sede" aria-required="true" (change)="errorGuardar = ''; errorNombreServidor = ''" [attr.aria-invalid]="errorSede ? 'true' : null"
               [attr.aria-describedby]="'sede-ayuda' + (errorSede ? ' sede-error' : '')">
               <option [ngValue]="null" disabled [selected]="sede.value === null">Elige una sede</option>
               @for (s of sedesElegibles; track s.id) { <option [ngValue]="s.id" [selected]="s.id === sede.value">{{ s.nombre }}{{ s.activa === false ? ' (inactiva)' : '' }}</option> }

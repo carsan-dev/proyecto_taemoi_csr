@@ -289,6 +289,20 @@ describe('CrearGrupoPanelComponent (3m-1b)', () => {
       http.expectNone(`${environment.apiUrl}/grupos`);
     });
 
+    it('un 409 de nombre repetido en la sede se muestra bajo el nombre, no en la sede', () => {
+      conVariasSedes();
+      nombre('Infantiles');
+      deporte('TAEKWONDO');
+      elegirSede('Mollina');
+      fixture.componentInstance.crear();
+      const texto = 'Ya hay un grupo con ese nombre en Sede Mollina. Elige otro nombre.';
+      http.expectOne(`${environment.apiUrl}/grupos`).flush({ mensaje: texto }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('#crear-grupo-error').textContent).toContain(texto);
+      expect(fixture.nativeElement.querySelector('#crear-grupo-sede-error')).toBeNull();
+      expect(fixture.nativeElement.querySelectorAll('[role="alert"]').length).toBe(1);
+    });
+
     it('un 400 del servidor sobre la sede se muestra en su campo', () => {
       conVariasSedes();
       nombre('Infantiles');
