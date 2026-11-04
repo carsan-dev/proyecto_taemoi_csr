@@ -53,6 +53,8 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 	private static final String ESQUEMA_FALLO = "taemoi_v31_fallo_it";
 	private static final String ESQUEMA_FK = "taemoi_v31_fk_it";
 	private static final String V31 = "db/migration/V31__sedes_y_vinculos.sql";
+	/** Hasta 31.21: V32 (E10-3) borra usuario_rol y usuario.alumno_id, que estas pruebas usan. */
+	private static final String HASTA = "31.21";
 
 	DataSource dataSource;
 	JdbcTemplate jdbc;
@@ -66,7 +68,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 		flyway(dataSource, "30").migrate();
 		fx = Fixture.cargar(jdbc);
 		precheckAntes = ejecutarScriptDocs(dataSource, "precheck-v31.sql");
-		flyway(dataSource, null).migrate();
+		flyway(dataSource, HASTA).migrate();
 	}
 
 	@Test
@@ -107,7 +109,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 				"SELECT COUNT(*) FROM grupo g JOIN sede s ON s.id = g.sede_id WHERE g.organizacion_id = 1 AND s.nombre = 'Umbrete'",
 				Integer.class));
 		Map<String, Object> columna = columna(jdbc, "grupo", "sede_id");
-		assertEquals("YES", columna.get("IS_NULLABLE"), "V31 no pasa sede_id a NOT NULL (eso es V32)");
+		assertEquals("YES", columna.get("IS_NULLABLE"), "V31 no pasa sede_id a NOT NULL (eso es V32_1)");
 		assertTrue(existeRestriccion(jdbc, "grupo", "fk_grupo_sede"));
 	}
 
@@ -355,8 +357,12 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(antes, estado(jdbc));
 	}
 
+	/**
+	 * V31 deja una tabla temporal pensada para una guarda de V32 que no se hizo (decisión 433). V31 ya está aplicada y no
+	 * se puede cambiar (suma de comprobación): basta que la marca no quede en el esquema.
+	 */
 	@Test
-	void marcaTemporalParaLaGuardaDeV32_soloEnSuConexion() throws Exception {
+	void marcaTemporalDeV31_soloEnSuConexion() throws Exception {
 		try (Connection conexion = dataSource.getConnection()) {
 			ScriptUtils.executeSqlScript(conexion, new EncodedResource(new ClassPathResource(V31), StandardCharsets.UTF_8));
 			try (Statement st = conexion.createStatement();
@@ -385,7 +391,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 		f.execute("""
 				CREATE TRIGGER it_v31_fallo_grupo BEFORE UPDATE ON grupo FOR EACH ROW
 				SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fallo simulado de V31 (grupo)'""");
-		FlywayException error = assertThrows(FlywayException.class, () -> flyway(fuente, null).migrate());
+		FlywayException error = assertThrows(FlywayException.class, () -> flyway(fuente, HASTA).migrate());
 		assertTrue(mensajeCompleto(error).contains("fallo simulado de V31 (grupo)"), mensajeCompleto(error));
 		assertEquals(3, f.queryForObject("SELECT COUNT(*) FROM sede", Integer.class));
 		assertTrue(existeColumna(f, "grupo", "sede_id"));
@@ -396,7 +402,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 		f.execute("""
 				CREATE TRIGGER it_v31_fallo_alumno BEFORE UPDATE ON alumno FOR EACH ROW
 				SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'fallo simulado de V31 (alumno)'""");
-		Flyway segundo = flyway(fuente, null);
+		Flyway segundo = flyway(fuente, HASTA);
 		segundo.repair();
 		error = assertThrows(FlywayException.class, segundo::migrate);
 		assertTrue(mensajeCompleto(error).contains("fallo simulado de V31 (alumno)"), mensajeCompleto(error));
@@ -408,7 +414,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 		f.execute("DROP TRIGGER it_v31_fallo_alumno");
 
 		// c) Termina.
-		Flyway tercero = flyway(fuente, null);
+		Flyway tercero = flyway(fuente, HASTA);
 		tercero.repair();
 		tercero.migrate();
 		assertEquals(1, versionAplicada(f, "31"));
@@ -451,7 +457,7 @@ class SedesVinculosMigracionIntegrationTest extends MySqlIntegrationTest {
 	void usuarioRol_fkRepetible() throws Exception {
 		DataSource fuente = recrear(ESQUEMA_FK);
 		JdbcTemplate k = new JdbcTemplate(fuente);
-		flyway(fuente, null).migrate();
+		flyway(fuente, HASTA).migrate();
 
 		k.execute("ALTER TABLE usuario_rol DROP FOREIGN KEY fk_usuario_rol_usuario");
 		ejecutarV31(fuente);

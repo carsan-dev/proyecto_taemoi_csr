@@ -99,20 +99,22 @@ se generó con `docker run --rm httpd:2.4-alpine htpasswd -nbBC 10 "" 'Pruebas-T
 | `gestor1@example.test`, `gestor2@example.test` | `ROLE_MANAGER` |
 | `direccion@example.test` | `ROLE_ADMIN` + `ROLE_MANAGER` |
 | `sin-rol@example.test` | ninguno, sin alumno (login rechazado: «El usuario no tiene acceso a ninguna escuela.») |
-| un correo de alumno activo (`nombre.apellidoNN@example.test`) | ninguno, vinculado a ese alumno (login rechazado igual) |
+| un correo de alumno activo (`nombre.apellidoNN@example.test`) | ninguno; en V17 vinculado a ese alumno (`usuario.alumno_id`), vínculo que se pierde en V32 al no tener membresía (login rechazado igual) |
 | 40 correos de alumnos activos (`nombre.apellidoNN@example.test`) | `ROLE_USER`, vinculados a un alumno; los familiares comparten correo con sus hermanos o hijos |
 | `propietario2@example.test` | org 2: PROPIETARIO (`ROLE_ADMIN`) |
 | `admin2@example.test` | org 2: ADMINISTRADOR (`ROLE_MANAGER`) |
 | `multiescuela@example.test` | org 1: FAMILIA (`ROLE_USER`) + org 2: ADMINISTRADOR (`ROLE_MANAGER`); entra en la org 1 |
 
+Los datos de V17 llevan los roles en `usuario_rol` y el vínculo con el alumno en `usuario.alumno_id`.
 Desde V20 los permisos salen de `membresia` (ADMIN → PROPIETARIO, MANAGER → ADMINISTRADOR,
-USER → FAMILIA, todo en la org 1); `usuario_rol` se conserva sin escribirse.
+USER → FAMILIA, todo en la org 1); V31 copia el vínculo a `usuario_alumno` y V32 borra `usuario_rol` y
+`usuario.alumno_id`.
 
-Para listar los correos familiares:
+Para listar los correos familiares (base ya migrada):
 
 ```sql
-SELECT u.email, GROUP_CONCAT(r.roles) FROM usuario u
-LEFT JOIN usuario_rol r ON r.usuario_id = u.id GROUP BY u.id;
+SELECT u.email, GROUP_CONCAT(m.rol) FROM usuario u
+LEFT JOIN membresia m ON m.usuario_id = u.id AND m.activa = TRUE GROUP BY u.id;
 ```
 
 ## Forma de los datos

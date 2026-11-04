@@ -1,7 +1,8 @@
 -- Segunda escuela SINTÉTICA (organización 2) para probar el aislamiento multi-escuela.
--- Requiere la base migrada hasta V29 (V22 quitó de alumno las columnas monodeporte; V28 quitó los
+-- Requiere la base migrada hasta V32 (V22 quitó de alumno las columnas monodeporte; V28 quitó los
 -- enums deporte/tipo_tarifa/tipo_grado: la disciplina y la tarifa se identifican solo por
--- disciplina_id y tarifa_id; V29 quitó alumno.responsable_legal_*). organizacion 2 queda con
+-- disciplina_id y tarifa_id; V29 quitó alumno.responsable_legal_*; V32 quitó usuario.alumno_id y
+-- usuario_rol: el vínculo de una cuenta con un alumno es usuario_alumno, de V31). organizacion 2 queda con
 -- comportamiento_legado_taemoi = FALSE (valor por defecto).
 -- Repetible: borra antes lo que crea. Contraseña de los usuarios: la de README.md.
 -- La organización 2 tiene su propio catálogo: disciplinas TAEKWONDO, KICKBOXING y PILATES (sin
@@ -130,27 +131,36 @@ INSERT INTO producto_alumno (cantidad, concepto, fecha_asignacion, fecha_pago, n
 VALUES (1, 'RESERVA DE PLAZA', '2026-09-07 10:00:00', '2026-09-07 10:05:00', NULL, 1, 15.0, 1001, 103, 1001, 2);
 
 -- ---------------------------------------------------------------- usuarios y membresías
-INSERT INTO usuario (apellidos, contrasena, email, nombre, alumno_id, auth_provider, recordatorio_racha_email_habilitado)
-VALUES ('Sierra Sur', @hash, 'propietario2@example.test', 'Propietaria', NULL, 'LOCAL', 0),
-       ('Sierra Sur', @hash, 'admin2@example.test', 'Administrador', NULL, 'LOCAL', 0);
+INSERT INTO usuario (apellidos, contrasena, email, nombre, auth_provider, recordatorio_racha_email_habilitado)
+VALUES ('Sierra Sur', @hash, 'propietario2@example.test', 'Propietaria', 'LOCAL', 0),
+       ('Sierra Sur', @hash, 'admin2@example.test', 'Administrador', 'LOCAL', 0);
 INSERT INTO membresia (usuario_id, organizacion_id, rol)
 SELECT id, 2, 'PROPIETARIO' FROM usuario WHERE email = 'propietario2@example.test';
 INSERT INTO membresia (usuario_id, organizacion_id, rol)
 SELECT id, 2, 'ADMINISTRADOR' FROM usuario WHERE email = 'admin2@example.test';
 
 -- Usuario en las dos escuelas: ADMINISTRADOR en la 2 y FAMILIA en la 1. Se le asigna el correo
--- del primer alumno activo de la org 1 cuyo correo no tiene usuario (por id, determinista).
+-- del primer alumno activo de la org 1 cuyo correo no tiene usuario ni cuenta vinculada (por id,
+-- determinista), y queda vinculado a él en usuario_alumno como lo habría dejado V31 (MIGRACION, relación
+-- por edad).
 SET @alumno_multi = (
   SELECT a.id FROM alumno a
   WHERE a.organizacion_id = 1 AND a.activo = 1 AND a.email IS NOT NULL
     AND NOT EXISTS (SELECT 1 FROM usuario u WHERE u.email = a.email)
-    AND NOT EXISTS (SELECT 1 FROM usuario u WHERE u.alumno_id = a.id)
+    AND NOT EXISTS (SELECT 1 FROM usuario_alumno ua WHERE ua.alumno_id = a.id)
     AND (SELECT COUNT(*) FROM alumno b WHERE b.email = a.email) = 1
   ORDER BY a.id LIMIT 1);
 UPDATE alumno SET email = 'multiescuela@example.test' WHERE id = @alumno_multi;
-INSERT INTO usuario (apellidos, contrasena, email, nombre, alumno_id, auth_provider, recordatorio_racha_email_habilitado)
-SELECT LEFT(a.apellidos, 50), @hash, 'multiescuela@example.test', LEFT(a.nombre, 50), a.id, 'LOCAL', 0
+INSERT INTO usuario (apellidos, contrasena, email, nombre, auth_provider, recordatorio_racha_email_habilitado)
+SELECT LEFT(a.apellidos, 50), @hash, 'multiescuela@example.test', LEFT(a.nombre, 50), 'LOCAL', 0
 FROM alumno a WHERE a.id = @alumno_multi;
+INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+SELECT u.id, a.id, a.organizacion_id,
+       IF(a.fecha_nacimiento IS NOT NULL AND TIMESTAMPDIFF(YEAR, a.fecha_nacimiento, CURDATE()) >= 18,
+          'PROPIO', 'TUTOR'),
+       'MIGRACION'
+FROM usuario u JOIN alumno a ON a.id = @alumno_multi
+WHERE u.email = 'multiescuela@example.test';
 INSERT INTO membresia (usuario_id, organizacion_id, rol)
 SELECT id, 1, 'FAMILIA' FROM usuario WHERE email = 'multiescuela@example.test'
 UNION ALL

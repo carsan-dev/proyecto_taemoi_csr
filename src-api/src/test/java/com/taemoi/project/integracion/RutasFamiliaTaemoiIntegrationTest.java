@@ -115,7 +115,6 @@ class RutasFamiliaTaemoiIntegrationTest extends MySqlIntegrationTest {
 		dar(degradado, RolMembresia.FAMILIA);
 		jdbc.update("UPDATE membresia SET activa = FALSE WHERE id = ?", dar(degradado, RolMembresia.ADMINISTRADOR).getId());
 		alumnoDegradado = alumno("RF DEGRADADO", degradado.getEmail());
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumnoOtraFamilia, degradado.getId());
 		jdbc.update("""
 				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
 				VALUES (?, ?, ?, 'TUTOR', 'MIGRACION')
@@ -140,7 +139,6 @@ class RutasFamiliaTaemoiIntegrationTest extends MySqlIntegrationTest {
 	void retirar() {
 		for (Long cuenta : cuentas) {
 			jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", cuenta);
-			jdbc.update("UPDATE usuario SET alumno_id = NULL WHERE id = ?", cuenta);
 		}
 		for (Long ficha : fichas) {
 			jdbc.update("UPDATE alumno SET activo = FALSE WHERE id = ?", ficha);

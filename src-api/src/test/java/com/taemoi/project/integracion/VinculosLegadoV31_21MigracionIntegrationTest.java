@@ -300,6 +300,26 @@ class VinculosLegadoV31_21MigracionIntegrationTest extends MySqlIntegrationTest 
 		assertEquals(sinElla.size() + 1, vinculos().size());
 	}
 
+	/**
+	 * Relación por edad sin fecha de nacimiento: V31_21 solo da PROPIO si la fecha existe y son 18 años o más; con
+	 * {@code fecha_nacimiento} NULL la fila es TUTOR (como V31). La columna es NOT NULL desde V1, así que el caso no se
+	 * da en una base real: se prueba la rama abriendo la columna en este esquema de pruebas (último test de la clase).
+	 */
+	@Test
+	@Order(14)
+	void alumnoSinFechaDeNacimiento_relacionTutor() throws Exception {
+		assertEquals("NO", jdbc.queryForObject("""
+				SELECT IS_NULLABLE FROM information_schema.COLUMNS
+				WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alumno' AND COLUMN_NAME = 'fecha_nacimiento'""",
+				String.class));
+		jdbc.execute("ALTER TABLE alumno MODIFY fecha_nacimiento DATE NULL");
+		long alumno = alumno(32111, 1, "sinfecha.v3121@example.test", null);
+		long usuario = usuario("sinfecha.v3121@example.test", alumno);
+		membresia(usuario, 1, "FAMILIA", true);
+		ejecutarV31_21();
+		assertEquals(Map.of("organizacion_id", 1L, "relacion", "TUTOR", "origen", "MIGRACION"), fila(usuario, alumno));
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	private List<Map<String, Object>> claves() {

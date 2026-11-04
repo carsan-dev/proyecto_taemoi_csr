@@ -166,8 +166,6 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(Map.of("organizacion_id", org2, "relacion", "PROPIO", "origen", "REGISTRO")),
 				filas(usuarioId, propio));
 		assertEquals(List.of(), filas(usuarioId, hermano));
-		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, usuarioId),
-				"Pieza E10-2: usuario.alumno_id ya no se escribe");
 
 		String token = loginConClave(email);
 		assertEquals(Set.of(propio), alumnosVisibles(token));
@@ -190,23 +188,6 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 				email), "la solicitud inservible se borra como antes");
 		assertEquals(List.of(cuentaY), jdbc.queryForList("SELECT usuario_id FROM usuario_alumno WHERE alumno_id = ?",
 				Long.class, ficha));
-	}
-
-	/**
-	 * Decisión 428: solo cuenta usuario_alumno. Una ficha con el usuario.alumno_id heredado de otra cuenta pero sin
-	 * ninguna fila (lo que V31_21 deja fuera a propósito) admite el registro.
-	 */
-	@Test
-	void registroDeUnaFichaSinFilasSeAceptaAunqueTengaAlumnoIdHeredado() {
-		String email = email("registro-legado");
-		long ficha = alumno(org2, "REG LEGADO", email, ADULTO);
-		long cuentaY = cuentaConClave(email("registro-legado-y"), org2, RolMembresia.FAMILIA);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", ficha, cuentaY);
-
-		long usuarioId = registrar(org2, email, ficha);
-
-		assertEquals(List.of(Map.of("organizacion_id", org2, "relacion", "PROPIO", "origen", "REGISTRO")),
-				filas(usuarioId, ficha));
 	}
 
 	@Test
@@ -233,8 +214,6 @@ class AltasFamiliaUsuarioAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(Map.of("organizacion_id", org2, "relacion", "TUTOR", "origen", "REGISTRO")),
 				filas(usuarioId, inactivo));
 		assertEquals(List.of(), filas(usuarioId, deOtraCuenta));
-		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, usuarioId),
-				"Pieza E10-2: usuario.alumno_id ya no se escribe");
 		assertEquals(List.of(Map.of("organizacion_id", org2, "relacion", "TUTOR", "origen", "MIGRACION")),
 				filas(cuentaY, deOtraCuenta), "la cuenta Y conserva su alumno");
 

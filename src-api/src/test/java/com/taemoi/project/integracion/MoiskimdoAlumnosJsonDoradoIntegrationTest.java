@@ -400,11 +400,11 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 		apuntarTurno(30, sabado);
 
 		jdbc.update("""
-				INSERT INTO usuario (id, nombre, apellidos, email, contrasena, auth_provider, alumno_id,
+				INSERT INTO usuario (id, nombre, apellidos, email, contrasena, auth_provider,
 				  recordatorio_racha_email_habilitado) VALUES (?, 'Familia', 'Dorado A03', 'dorado-r2-familia-a03@example.test',
-				  'fake-hash-no-usado', 'LOCAL', ?, 0)""", USUARIO + 1, ALUMNO + 3);
+				  'fake-hash-no-usado', 'LOCAL', 0)""", USUARIO + 1);
 		registrar(USUARIO + 1, "usuario:A03");
-		// Pieza E10-2: el vínculo que cuenta es usuario_alumno (usuario.alumno_id ya no se mapea). Con la cuenta
+		// Pieza E10-2: el vínculo es usuario_alumno (usuario.alumno_id ya no existe, V32). Con la cuenta
 		// vinculada, el JSON de /api/admin/{id} ya no lleva la clave «usuario» (decisión 434).
 		jdbc.update("""
 				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)

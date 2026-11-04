@@ -132,17 +132,15 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 	 * {@code @TenantId}. Las membresías de otras escuelas las mira quien llama, para saber además cuáles siguen activas.
 	 *
 	 * <p>Una línea por cada clave ajena a {@code usuario}: casi todas son {@code ON DELETE SET NULL} o {@code CASCADE}, así
-	 * que borrar sin mirarlas no daría error: perdería el autor de un cobro o el vínculo con un alumno. También el vínculo
-	 * legado {@code usuario.alumno_id} y la marca de plataforma. Una clave ajena nueva hace fallar
-	 * {@code CancelarInvitacionIntegrationTest} hasta añadirla aquí. {@code auditoria_evento} no tiene clave ajena: copia
-	 * el id, el email y el nombre, y no impide el borrado. {@code usuario_rol} se va en V32: quitar su línea entonces.
+	 * que borrar sin mirarlas no daría error: perdería el autor de un cobro o el vínculo con un alumno. También la marca
+	 * de plataforma. Una clave ajena nueva hace fallar {@code CancelarInvitacionIntegrationTest} hasta añadirla aquí.
+	 * {@code auditoria_evento} no tiene clave ajena: copia el id, el email y el nombre, y no impide el borrado. El vínculo
+	 * legado {@code usuario.alumno_id} y la tabla {@code usuario_rol} ya no existen (V32).
 	 */
 	@Query(value = """
 			SELECT CASE WHEN
-			     EXISTS (SELECT 1 FROM usuario u WHERE u.id = :usuarioId
-			             AND (u.alumno_id IS NOT NULL OR u.es_admin_plataforma = TRUE))
+			     EXISTS (SELECT 1 FROM usuario u WHERE u.id = :usuarioId AND u.es_admin_plataforma = TRUE)
 			  OR EXISTS (SELECT 1 FROM usuario_alumno x WHERE x.usuario_id = :usuarioId)
-			  OR EXISTS (SELECT 1 FROM usuario_rol x WHERE x.usuario_id = :usuarioId)
 			  OR EXISTS (SELECT 1 FROM asignacion_profesor x WHERE x.usuario_id = :usuarioId
 			             AND x.organizacion_id <> :organizacionId)
 			  OR EXISTS (SELECT 1 FROM cobro x WHERE x.cobrado_por_usuario_id = :usuarioId)

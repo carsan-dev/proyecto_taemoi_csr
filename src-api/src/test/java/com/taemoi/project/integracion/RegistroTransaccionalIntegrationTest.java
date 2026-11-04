@@ -88,7 +88,7 @@ class RegistroTransaccionalIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0, jdbc.queryForObject(
 				"SELECT COUNT(*) FROM membresia m JOIN usuario u ON u.id = m.usuario_id WHERE u.email = ?",
 				Integer.class, email));
-		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario WHERE alumno_id = ?", Integer.class,
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM usuario_alumno WHERE alumno_id = ?", Integer.class,
 				alumnoId));
 		assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM registro_pendiente WHERE email = ?", Integer.class,
 				email), "la solicitud no se consume");

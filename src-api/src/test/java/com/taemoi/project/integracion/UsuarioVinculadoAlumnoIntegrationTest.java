@@ -223,8 +223,6 @@ class UsuarioVinculadoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		String tokenSin = solicitarRegistro(email("reg-sin"), sinCuenta);
 		TenantContext.ejecutarCon(org, () -> registroService.confirmarRegistro(tokenSin));
 		long nueva = jdbc.queryForObject("SELECT id FROM usuario WHERE email = ?", Long.class, email("reg-sin"));
-		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, nueva),
-				"usuario.alumno_id ya no se escribe");
 		assertEquals(1, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ? AND organizacion_id = ? "
 				+ "AND rol = 'FAMILIA'", nueva, org));
 		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?", nueva,
@@ -252,8 +250,6 @@ class UsuarioVinculadoAlumnoIntegrationTest extends MySqlIntegrationTest {
 
 		Usuario creada = TenantContext.calcularCon(org, () -> oauth2.processOAuth2Login(google(email), "google"));
 
-		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, creada.getId()),
-				"usuario.alumno_id ya no se escribe");
 		assertEquals(List.of(otraCuenta), cuentasDelAlumno(deOtraCuenta));
 		assertEquals(List.of(terceraCuenta), cuentasDelAlumno(inactivoConCuenta));
 		assertEquals(List.of(inactivoLibre, libre).stream().sorted().toList(), jdbc.queryForList(

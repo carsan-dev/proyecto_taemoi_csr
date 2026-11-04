@@ -88,9 +88,7 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 			// eliminarAlumno no cambia.
 			Map.entry("solicitud.alumno_id", "SET NULL"),
 			Map.entry("tutor.alumno_id", "CASCADE"),
-			// E10-1 (V31_21): el vínculo antiguo queda a NULL al borrar la ficha. Desde la E10-2 eliminarAlumno ya no lo
-			// lee ni lo desvincula: decide por usuario_alumno (decisión 429).
-			Map.entry("usuario.alumno_id", "SET NULL"),
+			// El vínculo antiguo usuario.alumno_id ya no existe (V32): eliminarAlumno decide por usuario_alumno (429).
 			Map.entry("usuario_alumno.alumno_id", "CASCADE"));
 
 	@Autowired MockMvc mvc;
@@ -201,12 +199,10 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 	void borrarUnAlumnoConVinculosDeFamiliaQuitaLosVinculosYConservaLasCuentas() throws Exception {
 		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("FAMILIA", null));
 		long hermano = TenantContext.calcularCon(ORG1, () -> crearAlumno("HERMANO", null));
-		// Cuenta vinculada solo a esta ficha (y con el usuario.alumno_id heredado, que ya no se lee), familia aquí y en
-		// otra escuela: pierde FAMILIA aquí y sobrevive.
+		// Cuenta vinculada solo a esta ficha, familia aquí y en otra escuela: pierde FAMILIA aquí y sobrevive.
 		Usuario heredado = crearUsuario("heredado-" + sufijo + "@example.test");
 		dar(heredado, ORG1, RolMembresia.FAMILIA);
 		dar(heredado, org2, RolMembresia.FAMILIA);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumno, heredado.getId());
 		vincular(heredado.getId(), alumno, "PROPIO");
 		// Cuenta tutora vinculada también a otro alumno que sigue viendo: no se toca (decisión 429).
 		Usuario tutora = crearUsuario("tutora-" + sufijo + "@example.test");
@@ -222,7 +218,6 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?",
 				tutora.getId(), hermano), "el vínculo con el otro alumno sigue");
 		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", heredado.getId()));
-		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, heredado.getId()));
 		assertEquals(0, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ? AND organizacion_id = ?",
 				heredado.getId(), ORG1), "se retira su acceso de familia a esta escuela (como antes)");
 		assertEquals(1, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ? AND organizacion_id = ?",
@@ -473,7 +468,7 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 
 	/**
 	 * Decisión 437: la cuenta tutora que se borra al quedarse sin membresías se borra aunque otras tablas la apunten
-	 * (aquí, sus roles globales de usuario_rol, que caen con ella; las SET NULL las cubre el inventario de arriba).
+	 * (aquí, una asignación de profesor, que cae con ella; las SET NULL las cubre el inventario de arriba).
 	 */
 	@Test
 	void decision437_tutoraConReferencias_seBorraSinFallar() throws Exception {
@@ -481,29 +476,19 @@ class BorradoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		Usuario tutora = crearUsuario("d437-ref-" + sufijo + "@example.test");
 		dar(tutora, ORG1, RolMembresia.FAMILIA);
 		vincular(tutora.getId(), alumno, "TUTOR");
-		jdbc.update("INSERT INTO usuario_rol (usuario_id, roles) VALUES (?, 'ROLE_USER')", tutora.getId());
+		jdbc.update("""
+				INSERT INTO grupo (nombre, organizacion_id, disciplina_id, sede_id)
+				VALUES (?, ?, ?, (SELECT MIN(s.id) FROM sede s WHERE s.organizacion_id = ?))""", "D437 " + sufijo, ORG1,
+				disciplina, ORG1);
+		long grupo = jdbc.queryForObject("SELECT id FROM grupo WHERE nombre = ? AND organizacion_id = ?", Long.class,
+				"D437 " + sufijo, ORG1);
+		jdbc.update("INSERT INTO asignacion_profesor (organizacion_id, usuario_id, grupo_id, rol) VALUES (?, ?, ?, 'AYUDANTE')",
+				ORG1, tutora.getId(), grupo);
 
 		mvc.perform(delete("/api/alumnos/" + alumno).cookie(jwt(tokenAdmin))).andExpect(status().isOk());
 
 		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", tutora.getId()));
-		assertEquals(0, contar("SELECT COUNT(*) FROM usuario_rol WHERE usuario_id = ?", tutora.getId()));
-	}
-
-	/**
-	 * E10-1 (V31_21): borrar en la base una ficha cuyo id está en usuario.alumno_id (sin pasar por eliminarAlumno, que
-	 * desvincula antes) ya no falla: la columna queda a NULL y la cuenta sigue.
-	 */
-	@Test
-	void borrarEnLaBaseUnaFichaConVinculoAntiguo_loDejaANullYConservaLaCuenta() {
-		long alumno = TenantContext.calcularCon(ORG1, () -> crearAlumno("LEGADO", null));
-		Usuario cuenta = crearUsuario("legado-" + sufijo + "@example.test");
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumno, cuenta.getId());
-
-		jdbc.update("DELETE FROM alumno WHERE id = ?", alumno);
-
-		assertEquals(0, contar("SELECT COUNT(*) FROM alumno WHERE id = ?", alumno));
-		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", cuenta.getId()));
-		assertNull(jdbc.queryForObject("SELECT alumno_id FROM usuario WHERE id = ?", Long.class, cuenta.getId()));
+		assertEquals(0, contar("SELECT COUNT(*) FROM asignacion_profesor WHERE usuario_id = ?", tutora.getId()));
 	}
 
 	// ------------------------------------------------------------------ (c) alumno sin nada de lo anterior
