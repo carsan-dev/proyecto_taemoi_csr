@@ -446,7 +446,7 @@ class ResponsableSedeEntradaIntegrationTest extends MySqlIntegrationTest {
 
 		JsonNode permisos = leer(get("/api/auth/permisos"), token, 200);
 		assertEquals(List.of("ADMINISTRADOR", "RESPONSABLE_SEDE"), textos(permisos.get("roles")));
-		assertEquals(List.of(e.sA, e.sB, e.sC), ids(permisos.get("sedes")), "todas: alcance total");
+		assertEquals(List.of(e.sA, e.sB, e.sC, e.sSin), ids(permisos.get("sedes")), "todas: alcance total");
 		assertEquals(List.of("MIEMBROS", "SEDES", "ASIGNAR_PROFESORES"), textos(permisos.get("capacidades")));
 		assertEquals(200, estado(get("/api/alumnos/" + e.aB), token));
 		assertEquals(200, estado(get("/api/sedes"), token));

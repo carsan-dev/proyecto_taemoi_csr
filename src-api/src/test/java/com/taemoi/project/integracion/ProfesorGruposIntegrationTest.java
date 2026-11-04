@@ -186,7 +186,7 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(3, gA.get("alumnosActivos").asLong());
 		JsonNode gSin = fila(grupos, "id", e.gSin);
 		assertEquals("AYUDANTE", gSin.get("rol").asText());
-		assertTrue(gSin.get("sede").isNull(), "grupo sin sede");
+		assertEquals(e.sSin, gSin.get("sede").get("id").asLong(), "V32_1: todo grupo tiene sede");
 		assertEquals(0, gSin.get("alumnosActivos").asLong());
 		assertEquals(Set.of("id", "nombre", "sede", "rol", "alumnosActivos", "disciplina", "turnos"), campos(gA));
 

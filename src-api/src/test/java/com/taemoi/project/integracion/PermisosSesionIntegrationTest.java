@@ -80,8 +80,8 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	void preparar() {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e8-1p");
 		otra = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e8-1p-otra");
-		// La otra escuela con una sola sede activa (A): B y C cerradas.
-		jdbc.update("UPDATE sede SET activa = FALSE WHERE id = ?", otra.sB);
+		// La otra escuela con una sola sede activa (A): B, C y S cerradas.
+		jdbc.update("UPDATE sede SET activa = FALSE WHERE id IN (?, ?)", otra.sB, otra.sSin);
 
 		long propietario = e.cuenta(usuarios, "propietario");
 		membresia(e, propietario, "PROPIETARIO");
@@ -151,7 +151,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(p.get("cumpleanos").asBoolean(), "8b-M2: sin ficha propia, nunca cumpleaños");
 		assertEquals(List.of("PROPIETARIO"), textos(p.get("roles")));
 		assertFalse(p.get("esAdminPlataforma").asBoolean());
-		assertEquals(List.of(e.sA, e.sB, e.sC), ids(p.get("sedes")), "todas las de la escuela, por id: " + p);
+		assertEquals(List.of(e.sA, e.sB, e.sC, e.sSin), ids(p.get("sedes")), "todas las de la escuela, por id: " + p);
 		JsonNode sedeA = p.get("sedes").get(0);
 		assertEquals(Set.of("id", "nombre", "activa"), campos(sedeA));
 		assertEquals("IT E6 A " + e.marca, sedeA.get("nombre").asText());
@@ -167,7 +167,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	void permisos_gestor() throws Exception {
 		JsonNode p = permisos(tGestor);
 		assertEquals(List.of("ADMINISTRADOR"), textos(p.get("roles")));
-		assertEquals(List.of(e.sA, e.sB, e.sC), ids(p.get("sedes")));
+		assertEquals(List.of(e.sA, e.sB, e.sC, e.sSin), ids(p.get("sedes")));
 		assertEquals(GESTION_G, textos(p.get("capacidades")), "el gestor no da ni quita gestión (D8)");
 		assertFalse(p.get("tieneGrupos").asBoolean());
 	}
@@ -176,7 +176,7 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	void permisos_propietarioProfesorConGrupos_misGrupos() throws Exception {
 		JsonNode p = permisos(tPropProf);
 		assertEquals(List.of("PROPIETARIO", "PROFESOR"), textos(p.get("roles")));
-		assertEquals(List.of(e.sA, e.sB, e.sC), ids(p.get("sedes")));
+		assertEquals(List.of(e.sA, e.sB, e.sC, e.sSin), ids(p.get("sedes")));
 		assertTrue(p.get("tieneGrupos").asBoolean());
 		List<String> esperadas = new ArrayList<>(GESTION_P);
 		esperadas.addAll(PROFESOR);
@@ -320,17 +320,17 @@ class PermisosSesionIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void permisos_unaSedeActiva_variasSedesFalse() throws Exception {
 		JsonNode p = permisos(tPropietarioOtra);
-		assertEquals(List.of(otra.sA, otra.sB, otra.sC), ids(p.get("sedes")));
+		assertEquals(List.of(otra.sA, otra.sB, otra.sC, otra.sSin), ids(p.get("sedes")));
 		assertFalse(p.get("variasSedes").asBoolean(), "solo A activa");
 	}
 
 	@Test
 	void permisos_noCruzaEscuelas() throws Exception {
-		Set<Long> deE = Set.of(e.sA, e.sB, e.sC);
+		Set<Long> deE = Set.of(e.sA, e.sB, e.sC, e.sSin);
 		Set<Long> deOtra = new HashSet<>(ids(permisos(tPropietarioOtra).get("sedes")));
 		assertFalse(deOtra.removeAll(deE), "la otra escuela no ve sedes de esta");
 		Set<Long> vistas = new HashSet<>(ids(permisos(tPropietario).get("sedes")));
-		assertFalse(vistas.removeAll(Set.of(otra.sA, otra.sB, otra.sC)), "esta escuela no ve sedes de la otra");
+		assertFalse(vistas.removeAll(Set.of(otra.sA, otra.sB, otra.sC, otra.sSin)), "esta escuela no ve sedes de la otra");
 	}
 
 	@Test

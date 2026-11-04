@@ -159,9 +159,10 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 	private static final Map<String, Integer> LIMITES = Map.ofEntries(
 			// Δ medido tras R2-P3 + 2 (en 9ef8e11c: grupos TKD Δ52, KB Δ11, turnos TKD Δ15, KB Δ3, /turnos/dto Δ35).
 			// R2-P6 (turnos de los grupos en una consulta): grupos TKD Δ3, KB Δ1 en local; límites 8 → 5 y KB se queda
-			// en 4 (en la CI, con los datos que dejan otras clases, KB mide Δ4).
-			Map.entry("public_grupos_tkd", 5), Map.entry("public_grupos_kb", 4), Map.entry("public_turnos_tkd", 2),
-			Map.entry("public_turnos_kb", 2), Map.entry("turnos_dto", 3), Map.entry("turnos_dto_anonimo", 3),
+			// en 4 (en la CI, con los datos que dejan otras clases, KB mide Δ4). Desde V32_1 el grupo KB tiene sede, como
+			// todos en producción: en la CI mide grupos Δ5 y turnos Δ3, así que sus límites pasan a 5 y 3.
+			Map.entry("public_grupos_tkd", 5), Map.entry("public_grupos_kb", 5), Map.entry("public_turnos_tkd", 2),
+			Map.entry("public_turnos_kb", 3), Map.entry("turnos_dto", 3), Map.entry("turnos_dto_anonimo", 3),
 			// Escrituras, absolutas: medido tras R2-P3 + margen para lo que dejen otras clases en la organización 1 (en
 			// 9ef8e11c: cancelar 52, cambiar turnos 56, baja 45, límite 3/4/5: 40/48/57, y crecían con la escuela).
 			Map.entry("cancelar", 30), Map.entry("cambiar_turnos", 34), Map.entry("baja_alumno", 28),
@@ -616,7 +617,7 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 		long infantil = grupo(1, "TKD-INFANTIL", "Infantil", tkd, sede, 6, 12);
 		long adultos = grupo(2, "TKD-ADULTOS", "Adultos", tkd, sede, null, null);
 		grupo(3, "TKD-COMPETICION", "Competicion", tkd, sede, null, null); // oculto en el formulario público
-		long kickboxing = grupo(4, "KB", "Kickboxing", kb, null, null, null);
+		long kickboxing = grupo(4, "KB", "Kickboxing", kb, sede, null, null);
 		grupo(5, "TKD-SIN-TURNOS", "Sin turnos", tkd, sede, null, null);
 		long t1 = turno(1, "T1", infantil, "Lunes", "17:00", "18:00");
 		long t2 = turno(2, "T2", infantil, "Miércoles", "17:00", "18:00");

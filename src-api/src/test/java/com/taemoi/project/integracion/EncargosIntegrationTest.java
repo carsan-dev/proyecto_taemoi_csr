@@ -75,7 +75,8 @@ class EncargosIntegrationTest extends MySqlIntegrationTest {
 
 	/**
 	 * Una escuela de prueba. prof1 (solo PROFESOR) da clase en gA, gB y gSin; prof2 (FAMILIA + PROFESOR) en gA2.
-	 * aProfA está solo en gA; e.aGrupoA, en gA y gB (dos sedes); aSoloSin, solo en gSin (grupo sin sede).
+	 * aProfA está solo en gA; e.aGrupoA, en gA y gB (dos sedes); aSoloSin, solo en gSin (sede S: desde la V32_1
+	 * no hay grupos sin sede).
 	 */
 	final class Escena {
 		final EscuelaConSedesDePrueba e;
@@ -253,11 +254,11 @@ class EncargosIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(s.e.sA, json.readTree(s.pedir(s.tProf1, s.aProfA, s.dobok, NOTA, null).getResponse()
 				.getContentAsString()).get("sedeId").asLong());
 		assertEquals(400, s.pedir(s.tProf1, s.aProfA, s.dobok, NOTA, s.e.sB).getResponse().getStatus());
-		// aSoloSin, solo en un grupo sin sede: el encargo no tiene sede.
-		MvcResult sinSede = s.pedir(s.tProf1, s.aSoloSin, s.dobok, NOTA, null);
-		assertEquals(201, sinSede.getResponse().getStatus(), sinSede.getResponse().getContentAsString());
-		long id = json.readTree(sinSede.getResponse().getContentAsString()).get("id").asLong();
-		assertNull(jdbc.queryForObject("SELECT sede_id FROM solicitud WHERE id = ?", Long.class, id));
+		// aSoloSin, solo en gSin (sede S; desde la V32_1 no hay grupos sin sede): la sede se deduce.
+		MvcResult enS = s.pedir(s.tProf1, s.aSoloSin, s.dobok, NOTA, null);
+		assertEquals(201, enS.getResponse().getStatus(), enS.getResponse().getContentAsString());
+		long id = json.readTree(enS.getResponse().getContentAsString()).get("id").asLong();
+		assertEquals(s.e.sSin, jdbc.queryForObject("SELECT sede_id FROM solicitud WHERE id = ?", Long.class, id));
 	}
 
 	@Test
@@ -662,9 +663,10 @@ class EncargosIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(1, una.get("sedes").size(), una.toString());
 		assertEquals(s.e.sA, una.get("sedes").get(0).get("id").asLong());
 
-		JsonNode sinSede = porId.get(s.aSoloSin);
-		assertNotNull(sinSede);
-		assertNull(sinSede.get("sedes"), "solo en un grupo sin sede: el campo no sale");
+		// Desde la V32_1 no hay grupos sin sede: gSin está en la sede S.
+		JsonNode enS = porId.get(s.aSoloSin);
+		assertEquals(1, enS.get("sedes").size(), enS.toString());
+		assertEquals(s.e.sSin, enS.get("sedes").get(0).get("id").asLong());
 	}
 
 	/** El estado del cobro del cargo de cada encargo, en sus solicitudes y en la bandeja; los otros tipos no lo llevan. */

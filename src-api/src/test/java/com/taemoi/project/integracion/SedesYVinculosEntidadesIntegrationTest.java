@@ -82,9 +82,9 @@ class SedesYVinculosEntidadesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void actualizarGrupo_conservaLaSede_yCompletaLaQueFalte() {
+	void actualizarGrupo_conservaLaSede() {
+		// Desde la V32_1 no hay grupos sin sede: ya no se prueba completar la que falte.
 		GrupoConAlumnosDTO creado = TenantContext.calcularCon(ORG1, () -> grupoService.crearGrupo(dto("IT sede conserva")));
-		long umbrete = sedeDe(creado.getId());
 		long otraSede = TenantContext.calcularCon(ORG1, () -> {
 			Sede sede = new Sede();
 			sede.setNombre("IT inactiva " + UUID.randomUUID());
@@ -94,12 +94,8 @@ class SedesYVinculosEntidadesIntegrationTest extends MySqlIntegrationTest {
 		jdbc.update("UPDATE grupo SET sede_id = ? WHERE id = ?", otraSede, creado.getId());
 		TenantContext.ejecutarCon(ORG1, () -> grupoService.actualizarGrupo(creado.getId(), dto("IT sede conserva 2")));
 		assertEquals(otraSede, sedeDe(creado.getId()), "un grupo con sede la conserva");
-
-		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", creado.getId());
-		TenantContext.ejecutarCon(ORG1, () -> grupoService.actualizarGrupo(creado.getId(), dto("IT sede conserva 3")));
-		assertEquals(umbrete, sedeDe(creado.getId()), "una sede inactiva no cuenta: queda la única activa");
-		jdbc.update("DELETE FROM sede WHERE id = ?", otraSede);
 		borrarGrupo(creado.getId());
+		jdbc.update("DELETE FROM sede WHERE id = ?", otraSede);
 	}
 
 	@Test

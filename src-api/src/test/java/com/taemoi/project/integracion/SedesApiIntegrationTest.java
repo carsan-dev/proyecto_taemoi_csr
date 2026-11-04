@@ -105,8 +105,8 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e8-2");
 		otra = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e8-2-otra");
 		d83 = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e8-2-d83");
-		// D8-3: la escuela empieza con una sola sede activa (A); B y C cerradas.
-		jdbc.update("UPDATE sede SET activa = FALSE WHERE id = ?", d83.sB);
+		// D8-3: la escuela empieza con una sola sede activa (A); B, C y S cerradas.
+		jdbc.update("UPDATE sede SET activa = FALSE WHERE id IN (?, ?)", d83.sB, d83.sSin);
 		TenantContext.ejecutarCon(d83.org, () -> DisciplinasDePrueba.tarifa(tarifas, "ADULTO", "30.00", null));
 
 		propietario = e.cuenta(usuarios, "propietario");
@@ -563,8 +563,8 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 
 	/**
 	 * D8-3 cerrado por las decisiones 368 y 377: con una sede activa, el grupo que la gestión da de alta sin sede recibe
-	 * esa sede; con dos, 400 «Indica la sede.» y no se crea, y editar uno sin sede sin indicarla también da 400. Con sede
-	 * explícita, la pedida.
+	 * esa sede; con dos, 400 «Indica la sede.» y no se crea. Con sede explícita, la pedida. (Editar un grupo sin sede ya
+	 * no se prueba: desde la V32_1 la base no admite grupos sin sede.)
 	 */
 	@Test
 	void dosSedesActivas_altaDeGrupo_exigeLaSede() throws Exception {
@@ -575,11 +575,6 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 					tGestorD83);
 			assertEquals(400, sinSede.getResponse().getStatus(), contenido(sinSede));
 			assertTrue(contenido(sinSede).contains("Indica la sede."), contenido(sinSede));
-			long grupoSinSede = altaDeGrupo("IT E8-2 d83 antiguo " + d83.marca, d83.sA);
-			jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", grupoSinSede);
-			assertEquals(400, estado(conCuerpo(put("/api/grupos/" + grupoSinSede),
-					grupo("IT E8-2 d83 sin sede editado " + d83.marca, null)), tGestorD83));
-			assertNull(sedeDelGrupo(grupoSinSede), "editarlo sin sede no le pone una");
 			assertEquals(segunda, sedeDelGrupo(altaDeGrupo("IT E8-2 d83 en la segunda " + d83.marca, segunda)));
 			assertEquals(d83.sA, sedeDelGrupo(altaDeGrupo("IT E8-2 d83 en A " + d83.marca, d83.sA)));
 		} finally {

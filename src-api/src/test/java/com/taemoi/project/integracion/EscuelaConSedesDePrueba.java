@@ -13,10 +13,12 @@ import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
 
 /**
- * Escuela sintética de la entrega 6-1 con tres sedes: A y B activas, C inactiva (D6-17). Datos inventados.
+ * Escuela sintética de la entrega 6-1 con cuatro sedes: A y B activas, C inactiva (D6-17) y S, activa y sin
+ * responsables, la del grupo gSin. Datos inventados.
  *
  * <pre>
- * grupos   gA, gA2 (sede A), gB (sede B), gC (sede C, inactiva), gSin (sin sede)
+ * grupos   gA, gA2 (sede A), gB (sede B), gC (sede C, inactiva), gSin (sede S: era el grupo sin sede; desde la
+ *          V32_1 la base no admite grupos sin sede y S, sin responsables, lo deja fuera de su alcance igual)
  * alumnos  aA        sede principal A
  *          aGrupoA   sede principal B, en gA y gB  (D9: lo ve A por grupo; lo edita solo B, D6-3)
  *          aSinSede  sin sede principal, en gA     (D6-1: lo ve A; nadie lo edita salvo gestión)
@@ -37,7 +39,7 @@ final class EscuelaConSedesDePrueba {
 	final JdbcTemplate jdbc;
 	final String marca = UUID.randomUUID().toString().substring(0, 8);
 
-	long org, disciplina, sA, sB, sC;
+	long org, disciplina, sA, sB, sC, sSin;
 	long gA, gA2, gB, gC, gSin;
 	long aA, aGrupoA, aSinSede, aB, aNada, aInactivoA;
 	long tA, tB, tSin;
@@ -62,13 +64,13 @@ final class EscuelaConSedesDePrueba {
 		e.sA = e.sede("A");
 		e.sB = e.sede("B");
 		e.sC = e.sede("C");
+		e.sSin = e.sede("S");
 
 		e.gA = e.grupo(grupos, "IT E6 gA " + e.marca, e.sA);
 		e.gA2 = e.grupo(grupos, "IT E6 gA2 " + e.marca, e.sA);
 		e.gB = e.grupo(grupos, "IT E6 gB " + e.marca, e.sB);
 		e.gC = e.grupo(grupos, "IT E6 gC " + e.marca, e.sC);
-		e.gSin = e.grupo(grupos, "IT E6 gSin " + e.marca, e.sA);
-		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", e.gSin);
+		e.gSin = e.grupo(grupos, "IT E6 gSin " + e.marca, e.sSin);
 		jdbc.update("UPDATE sede SET activa = FALSE WHERE id = ?", e.sC);
 
 		e.aA = e.alumno("E6A" + e.marca, e.sA, true);

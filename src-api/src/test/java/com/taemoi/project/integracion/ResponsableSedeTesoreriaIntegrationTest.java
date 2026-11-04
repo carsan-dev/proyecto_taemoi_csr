@@ -168,7 +168,8 @@ class ResponsableSedeTesoreriaIntegrationTest extends MySqlIntegrationTest {
 		assertPorSedeSumaElTotal(gestion);
 		List<String> filas = new ArrayList<>();
 		gestion.get("porSede").forEach(f -> filas.add(f.get("sedeId").isNull() ? "sin" : f.get("sedeId").asText()));
-		assertEquals(List.of(String.valueOf(e.sA), String.valueOf(e.sB), String.valueOf(e.sC), "sin"), filas,
+		assertEquals(List.of(String.valueOf(e.sA), String.valueOf(e.sB), String.valueOf(e.sC), String.valueOf(e.sSin), "sin"),
+				filas,
 				"todas las sedes de la escuela por id y después «Sin sede»");
 
 		// Con período (otra ruta del servicio): mismas cifras.

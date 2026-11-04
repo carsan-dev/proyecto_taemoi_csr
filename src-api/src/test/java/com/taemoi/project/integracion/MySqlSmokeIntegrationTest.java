@@ -33,7 +33,7 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 		MigrationInfo actual = flyway.info().current();
 
 		assertNotNull(actual);
-		assertEquals("32", actual.getVersion().getVersion());
+		assertEquals("32.1", actual.getVersion().getVersion());
 		assertEquals(0, flyway.info().pending().length);
 	}
 
@@ -55,6 +55,8 @@ class MySqlSmokeIntegrationTest extends MySqlIntegrationTest {
 		grupo.setNombre("IT smoke grupo");
 		grupo.setTipo("Pilates");
 		grupo.setDisciplina(disciplinas.findByCodigo("PILATES").orElseThrow());
+		// V32_1: la sede es obligatoria; la organización 1 tiene al menos la suya (V31).
+		grupo.setSedeId(jdbc.queryForObject("SELECT MIN(id) FROM sede WHERE organizacion_id = 1", Long.class));
 
 		Long id = grupos.save(grupo).getId();
 		try {
