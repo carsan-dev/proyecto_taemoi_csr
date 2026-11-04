@@ -43,6 +43,9 @@ public class GestionPorSede {
 
 	private final AlcanceActual alcanceActual;
 	public static final String INDICA_LA_SEDE = "Indica la sede.";
+	/** E10-4: alta sin sede en una escuela sin ninguna sede activa (400). */
+	public static final String SIN_SEDE_ACTIVA = "La escuela no tiene ninguna sede activa. Crea una en Sedes y vuelve a "
+			+ "intentarlo.";
 	public static final String GRUPO_SIN_SEDE = "El grupo no tiene sede. Asígnasela antes de finalizar.";
 	public static final String EMAIL_SOLO_GESTION = "Solo la gestión de la escuela puede cambiar el email de un alumno "
 			+ "sin cuenta.";
@@ -91,8 +94,11 @@ public class GestionPorSede {
 	 * con {@code exigirActiva}, activa (D6-17; si no, 400).</li>
 	 * <li>Sin sede, responsable: su única sede; con varias, 400 (obligatoria).</li>
 	 * <li>Sin sede, resto: la única sede activa de la escuela ({@link SedeService#sedePorDefecto}); con varias, 400
-	 * (obligatoria, decisiones 368 y 377); con ninguna, {@code null} (como hasta ahora).</li>
+	 * (obligatoria, decisiones 368 y 377); con ninguna, 400 {@link #SIN_SEDE_ACTIVA} (E10-4: nunca devuelve
+	 * {@code null}).</li>
 	 * </ul>
+	 *
+	 * @return el id de la sede del alta, nunca {@code null}
 	 */
 	public Long sedeDeAlta(Long solicitada, boolean exigirActiva) {
 		Optional<AlcanceSesion> restriccion = restriccion();
@@ -102,7 +108,8 @@ public class GestionPorSede {
 				if (sedeService.variasActivas()) {
 					throw new IllegalArgumentException(INDICA_LA_SEDE);
 				}
-				return sedeService.sedePorDefecto().orElse(null);
+				return sedeService.sedePorDefecto()
+						.orElseThrow(() -> new IllegalArgumentException(SIN_SEDE_ACTIVA));
 			}
 			Set<Long> suyas = restriccion.get().sedes();
 			if (suyas.size() != 1) {

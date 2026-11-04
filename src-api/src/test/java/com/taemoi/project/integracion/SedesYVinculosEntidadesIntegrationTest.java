@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.acceso.GestionPorSede;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.entities.AsignacionProfesor;
 import com.taemoi.project.entities.AuthProvider;
@@ -102,10 +103,14 @@ class SedesYVinculosEntidadesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void grupoSinSede_laUnicaActiva_ningunaSinSede_variasObligatoria() {
+	void grupoSinSede_laUnicaActiva_ningunaActiva400_variasObligatoria() {
+		// E10-4: sin ninguna sede activa el alta ya no deja el grupo sin sede: 400 y no se crea.
 		long sinSede = organizacion("it-sin-sede");
-		GrupoConAlumnosDTO a = TenantContext.calcularCon(sinSede, () -> grupoService.crearGrupo(dto("IT sin sede")));
-		assertNull(sedeDe(a.getId()));
+		IllegalArgumentException ninguna = assertThrows(IllegalArgumentException.class,
+				() -> TenantContext.calcularCon(sinSede, () -> grupoService.crearGrupo(dto("IT sin sede"))));
+		assertEquals(GestionPorSede.SIN_SEDE_ACTIVA, ninguna.getMessage());
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM grupo WHERE organizacion_id = ?", Integer.class,
+				sinSede));
 
 		long dosSedes = organizacion("it-dos-sedes");
 		jdbc.update("INSERT INTO sede (organizacion_id, nombre) VALUES (?, 'Una'), (?, 'Otra')", dosSedes, dosSedes);

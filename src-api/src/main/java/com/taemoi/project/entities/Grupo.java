@@ -52,10 +52,12 @@ public class Grupo extends EntidadOrganizacion {
 	/**
 	 * Sede del grupo (V31; NULL admitido hasta V32). Solo el id, fuera del JSON: las respuestas de la API no
 	 * cambian. Al crear un grupo sin sede se usa la única sede activa de la escuela; con varias, hay que indicarla
-	 * ({@code GestionPorSede#sedeDeAlta}).
+	 * ({@code GestionPorSede#sedeDeAlta}). E10-4: {@code nullable = false} solo documenta la regla; Hibernate no
+	 * comprueba la nulabilidad al guardar (Bean Validation en el classpath) y un grupo heredado sin sede se sigue
+	 * guardando hasta que la V32_1 cierre la columna.
 	 */
 	@JsonIgnore
-	@Column(name = "sede_id")
+	@Column(name = "sede_id", nullable = false)
 	private Long sedeId;
 
 	// Rango de edad personalizado (opcional)
