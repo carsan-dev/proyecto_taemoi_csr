@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.taemoi.project.acceso.GestionPorSede;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.TarifaRepository;
@@ -149,14 +150,19 @@ class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void altas_ningunaSedeActiva_sinCambios() throws Exception {
+	void altas_ningunaSedeActiva_400SinCrearNada() throws Exception {
+		// E10-4: sin ninguna sede activa, el alta ya no deja el alumno ni el grupo sin sede.
+		long alumnos = alumnosDe(ninguna.org);
+		long grupos = gruposDe(ninguna.org);
 		MvcResult alumno = altaDeAlumno(tGestorNinguna, null);
-		assertEquals(201, alumno.getResponse().getStatus(), contenido(alumno));
-		assertNull(ninguna.sedeDe(json.readTree(contenido(alumno)).get("id").asLong()), "sin sede, como hasta ahora");
+		assertEquals(400, alumno.getResponse().getStatus(), contenido(alumno));
+		assertTrue(contenido(alumno).contains(GestionPorSede.SIN_SEDE_ACTIVA), contenido(alumno));
 		MvcResult grupo = peticion(conCuerpo(post("/api/grupos"), grupo("IT E9 ninguna " + marca(), null)),
 				tGestorNinguna);
-		assertEquals(201, grupo.getResponse().getStatus(), contenido(grupo));
-		assertNull(sedeDelGrupo(json.readTree(contenido(grupo)).get("id").asLong()), "sin sede, como hasta ahora");
+		assertEquals(400, grupo.getResponse().getStatus(), contenido(grupo));
+		assertTrue(contenido(grupo).contains(GestionPorSede.SIN_SEDE_ACTIVA), contenido(grupo));
+		assertEquals(alumnos, alumnosDe(ninguna.org), "ningún alumno");
+		assertEquals(grupos, gruposDe(ninguna.org), "ningún grupo");
 	}
 
 	@Test
@@ -303,14 +309,25 @@ class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void finalizar_grupoSinSede_ningunaActiva_sinSedeComoHastaAhora() throws Exception {
+	void finalizar_grupoSinSede_ningunaActiva_400SinAlumnoNiCorreo() throws Exception {
+		// E10-4: sin ninguna sede activa no se finaliza: el alumno no nacería en ninguna sede.
 		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", ninguna.gSin);
 		String referencia = preinscripcion(ninguna.org, ninguna.gSin, turno(ninguna.org, ninguna.gSin));
+		long alumnos = alumnosDe(ninguna.org);
+		long expediente = contadorExpediente(ninguna.org);
+		clearInvocations(mailSender);
 		MvcResult r = peticion(conCuerpo(post("/api/preinscripciones/" + referencia + "/finalizar"), FINALIZAR_NUEVO),
 				tGestorNinguna);
-		assertEquals(200, r.getResponse().getStatus(), contenido(r));
-		long alumno = jdbc.queryForObject("SELECT alumno_id FROM preinscripcion WHERE referencia = ?", Long.class, referencia);
-		assertNull(ninguna.sedeDe(alumno));
+		assertEquals(400, r.getResponse().getStatus(), contenido(r));
+		assertTrue(contenido(r).contains(GestionPorSede.SIN_SEDE_ACTIVA), contenido(r));
+		assertEquals(alumnos, alumnosDe(ninguna.org), "ningún alumno");
+		assertEquals(expediente, contadorExpediente(ninguna.org), "ningún número de expediente gastado");
+		Map<String, Object> fila = jdbc.queryForMap(
+				"SELECT estado, alumno_id, email_finalizacion_estado FROM preinscripcion WHERE referencia = ?", referencia);
+		assertEquals("PENDIENTE", fila.get("estado"));
+		assertNull(fila.get("alumno_id"));
+		assertEquals("NO_ENVIADO", fila.get("email_finalizacion_estado"), "ningún correo pendiente");
+		verifyNoInteractions(mailSender);
 	}
 
 	// ------------------------------------------------------------------ datos
