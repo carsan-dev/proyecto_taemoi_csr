@@ -543,13 +543,18 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 				Long.class, antes, "%" + nombre + "%"));
 	}
 
-	/** {@code Alumno#getUsuario} saca la entidad en el JSON de alumno: el perfil de esa cuenta no puede ir dentro. */
+	/**
+	 * Decisión 434 (pieza E10-2): el JSON de alumno ya no lleva la cuenta vinculada (antes, {@code Alumno#getUsuario}):
+	 * ni la clave «usuario» ni el perfil de esa cuenta.
+	 */
 	@Test
-	void elJsonDeAlumno_noLlevaElPerfilDeSuCuenta() throws Exception {
+	void elJsonDeAlumno_noLlevaLaCuentaNiSuPerfil() throws Exception {
 		String nombre = "Nombre" + UUID.randomUUID().toString().substring(0, 8);
 		long vinculada = cuentaCon(e, "ADMINISTRADOR");
 		long alumno = e.alumno("E322VINCULADO" + e.marca, null, true);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumno, vinculada);
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'PROPIO', 'MANUAL')""", vinculada, alumno, e.org);
 		guardar(token(e, vinculada), "{\"nombrePreferido\":\"" + nombre + "\",\"cumpleDia\":17,\"cumpleMes\":11}");
 
 		long propietario = cuentaCon(e, "PROPIETARIO");
@@ -557,13 +562,10 @@ class PerfilCuentaIntegrationTest extends MySqlIntegrationTest {
 				.andReturn();
 		String cuerpo = r.getResponse().getContentAsString(StandardCharsets.UTF_8);
 		assertEquals(200, r.getResponse().getStatus(), cuerpo);
-		JsonNode usuario = json.readTree(cuerpo).get("usuario");
-		assertTrue(usuario != null && usuario.has("email"), "la entidad sale en el JSON de alumno: " + cuerpo);
-		assertFalse(usuario.has("nombrePreferido"), cuerpo);
-		assertFalse(usuario.has("cumpleDia"), cuerpo);
-		assertFalse(usuario.has("cumpleMes"), cuerpo);
-		assertFalse(usuario.has("importesTapados"), cuerpo);
+		assertFalse(json.readTree(cuerpo).has("usuario"), cuerpo);
 		assertFalse(cuerpo.contains(nombre), cuerpo);
+		assertFalse(cuerpo.contains("nombrePreferido"), cuerpo);
+		assertFalse(cuerpo.contains("cumpleDia"), cuerpo);
 	}
 
 	// ------------------------------------------------------------------ utilidades

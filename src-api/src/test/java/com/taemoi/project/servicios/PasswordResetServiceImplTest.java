@@ -53,7 +53,6 @@ class PasswordResetServiceImplTest {
             membresiasUsuario.stream().map(Membresia::getRol).toList());
         membresias = new MembresiaServiceImpl(membresiaRepo, mock(OrganizacionRepository.class), users, acceso,
             new com.taemoi.project.organizacion.ResolutorOrganizacion(1L));
-        user.setAlumno(new Alumno());
         when(users.findByEmailIgnoreCase(user.getEmail())).thenReturn(Optional.of(user));
         when(users.findByResetTokenHash(anyString())).thenAnswer(call ->
             call.getArgument(0).equals(user.getResetTokenHash()) ? Optional.of(user) : Optional.empty());
@@ -89,11 +88,9 @@ class PasswordResetServiceImplTest {
     @EnumSource(AuthProvider.class)
     void resetAllowsRealPasswordLoginAndGooglePreservesPassword(AuthProvider origin) {
         user.setAuthProvider(origin);
-        Alumno linked = user.getAlumno();
         String token = requestToken();
         reset.resetearContrasena(token, "Nueva-456!");
         assertEquals(origin, user.getAuthProvider());
-        assertSame(linked, user.getAlumno());
         verify(membresiaRepo, never()).save(any());
         assertEquals(Set.of(Roles.ROLE_USER), membresias.autoridadesEn(5L, 1L));
         assertNull(user.getResetTokenHash());

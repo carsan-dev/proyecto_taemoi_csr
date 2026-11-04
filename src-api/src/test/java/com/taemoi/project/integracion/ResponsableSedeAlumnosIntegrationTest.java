@@ -257,7 +257,8 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 		});
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')", cuenta,
 				e.org);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumno, cuenta);
+		// Pieza E10-2: la cuenta de la ficha es su fila de usuario_alumno (la de V31 para un gestor).
+		vincularCuenta(cuenta, alumno, "PROPIO", "MIGRACION");
 
 		String ajeno = "it-e6-responsable-" + e.marca + "@example.test";
 		MvcResult cambio = peticion(editar(alumno, ajeno, "Calle 2"), tokenA);
@@ -278,6 +279,113 @@ class ResponsableSedeAlumnosIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(200, gestion.getResponse().getStatus(), gestion.getResponse().getContentAsString());
 		assertEquals(nuevo, emailDeCuenta(cuenta));
 		jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", cuenta);
+	}
+
+	/**
+	 * Decisión 430 (pieza E10-2): el email de la ficha solo pasa a la cuenta si es la ÚNICA vinculada y su email era el
+	 * de la ficha. Con otro email, o con dos cuentas, la ficha cambia y las cuentas no.
+	 */
+	@Test
+	@Order(Integer.MAX_VALUE)
+	void email_decision430_soloSePropagaAUnaUnicaCuentaConElMismoEmail() throws Exception {
+		// Una sola cuenta, con otro email que la ficha: la cuenta no cambia.
+		String fichaA = "it-430-ficha-a-" + e.marca + "@example.test";
+		long alumnoA = e.alumno("E430A" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET email = ? WHERE id = ?", fichaA, alumnoA);
+		conDeporte(alumnoA);
+		String emailOtra = "it-430-cuenta-otra-" + e.marca + "@example.test";
+		long otraCuenta = cuentaFamilia(emailOtra);
+		vincularCuenta(otraCuenta, alumnoA, "TUTOR", "MANUAL");
+
+		String nuevoA = "it-430-nuevo-a-" + e.marca + "@example.test";
+		MvcResult cambioA = peticion(editar(alumnoA, nuevoA, "Calle 2"), tokenGestor);
+		assertEquals(200, cambioA.getResponse().getStatus(), cambioA.getResponse().getContentAsString());
+		assertEquals(nuevoA, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumnoA));
+		assertEquals(emailOtra, emailDeCuenta(otraCuenta), "su email no era el de la ficha: no se toca");
+
+		// Dos cuentas, una con el email de la ficha: ninguna cambia.
+		String fichaB = "it-430-ficha-b-" + e.marca + "@example.test";
+		long alumnoB = e.alumno("E430B" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET email = ? WHERE id = ?", fichaB, alumnoB);
+		conDeporte(alumnoB);
+		long mismaB = cuentaFamilia(fichaB);
+		vincularCuenta(mismaB, alumnoB, "PROPIO", "REGISTRO");
+		long tutoraB = cuentaFamilia("it-430-tutora-b-" + e.marca + "@example.test");
+		vincularCuenta(tutoraB, alumnoB, "TUTOR", "MANUAL");
+
+		String nuevoB = "it-430-nuevo-b-" + e.marca + "@example.test";
+		MvcResult cambioB = peticion(editar(alumnoB, nuevoB, "Calle 2"), tokenGestor);
+		assertEquals(200, cambioB.getResponse().getStatus(), cambioB.getResponse().getContentAsString());
+		assertEquals(nuevoB, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumnoB));
+		assertEquals(fichaB, emailDeCuenta(mismaB), "con dos cuentas vinculadas no se propaga");
+
+		// Una sola cuenta con el mismo email (el caso de hoy): se propaga.
+		String fichaC = "it-430-ficha-c-" + e.marca + "@example.test";
+		long alumnoC = e.alumno("E430C" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET email = ? WHERE id = ?", fichaC, alumnoC);
+		conDeporte(alumnoC);
+		long mismaC = cuentaFamilia(fichaC);
+		vincularCuenta(mismaC, alumnoC, "PROPIO", "REGISTRO");
+
+		String nuevoC = "it-430-nuevo-c-" + e.marca + "@example.test";
+		MvcResult cambioC = peticion(editar(alumnoC, nuevoC, "Calle 2"), tokenGestor);
+		assertEquals(200, cambioC.getResponse().getStatus(), cambioC.getResponse().getContentAsString());
+		assertEquals(nuevoC, emailDeCuenta(mismaC));
+
+		// El responsable sigue sin poder cambiar el email de una ficha con cuentas (6-1), tenga una o varias.
+		MvcResult responsable = peticion(editar(alumnoB, "it-430-resp-" + e.marca + "@example.test", "Calle 3"),
+				tokenA);
+		assertEquals(403, responsable.getResponse().getStatus(), responsable.getResponse().getContentAsString());
+		assertEquals(nuevoB, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumnoB));
+		for (long cuenta : List.of(otraCuenta, mismaB, tutoraB, mismaC)) {
+			jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", cuenta);
+		}
+	}
+
+	/**
+	 * Revisión E10-2 (F3): el responsable que cambia el email de una ficha con cuenta por su fila de usuario_alumno
+	 * recibe el mismo 403 que con una ficha sin cuenta (EMAIL_SOLO_GESTION, decisión 96), no «Acceso denegado.»; no
+	 * cambia nada.
+	 */
+	@Test
+	@Order(Integer.MAX_VALUE)
+	void email_fichaConCuentaPorFila_elResponsableRecibeElMotivoDeLaDecision96() throws Exception {
+		String emailFicha = "it-f3-ficha-" + e.marca + "@example.test";
+		long alumno = e.alumno("EF3" + e.marca, e.sA, true);
+		jdbc.update("UPDATE alumno SET email = ? WHERE id = ?", emailFicha, alumno);
+		conDeporte(alumno);
+		long cuenta = cuentaFamilia(emailFicha);
+		vincularCuenta(cuenta, alumno, "TUTOR", "REGISTRO");
+
+		MvcResult cambio = peticion(editar(alumno, "it-f3-otro-" + e.marca + "@example.test", "Calle 2"), tokenA);
+
+		assertEquals(403, cambio.getResponse().getStatus(), cambio.getResponse().getContentAsString());
+		assertEquals(GestionPorSede.EMAIL_SOLO_GESTION,
+				json.readTree(cambio.getResponse().getContentAsString(StandardCharsets.UTF_8)).get("mensaje").asText());
+		assertEquals(emailFicha, jdbc.queryForObject("SELECT email FROM alumno WHERE id = ?", String.class, alumno));
+		assertEquals(emailFicha, emailDeCuenta(cuenta));
+		assertEquals("Calle 1", direccionDe(alumno), "el 403 no deja cambios a medias");
+		jdbc.update("UPDATE membresia SET activa = FALSE WHERE usuario_id = ?", cuenta);
+	}
+
+	private long cuentaFamilia(String email) {
+		long cuenta = TenantContext.calcularCon(EscuelaConSedesDePrueba.ORG1, () -> {
+			com.taemoi.project.entities.Usuario u = new com.taemoi.project.entities.Usuario();
+			u.setNombre("Familia");
+			u.setApellidos("Vinculada");
+			u.setEmail(email);
+			u.setContrasena("fake-Password-123");
+			u.setAuthProvider(com.taemoi.project.entities.AuthProvider.LOCAL);
+			return usuarios.save(u).getId();
+		});
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'FAMILIA')", cuenta, e.org);
+		return cuenta;
+	}
+
+	private void vincularCuenta(long cuenta, long alumno, String relacion, String origen) {
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, ?, ?)""", cuenta, alumno, e.org, relacion, origen);
 	}
 
 	/**

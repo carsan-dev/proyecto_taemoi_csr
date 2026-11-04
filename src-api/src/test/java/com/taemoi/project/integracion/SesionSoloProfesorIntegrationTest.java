@@ -90,7 +90,7 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 		e = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-180-profesor");
 		alumnoDeSuGrupo = e.alumno("E180PROF" + e.marca, e.sA, true);
 		jdbc.update("INSERT INTO alumno_grupo (grupo_id, alumno_id) VALUES (?, ?)", e.gA, alumnoDeSuGrupo);
-		// La cuenta está vinculada (usuario.alumno_id) a un alumno activo de la escuela: no se le muestra.
+		// La cuenta está vinculada (usuario_alumno, PROPIO) a un alumno activo de la escuela: no se le muestra.
 		profesor = cuenta("prof", alumnoDeSuGrupo);
 		membresia(profesor, e.org, "PROFESOR");
 		jdbc.update("INSERT INTO asignacion_profesor (organizacion_id, usuario_id, grupo_id, rol) "
@@ -420,7 +420,10 @@ class SesionSoloProfesorIntegrationTest extends MySqlIntegrationTest {
 			return usuarios.save(usuario);
 		});
 		if (alumnoId != null) {
-			jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumnoId, guardado.getId());
+			// Pieza E10-2: el vínculo es la fila de usuario_alumno (usuario.alumno_id ya no se lee).
+			jdbc.update("""
+					INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+					VALUES (?, ?, ?, 'PROPIO', 'MIGRACION')""", guardado.getId(), alumnoId, e.org);
 		}
 		return guardado;
 	}

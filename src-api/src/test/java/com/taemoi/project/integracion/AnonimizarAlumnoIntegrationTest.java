@@ -439,7 +439,7 @@ class AnonimizarAlumnoIntegrationTest extends MySqlIntegrationTest {
 		e.enTurno(e.tA, alumno);
 		long cuenta = e.cuenta(usuarios, "familia8b3lbis");
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'FAMILIA')", cuenta, e.org);
-		jdbc.update("UPDATE usuario SET alumno_id = ? WHERE id = ?", alumno, cuenta);
+		// Pieza E10-2: solo cuenta la fila de usuario_alumno (usuario.alumno_id ya no se lee).
 		jdbc.update("""
 				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
 				VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", cuenta, alumno, e.org);
@@ -470,6 +470,90 @@ class AnonimizarAlumnoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", cuenta), "sin membresías, la cuenta cae");
 		assertEquals(0, contar("SELECT COUNT(*) FROM alumno_deporte WHERE alumno_id = ? AND activo = TRUE", alumno));
 		assertEquals(1, contar("SELECT COUNT(*) FROM producto_alumno WHERE id = ? AND alumno_id = ?", pagado, alumno));
+	}
+
+	/**
+	 * Decisión 429 (pieza E10-2): al anonimizar, cada cuenta vinculada se decide por separado: la que sigue viendo otra
+	 * ficha no se toca; la de gestión y familia pierde FAMILIA y conserva la gestión; la solo familia sin más fichas
+	 * se borra (también la REGISTRO, que antes ocupaba usuario.alumno_id).
+	 */
+	@Test
+	void anonimizar_decision429_cadaCuentaSegunLoQueLeQueda() throws Exception {
+		long alumno = e.alumno("IT8B3LBISD429" + e.marca, e.sA, true);
+		long hermano = e.alumno("IT8B3LBISD429H" + e.marca, e.sA, true);
+		cargo(alumno, "30.00", true);
+		long conOtra = e.cuenta(usuarios, "d429-con-otra");
+		membresia(conOtra, "FAMILIA");
+		vinculo(conOtra, alumno, "TUTOR", "MANUAL");
+		vinculo(conOtra, hermano, "TUTOR", "MANUAL");
+		long gestora = e.cuenta(usuarios, "d429-gestora");
+		membresia(gestora, "ADMINISTRADOR");
+		membresia(gestora, "FAMILIA");
+		vinculo(gestora, alumno, "PROPIO", "MANUAL");
+		long registro = e.cuenta(usuarios, "d429-registro");
+		membresia(registro, "FAMILIA");
+		vinculo(registro, alumno, "PROPIO", "REGISTRO");
+
+		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), tokenPropietario));
+
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario_alumno WHERE alumno_id = ?", alumno));
+		assertEquals(1, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ? AND organizacion_id = ? "
+				+ "AND rol = 'FAMILIA'", conOtra, e.org), "sigue viendo al hermano");
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?", conOtra,
+				hermano));
+		assertEquals(List.of("ADMINISTRADOR"), jdbc.queryForList(
+				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = ?", String.class, gestora, e.org));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", gestora));
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", registro), "sin membresías, la cuenta cae");
+	}
+
+	/** Decisión 429: la cuenta con membresía en otra escuela solo pierde la FAMILIA de esta y sobrevive. */
+	@Test
+	void anonimizar_decision429_cuentaConOtraEscuela_soloPierdeEstaFamilia() throws Exception {
+		long alumno = e.alumno("IT8B3LBISD429O" + e.marca, e.sA, true);
+		cargo(alumno, "30.00", true);
+		long cuenta = e.cuenta(usuarios, "d429-otra-escuela");
+		membresia(cuenta, "FAMILIA");
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'FAMILIA')", cuenta,
+				otra.org);
+		vinculo(cuenta, alumno, "TUTOR", "MANUAL");
+
+		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), tokenPropietario));
+
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", cuenta));
+		assertEquals(0, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ? AND organizacion_id = ?", cuenta,
+				e.org));
+		assertEquals(1, contar("SELECT COUNT(*) FROM membresia WHERE usuario_id = ? AND organizacion_id = ?", cuenta,
+				otra.org));
+	}
+
+	/**
+	 * Decisión 437 (afina la 429): al anonimizar, la otra ficha vinculada cuenta aunque esté de baja (la cuenta conserva
+	 * FAMILIA); una anonimizada no cuenta (la cuenta pierde FAMILIA y, sin membresías, cae).
+	 */
+	@Test
+	void anonimizar_decision437_otraFichaDeBajaCuenta_yLaAnonimizadaNo() throws Exception {
+		long alumno = e.alumno("IT8B3LBISD437" + e.marca, e.sA, true);
+		cargo(alumno, "30.00", true);
+		long deBaja = e.alumno("IT8B3LBISD437B" + e.marca, e.sA, false);
+		long anonimizada = e.alumno("IT8B3LBISD437A" + e.marca, e.sA, false);
+		jdbc.update("UPDATE alumno SET anonimizado_en = NOW() WHERE id = ?", anonimizada);
+		long conBaja = e.cuenta(usuarios, "d437-con-baja");
+		membresia(conBaja, "FAMILIA");
+		vinculo(conBaja, alumno, "TUTOR", "MANUAL");
+		vinculo(conBaja, deBaja, "TUTOR", "MANUAL");
+		long conAnonimizada = e.cuenta(usuarios, "d437-con-anon");
+		membresia(conAnonimizada, "FAMILIA");
+		vinculo(conAnonimizada, alumno, "TUTOR", "MANUAL");
+		vinculo(conAnonimizada, anonimizada, "TUTOR", "MANUAL");
+
+		assertEquals(200, estado(post("/api/alumnos/" + alumno + "/anonimizar"), tokenPropietario));
+
+		assertEquals(List.of("FAMILIA"), jdbc.queryForList(
+				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = ?", String.class, conBaja, e.org));
+		assertEquals(1, contar("SELECT COUNT(*) FROM usuario_alumno WHERE usuario_id = ? AND alumno_id = ?", conBaja,
+				deBaja));
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE id = ?", conAnonimizada));
 	}
 
 	@Test
@@ -616,6 +700,16 @@ class AnonimizarAlumnoIntegrationTest extends MySqlIntegrationTest {
 		List<Long> r = new java.util.ArrayList<>();
 		lista.forEach(n -> r.add(n.isNumber() ? n.asLong() : n.get("id").asLong()));
 		return r;
+	}
+
+	private void membresia(long usuario, String rol) {
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, ?)", usuario, e.org, rol);
+	}
+
+	private void vinculo(long usuario, long alumno, String relacion, String origen) {
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, ?, ?)""", usuario, alumno, e.org, relacion, origen);
 	}
 
 	private int contar(String sql, Object... args) {

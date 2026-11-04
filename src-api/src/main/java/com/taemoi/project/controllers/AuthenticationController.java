@@ -65,6 +65,7 @@ import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.PasswordResetService;
 import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.services.UsuarioService;
+import com.taemoi.project.services.VinculoFamiliaService;
 import com.taemoi.project.services.impl.AuthenticationServiceImpl;
 import com.taemoi.project.utils.EmailUtils;
 
@@ -110,6 +111,9 @@ public class AuthenticationController {
 
 	@Autowired
 	private AccesoFamiliaService accesoFamilia;
+
+	@Autowired
+	private VinculoFamiliaService vinculoFamilia;
 
 	@Autowired
 	private RegistroService registroService;
@@ -391,27 +395,28 @@ public class AuthenticationController {
 			return null;
 		}
 
-		Long alumnoAsociadoId = usuario.getAlumnoId();
+		// Decisión 431 (pieza E10-2): la ficha preferida es la PROPIO de la cuenta en la escuela activa
+		// (usuario_alumno), no usuario.alumno_id.
+		List<Long> fichasPropias = vinculoFamilia.fichasPropiasDeLaCuenta(usuario.getId(), TenantContext.get());
 		if (!autoridades.contains(Roles.ROLE_USER)) {
-			// El alumno asociado puede ser de otra escuela: solo se muestra si es de la activa.
-			Alumno alumnoAsociado = alumnoAsociadoId == null ? null
-					: alumnoRepository.buscarPorIdEnOrganizacionActiva(alumnoAsociadoId).orElse(null);
-			if (alumnoAsociado != null && Boolean.TRUE.equals(alumnoAsociado.getActivo())) {
-				return AlumnoParaUsuarioDTO.deAlumno(alumnoAsociado);
+			// Gestión sin familia: su ficha PROPIO de la escuela activa, solo si está activa (la primera por id).
+			for (Long fichaPropia : fichasPropias) {
+				Alumno alumnoPropio = alumnoRepository.buscarPorIdEnOrganizacionActiva(fichaPropia).orElse(null);
+				if (alumnoPropio != null && Boolean.TRUE.equals(alumnoPropio.getActivo())) {
+					return AlumnoParaUsuarioDTO.deAlumno(alumnoPropio);
+				}
 			}
 			return null;
 		}
 
+		// Familia: entre las fichas que ve (en orden de id), la primera PROPIO; si no hay, la de menor id.
 		List<Alumno> alumnosActivos = accesoFamilia.alumnosAccesiblesEnOrganizacionActiva(usuario);
 		if (alumnosActivos.isEmpty()) {
 			return null;
 		}
-
-		if (alumnoAsociadoId != null) {
-			for (Alumno alumnoActivo : alumnosActivos) {
-				if (alumnoAsociadoId.equals(alumnoActivo.getId())) {
-					return AlumnoParaUsuarioDTO.deAlumno(alumnoActivo);
-				}
+		for (Alumno alumnoActivo : alumnosActivos) {
+			if (fichasPropias.contains(alumnoActivo.getId())) {
+				return AlumnoParaUsuarioDTO.deAlumno(alumnoActivo);
 			}
 		}
 

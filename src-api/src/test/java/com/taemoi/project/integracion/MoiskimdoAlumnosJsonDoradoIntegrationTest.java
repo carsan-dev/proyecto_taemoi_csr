@@ -404,6 +404,11 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 				  recordatorio_racha_email_habilitado) VALUES (?, 'Familia', 'Dorado A03', 'dorado-r2-familia-a03@example.test',
 				  'fake-hash-no-usado', 'LOCAL', ?, 0)""", USUARIO + 1, ALUMNO + 3);
 		registrar(USUARIO + 1, "usuario:A03");
+		// Pieza E10-2: el vínculo que cuenta es usuario_alumno (usuario.alumno_id ya no se mapea). Con la cuenta
+		// vinculada, el JSON de /api/admin/{id} ya no lleva la clave «usuario» (decisión 434).
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, 1, 'TUTOR', 'MIGRACION')""", USUARIO + 1, ALUMNO + 3);
 		// Reto diario y racha: campos de la entidad que solo salen en /api/admin.
 		jdbc.update("UPDATE usuario SET recordatorio_racha_email_habilitado = 1, ultimo_recordatorio_racha_reset = "
 				+ "'2026-09-28' WHERE id = ?", USUARIO + 1);

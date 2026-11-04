@@ -105,6 +105,10 @@ class SecurityAuthorizationWebMvcTest {
 	@MockitoBean
 	private AccesoFamiliaService accesoFamiliaService;
 
+	/** Pieza E10-2: fichas propias de la cuenta para el alumnoDTO de {@code /api/auth/user}. */
+	@MockitoBean
+	private com.taemoi.project.services.VinculoFamiliaService vinculoFamiliaService;
+
 	/** Pieza E8-4: crear la contraseña de una invitación ({@code POST /api/auth/invitacion/aceptar}). */
 	@MockitoBean
 	private InvitacionService invitacionService;
