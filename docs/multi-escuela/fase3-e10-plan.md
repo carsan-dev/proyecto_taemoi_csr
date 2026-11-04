@@ -437,4 +437,7 @@ precheck antes de E10-3 para comparar: no depende de `alumno_id`, así que debe 
 7. Sin tabla de archivo: basta la copia de `desplegar_migrar` (432).
 8. Se quita la guarda «V32 no con V31» (433).
 9. La clave `usuario` sale del JSON de `GET /api/admin` y `/api/admin/{id}` (434).
-10. Los textos de error del grupo los propone `impeccable` en E10-4 y los aprueba el propietario (435).
+10. Los textos de error del grupo los propone `impeccable` en E10-4 y los aprueba el propietario (435). Aprobados el
+    04/11: «Ya hay un grupo con ese nombre en {sede}. Elige otro nombre.» (409, con el nombre de la sede, para que el
+    panel lo muestre bajo el nombre y no bajo la sede) y «La escuela no tiene ninguna sede activa. Crea una en Sedes y
+    vuelve a intentarlo.» (vale para grupo, alumno y preinscripción; la última sede activa ya no se puede desactivar).
