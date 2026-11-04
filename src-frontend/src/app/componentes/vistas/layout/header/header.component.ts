@@ -288,6 +288,12 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.destinoPanel === '/mis-grupos' ? 'Cambiar a profesor' : 'Cambiar a admin';
   }
 
+  /** «Mis grupos» en los menús de familia; si ya se ve «Cambiar a profesor» (mismo destino) se omite (decisión 442). */
+  get mostrarMisGrupos(): boolean {
+    const cambioAProfesor = this.tieneAccesoDual && this.destinoPanel === '/mis-grupos';
+    return this.veMisGrupos && !cambioAProfesor;
+  }
+
   get mostrarHeaderUser(): boolean {
     if (!this.isAuthChecked || !this.usuarioLogueado || !this.isUser) {
       return false;

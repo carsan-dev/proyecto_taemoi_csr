@@ -1,6 +1,6 @@
 import { HeaderComponent } from './header.component';
 import { NgZone } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
@@ -229,7 +229,7 @@ describe('HeaderComponent: cabecera móvil', () => {
 
 describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
   /** Por defecto, la capacidad que el servidor da según la sesión (E8-1): solo-profesor y F+Pr, MIS_GRUPOS. */
-  async function renderizar(roles: string[], capacidades?: Capacidad[] | 'error') {
+  async function renderizar(roles: string[], capacidades?: Capacidad[] | 'error', dual = false) {
     const gestion = roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER');
     const porDefecto: Capacidad[] = roles.includes('ROLE_PROFESOR') ? (gestion ? ['MI_CAJA'] : ['MI_CAJA', 'MIS_GRUPOS']) : [];
     const permisos = {
@@ -249,7 +249,7 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
       marcarVistaPreferidaSegunRuta: () => undefined,
       tieneAccesoAdmin: (r: string[]) => r.includes('ROLE_ADMIN') || r.includes('ROLE_MANAGER'),
       tieneAccesoUser: (r: string[]) => r.includes('ROLE_USER'),
-      tieneAccesoDual: () => false,
+      tieneAccesoDual: () => dual,
       logout: () => undefined,
     };
 
@@ -328,6 +328,45 @@ describe('HeaderComponent: sesiones con ROLE_PROFESOR', () => {
     componente.toggleMobileMenu();
     fixture.detectChanges();
     expect(el.querySelector('a[href="/mis-grupos"]')).toBeNull();
+  });
+
+  /** Abre los tres menús de familia y devuelve cuántos enlaces «Mis grupos» hay en cada uno. */
+  function enlacesMisGrupos(fixture: ComponentFixture<HeaderComponent>) {
+    const componente = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+    const contar = (selector: string) => el.querySelectorAll(`${selector}[href="/mis-grupos"]`).length;
+    componente.toggleDesktopUserMenu();
+    fixture.detectChanges();
+    const escritorio = contar('.user-desktop-menu-panel a');
+    componente.closeDesktopUserMenu();
+    componente.toggleMobileUserQuickMenu();
+    fixture.detectChanges();
+    const rapido = contar('.mobile-user-quick-menu-panel a');
+    componente.closeMobileUserQuickMenu();
+    componente.toggleMobileMenu();
+    fixture.detectChanges();
+    const movil = contar('a.mobile-header-link');
+    return { escritorio, rapido, movil };
+  }
+
+  itSinReloj('profesor + familia con grupos (ve «Cambiar a profesor»): sin «Mis grupos» en ningún menú, con «Mi caja» (decisión 442)', async () => {
+    const { fixture } = await renderizar(['ROLE_USER', 'ROLE_PROFESOR'], undefined, true);
+    expect(fixture.componentInstance.etiquetaCambioVista).toBe('Cambiar a profesor');
+    expect(enlacesMisGrupos(fixture)).toEqual({ escritorio: 0, rapido: 0, movil: 0 });
+    expect((fixture.nativeElement as HTMLElement).querySelector('a[href="/mi-caja"]')).not.toBeNull();
+  });
+
+  itSinReloj('gestión + profesor + familia con MIS_GRUPOS: conserva «Mis grupos» (su cambio va al panel)', async () => {
+    const { fixture } = await renderizar(['ROLE_MANAGER', 'ROLE_USER', 'ROLE_PROFESOR'], ['MI_CAJA', 'MIS_GRUPOS'], true);
+    fixture.componentInstance.isUserRoute = true;
+    fixture.detectChanges();
+    expect(fixture.componentInstance.etiquetaCambioVista).toBe('Cambiar a admin');
+    expect(enlacesMisGrupos(fixture)).toEqual({ escritorio: 1, rapido: 1, movil: 1 });
+  });
+
+  itSinReloj('profesor + familia sin grupos: sin «Mis grupos» como hoy', async () => {
+    const { fixture } = await renderizar(['ROLE_USER', 'ROLE_PROFESOR'], ['MI_CAJA'], true);
+    expect(enlacesMisGrupos(fixture)).toEqual({ escritorio: 0, rapido: 0, movil: 0 });
   });
 
   itSinReloj('familia sin profesor: no ve «Mi caja» y sigue sin pedir permisos', async () => {
