@@ -410,7 +410,8 @@ export class HeaderComponent implements OnInit, AfterViewInit, OnDestroy {
     this.closeDesktopUserMenu();
     this.closeMobileUserQuickMenu();
     this.closeMobileMenu();
-    const rutaDestino = portal === 'admin' ? '/adminpage' : '/userpage';
+    // La vista «admin» de profesor + familia es «Mis grupos» (decisión 439): el destino de «Volver al panel».
+    const rutaDestino = portal === 'admin' ? this.destinoPanel : '/userpage';
     this.router.navigate([rutaDestino]);
   }
 

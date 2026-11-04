@@ -60,7 +60,11 @@ public record PermisosSesionDTO(List<String> roles, boolean esAdminPlataforma, L
 		 * solo o con PROFESOR o FAMILIA. Con gestión no sale: esa sesión es de gestión, con alcance total.
 		 */
 		PANEL_SEDE,
-		/** Elige entre su panel de sede y la vista de familia (decisión 371): responsable + familia sin gestión. */
+		/**
+		 * Elige entre su otra vista y la de familia, como gestión + familia: responsable + familia sin gestión, con su
+		 * panel de sede (decisión 371), y profesor + familia sin gestión con {@link #MIS_GRUPOS}, con «Mis grupos»
+		 * (decisión 439).
+		 */
 		ELEGIR_VISTA
 	}
 }

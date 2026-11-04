@@ -85,6 +85,77 @@ describe('Sesión del responsable de sede (pieza 9-5)', () => {
     expect(await destino(['ROLE_RESPONSABLE_SEDE', 'ROLE_ADMIN'], [])).toBe('/adminpage');
   });
 
+  describe('profesor + familia (decisión 439)', () => {
+    const PF = ['ROLE_PROFESOR', 'ROLE_USER'];
+    const CON_GRUPOS: Capacidad[] = ['MIS_GRUPOS', 'MI_CAJA', 'ELEGIR_VISTA'];
+
+    it('pide los permisos para resolver el destino y, sin preferencia, abre en Mis grupos', async () => {
+      expect(await destino(PF, CON_GRUPOS)).toBe('/mis-grupos');
+    });
+
+    it('recuerda la vista elegida: familia, /userpage; profesor, /mis-grupos', async () => {
+      auth.guardarVistaPreferida('user');
+      expect(await destino(PF, CON_GRUPOS)).toBe('/userpage');
+      auth.guardarVistaPreferida('admin');
+      expect(await destino(PF, null)).toBe('/mis-grupos');
+    });
+
+    it('sin grupos no hay vista de profesor que elegir: entra como familia, como hoy', async () => {
+      expect(await destino(PF, ['MI_CAJA'])).toBe('/userpage');
+    });
+
+    it('sin permisos legibles, como hoy: entra como familia', async () => {
+      expect(await destino(PF, 'fallo')).toBe('/userpage');
+    });
+
+    it('con gestión, sin cambios: no pide permisos y abre el panel', async () => {
+      expect(await destino(['ROLE_ADMIN', 'ROLE_PROFESOR', 'ROLE_USER'], null)).toBe('/adminpage');
+      expect(await destino(['ROLE_MANAGER', 'ROLE_PROFESOR', 'ROLE_USER'], null)).toBe('/adminpage');
+    });
+
+    it('R + Pr + F sigue en su panel de sede (371)', async () => {
+      expect(
+        await destino(
+          ['ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR', 'ROLE_USER'],
+          ['MIS_GRUPOS', 'MI_CAJA', 'PANEL_SEDE', 'ELEGIR_VISTA']
+        )
+      ).toBe('/adminpage');
+    });
+
+    it('entrar en Mis grupos la marca como su vista; con gestión, responsable o solo profesor, no', () => {
+      auth.guardarVistaPreferida('user');
+      auth.marcarVistaPreferidaSegunRuta('/mis-grupos/12?x=1', PF);
+      expect(auth.obtenerVistaPreferida()).toBe('admin');
+
+      for (const roles of [
+        ['ROLE_ADMIN', 'ROLE_PROFESOR', 'ROLE_USER'],
+        ['ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR', 'ROLE_USER'],
+        ['ROLE_PROFESOR'],
+      ]) {
+        auth.guardarVistaPreferida('user');
+        auth.marcarVistaPreferidaSegunRuta('/mis-grupos', roles);
+        expect(auth.obtenerVistaPreferida()).withContext(roles.join(',')).toBe('user');
+      }
+      auth.guardarVistaPreferida('admin');
+      auth.marcarVistaPreferidaSegunRuta('/userpage', PF);
+      expect(auth.obtenerVistaPreferida()).toBe('user');
+    });
+
+    it('destinoVistaAdmin: Mis grupos para profesor + familia; el panel para gestión y responsable', () => {
+      expect(auth.destinoVistaAdmin(PF, CON_GRUPOS)).toBe('/mis-grupos');
+      expect(auth.destinoVistaAdmin(['ROLE_ADMIN', 'ROLE_USER'])).toBe('/adminpage');
+      expect(auth.destinoVistaAdmin(['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'], ['PANEL_SEDE', 'ELEGIR_VISTA'])).toBe(
+        '/adminpage'
+      );
+    });
+
+    it('tieneAccesoDual con su ELEGIR_VISTA; sin ella, no', () => {
+      expect(auth.tieneAccesoDual(PF, CON_GRUPOS)).toBeTrue();
+      expect(auth.tieneAccesoDual(PF, ['MI_CAJA'])).toBeFalse();
+      expect(auth.tieneAccesoDual(PF)).toBeFalse();
+    });
+  });
+
   it('tieneAccesoDual suma ELEGIR_VISTA y deja igual a gestión + familia', () => {
     expect(auth.tieneAccesoDual(['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'], ['PANEL_SEDE', 'ELEGIR_VISTA'])).toBeTrue();
     expect(auth.tieneAccesoDual(['ROLE_RESPONSABLE_SEDE'], ['PANEL_SEDE'])).toBeFalse();

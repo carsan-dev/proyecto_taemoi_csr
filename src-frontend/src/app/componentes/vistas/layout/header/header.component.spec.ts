@@ -360,6 +360,7 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
       esAdminPlataforma: () => of(false),
       marcarVistaPreferidaSegunRuta: () => undefined,
       obtenerVistaPreferida: () => vistaPreferida,
+      guardarVistaPreferida: jasmine.createSpy('guardarVistaPreferida'),
       tieneAccesoAdmin: () => gestion,
       tieneAccesoUser: () => roles.includes('ROLE_USER'),
       tieneAccesoDual: (_r: string[], caps: string[] = []) =>
@@ -391,6 +392,7 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
       el: fixture.nativeElement as HTMLElement,
       contador,
       usuarioLogueadoCambio: authServiceMock.usuarioLogueadoCambio,
+      guardarVistaPreferida: authServiceMock.guardarVistaPreferida,
     };
   }
 
@@ -431,6 +433,33 @@ describe('HeaderComponent: cabecera de la web pública con sesión del panel', (
     fixture.componentInstance.toggleDesktopUserMenu();
     fixture.detectChanges();
     expect(el.textContent).toContain('Cambiar a admin');
+  });
+
+  for (const [nombre, roles, capacidades, ruta] of [
+    ['Pr + F', ['ROLE_PROFESOR', 'ROLE_USER'], ['MIS_GRUPOS', 'MI_CAJA', 'ELEGIR_VISTA'], '/mis-grupos'],
+    ['R + F', ['ROLE_RESPONSABLE_SEDE', 'ROLE_USER'], ['PANEL_SEDE', 'ELEGIR_VISTA'], '/adminpage'],
+    ['G + F', ['ROLE_ADMIN', 'ROLE_USER'], [], '/adminpage'],
+  ] as const) {
+    itSinReloj(`${nombre}: «Cambiar a admin» guarda la vista y lleva a ${ruta} (439)`, async () => {
+      const { el, fixture, guardarVistaPreferida } = await renderizar([...roles], '/userpage', 'user', [...capacidades]);
+      const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      expect(fixture.componentInstance.tieneAccesoDual).toBeTrue();
+      fixture.componentInstance.toggleDesktopUserMenu();
+      fixture.detectChanges();
+      expect(el.textContent).toContain('Cambiar a admin');
+      fixture.componentInstance.cambiarVistaAdmin();
+      expect(guardarVistaPreferida).toHaveBeenCalledWith('admin');
+      expect(navegar).toHaveBeenCalledWith([ruta]);
+    });
+  }
+
+  itSinReloj('Pr + F sin grupos: su cabecera de familia, sin «Cambiar a admin» (439)', async () => {
+    const { el, fixture } = await renderizar(['ROLE_PROFESOR', 'ROLE_USER'], '/userpage', 'user', ['MI_CAJA']);
+    expect(fixture.componentInstance.mostrarHeaderUser).toBeTrue();
+    expect(fixture.componentInstance.tieneAccesoDual).toBeFalse();
+    fixture.componentInstance.toggleDesktopUserMenu();
+    fixture.detectChanges();
+    expect(el.textContent).not.toContain('Cambiar a admin');
   });
 
   itSinReloj('sin capacidades legibles, un responsable no ve «Volver al panel»', async () => {
