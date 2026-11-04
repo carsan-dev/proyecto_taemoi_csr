@@ -5,7 +5,7 @@
     "nombre" : "DORADOR2 Kickboxing Iniciacion",
     "rangoEdadMax" : null,
     "rangoEdadMin" : null,
-    "sedeId" : null
+    "sedeId" : 1
   },
   {
     "deporte" : "TAEKWONDO",

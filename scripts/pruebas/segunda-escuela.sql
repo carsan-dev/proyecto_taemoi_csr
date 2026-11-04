@@ -1,8 +1,9 @@
 -- Segunda escuela SINTÉTICA (organización 2) para probar el aislamiento multi-escuela.
--- Requiere la base migrada hasta V32 (V22 quitó de alumno las columnas monodeporte; V28 quitó los
+-- Requiere la base migrada hasta V32_1 (V22 quitó de alumno las columnas monodeporte; V28 quitó los
 -- enums deporte/tipo_tarifa/tipo_grado: la disciplina y la tarifa se identifican solo por
 -- disciplina_id y tarifa_id; V29 quitó alumno.responsable_legal_*; V32 quitó usuario.alumno_id y
--- usuario_rol: el vínculo de una cuenta con un alumno es usuario_alumno, de V31). organizacion 2 queda con
+-- usuario_rol: el vínculo de una cuenta con un alumno es usuario_alumno, de V31; V32_1 hizo obligatoria la sede
+-- del grupo: la org 2 tiene su «Sede principal», como las escuelas que V31 encontró). organizacion 2 queda con
 -- comportamiento_legado_taemoi = FALSE (valor por defecto).
 -- Repetible: borra antes lo que crea. Contraseña de los usuarios: la de README.md.
 -- La organización 2 tiene su propio catálogo: disciplinas TAEKWONDO, KICKBOXING y PILATES (sin
@@ -50,6 +51,7 @@ UPDATE alumno SET foto_alumno_id = NULL WHERE foto_alumno_id IN (SELECT id FROM 
 DELETE FROM imagen WHERE organizacion_id = 2;
 DELETE FROM contador WHERE organizacion_id = 2;
 DELETE FROM configuracion_organizacion WHERE organizacion_id = 2;
+DELETE FROM sede WHERE organizacion_id = 2;
 DELETE FROM organizacion WHERE id = 2;
 
 START TRANSACTION;
@@ -59,6 +61,7 @@ INSERT INTO organizacion (id, slug, nombre, localidad, provincia, email_contacto
 VALUES (2, 'sierra-sur-sintetica', 'Escuela Sierra Sur (sintetica)', 'Localidad Sintetica', 'Sevilla',
         'contacto@sierra-sur.example.test', 'Europe/Madrid', TRUE);
 INSERT INTO configuracion_organizacion (organizacion_id, clave, valor) VALUES (2, 'limite_turno', '24');
+INSERT INTO sede (organizacion_id, nombre, activa) VALUES (2, 'Sede principal', TRUE);
 
 -- ---------------------------------------------------------------- catálogo propio de la org 2
 INSERT INTO disciplina (id, organizacion_id, codigo, nombre, sistema_grados_id, permite_competicion,
@@ -73,8 +76,9 @@ INSERT INTO tarifa (id, organizacion_id, disciplina_id, codigo, nombre, importe,
   (104, 2, 103, 'PILATES', 'Pilates', 30.00, 1);
 
 -- ---------------------------------------------------------------- grupo, turno y productos
-INSERT INTO grupo (id, nombre, tipo, rango_edad_min, rango_edad_max, organizacion_id, disciplina_id)
-VALUES (101, 'Sierra Sur Taekwondo Lunes y Miercoles', 'Taekwondo', NULL, NULL, 2, 101);
+INSERT INTO grupo (id, nombre, tipo, rango_edad_min, rango_edad_max, organizacion_id, disciplina_id, sede_id)
+VALUES (101, 'Sierra Sur Taekwondo Lunes y Miercoles', 'Taekwondo', NULL, NULL, 2, 101,
+  (SELECT id FROM sede WHERE organizacion_id = 2 AND nombre = 'Sede principal'));
 INSERT INTO turno (id, dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id) VALUES
   (201, 'Lunes', '18:00', '19:00', 'Sierra Sur Taekwondo Lunes', 101, 2),
   (202, 'Miércoles', '18:00', '19:00', 'Sierra Sur Taekwondo Miércoles', 101, 2);

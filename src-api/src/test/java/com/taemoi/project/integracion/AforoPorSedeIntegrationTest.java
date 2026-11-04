@@ -114,7 +114,7 @@ class AforoPorSedeIntegrationTest extends MySqlIntegrationTest {
 
 		long tSinSede = turno(e.org, e.gSin);
 		assertEquals(LIMITE_E, turno(leer(get("/api/turnos/resumen"), tokenE, 200), tSinSede).get("aforoEfectivo").asInt(),
-				"grupo sin sede: el límite común");
+				"grupo de una sede sin aforo (antes, sin sede): el límite común");
 	}
 
 	@Test

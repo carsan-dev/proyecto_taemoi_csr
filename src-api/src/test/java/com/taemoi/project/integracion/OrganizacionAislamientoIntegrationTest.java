@@ -301,6 +301,7 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		Grupo grupo = new Grupo();
 		grupo.setNombre("G " + marca);
 		grupo.setDisciplina(DisciplinasDePrueba.asegurar(disciplinas, "TAEKWONDO"));
+		grupo.setSedeId(sedeDe(TenantContext.get()));
 		grupo.getAlumnos().add(alumnos.findById(d.alumnoId).orElseThrow());
 		Grupo grupoGuardado = grupos.save(grupo);
 		d.grupoId = grupoGuardado.getId();
@@ -380,6 +381,16 @@ class OrganizacionAislamientoIntegrationTest extends MySqlIntegrationTest {
 		long id = TenantContext.calcularCon(ORG_TAEMOI, () -> organizaciones.save(org).getId());
 		assertNotEquals(ORG_TAEMOI, id);
 		return id;
+	}
+
+	/** V32_1: el grupo necesita sede. Una organización creada en el test no tiene ninguna: se le crea una. */
+	private long sedeDe(long organizacion) {
+		Long sede = jdbc.queryForObject("SELECT MIN(id) FROM sede WHERE organizacion_id = ?", Long.class, organizacion);
+		if (sede != null) {
+			return sede;
+		}
+		jdbc.update("INSERT INTO sede (organizacion_id, nombre) VALUES (?, 'Sede IT')", organizacion);
+		return jdbc.queryForObject("SELECT id FROM sede WHERE organizacion_id = ?", Long.class, organizacion);
 	}
 
 	private long organizacionDe(String tabla, Long id) {

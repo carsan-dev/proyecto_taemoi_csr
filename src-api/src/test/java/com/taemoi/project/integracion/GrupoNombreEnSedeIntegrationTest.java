@@ -2,6 +2,7 @@ package com.taemoi.project.integracion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -42,8 +44,8 @@ import jakarta.servlet.http.Cookie;
  * Pieza E10-4 (fase3-e10-plan.md §4) contra MySQL: el alta de grupo sin ninguna sede activa da 400; el alta y la
  * edición con un nombre que ya tiene otro grupo de la misma sede dan 409 antes de guardar, con la misma comparación que
  * hará la clave única {@code (sede_id, nombre)} de la V32_1 (la colación de la columna: sin distinguir mayúsculas ni
- * tildes). Editar un grupo sin cambiar nombre ni sede no comprueba nada (duplicados heredados). Y {@code Grupo.sedeId}
- * con {@code nullable = false} no impide guardar un grupo heredado sin sede mientras la columna admita NULL.
+ * tildes); desde la V32_1 la clave única existe y ya no hay duplicados heredados. Y {@code Grupo.sedeId}
+ * con {@code nullable = false} no impide guardar un grupo sin sede: desde la V32_1 lo impide la base.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -151,21 +153,6 @@ class GrupoNombreEnSedeIntegrationTest extends MySqlIntegrationTest {
 	// ------------------------------------------------------------------ edición
 
 	@Test
-	void edicion_sinCambiarNombreNiSede_conDuplicadoHeredado_200() throws Exception {
-		String nombre = "IT E10-4 heredado " + e.marca;
-		long uno = alta(nombre, e.sA);
-		long otro = alta("IT E10-4 heredado bis " + e.marca, e.sA);
-		jdbc.update("UPDATE grupo SET nombre = ? WHERE id = ?", nombre, otro);
-
-		MvcResult r = peticion(put("/api/grupos/" + uno).contentType(MediaType.APPLICATION_JSON)
-				.content("{\"nombre\":\"" + nombre + "\",\"deporte\":\"TAEKWONDO\",\"rangoEdadMin\":6}"));
-		assertEquals(200, r.getResponse().getStatus(), contenido(r));
-		assertEquals(6, jdbc.queryForObject("SELECT rango_edad_min FROM grupo WHERE id = ?", Integer.class, uno));
-		assertEquals(200, estado(put("/api/grupos/" + otro).contentType(MediaType.APPLICATION_JSON)
-				.content(grupo(nombre, e.sA))), "con la misma sede en el cuerpo, tampoco");
-	}
-
-	@Test
 	void edicion_aUnNombreRepetido_409YSinCambios() throws Exception {
 		String ocupado = "IT E10-4 ocupado " + e.marca;
 		alta(ocupado, e.sA);
@@ -204,18 +191,19 @@ class GrupoNombreEnSedeIntegrationTest extends MySqlIntegrationTest {
 	// ------------------------------------------------------------------ Grupo.sedeId nullable = false
 
 	@Test
-	void grupoHeredadoSinSede_seGuardaAunqueLaEntidadNoAdmitaNull() {
-		// Hibernate no comprueba la nulabilidad al guardar (Bean Validation en el classpath): un grupo heredado con
-		// sede_id NULL se sigue guardando hasta que la V32_1 lo impida en la base.
+	void grupoSinSede_laBaseLoRechazaDesdeV32_1() {
+		// Hibernate no comprueba la nulabilidad al guardar (Bean Validation en el classpath): desde la V32_1 es la base
+		// (grupo.sede_id NOT NULL) la que impide un grupo sin sede.
 		assertFalse(emf.unwrap(SessionFactoryImplementor.class).getSessionFactoryOptions().isCheckNullability());
-		TenantContext.ejecutarCon(e.org, () -> transacciones.executeWithoutResult(estado -> {
-			Grupo sinSede = grupoRepository.findById(e.gSin).orElseThrow();
-			assertNull(sinSede.getSedeId());
-			sinSede.setRangoEdadMax(99);
-			grupoRepository.saveAndFlush(sinSede);
-		}));
-		assertEquals(99, jdbc.queryForObject("SELECT rango_edad_max FROM grupo WHERE id = ?", Integer.class, e.gSin));
-		assertNull(jdbc.queryForObject("SELECT sede_id FROM grupo WHERE id = ?", Long.class, e.gSin));
+		assertThrows(DataIntegrityViolationException.class,
+				() -> TenantContext.ejecutarCon(e.org, () -> transacciones.executeWithoutResult(estado -> {
+					Grupo grupo = grupoRepository.findById(e.gSin).orElseThrow();
+					grupo.setSedeId(null);
+					grupo.setRangoEdadMax(99);
+					grupoRepository.saveAndFlush(grupo);
+				})));
+		assertEquals(e.sSin, jdbc.queryForObject("SELECT sede_id FROM grupo WHERE id = ?", Long.class, e.gSin));
+		assertNotEquals(99, jdbc.queryForObject("SELECT rango_edad_max FROM grupo WHERE id = ?", Integer.class, e.gSin));
 	}
 
 	// ------------------------------------------------------------------ ayudas

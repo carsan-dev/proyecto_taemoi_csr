@@ -616,7 +616,7 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 		long infantil = grupo(1, "TKD-INFANTIL", "Infantil", tkd, sede, 6, 12);
 		long adultos = grupo(2, "TKD-ADULTOS", "Adultos", tkd, sede, null, null);
 		grupo(3, "TKD-COMPETICION", "Competicion", tkd, sede, null, null); // oculto en el formulario público
-		long kickboxing = grupo(4, "KB", "Kickboxing", kb, null, null, null);
+		long kickboxing = grupo(4, "KB", "Kickboxing", kb, sede, null, null);
 		grupo(5, "TKD-SIN-TURNOS", "Sin turnos", tkd, sede, null, null);
 		long t1 = turno(1, "T1", infantil, "Lunes", "17:00", "18:00");
 		long t2 = turno(2, "T2", infantil, "Miércoles", "17:00", "18:00");

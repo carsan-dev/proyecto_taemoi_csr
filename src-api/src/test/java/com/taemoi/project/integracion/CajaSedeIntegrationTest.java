@@ -826,8 +826,8 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 	void sedesDeLaCaja_permisosCoincidenConLaTesoreria_porRol() throws Exception {
 		String tRespAC = s.e.token(jwtService, usuarios, s.e.respAC);
 		Map<String, Set<Long>> esperadas = Map.of(
-				s.tPropietario, Set.of(s.e.sA, s.e.sB, s.e.sC),
-				s.tGestor, Set.of(s.e.sA, s.e.sB, s.e.sC),
+				s.tPropietario, Set.of(s.e.sA, s.e.sB, s.e.sC, s.e.sSin),
+				s.tGestor, Set.of(s.e.sA, s.e.sB, s.e.sC, s.e.sSin),
 				s.tResp, Set.of(s.e.sA),
 				tRespAC, Set.of(s.e.sA, s.e.sC));
 		for (Map.Entry<String, Set<Long>> caso : esperadas.entrySet()) {
@@ -972,8 +972,8 @@ class CajaSedeIntegrationTest extends MySqlIntegrationTest {
 		responsableDe(respProfesor, n.e.org, n.e.sA);
 
 		String tGestorResp = n.e.token(jwtService, usuarios, gestorYResp);
-		assertEquals(Set.of(n.e.sA, n.e.sB, n.e.sC), sedesDePermisos(tGestorResp), "gestor + responsable: todas");
-		assertEquals(Set.of(n.e.sA, n.e.sB, n.e.sC), sedesDeTesoreria(tGestorResp));
+		assertEquals(Set.of(n.e.sA, n.e.sB, n.e.sC, n.e.sSin), sedesDePermisos(tGestorResp), "gestor + responsable: todas");
+		assertEquals(Set.of(n.e.sA, n.e.sB, n.e.sC, n.e.sSin), sedesDeTesoreria(tGestorResp));
 
 		String tRespSin = n.e.token(jwtService, usuarios, respSinSedes);
 		assertEquals(Set.of(), sedesDePermisos(tRespSin), "responsable sin sedes: ninguna");

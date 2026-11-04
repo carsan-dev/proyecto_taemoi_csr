@@ -83,7 +83,7 @@ import jakarta.servlet.http.Cookie;
  * 2 deportes (A05), alumno inactivo (A10, A29), deporte inactivo (A07 en kickboxing), con cuenta de usuario (A03),
  * con tutor responsable legal (A04) y con tutor que no lo es (A06), con foto (A02), fichas deportivas completas
  * (tarifa, categoría, peso, licencia, familia, competición: A05, A13, A21), documento y cargo con producto (A05),
- * examen en una convocatoria (A08), reto diario y racha (A03, A05), grupos con sede y uno sin sede,
+ * examen en una convocatoria (A08), reto diario y racha (A03, A05), grupos con sede (desde la V32_1, todos),
  * grupo con rango de edad y grupos sin él (edades calculadas), turno sin grupo, preinscripción PENDIENTE en un turno
  * y ese turno lleno ({@code completo=true}, con el límite de turno fijado a {@value #LIMITE_TURNO} mientras dura la
  * clase). Al terminar se borra todo y se restauran el límite y los AUTO_INCREMENT.
@@ -329,7 +329,7 @@ class MoiskimdoAlumnosJsonDoradoIntegrationTest extends MySqlIntegrationTest {
 
 		long infantil = grupo(1, "TKD-INFANTIL", "Taekwondo Infantil", tkd, sede, 6, 12);
 		long adultos = grupo(2, "TKD-ADULTOS", "Taekwondo Adultos", tkd, sede, null, null);
-		long kbIni = grupo(3, "KB-INICIACION", "Kickboxing Iniciacion", kb, null, null, null);
+		long kbIni = grupo(3, "KB-INICIACION", "Kickboxing Iniciacion", kb, sede, null, null);
 		long lunes = turno(1, "TKD-INFANTIL", infantil, "Lunes", "17:00", "18:00", "Taekwondo");
 		long miercoles = turno(2, "TKD-INFANTIL", infantil, "Miércoles", "17:00", "18:00", null);
 		long martes = turno(3, "TKD-ADULTOS", adultos, "Martes", "19:00", "20:00", null);

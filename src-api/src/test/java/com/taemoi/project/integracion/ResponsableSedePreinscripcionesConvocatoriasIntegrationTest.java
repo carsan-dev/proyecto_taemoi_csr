@@ -548,7 +548,7 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 		Map<String, Object> dosGruposA = TenantContext.calcularCon(e.org,
 				() -> preinscripcionService.crear(solicitud(List.of(e.tA, tA2)), null));
 		assertNotNull(dosGruposA.get("referencia"));
-		// Escuela de una sede, con un grupo con sede y otro sin ella: la validación no se aplica.
+		// Escuela de una sede, con dos grupos (el antiguo «sin sede» ya tiene la única desde la V32_1): pasan.
 		UnaSede u = unaSede();
 		long lunes = turno(u.org, u.grupo, "Lunes");
 		long martes = turno(u.org, u.grupoSinSede, "Martes");
@@ -864,8 +864,8 @@ class ResponsableSedePreinscripcionesConvocatoriasIntegrationTest extends MySqlI
 		jdbc.update("INSERT INTO tarifa (organizacion_id, codigo, nombre, importe) VALUES (?, ?, 'Tarifa IT', 30.00)",
 				u.org, TARIFA);
 		u.grupo = grupo(u.org, "IT E6-2 única " + slug);
+		// Era un grupo sin sede; desde la V32_1 todo grupo tiene sede y este queda en la única.
 		u.grupoSinSede = grupo(u.org, "IT E6-2 sin sede " + slug);
-		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", u.grupoSinSede);
 		long gestor = cuenta("it-e6-2-gestor-" + slug + "@example.test");
 		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')", gestor,
 				u.org);

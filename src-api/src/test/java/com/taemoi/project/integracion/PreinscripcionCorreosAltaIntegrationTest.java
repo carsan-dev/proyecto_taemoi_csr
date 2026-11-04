@@ -105,7 +105,8 @@ class PreinscripcionCorreosAltaIntegrationTest extends MySqlIntegrationTest {
 				Long.class);
 		jdbc.update("""
 				INSERT INTO grupo (id, nombre, tipo, rango_edad_min, rango_edad_max, organizacion_id, disciplina_id, sede_id)
-				VALUES (?, 'CORREOS-R2P7D Adultos', NULL, NULL, NULL, 1, ?, NULL)""", GRUPO, tkd);
+				VALUES (?, 'CORREOS-R2P7D Adultos', NULL, NULL, NULL, 1, ?,
+				  (SELECT MIN(s.id) FROM sede s WHERE s.organizacion_id = 1))""", GRUPO, tkd);
 		jdbc.update("""
 				INSERT INTO turno (id, dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id)
 				VALUES (?, 'Sábado', '12:00', '13:00', NULL, ?, 1)""", TURNO, GRUPO);

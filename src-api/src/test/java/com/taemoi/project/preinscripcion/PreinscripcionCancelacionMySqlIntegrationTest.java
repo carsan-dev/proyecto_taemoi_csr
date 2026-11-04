@@ -243,7 +243,8 @@ class PreinscripcionCancelacionMySqlIntegrationTest extends MySqlIntegrationTest
 				"SELECT t.id FROM turno t JOIN grupo g ON g.id=t.grupo_id WHERE g.nombre=? ORDER BY t.id LIMIT 1",
 				Long.class, nombreGrupo);
 		if (!existentes.isEmpty()) return existentes.get(0);
-		jdbc.update("INSERT INTO grupo(nombre,tipo,rango_edad_min,rango_edad_max,organizacion_id,disciplina_id) VALUES (?,NULL,0,99,1,"
+		jdbc.update("INSERT INTO grupo(nombre,tipo,rango_edad_min,rango_edad_max,organizacion_id,sede_id,disciplina_id) VALUES (?,NULL,0,99,1,"
+				+ "(SELECT MIN(s.id) FROM sede s WHERE s.organizacion_id=1),"
 				+ "(SELECT d.id FROM disciplina d WHERE d.organizacion_id=1 AND d.codigo=?))",
 				nombreGrupo, Deporte.TAEKWONDO.name());
 		Long grupoId = jdbc.queryForObject("SELECT id FROM grupo WHERE nombre=?", Long.class, nombreGrupo);

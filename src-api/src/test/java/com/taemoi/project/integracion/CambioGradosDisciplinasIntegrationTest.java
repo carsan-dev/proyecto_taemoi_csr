@@ -1104,6 +1104,9 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 			Grupo grupo = new Grupo();
 			grupo.setNombre(nombreGrupo + " " + marca);
 			grupo.setDisciplina(disciplinas.findByCodigo(deporte).orElseThrow());
+			// V32_1: la sede es obligatoria; la organización 1 tiene al menos la suya (V31).
+			grupo.setSedeId(jdbc.queryForObject("SELECT MIN(id) FROM sede WHERE organizacion_id = ?", Long.class,
+					ORG_TAEMOI));
 			grupo = grupos.save(grupo);
 			Turno turno = turnos.save(new Turno("Lunes", "18:00", "19:00", grupo));
 			Preinscripcion p = new Preinscripcion();

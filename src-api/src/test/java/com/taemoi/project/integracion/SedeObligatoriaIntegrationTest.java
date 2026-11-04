@@ -3,15 +3,12 @@ package com.taemoi.project.integracion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -45,12 +42,13 @@ import jakarta.servlet.http.Cookie;
  * <ul>
  * <li>Alta de alumno y de grupo sin sede: 400 «Indica la sede.» para propietario y gestión, como el responsable; con
  * una sede activa, esa; con ninguna, sin sede, como hasta ahora.</li>
- * <li>Editar un grupo: sin sede en el cuerpo conserva la suya; sin sede propia y con varias activas, 400; se puede
- * corregir a otra sede activa de la escuela, sin mover cargos ni cobros; el responsable, solo dentro de las suyas.</li>
- * <li>Finalizar una preinscripción con grupo sin sede y varias activas: 400, sin alumno ni correo.</li>
+ * <li>Editar un grupo: sin sede en el cuerpo conserva la suya; se puede corregir a otra sede activa de la escuela, sin
+ * mover cargos ni cobros; el responsable, solo dentro de las suyas.</li>
+ * <li>Finalizar una preinscripción: el alumno nace en la sede del grupo. Desde la V32_1 todo grupo tiene sede: los
+ * casos de grupo sin sede ya no pueden darse.</li>
  * </ul>
- * Escuelas sintéticas de {@link EscuelaConSedesDePrueba} (A y B activas, C inactiva), una con B cerrada (una sede
- * activa) y otra con todas cerradas (ninguna). Datos inventados.
+ * Escuelas sintéticas de {@link EscuelaConSedesDePrueba} (A, B y S activas, C inactiva), una con B y S cerradas (una
+ * sede activa) y otra con todas cerradas (ninguna). Datos inventados.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -58,7 +56,6 @@ import jakarta.servlet.http.Cookie;
 class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 
 	private static final String INDICA_LA_SEDE = "Indica la sede.";
-	private static final String GRUPO_SIN_SEDE = "El grupo no tiene sede. Asígnasela antes de finalizar.";
 	private static final String TARIFA = "ADULTO";
 	private static final String FINALIZAR_NUEVO = "{\"accionAlumno\":\"CREAR_NUEVO\",\"datosDeporte\":"
 			+ "{\"tipoTarifa\":\"" + TARIFA + "\",\"cuantiaTarifa\":30.0}}";
@@ -86,7 +83,7 @@ class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 		una = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e9-1-una");
 		ninguna = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e9-1-ninguna");
 		otra = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-e9-1-otra");
-		jdbc.update("UPDATE sede SET activa = FALSE WHERE id = ?", una.sB);
+		jdbc.update("UPDATE sede SET activa = FALSE WHERE id IN (?, ?)", una.sB, una.sSin);
 		jdbc.update("UPDATE sede SET activa = FALSE WHERE organizacion_id = ?", ninguna.org);
 		for (EscuelaConSedesDePrueba escuela : List.of(e, una, ninguna)) {
 			TenantContext.ejecutarCon(escuela.org, () -> DisciplinasDePrueba.tarifa(tarifas, TARIFA, "30.00", null));
@@ -183,27 +180,6 @@ class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void editarGrupo_sinSedePropia_variasActivas_400SinCambiarNada() throws Exception {
-		long grupo = grupoSinSede();
-		String nombre = nombreDelGrupo(grupo);
-		MvcResult r = peticion(conCuerpo(put("/api/grupos/" + grupo), grupo("IT E9 no cambia " + marca(), null)), tGestor);
-		assertEquals(400, r.getResponse().getStatus(), contenido(r));
-		assertTrue(contenido(r).contains(INDICA_LA_SEDE), contenido(r));
-		assertNull(sedeDelGrupo(grupo));
-		assertEquals(nombre, nombreDelGrupo(grupo), "la transacción se deshace entera");
-		assertEquals(200, estado(conCuerpo(put("/api/grupos/" + grupo), grupo("IT E9 corregido " + marca(), e.sA)), tGestor));
-		assertEquals(e.sA, sedeDelGrupo(grupo));
-	}
-
-	@Test
-	void editarGrupo_unaSedeActiva_leRellenaLaUnica() throws Exception {
-		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", una.gA2);
-		assertEquals(200, estado(conCuerpo(put("/api/grupos/" + una.gA2), grupo("IT E9 rellena " + marca(), null)),
-				tGestorUna));
-		assertEquals(una.sA, sedeDelGrupo(una.gA2));
-	}
-
-	@Test
 	void editarGrupo_corrigeASedeActivaDeLaEscuela_noInactivaNiAjena() throws Exception {
 		long grupo = grupoDe(e.sA);
 		assertEquals(200, estado(conCuerpo(put("/api/grupos/" + grupo), grupo("IT E9 a B " + marca(), e.sB)), tGestor));
@@ -250,84 +226,19 @@ class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 
 	// ------------------------------------------------------------------ preinscripción
 
+	/**
+	 * V32_1: ya no hay grupos sin sede (los casos «grupo sin sede» de la decisión 377 y de la E10-4 no pueden darse). Con
+	 * varias sedes activas, el alumno nace en la sede del grupo.
+	 */
 	@Test
-	void finalizar_grupoSinSede_variasActivas_400SinAlumnoNiCorreo() throws Exception {
-		long grupo = grupoSinSede();
-		long turno = turno(e.org, grupo);
-		String referencia = preinscripcion(e.org, grupo, turno);
-		long alumnos = alumnosDe(e.org);
-		long expediente = contadorExpediente(e.org);
-		clearInvocations(mailSender);
-
-		for (String token : List.of(tPropietario, tGestor)) {
-			MvcResult r = peticion(conCuerpo(post("/api/preinscripciones/" + referencia + "/finalizar"), FINALIZAR_NUEVO),
-					token);
-			assertEquals(400, r.getResponse().getStatus(), contenido(r));
-			assertTrue(contenido(r).contains(GRUPO_SIN_SEDE), contenido(r));
-		}
-
-		assertEquals(alumnos, alumnosDe(e.org), "ningún alumno");
-		assertEquals(expediente, contadorExpediente(e.org), "ningún número de expediente gastado");
-		Map<String, Object> fila = jdbc.queryForMap(
-				"SELECT estado, alumno_id, email_finalizacion_estado FROM preinscripcion WHERE referencia = ?", referencia);
-		assertEquals("PENDIENTE", fila.get("estado"));
-		assertNull(fila.get("alumno_id"));
-		assertEquals("NO_ENVIADO", fila.get("email_finalizacion_estado"), "ningún correo pendiente");
-		verifyNoInteractions(mailSender);
-
-		// Con la sede ya asignada al grupo, se finaliza y el alumno nace en ella.
-		jdbc.update("UPDATE grupo SET sede_id = ? WHERE id = ?", e.sB, grupo);
+	void finalizar_variasActivas_elAlumnoNaceEnLaSedeDelGrupo() throws Exception {
+		long grupo = grupoDe(e.sB);
+		String referencia = preinscripcion(e.org, grupo, turno(e.org, grupo));
 		MvcResult r = peticion(conCuerpo(post("/api/preinscripciones/" + referencia + "/finalizar"), FINALIZAR_NUEVO),
 				tGestor);
 		assertEquals(200, r.getResponse().getStatus(), contenido(r));
 		long alumno = jdbc.queryForObject("SELECT alumno_id FROM preinscripcion WHERE referencia = ?", Long.class, referencia);
 		assertEquals(e.sB, e.sedeDe(alumno));
-	}
-
-	@Test
-	void finalizar_vincularFichaExistente_grupoSinSede_variasActivas_400() throws Exception {
-		long grupo = grupoSinSede();
-		String referencia = preinscripcion(e.org, grupo, turno(e.org, grupo));
-		String cuerpo = "{\"accionAlumno\":\"VINCULAR_EXISTENTE\",\"alumnoId\":" + e.aA + ",\"datosDeporte\":"
-				+ "{\"tipoTarifa\":\"" + TARIFA + "\",\"cuantiaTarifa\":30.0}}";
-		MvcResult r = peticion(conCuerpo(post("/api/preinscripciones/" + referencia + "/finalizar"), cuerpo), tGestor);
-		assertEquals(400, r.getResponse().getStatus(), contenido(r));
-		assertTrue(contenido(r).contains(GRUPO_SIN_SEDE), contenido(r));
-		assertEquals("PENDIENTE",
-				jdbc.queryForObject("SELECT estado FROM preinscripcion WHERE referencia = ?", String.class, referencia));
-	}
-
-	@Test
-	void finalizar_grupoSinSede_unaSedeActiva_laUnica() throws Exception {
-		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", una.gSin);
-		String referencia = preinscripcion(una.org, una.gSin, turno(una.org, una.gSin));
-		MvcResult r = peticion(conCuerpo(post("/api/preinscripciones/" + referencia + "/finalizar"), FINALIZAR_NUEVO),
-				tGestorUna);
-		assertEquals(200, r.getResponse().getStatus(), contenido(r));
-		long alumno = jdbc.queryForObject("SELECT alumno_id FROM preinscripcion WHERE referencia = ?", Long.class, referencia);
-		assertEquals(una.sA, una.sedeDe(alumno));
-	}
-
-	@Test
-	void finalizar_grupoSinSede_ningunaActiva_400SinAlumnoNiCorreo() throws Exception {
-		// E10-4: sin ninguna sede activa no se finaliza: el alumno no nacería en ninguna sede.
-		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", ninguna.gSin);
-		String referencia = preinscripcion(ninguna.org, ninguna.gSin, turno(ninguna.org, ninguna.gSin));
-		long alumnos = alumnosDe(ninguna.org);
-		long expediente = contadorExpediente(ninguna.org);
-		clearInvocations(mailSender);
-		MvcResult r = peticion(conCuerpo(post("/api/preinscripciones/" + referencia + "/finalizar"), FINALIZAR_NUEVO),
-				tGestorNinguna);
-		assertEquals(400, r.getResponse().getStatus(), contenido(r));
-		assertTrue(contenido(r).contains(GestionPorSede.SIN_SEDE_ACTIVA), contenido(r));
-		assertEquals(alumnos, alumnosDe(ninguna.org), "ningún alumno");
-		assertEquals(expediente, contadorExpediente(ninguna.org), "ningún número de expediente gastado");
-		Map<String, Object> fila = jdbc.queryForMap(
-				"SELECT estado, alumno_id, email_finalizacion_estado FROM preinscripcion WHERE referencia = ?", referencia);
-		assertEquals("PENDIENTE", fila.get("estado"));
-		assertNull(fila.get("alumno_id"));
-		assertEquals("NO_ENVIADO", fila.get("email_finalizacion_estado"), "ningún correo pendiente");
-		verifyNoInteractions(mailSender);
 	}
 
 	// ------------------------------------------------------------------ datos
@@ -342,12 +253,6 @@ class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 		dto.setDeporte("TAEKWONDO");
 		dto.setSedeId(sede);
 		return TenantContext.calcularCon(e.org, () -> grupoService.crearGrupo(dto).getId());
-	}
-
-	private long grupoSinSede() {
-		long grupo = grupoDe(e.sA);
-		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", grupo);
-		return grupo;
 	}
 
 	private long turno(long org, long grupo) {
@@ -404,10 +309,6 @@ class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 		return jdbc.queryForObject("SELECT sede_id FROM grupo WHERE id = ?", Long.class, grupo);
 	}
 
-	private String nombreDelGrupo(long grupo) {
-		return jdbc.queryForObject("SELECT nombre FROM grupo WHERE id = ?", String.class, grupo);
-	}
-
 	private Long sedeDelCargo(long cargo) {
 		return jdbc.queryForObject("SELECT sede_id FROM producto_alumno WHERE id = ?", Long.class, cargo);
 	}
@@ -418,11 +319,6 @@ class SedeObligatoriaIntegrationTest extends MySqlIntegrationTest {
 
 	private long gruposDe(long org) {
 		return jdbc.queryForObject("SELECT COUNT(*) FROM grupo WHERE organizacion_id = ?", Long.class, org);
-	}
-
-	private long contadorExpediente(long org) {
-		return jdbc.queryForObject("SELECT COALESCE(MAX(numero_expediente), 0) FROM alumno WHERE organizacion_id = ?",
-				Long.class, org);
 	}
 
 	// ------------------------------------------------------------------ HTTP

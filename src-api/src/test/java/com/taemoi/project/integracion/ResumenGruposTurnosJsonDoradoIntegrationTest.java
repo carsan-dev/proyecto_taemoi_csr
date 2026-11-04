@@ -63,7 +63,7 @@ import jakarta.servlet.http.Cookie;
  * <h2>Datos</h2>
  * Sintéticos, con prefijo {@value #PREFIJO} y ids explícitos en rangos reservados, en la organización 1, más una
  * segunda sede INACTIVA (como en {@link PreinscripcionesListadoJsonDoradoIntegrationTest}). Cinco grupos: G1 (sede 1,
- * con rango de edad y dos turnos), G2 (sede 2), G3 (sede 1, kickboxing, sin rango, dos turnos), G4 (sin sede) y G5
+ * con rango de edad y dos turnos), G2 (sede 2), G3 (sede 1, kickboxing, sin rango, dos turnos), G4 (sede 2; era el grupo sin sede) y G5
  * (sede 1, vacío, sin turnos); más un turno sin grupo. Casos de {@code numAlumnos} en G1: activo con la ficha del
  * deporte activa (cuenta), activo con la ficha del deporte dada de baja (no), de baja (no), activo sin ninguna ficha
  * de deporte (cuenta, como en la lista de alumnos del grupo) y activo con solo la ficha de otro deporte (no); G3
@@ -168,7 +168,9 @@ class ResumenGruposTurnosJsonDoradoIntegrationTest extends MySqlIntegrationTest 
 		long g1 = grupo(1, "Taekwondo Sede1", tkd, sede1, 6, 12);
 		long g2 = grupo(2, "Taekwondo Sede2", tkd, sede2, null, null);
 		long g3 = grupo(3, "Kickboxing Sede1", kb, sede1, null, null);
-		long g4 = grupo(4, "Taekwondo SinSede", tkd, null, 4, null);
+		// G4 era el grupo sin sede; desde la V32_1 todo grupo tiene sede: va a la sede 2, también fuera del alcance del
+		// responsable (sede 1). Conserva el nombre para que el JSON congelado no cambie.
+		long g4 = grupo(4, "Taekwondo SinSede", tkd, sede2, 4, null);
 		long g5 = grupo(5, "Taekwondo Vacio", tkd, sede1, null, 9);
 		// Ids de turno no correlativos con el orden de inserción: el orden esperado es el de id.
 		turno(2, g1, "Miércoles", "17:00", "18:00", "Infantil");

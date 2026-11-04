@@ -80,7 +80,8 @@ class AccesoRecursosAlcanceIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 
-	long orgA, s1, s2, g1, g2, gSinSede;
+	// gSinSede: desde la V32_1 todo grupo tiene sede; este está en s3, fuera de las sedes que se consultan.
+	long orgA, s1, s2, s3, g1, g2, gSinSede;
 	long aPrincipal, aGrupo1, aGrupo2, aNada;
 	long t1, t2, tSin;
 	String p1, p2, pSin;
@@ -97,7 +98,8 @@ class AccesoRecursosAlcanceIntegrationTest extends MySqlIntegrationTest {
 		gSinSede = grupo(orgA, "IT acceso sin sede");
 		s2 = sede(orgA);
 		jdbc.update("UPDATE grupo SET sede_id = ? WHERE id = ?", s2, g2);
-		jdbc.update("UPDATE grupo SET sede_id = NULL WHERE id = ?", gSinSede);
+		s3 = sede(orgA);
+		jdbc.update("UPDATE grupo SET sede_id = ? WHERE id = ?", s3, gSinSede);
 
 		aPrincipal = alumno(orgA, s1);
 		aGrupo1 = alumno(orgA, s2);
