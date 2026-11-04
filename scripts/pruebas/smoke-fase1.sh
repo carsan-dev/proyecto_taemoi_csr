@@ -31,8 +31,9 @@ read -r FAMILIA_EMAIL FAMILIA_ALUMNOS <<<"$(sql "
   WHERE NOT EXISTS (SELECT 1 FROM membresia m2 WHERE m2.usuario_id = u.id AND m2.organizacion_id <> 1)
   GROUP BY u.id, u.email HAVING COUNT(*) > 1 ORDER BY u.id LIMIT 1")"
 export FAMILIA_EMAIL FAMILIA_ALUMNOS
+# Sin roles y con el correo de un alumno (su usuario.alumno_id de V17 se perdió en V32: sin membresía, R1 no le dio fila).
 export SIN_ROL_ALUMNO_EMAIL="$(sql "
-  SELECT u.email FROM usuario u WHERE u.alumno_id IS NOT NULL
+  SELECT u.email FROM usuario u WHERE EXISTS (SELECT 1 FROM alumno a WHERE a.email = u.email)
     AND NOT EXISTS (SELECT 1 FROM membresia m WHERE m.usuario_id = u.id) ORDER BY u.id LIMIT 1")"
 
 PYTHONIOENCODING=utf-8 python - <<'PY'
