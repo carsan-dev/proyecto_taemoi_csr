@@ -181,8 +181,11 @@ export class EditarGrupoComponent implements OnInit {
         next: () => { if (this.grupo) { this.grupo.nombre = nombre; if (sedeId !== null) this.grupo.sedeId = sedeId; } this.avisos.exito('El grupo se ha actualizado correctamente'); },
         error: (error: unknown) => {
           const mensaje = mensajeDeError(error) ?? 'Error al actualizar el grupo';
-          // E10-4: el nombre repetido en la sede (409) va junto al campo nombre; el resto, bajo Datos del grupo.
-          if (error instanceof HttpErrorResponse && error.status === 409) this.errorNombreServidor = mensaje;
+          // E10-4: el nombre repetido en la sede (409) va junto al campo nombre; el resto (también otros 409, como
+          // los de concurrencia), bajo Datos del grupo.
+          const nombreRepetido = error instanceof HttpErrorResponse && error.status === 409
+            && mensaje.startsWith('Ya hay un grupo con ese nombre');
+          if (nombreRepetido) this.errorNombreServidor = mensaje;
           else this.errorGuardar = mensaje;
         },
       });
