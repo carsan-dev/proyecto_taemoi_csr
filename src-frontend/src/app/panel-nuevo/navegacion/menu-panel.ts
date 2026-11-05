@@ -150,6 +150,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
         grupo: 'Plataforma',
       },
       { etiqueta: 'Logo y color', ruta: '/plataformaLogos', icono: 'bi-palette', condicion: 'plataforma' },
+      { etiqueta: 'Nueva escuela', ruta: '/plataformaNuevaEscuela', icono: 'bi-building-add', condicion: 'plataforma' },
     ],
     prefijos: [
       '/eventosListar',
@@ -162,6 +163,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       '/auditoriaSistema',
       '/plataformaErrores',
       '/plataformaLogos',
+      '/plataformaNuevaEscuela',
     ],
   },
 ];

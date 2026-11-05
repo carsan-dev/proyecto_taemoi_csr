@@ -96,7 +96,7 @@ function permisos(roles: string[]) {
 const SOLO_GESTION = /^(alumnosEliminar|eventos(Listar|Crear|Editar)|productos(Listar|Crear|Editar)|sedes|miembros|material-examen)/;
 
 describe('app routes', () => {
-  for (const camino of ['plataformaErrores', 'plataformaLogos']) {
+  for (const camino of ['plataformaErrores', 'plataformaLogos', 'plataformaNuevaEscuela']) {
     it(`${camino}: carga solo gestión sin convertirla en pantalla nueva`, () => {
       const ruta = routes.find((entrada) => entrada.path === camino)!;
       expect(ruta.canMatch).toEqual([estilosGestionGuard]);
