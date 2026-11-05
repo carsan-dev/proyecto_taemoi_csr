@@ -118,7 +118,9 @@ public class MarcaEscuelaService {
 
 	/**
 	 * Decisión 391: buzón de la escuela de una entidad ({@code organizacion.email_contacto}); sin ella (aún sin guardar),
-	 * el de la activa. La misma escuela que {@link #deEntidadOActiva}. Se lee cada vez (sin la caché de la marca).
+	 * el de la activa. La misma escuela que {@link #deEntidadOActiva}. Se lee cada vez (sin la caché de la marca), en la transacción
+	 * de quien llama: {@code Organizacion} es global (sin {@code @TenantId}), así que se lee por id con cualquier escuela
+	 * activa y no hace falta una transacción nueva (el buzón se lee en la misma que publica el evento).
 	 *
 	 * @return el buzón sin espacios, o {@code null} si la escuela no lo tiene (nunca el de otra escuela).
 	 * @throws IllegalStateException si no hay escuela (ni de la entidad ni activa) o no existe.
@@ -132,7 +134,7 @@ public class MarcaEscuelaService {
 			}
 		}
 		Long id = escuela;
-		String buzon = id.equals(TenantContext.get()) ? leerBuzon(id) : enEscuela.leer(id, () -> leerBuzon(id));
+		String buzon = leerBuzon(id);
 		if (buzon == null || buzon.isBlank()) {
 			log.warn("La escuela {} no tiene email_contacto: no se envía el correo a su buzón", id);
 			return null;

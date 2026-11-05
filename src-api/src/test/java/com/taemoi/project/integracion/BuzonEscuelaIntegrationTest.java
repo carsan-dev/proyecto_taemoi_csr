@@ -194,6 +194,7 @@ class BuzonEscuelaIntegrationTest extends MySqlIntegrationTest {
 		MvcResult r = contacto(tokenOtra);
 		assertEquals(409, r.getResponse().getStatus(), r.getResponse().getContentAsString(StandardCharsets.UTF_8));
 		assertEquals(List.of(), destinatarios());
+		assertEquals("La escuela no tiene un correo de contacto configurado.", json.readTree(r.getResponse().getContentAsString(StandardCharsets.UTF_8)).path("mensaje").asText());
 
 		buzon(" ");
 		assertEquals(409, contacto(tokenOtra).getResponse().getStatus());

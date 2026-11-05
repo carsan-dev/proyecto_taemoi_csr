@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.LinkedHashMap;
@@ -204,7 +205,8 @@ class EmailControllerWebMvcTest {
 		when(marcaEscuela.buzonDeActiva()).thenReturn(null);
 
 		enviar(payload("Ana", "Ruiz", "ana@example.com", "Asunto", "Mensaje"))
-				.andExpect(status().isConflict());
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.mensaje").value("La escuela no tiene un correo de contacto configurado."));
 
 		verifyNoInteractions(emailService);
 	}

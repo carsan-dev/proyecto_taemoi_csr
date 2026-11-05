@@ -3,19 +3,19 @@ package com.taemoi.project.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import com.taemoi.project.entities.Organizacion;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.organizacion.TransaccionEnEscuela;
 import com.taemoi.project.repositories.ImagenRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
 
@@ -44,16 +44,15 @@ class MarcaEscuelaBuzonTest {
 	void buzonDeLaEscuelaDeLaEntidadAunqueElHiloTengaOtra() {
 		uno.setEmailContacto(BUZON_1);
 		dos.setEmailContacto(BUZON_2);
-		List<Long> escuelaAlLeer = new ArrayList<>();
-		when(organizaciones.findById(anyLong())).thenAnswer(inv -> {
-			escuelaAlLeer.add(TenantContext.get());
-			return Optional.of(inv.<Long>getArgument(0) == 2L ? dos : uno);
-		});
+		TransaccionEnEscuela enEscuela = mock(TransaccionEnEscuela.class);
+		MarcaEscuelaService directo = new MarcaEscuelaService(organizaciones, mock(ImagenRepository.class),
+				mock(ImagenService.class), enEscuela, new AtomicLong()::get);
 
-		assertEquals(BUZON_2, TenantContext.calcularCon(1L, () -> marca.buzonDeEntidadOActiva(2L)));
-		assertEquals(List.of(2L), escuelaAlLeer, "se lee con la escuela de la entidad fijada");
-		assertEquals(BUZON_2, marca.buzonDeEntidadOActiva(2L), "hilo sin escuela (tras el commit)");
-		assertEquals(BUZON_1, TenantContext.calcularCon(2L, () -> marca.buzonDeEntidadOActiva(1L)));
+		assertEquals(BUZON_2, TenantContext.calcularCon(1L, () -> directo.buzonDeEntidadOActiva(2L)));
+		assertEquals(BUZON_2, directo.buzonDeEntidadOActiva(2L), "hilo sin escuela (tras el commit)");
+		assertEquals(BUZON_1, TenantContext.calcularCon(2L, () -> directo.buzonDeEntidadOActiva(1L)));
+		verify(organizaciones, times(2)).findById(2L);
+		verifyNoInteractions(enEscuela);
 	}
 
 	@Test
