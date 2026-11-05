@@ -2,6 +2,7 @@ package com.taemoi.project.plataforma;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -9,8 +10,10 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +52,9 @@ public class PlataformaController {
 
 	/** Mensaje del 400 de {@code PUT …/marca} sin la clave {@code colorPrimario}. */
 	static final String FALTA_COLOR = "Falta colorPrimario: un color #RRGGBB, o null para quitarlo.";
+
+	/** Mensaje del 400 de un cuerpo que no se puede leer (el mismo texto que {@code MiembroController}). */
+	static final String CUERPO_NO_VALIDO = "El cuerpo de la petición no es válido.";
 
 	/** Errores técnicos (4xx/5xx o sin sesión) de todas las escuelas, del más reciente al más antiguo. */
 	@GetMapping("/errores")
@@ -145,5 +151,16 @@ public class PlataformaController {
 			throw new IllegalArgumentException(ReglaContraste.MENSAJE_FORMATO);
 		}
 		return valor.asText();
+	}
+
+	/**
+	 * Cuerpo que no se puede leer (JSON malformado o con otra forma, p. ej. {@code {"sede": []}} en el alta): 400 con
+	 * {@code {"mensaje"}}, en cualquier endpoint de este controlador, como {@code MiembroController}. Atendido aquí,
+	 * Spring no apunta en el log el error de Jackson, que cita el texto del cuerpo (en el alta, nombres y emails); por
+	 * eso tampoco se registra nada de la excepción.
+	 */
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<Map<String, String>> cuerpoNoLegible() {
+		return ResponseEntity.badRequest().body(Map.of("mensaje", CUERPO_NO_VALIDO));
 	}
 }

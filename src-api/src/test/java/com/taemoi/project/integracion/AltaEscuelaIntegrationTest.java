@@ -30,9 +30,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -67,6 +70,7 @@ import jakarta.servlet.http.Cookie;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ExtendWith(OutputCaptureExtension.class)
 class AltaEscuelaIntegrationTest extends MySqlIntegrationTest {
 
 	private static final long ORG1 = 1L;
@@ -514,6 +518,29 @@ class AltaEscuelaIntegrationTest extends MySqlIntegrationTest {
 		for (String guardado : cuerpos) {
 			assertFalse(guardado != null && (guardado.contains("@example.test") || guardado.contains(marca)), guardado);
 		}
+	}
+
+	@Test
+	void cuerpoIlegible_400ConMensajeFijo_sinDetallesDeJackson(CapturedOutput salida) throws Exception {
+		long antes = contar("SELECT COUNT(*) FROM organizacion");
+		String rastro = "ilegible-" + marca;
+		List<String> cuerpos = List.of(
+				// Forma equivocada: la sede es un objeto.
+				"{\"nombre\": \"Escuela IT " + rastro + "\", \"sede\": [], \"propietario\": {\"email\": \"" + rastro
+						+ "@example.test\"}}",
+				// JSON malformado.
+				"{\"nombre\": \"Escuela IT " + rastro + "\", \"propietario\": {\"email\": \"" + rastro + "@example.test");
+		for (String cuerpo : cuerpos) {
+			MvcResult r = mvc.perform(alta(cuerpo).cookie(cookieSuperadmin)).andReturn();
+			assertEquals(400, r.getResponse().getStatus(), cuerpo);
+			JsonNode error = json.readTree(r.getResponse().getContentAsString());
+			assertEquals("El cuerpo de la petición no es válido.", error.get("mensaje").asText(), cuerpo);
+			assertEquals(1, error.size(), error.toString());
+		}
+		assertEquals(antes, contar("SELECT COUNT(*) FROM organizacion"));
+		// Ni el cuerpo ni el detalle de Jackson en el log.
+		assertFalse(salida.getAll().contains(rastro), "El log cita el cuerpo");
+		assertFalse(salida.getAll().contains("JSON parse error"), "El log trae el error de Jackson");
 	}
 
 	// ------------------------------------------------------------------ apoyo
