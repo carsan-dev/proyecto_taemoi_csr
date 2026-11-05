@@ -109,6 +109,12 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		 * nunca el valor del color. Caso en MarcaEscuelaPanelIntegrationTest.
 		 */
 		MARCA_ESCUELA_COLOR("PUT", "/api/plataforma/escuelas/[^/]+/marca"),
+		/**
+		 * Fase 4, pieza F4-2: alta de una escuela (superadmin). AltaEscuelaService registra el 201 en la escuela NUEVA
+		 * (PLATAFORMA ESCUELA_CREADA con ids y códigos de disciplina; MIEMBROS MIEMBRO_INVITADO y ROL_DADO del propietario),
+		 * nunca el nombre ni los emails. Caso en AltaEscuelaIntegrationTest.
+		 */
+		ESCUELA_CREAR("POST", "/api/plataforma/escuelas"),
 		// Pieza E7-9 (decisión 214): rutas del profesor y quitar un profesor de un grupo; el registro, entre paréntesis.
 		/** ProfesorService#actualizarApto (PROFESOR APTO_CAMBIADO). */
 		PROFESOR_APTO("PUT", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/apto"),
@@ -220,6 +226,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			Pattern.compile("^/api/miembros/[^/]+/roles/[^/]+/?$"), Set.of("cargo"),
 			// Pieza 8b-T: el color de la escuela en el cuerpo del PUT de la marca (los 4xx; el 2xx tiene registro propio).
 			Pattern.compile("^/api/plataforma/escuelas/[^/]+/marca/?$"), Set.of("colorPrimario"),
+			// Fase 4, pieza F4-2: el nombre de la escuela y de la sede, su email y los datos del propietario (los 4xx; el 2xx
+			// tiene registro propio). Se redactan en cualquier nivel del cuerpo.
+			Pattern.compile("^/api/plataforma/escuelas/?$"), Set.of("nombre", "emailContacto", "email", "apellidos"),
 			// Decisiones 322 y 419: el nombre, el cumpleaños y la preferencia del perfil de la cuenta (los 4xx; el 2xx tiene
 			// registro propio).
 			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes", "importesTapados"),

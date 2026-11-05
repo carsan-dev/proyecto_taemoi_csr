@@ -6,12 +6,14 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,11 +37,14 @@ public class PlataformaController {
 	private final ErroresPlataformaService errores;
 	private final LogoEscuelaService logos;
 	private final MarcaPanelService marcas;
+	private final AltaEscuelaService altas;
 
-	public PlataformaController(ErroresPlataformaService errores, LogoEscuelaService logos, MarcaPanelService marcas) {
+	public PlataformaController(ErroresPlataformaService errores, LogoEscuelaService logos, MarcaPanelService marcas,
+			AltaEscuelaService altas) {
 		this.errores = errores;
 		this.logos = logos;
 		this.marcas = marcas;
+		this.altas = altas;
 	}
 
 	/** Mensaje del 400 de {@code PUT …/marca} sin la clave {@code colorPrimario}. */
@@ -64,6 +69,23 @@ public class PlataformaController {
 	@GetMapping("/escuelas")
 	public ResponseEntity<List<EscuelaPlataformaDTO>> obtenerEscuelas() {
 		return ResponseEntity.ok(errores.escuelas());
+	}
+
+	/**
+	 * Fase 4, pieza F4-2 (decisiones 390, 392 y 444): da de alta una escuela con su primera sede, su propietario
+	 * (invitación, o solo el rol si el email ya tiene cuenta) y el catálogo de las disciplinas elegidas copiado de la
+	 * plantilla, con las tarifas desactivadas. 201 con {@code id}, {@code nombre} e {@code invitacionEnviadaA} (null sin
+	 * invitación); 400 datos que no valen o disciplina fuera de la plantilla; 409 nombre repetido. Todo o nada.
+	 */
+	@PostMapping("/escuelas")
+	public ResponseEntity<AltaEscuelaDTO> crearEscuela(@RequestBody(required = false) AltaEscuelaRequest solicitud) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(altas.crear(solicitud));
+	}
+
+	/** Pieza F4-2: las disciplinas de la plantilla para el alta, en el orden del catálogo, con lo que copia cada una. */
+	@GetMapping("/plantilla/disciplinas")
+	public ResponseEntity<List<DisciplinaPlantillaDTO>> obtenerDisciplinasDeLaPlantilla() {
+		return ResponseEntity.ok(altas.disciplinasDeLaPlantilla());
 	}
 
 	/**

@@ -79,11 +79,13 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 	/**
 	 * El logo tiene su caso en LogoEscuelaIntegrationTest y el color de la marca (8b-T) en
 	 * MarcaEscuelaPanelIntegrationTest#registroEnLaEscuelaDestino_sinElValor (superadmin y escuela destino). El material de
-	 * examen, en MaterialExamenIntegrationTest#cadaEscritura_soloSuRegistro_yLaFallida_soloElGenerico (sobre disco).
+	 * examen, en MaterialExamenIntegrationTest#cadaEscritura_soloSuRegistro_yLaFallida_soloElGenerico (sobre disco). El
+	 * alta de una escuela (F4-2), en AltaEscuelaIntegrationTest.
 	 */
 	private static final Set<EscrituraConRegistroPropio> CON_CASO_EN_OTRO_TEST = EnumSet.of(
 			EscrituraConRegistroPropio.LOGO_ESCUELA_CAMBIAR, EscrituraConRegistroPropio.LOGO_ESCUELA_QUITAR,
-			EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR, EscrituraConRegistroPropio.MATERIAL_VIDEO_SUBIR,
+			EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR, EscrituraConRegistroPropio.ESCUELA_CREAR,
+			EscrituraConRegistroPropio.MATERIAL_VIDEO_SUBIR,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_SUSTITUIR, EscrituraConRegistroPropio.MATERIAL_VIDEO_TITULO,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_ORDEN, EscrituraConRegistroPropio.MATERIAL_VIDEO_ELIMINAR,
 			EscrituraConRegistroPropio.MATERIAL_TEMARIO, EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_SUBIR,

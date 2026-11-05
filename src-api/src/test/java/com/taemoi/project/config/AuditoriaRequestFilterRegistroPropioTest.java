@@ -49,6 +49,7 @@ class AuditoriaRequestFilterRegistroPropioTest {
 					new Ejemplo("DELETE", "/api/plataforma/escuelas/7/logo")),
 			Map.entry(EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR,
 					new Ejemplo("PUT", "/api/plataforma/escuelas/7/marca")),
+			Map.entry(EscrituraConRegistroPropio.ESCUELA_CREAR, new Ejemplo("POST", "/api/plataforma/escuelas")),
 			Map.entry(EscrituraConRegistroPropio.PROFESOR_APTO,
 					new Ejemplo("PUT", "/api/profesor/alumnos/12/deportes/TAEKWONDO/apto")),
 			Map.entry(EscrituraConRegistroPropio.PROFESOR_FECHA_GRADO,
