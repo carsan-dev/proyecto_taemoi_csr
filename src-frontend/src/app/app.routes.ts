@@ -524,7 +524,7 @@ export const routes: Routes = [
   {
     // Logo de cada escuela (E7-7b): misma sesión de plataforma y mismo guard que los errores.
     path: 'plataformaLogos',
-    canMatch: [estilosGestionGuard],
+    canMatch: [estilosPanelGuard],
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/plataforma-logos/plataforma-logos.component').then(m => m.PlataformaLogosComponent),
     canActivate: [plataformaGuard],
@@ -532,7 +532,7 @@ export const routes: Routes = [
   {
     // Alta de escuelas (F4-2): misma sesión de plataforma y mismos guards que «Logo y color».
     path: 'plataformaNuevaEscuela',
-    canMatch: [estilosGestionGuard],
+    canMatch: [estilosPanelGuard],
     data: { seo: SEO_ROUTES.noIndex },
     loadComponent: () => import('./componentes/endpoints/plataforma-nueva-escuela/plataforma-nueva-escuela.component').then(m => m.PlataformaNuevaEscuelaComponent),
     canActivate: [plataformaGuard],

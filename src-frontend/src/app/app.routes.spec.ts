@@ -96,13 +96,21 @@ function permisos(roles: string[]) {
 const SOLO_GESTION = /^(alumnosEliminar|eventos(Listar|Crear|Editar)|productos(Listar|Crear|Editar)|sedes|miembros|material-examen)/;
 
 describe('app routes', () => {
-  for (const camino of ['plataformaErrores', 'plataformaLogos', 'plataformaNuevaEscuela']) {
-    it(`${camino}: carga solo gestión sin convertirla en pantalla nueva`, () => {
+  it('plataformaErrores: carga solo gestión sin convertirla en pantalla nueva', () => {
+    const ruta = routes.find((entrada) => entrada.path === 'plataformaErrores')!;
+    expect(ruta.canMatch).toEqual([estilosGestionGuard]);
+    expect(ruta.canActivate).toEqual([plataformaGuard]);
+    expect(ruta.data?.['panelNuevo']).toBeUndefined();
+    expect(ruta.canActivate).not.toContain(estilosPanelGuard);
+  });
+
+  // F4-3 (decisión 445): Logo y color y Nueva escuela llevan el estilo del panel, así que cargan también panel-nuevo.css.
+  for (const camino of ['plataformaLogos', 'plataformaNuevaEscuela']) {
+    it(`${camino}: carga las hojas del panel y conserva el guard de plataforma`, () => {
       const ruta = routes.find((entrada) => entrada.path === camino)!;
-      expect(ruta.canMatch).toEqual([estilosGestionGuard]);
+      expect(ruta.canMatch).toEqual([estilosPanelGuard]);
       expect(ruta.canActivate).toEqual([plataformaGuard]);
       expect(ruta.data?.['panelNuevo']).toBeUndefined();
-      expect(ruta.canActivate).not.toContain(estilosPanelGuard);
     });
   }
 

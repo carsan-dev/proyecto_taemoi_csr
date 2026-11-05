@@ -1,30 +1,33 @@
+<div class="pn ne" pnAcento>
+<div class="ne__pagina">
 <section class="plataforma-page">
   <header class="page-header">
-    <p class="eyebrow">Plataforma</p>
+    <p class="miga">Plataforma</p>
     <h1>Nueva escuela</h1>
-    <p class="lead">Crea la escuela con su primera sede, invita a su propietario y prepara el catálogo de las disciplinas que lleve.</p>
+    <p class="lead sec">Crea la escuela con su primera sede, invita a su propietario y prepara el catálogo de las disciplinas que lleve.</p>
   </header>
 
   @if (creada) {
-    <div class="confirmacion" role="status">
-      <i class="bi bi-check-circle" aria-hidden="true"></i>
+    <div class="confirmacion bloque" role="status">
+      <svg class="ic ic--grande" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M7.5 12.5l3 3 6-7"></path></svg>
       <div class="confirmacion-texto">
         <h2 tabindex="-1" data-foco="confirmacion">Escuela creada</h2>
         @if (creada.invitacionEnviadaA) {
-          <p>Hemos enviado la invitación a {{ creada.invitacionEnviadaA }}.</p>
+          <p class="sec">Hemos enviado la invitación a {{ creada.invitacionEnviadaA }}.</p>
         } @else {
-          <p>La cuenta de {{ propietarioEmail.trim() }} ya existía: ya es propietario de la escuela y la verá al entrar.</p>
+          <p class="sec">La cuenta de {{ propietarioEmail.trim() }} ya existía: ya es propietario de la escuela y la verá al entrar.</p>
         }
-      </div>
-      <div class="confirmacion-acciones">
-        <button type="button" class="btn-secundario" (click)="crearOtra()">Crear otra</button>
-        <button type="button" class="btn-principal" (click)="irALogo()">Ir a Logo y color</button>
+        <div class="confirmacion-acciones">
+          <button type="button" class="btn-secundario" (click)="crearOtra()">Crear otra</button>
+          <button type="button" class="btn-principal" (click)="irALogo()">Ir a Logo y color</button>
+        </div>
       </div>
     </div>
   } @else {
     <form class="formulario" novalidate (ngSubmit)="enviar()" [attr.aria-busy]="enviando ? 'true' : null">
       @if (errorGeneral) {
-        <p class="error-general" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ errorGeneral }}</p>
+        <p class="error-general" role="alert"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16h.01"></path></svg>
+          <span>{{ errorGeneral }}</span></p>
       }
 
       <fieldset class="bloque" [disabled]="enviando">
@@ -143,13 +146,13 @@
 
       <section class="bloque" aria-labelledby="ne-catalogo-titulo">
         <h2 class="bloque-titulo" id="ne-catalogo-titulo">Catálogo</h2>
-        <p class="ayuda intro">Se copia la plantilla de cada disciplina marcada: sistema de grados, categorías, tarifas base y productos.</p>
+        <p class="ayuda intro sec">Se copia la plantilla de cada disciplina marcada: sistema de grados, categorías, tarifas base y productos.</p>
 
         @if (cargando) {
           <app-skeleton-card [type]="'table'" [count]="3"></app-skeleton-card>
         } @else if (errorCarga) {
-          <div class="aviso" role="alert">
-            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+          <div class="aviso aviso--error" role="alert">
+            <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16h.01"></path></svg>
             <span>No se pudo cargar la lista de disciplinas.</span>
             <button type="button" class="btn-secundario" (click)="cargar()">Reintentar</button>
           </div>
@@ -160,7 +163,7 @@
             [disabled]="enviando"
             [attr.aria-invalid]="errores.disciplinas ? 'true' : null"
             [attr.aria-describedby]="errores.disciplinas ? 'ne-disciplinas-error' : null">
-            <legend class="visually-hidden">Disciplinas</legend>
+            <legend class="oculto">Disciplinas</legend>
             @for (d of disciplinas; track d.codigo) {
               <label class="disciplina" [class.marcada]="marcada(d.codigo)" [attr.data-codigo]="d.codigo">
                 <input
@@ -177,8 +180,8 @@
           </fieldset>
           <p class="error" id="ne-disciplinas-error" [hidden]="!errores.disciplinas">{{ errores.disciplinas }}</p>
 
-          <p class="atencion">
-            <i class="bi bi-currency-euro" aria-hidden="true"></i>
+          <p class="aviso">
+            <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
             <span>Las tarifas base llegan desactivadas, con un importe de referencia. La escuela las revisa y las activa antes de cobrar.</span>
           </p>
         }
@@ -200,3 +203,5 @@
     </form>
   }
 </section>
+</div>
+</div>

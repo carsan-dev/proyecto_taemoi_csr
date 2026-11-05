@@ -8,6 +8,7 @@ import { EscuelaLogo } from '../../../interfaces/escuela-logo';
 import { LogoEscuelaService } from '../../../servicios/plataforma/logo-escuela.service';
 import { showErrorToast } from '../../../utils/toast.util';
 import { SUBIDA_LOGO, prepararFicheroParaSubida, reiniciarSelectorArchivo } from '../../../utils/subida-archivos.util';
+import { AcentoEscuelaDirective } from '../../../panel-nuevo/acento-escuela.directive';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 import { BLANCO, POR_DEFECTO, TemaColor, contraste, esColorValido, formatoRazon, temaDe } from './regla-contraste';
 
@@ -52,7 +53,7 @@ export const MENSAJE_FORMATO_COLOR = 'Escribe el color como #RRGGBB, por ejemplo
 @Component({
   selector: 'app-plataforma-logos',
   standalone: true,
-  imports: [SkeletonCardComponent],
+  imports: [SkeletonCardComponent, AcentoEscuelaDirective],
   templateUrl: './plataforma-logos.component.html',
   styleUrl: './plataforma-logos.component.scss',
 })

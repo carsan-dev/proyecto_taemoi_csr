@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
 import { AltaEscuelaService, DisciplinaPlantilla, EscuelaCreada } from '../../../servicios/plataforma/alta-escuela.service';
+import { AcentoEscuelaDirective } from '../../../panel-nuevo/acento-escuela.directive';
 import { SkeletonCardComponent } from '../../generales/skeleton-card/skeleton-card.component';
 
 export const NOMBRE_ESCUELA_MAX = 150;
@@ -23,7 +24,7 @@ const plural = (n: number, uno: string, varios: string): string => `${n} ${n ===
 @Component({
   selector: 'app-plataforma-nueva-escuela',
   standalone: true,
-  imports: [FormsModule, SkeletonCardComponent],
+  imports: [FormsModule, SkeletonCardComponent, AcentoEscuelaDirective],
   templateUrl: './plataforma-nueva-escuela.component.html',
   styleUrl: './plataforma-nueva-escuela.component.scss',
 })
