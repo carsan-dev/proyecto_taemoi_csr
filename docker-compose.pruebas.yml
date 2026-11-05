@@ -64,7 +64,6 @@ services:
       SPRING_MAIL_PORT: "2525"
       SPRING_MAIL_USERNAME: pruebas@example.test
       SPRING_MAIL_PASSWORD: correo-desactivado
-      APP_PREINSCRIPCIONES_ADMIN_EMAIL: pruebas@example.test
       STREAK_REMINDER_ENABLED: "false"
       APP_IMAGENES_PATH_DOCKER: /var/www/app/imagenes/
       # Clave de cifrado SOLO para el entorno local de pruebas (datos sintéticos). Nunca usarla en producción.

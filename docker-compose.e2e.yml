@@ -49,7 +49,6 @@ services:
       GOOGLE_REDIRECT_URI: http://localhost:8080/login/oauth2/code/google
       SPRING_MAIL_USERNAME: e2e@taemoi.test
       SPRING_MAIL_PASSWORD: e2e-mail-disabled
-      APP_PREINSCRIPCIONES_ADMIN_EMAIL: e2e@taemoi.test
       APP_IMAGENES_PATH_DOCKER: /var/www/app/imagenes/alumnos/
       APP_DOCUMENTOS_PATH_DOCKER: /var/www/app/documentos/
     volumes:
