@@ -229,7 +229,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(texto('.alumnos__rango')).toBe('1–25 de 1.044');
   });
 
-  it('8b-3l: enlace «Bajas y eliminaciones» en la cabecera, junto a «Informes» y «Nuevo alumno»', () => {
+  it('8b-3l: enlace «Bajas y eliminaciones» en la cabecera, junto a «Herramientas» y «Nuevo alumno»', () => {
     crear();
     responder(3);
     const enlace = el().querySelector<HTMLAnchorElement>('.alumnos__enlace-bajas')!;
@@ -682,7 +682,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     expect(listados()[0].request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
   });
 
-  it('«Informes»: menú con teclado, el diálogo de tipos de hoy y las tres herramientas en el panel lateral (8b-D1)', () => {
+  it('«Herramientas»: menú con teclado, el diálogo de tipos de hoy y las tres herramientas en el panel lateral (8b-D1)', () => {
     crear();
     responder();
     document.body.appendChild(el());

@@ -102,11 +102,11 @@ const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqu
  * Listado de alumnos C del panel nuevo (8b-3a; decisiones 251 y 253). Filas de dos líneas o tarjetas, 25 por página con
  * búsqueda, filtros y paginación en el servidor (el mismo `GET /api/alumnos` que el listado de hoy), el pendiente vencido
  * de cada alumno de la página (`GET /api/tesoreria/pendientes-por-alumno`) con «Cobrar» como la tesorería de hoy, la fila
- * desplegable con el detalle por deporte y sus acciones y el menú «Informes». Va en su propio chunk detrás de
+ * desplegable con el detalle por deporte y sus acciones y el menú «Herramientas». Va en su propio chunk detrás de
  * `estilosPanelGuard`.
  *
  * 8b-D1 (decisiones 269 y 270): «Cobrar», «Dar de baja» y «Dar de alta» con el diálogo del panel nuevo, avisos propios,
- * esqueleto, error y vacío comunes, y las tres herramientas del pie, cada una en el panel lateral desde «Informes» (el
+ * esqueleto, error y vacío comunes, y las tres herramientas del pie, cada una en el panel lateral desde «Herramientas» (el
  * listado acaba en la paginación).
  *
  * 8b-D2a: «Generar informe…» abre su sección en el panel lateral (no el diálogo de hoy), los PDF se ven en el visor del
@@ -630,20 +630,20 @@ export class AlumnosComponent implements OnInit, OnDestroy {
     this.informeAbierto = true;
   }
 
-  /** Al cerrar el panel, el foco vuelve a «Informes». */
+  /** Al cerrar el panel, el foco vuelve a «Herramientas». */
   cerrarInformes(): void {
     this.informeAbierto = false;
     this.cdr.detectChanges();
     this.botonInformes?.nativeElement.focus();
   }
 
-  /** Desde «Informes»: la herramienta en el panel lateral (hoja inferior en el móvil). */
+  /** Desde «Herramientas»: la herramienta en el panel lateral (hoja inferior en el móvil). */
   abrirHerramienta(seccion: SeccionHerramientas): void {
     this.cerrarMenu(false);
     this.herramientaAbierta = seccion;
   }
 
-  /** Al cerrar el panel, el foco vuelve a «Informes» (la opción del menú que lo abrió ya no está). */
+  /** Al cerrar el panel, el foco vuelve a «Herramientas» (la opción del menú que lo abrió ya no está). */
   cerrarHerramienta(): void {
     this.herramientaAbierta = null;
     this.cdr.detectChanges();

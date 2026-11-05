@@ -15,7 +15,7 @@ type AccionFila = 'ver' | 'descargar' | 'csv';
 const RESERVAS = 'reservas-plaza';
 
 /**
- * «Generar informe» del listado nuevo en el panel lateral (8b-D2a, decisión 270), como las herramientas de «Informes»:
+ * «Generar informe» del listado nuevo en el panel lateral (8b-D2a, decisión 270), como las herramientas del menú «Herramientas»:
  * los mismos tipos, grupos y orden que el diálogo de hoy (`InformeModalComponent`) y la misma generación
  * (`InformesAlumnos`, mismas peticiones y nombres de archivo). Cada fila lleva sus botones; el pulsado se pone ocupado,
  * los demás esperan (una petición a la vez) y el panel no se cierra hasta que termina. Errores en los avisos del panel
