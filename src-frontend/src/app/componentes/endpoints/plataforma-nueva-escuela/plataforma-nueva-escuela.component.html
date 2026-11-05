@@ -1,0 +1,174 @@
+<section class="plataforma-page">
+  <header class="page-header">
+    <p class="eyebrow">Plataforma</p>
+    <h1>Nueva escuela</h1>
+    <p class="lead">Crea la escuela con su primera sede, invita a su propietario y prepara el catálogo de las disciplinas que lleve.</p>
+  </header>
+
+  @if (creada) {
+    <div class="confirmacion" role="status">
+      <i class="bi bi-check-circle" aria-hidden="true"></i>
+      <div class="confirmacion-texto">
+        <h2 tabindex="-1" data-foco="confirmacion">Escuela creada</h2>
+        <p>Hemos enviado la invitación a {{ creada.invitacionEnviadaA }}.</p>
+      </div>
+      <div class="confirmacion-acciones">
+        <button type="button" class="btn-secundario" (click)="crearOtra()">Crear otra</button>
+        <button type="button" class="btn-principal" (click)="irALogo()">Ir a Logo y color</button>
+      </div>
+    </div>
+  } @else {
+    <form class="formulario" novalidate (ngSubmit)="enviar()" [attr.aria-busy]="enviando ? 'true' : null">
+      @if (errorGeneral) {
+        <p class="error-general" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ errorGeneral }}</p>
+      }
+
+      <fieldset class="bloque" [disabled]="enviando">
+        <legend class="bloque-titulo">Escuela</legend>
+
+        <div class="campo">
+          <label class="etiqueta" for="ne-nombre">Nombre <span class="marca">obligatorio</span></label>
+          <input
+            id="ne-nombre"
+            name="nombre"
+            type="text"
+            class="control"
+            autocomplete="off"
+            [maxlength]="nombreMax"
+            [(ngModel)]="nombre"
+            (ngModelChange)="limpiar('nombre')"
+            [attr.aria-invalid]="errores.nombre ? 'true' : null"
+            [attr.aria-describedby]="errores.nombre ? 'ne-nombre-error' : null" />
+          <div class="pie-campo">
+            <p class="error" id="ne-nombre-error" [hidden]="!errores.nombre">{{ errores.nombre }}</p>
+            <span class="contador">{{ contadorNombre }}</span>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label class="etiqueta" for="ne-emailContacto">Correo de contacto <span class="marca">obligatorio</span></label>
+          <input
+            id="ne-emailContacto"
+            name="emailContacto"
+            type="email"
+            class="control"
+            autocomplete="off"
+            [(ngModel)]="emailContacto"
+            (ngModelChange)="limpiar('emailContacto')"
+            [attr.aria-invalid]="errores.emailContacto ? 'true' : null"
+            [attr.aria-describedby]="errores.emailContacto ? 'ne-emailContacto-error ne-emailContacto-ayuda' : 'ne-emailContacto-ayuda'" />
+          <p class="ayuda" id="ne-emailContacto-ayuda">Le llegan el formulario de contacto y los avisos de preinscripción.</p>
+          <p class="error" id="ne-emailContacto-error" [hidden]="!errores.emailContacto">{{ errores.emailContacto }}</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque" [disabled]="enviando">
+        <legend class="bloque-titulo">Primera sede</legend>
+
+        <div class="campo">
+          <label class="etiqueta" for="ne-sede">Nombre <span class="marca">obligatorio</span></label>
+          <input
+            id="ne-sede"
+            name="sede"
+            type="text"
+            class="control"
+            autocomplete="off"
+            [maxlength]="sedeMax"
+            [(ngModel)]="sedeNombre"
+            (ngModelChange)="limpiar('sede')"
+            [attr.aria-invalid]="errores.sede ? 'true' : null"
+            [attr.aria-describedby]="errores.sede ? 'ne-sede-error ne-sede-ayuda' : 'ne-sede-ayuda'" />
+          <div class="pie-campo">
+            <p class="ayuda" id="ne-sede-ayuda">Las demás sedes las crea la escuela desde Sedes.</p>
+            <span class="contador">{{ contadorSede }}</span>
+          </div>
+          <p class="error" id="ne-sede-error" [hidden]="!errores.sede">{{ errores.sede }}</p>
+        </div>
+      </fieldset>
+
+      <fieldset class="bloque" [disabled]="enviando">
+        <legend class="bloque-titulo">Propietario</legend>
+
+        <div class="par">
+          <div class="campo">
+            <label class="etiqueta" for="ne-propietarioNombre">Nombre</label>
+            <input id="ne-propietarioNombre" name="propietarioNombre" type="text" class="control" autocomplete="off" [(ngModel)]="propietarioNombre" />
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="ne-propietarioApellidos">Apellidos</label>
+            <input id="ne-propietarioApellidos" name="propietarioApellidos" type="text" class="control" autocomplete="off" [(ngModel)]="propietarioApellidos" />
+          </div>
+        </div>
+
+        <div class="campo">
+          <label class="etiqueta" for="ne-propietarioEmail">Email <span class="marca">obligatorio</span></label>
+          <input
+            id="ne-propietarioEmail"
+            name="propietarioEmail"
+            type="email"
+            class="control"
+            autocomplete="off"
+            [(ngModel)]="propietarioEmail"
+            (ngModelChange)="limpiar('propietarioEmail')"
+            [attr.aria-invalid]="errores.propietarioEmail ? 'true' : null"
+            [attr.aria-describedby]="errores.propietarioEmail ? 'ne-propietarioEmail-error ne-propietarioEmail-ayuda' : 'ne-propietarioEmail-ayuda'" />
+          <p class="ayuda" id="ne-propietarioEmail-ayuda">Recibe una invitación para crear su contraseña o entrar con Google. Caduca en 7 días.</p>
+          <p class="error" id="ne-propietarioEmail-error" [hidden]="!errores.propietarioEmail">{{ errores.propietarioEmail }}</p>
+        </div>
+      </fieldset>
+
+      <section class="bloque" aria-labelledby="ne-catalogo-titulo">
+        <h2 class="bloque-titulo" id="ne-catalogo-titulo">Catálogo</h2>
+        <p class="ayuda intro">Se copia la plantilla de cada disciplina marcada: sistema de grados, categorías, tarifas base y productos.</p>
+
+        @if (cargando) {
+          <app-skeleton-card [type]="'table'" [count]="3"></app-skeleton-card>
+        } @else if (errorCarga) {
+          <div class="aviso" role="alert">
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            <span>No se pudo cargar la lista de disciplinas.</span>
+            <button type="button" class="btn-secundario" (click)="cargar()">Reintentar</button>
+          </div>
+        } @else {
+          <fieldset
+            class="disciplinas"
+            id="ne-disciplinas"
+            [disabled]="enviando"
+            [attr.aria-invalid]="errores.disciplinas ? 'true' : null"
+            [attr.aria-describedby]="errores.disciplinas ? 'ne-disciplinas-error' : null">
+            <legend class="visually-hidden">Disciplinas</legend>
+            @for (d of disciplinas; track d.codigo) {
+              <label class="disciplina" [class.marcada]="marcada(d.codigo)" [attr.data-codigo]="d.codigo">
+                <input type="checkbox" [checked]="marcada(d.codigo)" (change)="alternar(d.codigo, $any($event.target).checked)" />
+                <span class="disciplina-texto">
+                  <span class="disciplina-nombre">{{ d.nombre }}</span>
+                  <span class="disciplina-detalle">{{ detalle(d) }}</span>
+                </span>
+              </label>
+            }
+          </fieldset>
+          <p class="error" id="ne-disciplinas-error" [hidden]="!errores.disciplinas">{{ errores.disciplinas }}</p>
+
+          <p class="atencion">
+            <i class="bi bi-currency-euro" aria-hidden="true"></i>
+            <span>Las tarifas base llegan desactivadas, con un importe de referencia. La escuela las revisa y las activa antes de cobrar.</span>
+          </p>
+        }
+      </section>
+
+      <div class="barra">
+        <p class="barra-resumen" aria-live="polite">{{ resumen }}</p>
+        <div class="barra-acciones">
+          <button type="button" class="btn-secundario" [disabled]="enviando" (click)="cancelar()">Cancelar</button>
+          <button type="submit" class="btn-principal" [disabled]="enviando || cargando || errorCarga" [attr.aria-busy]="enviando ? 'true' : null">
+            @if (enviando) {
+              <span class="girando" aria-hidden="true"></span> Creando…
+            } @else {
+              Crear escuela
+            }
+          </button>
+        </div>
+      </div>
+    </form>
+  }
+</section>

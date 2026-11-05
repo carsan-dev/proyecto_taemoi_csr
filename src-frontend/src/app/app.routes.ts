@@ -530,6 +530,14 @@ export const routes: Routes = [
     canActivate: [plataformaGuard],
   },
   {
+    // Alta de escuelas (F4-2): misma sesión de plataforma y mismos guards que «Logo y color».
+    path: 'plataformaNuevaEscuela',
+    canMatch: [estilosGestionGuard],
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/plataforma-nueva-escuela/plataforma-nueva-escuela.component').then(m => m.PlataformaNuevaEscuelaComponent),
+    canActivate: [plataformaGuard],
+  },
+  {
     // Mi caja del panel nuevo (8b-3p): carga diferida y el mismo permiso, sin catálogo.
     path: 'mi-caja',
     canMatch: [estilosPanelGuard],
