@@ -13,10 +13,10 @@ export const NOMBRE_SEDE_MAX = 100;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export type CampoAlta = 'nombre' | 'emailContacto' | 'sede' | 'propietarioEmail' | 'disciplinas';
+export type CampoAlta = 'nombre' | 'emailContacto' | 'sede' | 'propietarioNombre' | 'propietarioApellidos' | 'propietarioEmail' | 'disciplinas';
 
 /** Orden en que el foco busca el primer campo con error. */
-const ORDEN_CAMPOS: CampoAlta[] = ['nombre', 'emailContacto', 'sede', 'propietarioEmail', 'disciplinas'];
+const ORDEN_CAMPOS: CampoAlta[] = ['nombre', 'emailContacto', 'sede', 'propietarioNombre', 'propietarioApellidos', 'propietarioEmail', 'disciplinas'];
 
 const plural = (n: number, uno: string, varios: string): string => `${n} ${n === 1 ? uno : varios}`;
 
@@ -156,6 +156,12 @@ export class PlataformaNuevaEscuelaComponent implements OnInit {
     } else if (sede.length > NOMBRE_SEDE_MAX) {
       e.sede = `El nombre admite hasta ${NOMBRE_SEDE_MAX} caracteres.`;
     }
+    if (!this.propietarioNombre.trim()) {
+      e.propietarioNombre = 'Escribe el nombre del propietario.';
+    }
+    if (!this.propietarioApellidos.trim()) {
+      e.propietarioApellidos = 'Escribe los apellidos del propietario.';
+    }
     const propietario = this.propietarioEmail.trim();
     if (!propietario) {
       e.propietarioEmail = 'Escribe el email del propietario.';
@@ -228,7 +234,17 @@ export class PlataformaNuevaEscuelaComponent implements OnInit {
         return;
       }
     }
-    this.location.back();
+    if (this.hayHistorial()) {
+      this.location.back();
+    } else {
+      // Pantalla abierta directamente: no hay pantalla anterior a la que volver.
+      void this.router.navigate(['/plataformaLogos']);
+    }
+  }
+
+  /** Hay una pantalla anterior en el historial del navegador. */
+  hayHistorial(): boolean {
+    return window.history.length > 1;
   }
 
   crearOtra(): void {

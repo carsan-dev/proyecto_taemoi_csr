@@ -128,10 +128,25 @@ describe('PlataformaNuevaEscuelaComponent', () => {
     expect(el().querySelector('#ne-emailContacto-error')!.textContent).toContain('correo de contacto');
     expect(el().querySelector('#ne-sede-error')!.textContent).toContain('primera sede');
     expect(el().querySelector('#ne-propietarioEmail-error')!.textContent).toContain('email del propietario');
+    expect(el().querySelector('#ne-propietarioNombre-error')!.textContent).toContain('nombre del propietario');
+    expect(el().querySelector('#ne-propietarioApellidos-error')!.textContent).toContain('apellidos del propietario');
+    expect(campo('ne-propietarioNombre').getAttribute('aria-describedby')).toBe('ne-propietarioNombre-error');
     expect(el().querySelector('#ne-disciplinas-error')!.textContent).toContain('Marca al menos una disciplina');
     expect(campo('ne-nombre').getAttribute('aria-invalid')).toBe('true');
     expect(campo('ne-nombre').getAttribute('aria-describedby')).toContain('ne-nombre-error');
     expect(document.activeElement === campo('ne-nombre') || el().contains(document.activeElement)).toBeTrue();
+  });
+
+  it('nombre y apellidos del propietario son obligatorios (solo espacios cuenta como vacío): no hay POST', async () => {
+    rellenar();
+    escribir('ne-propietarioNombre', '   ');
+    escribir('ne-propietarioApellidos', '');
+    await enviar();
+    expect(servicio.crear).not.toHaveBeenCalled();
+    expect(el().querySelector('#ne-propietarioNombre-error')!.hasAttribute('hidden')).toBeFalse();
+    expect(el().querySelector('#ne-propietarioApellidos-error')!.hasAttribute('hidden')).toBeFalse();
+    expect(campo('ne-propietarioNombre').getAttribute('aria-invalid')).toBe('true');
+    expect(el().querySelectorAll('.marca').length).toBe(6);
   });
 
   it('rechaza emails mal escritos', async () => {
@@ -221,10 +236,18 @@ describe('PlataformaNuevaEscuelaComponent', () => {
 
   describe('Cancelar', () => {
     it('con el formulario limpio vuelve atrás sin preguntar', async () => {
+      spyOn(fixture.componentInstance, 'hayHistorial').and.returnValue(true);
       const aviso = spyOn(Swal, 'fire');
       await fixture.componentInstance.cancelar();
       expect(aviso).not.toHaveBeenCalled();
       expect(location.back).toHaveBeenCalled();
+    });
+
+    it('sin historial al que volver, va a Logo y color', async () => {
+      spyOn(fixture.componentInstance, 'hayHistorial').and.returnValue(false);
+      await fixture.componentInstance.cancelar();
+      expect(location.back).not.toHaveBeenCalled();
+      expect(router.navigate).toHaveBeenCalledWith(['/plataformaLogos']);
     });
 
     it('con cambios pregunta; si se sigue editando no sale', async () => {
@@ -236,6 +259,7 @@ describe('PlataformaNuevaEscuelaComponent', () => {
 
     it('con cambios y confirmando, vuelve atrás', async () => {
       escribir('ne-nombre', 'Norte');
+      spyOn(fixture.componentInstance, 'hayHistorial').and.returnValue(true);
       spyOn(Swal, 'fire').and.resolveTo({ isConfirmed: true } as never);
       await fixture.componentInstance.cancelar();
       expect(location.back).toHaveBeenCalled();

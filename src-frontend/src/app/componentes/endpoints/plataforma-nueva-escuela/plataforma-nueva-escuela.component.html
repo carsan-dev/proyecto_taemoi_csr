@@ -91,12 +91,32 @@
 
         <div class="par">
           <div class="campo">
-            <label class="etiqueta" for="ne-propietarioNombre">Nombre</label>
-            <input id="ne-propietarioNombre" name="propietarioNombre" type="text" class="control" autocomplete="off" [(ngModel)]="propietarioNombre" />
+            <label class="etiqueta" for="ne-propietarioNombre">Nombre <span class="marca">obligatorio</span></label>
+            <input
+              id="ne-propietarioNombre"
+              name="propietarioNombre"
+              type="text"
+              class="control"
+              autocomplete="off"
+              [(ngModel)]="propietarioNombre"
+              (ngModelChange)="limpiar('propietarioNombre')"
+              [attr.aria-invalid]="errores.propietarioNombre ? 'true' : null"
+              [attr.aria-describedby]="errores.propietarioNombre ? 'ne-propietarioNombre-error' : null" />
+            <p class="error" id="ne-propietarioNombre-error" [hidden]="!errores.propietarioNombre">{{ errores.propietarioNombre }}</p>
           </div>
           <div class="campo">
-            <label class="etiqueta" for="ne-propietarioApellidos">Apellidos</label>
-            <input id="ne-propietarioApellidos" name="propietarioApellidos" type="text" class="control" autocomplete="off" [(ngModel)]="propietarioApellidos" />
+            <label class="etiqueta" for="ne-propietarioApellidos">Apellidos <span class="marca">obligatorio</span></label>
+            <input
+              id="ne-propietarioApellidos"
+              name="propietarioApellidos"
+              type="text"
+              class="control"
+              autocomplete="off"
+              [(ngModel)]="propietarioApellidos"
+              (ngModelChange)="limpiar('propietarioApellidos')"
+              [attr.aria-invalid]="errores.propietarioApellidos ? 'true' : null"
+              [attr.aria-describedby]="errores.propietarioApellidos ? 'ne-propietarioApellidos-error' : null" />
+            <p class="error" id="ne-propietarioApellidos-error" [hidden]="!errores.propietarioApellidos">{{ errores.propietarioApellidos }}</p>
           </div>
         </div>
 
