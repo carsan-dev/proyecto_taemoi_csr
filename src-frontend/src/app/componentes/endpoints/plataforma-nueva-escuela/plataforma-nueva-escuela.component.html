@@ -10,7 +10,11 @@
       <i class="bi bi-check-circle" aria-hidden="true"></i>
       <div class="confirmacion-texto">
         <h2 tabindex="-1" data-foco="confirmacion">Escuela creada</h2>
-        <p>Hemos enviado la invitación a {{ creada.invitacionEnviadaA }}.</p>
+        @if (creada.invitacionEnviadaA) {
+          <p>Hemos enviado la invitación a {{ creada.invitacionEnviadaA }}.</p>
+        } @else {
+          <p>La cuenta de {{ propietarioEmail.trim() }} ya existía: ya es propietario de la escuela y la verá al entrar.</p>
+        }
       </div>
       <div class="confirmacion-acciones">
         <button type="button" class="btn-secundario" (click)="crearOtra()">Crear otra</button>

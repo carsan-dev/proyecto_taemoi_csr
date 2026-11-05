@@ -223,6 +223,17 @@ describe('PlataformaNuevaEscuelaComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/plataformaLogos']);
   });
 
+  it('éxito sin invitación (cuenta ya existente): dice que ya es propietario y mantiene título y botones', async () => {
+    servicio.crear.and.returnValue(of({ id: 7, nombre: 'Escuela Norte', invitacionEnviadaA: null }));
+    rellenar();
+    await enviar();
+    expect(el().querySelector('h2')!.textContent).toContain('Escuela creada');
+    expect(texto()).toContain('La cuenta de ana@correo.es ya existía: ya es propietario de la escuela y la verá al entrar.');
+    expect(texto()).not.toContain('Hemos enviado la invitación');
+    expect(boton('Crear otra')).toBeDefined();
+    expect(boton('Ir a Logo y color')).toBeDefined();
+  });
+
   it('«Crear otra» vuelve al formulario vacío', async () => {
     servicio.crear.and.returnValue(of({ id: 7, nombre: 'Escuela Norte', invitacionEnviadaA: 'ana@correo.es' }));
     rellenar();

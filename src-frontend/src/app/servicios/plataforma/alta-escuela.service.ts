@@ -25,7 +25,8 @@ export interface AltaEscuela {
 export interface EscuelaCreada {
   id: number;
   nombre: string;
-  invitacionEnviadaA: string;
+  /** null si el email ya tenía cuenta: se le da la propiedad directamente y no se envía correo. */
+  invitacionEnviadaA: string | null;
 }
 
 /** Alta de escuelas (solo la sesión de plataforma). Los errores los muestra la pantalla. */
