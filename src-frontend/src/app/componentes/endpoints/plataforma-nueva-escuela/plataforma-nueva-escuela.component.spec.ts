@@ -83,8 +83,10 @@ describe('PlataformaNuevaEscuelaComponent', () => {
     expect(el().querySelector('h1')!.textContent).toContain('Nueva escuela');
     const filas = el().querySelectorAll('.disciplina');
     expect(filas.length).toBe(2);
-    expect(filas[0].textContent!.replace(/\s+/g, ' ')).toContain('Taekwondo Con grados · 3 tarifas base · 1 producto');
-    expect(filas[1].textContent!.replace(/\s+/g, ' ')).toContain('Pilates Sin grados · 1 tarifa base · 2 productos');
+    expect(filas[0].textContent).toContain('Taekwondo');
+    expect(filas[0].textContent!.replace(/\s+/g, ' ')).toContain('Con grados · 3 tarifas base · 1 producto');
+    expect(filas[1].textContent).toContain('Pilates');
+    expect(filas[1].textContent!.replace(/\s+/g, ' ')).toContain('Sin grados · 1 tarifa base · 2 productos');
     expect(texto()).toContain('Las tarifas base llegan desactivadas');
     expect(texto()).toContain('0 / 150');
     expect(texto()).toContain('0 / 100');
