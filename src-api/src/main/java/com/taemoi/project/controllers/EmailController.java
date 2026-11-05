@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 
 import com.taemoi.project.dtos.request.EmailRequest;
 import com.taemoi.project.services.EmailService;
+import com.taemoi.project.services.MarcaEscuelaService;
 
 @RestController
 @RequestMapping("/api/mail")
@@ -25,8 +26,17 @@ public class EmailController {
 	@Autowired
 	private EmailService emailService;
 
+	@Autowired
+	private MarcaEscuelaService marcaEscuela;
+
 	@PostMapping("/enviar")
 	public void sendEmail(@Valid @RequestBody EmailRequest emailRequest) {
+		// Decisión 391: al buzón (email_contacto) de la escuela de la petición, la misma que resuelve el alta pública
+		// de preinscripción (OrganizacionRequestFilter). Sin buzón no sale nada: 409 (IllegalStateException).
+		String buzon = marcaEscuela.buzonDeActiva();
+		if (buzon == null) {
+			throw new IllegalStateException("La escuela no tiene un correo de contacto configurado.");
+		}
 		// Texto del visitante: los campos de una línea, sin CR/LF (nombre y apellidos van en la cabecera
 		// Subject), y todo escapado antes de entrar en el HTML; los saltos del mensaje pasan a <br> tras escapar.
 		String nombre = unaLinea(emailRequest.getNombre());
@@ -57,8 +67,7 @@ public class EmailController {
 				+ "<div class='footer'>Atentamente,<br>La aplicación de mensajería del Club Moiskimdo Taekwondo</div>"
 				+ "</div>" + "</body>" + "</html>";
 
-		emailService.sendEmail("moiskimdotaekwondo@gmail.com", "Nuevo mensaje de " + nombre + " " + apellidos,
-				htmlMsg);
+		emailService.sendEmail(buzon, "Nuevo mensaje de " + nombre + " " + apellidos, htmlMsg);
 	}
 
 	/** Sustituye cada secuencia de CR/LF por un espacio: impide inyectar cabeceras de correo. */

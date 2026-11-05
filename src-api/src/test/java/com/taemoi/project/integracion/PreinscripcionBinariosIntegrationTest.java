@@ -73,8 +73,7 @@ import jakarta.servlet.http.Cookie;
  * {@link AforoPreinscripcionesIntegrationTest} (comparten contexto de Spring).
  */
 @SpringBootTest(properties = {
-		"spring.jpa.properties.hibernate.session_factory.statement_inspector=com.taemoi.project.integracion.ContadorSentencias",
-		"app.preinscripciones.admin-email=" + AforoPreinscripcionesIntegrationTest.ADMIN })
+		"spring.jpa.properties.hibernate.session_factory.statement_inspector=com.taemoi.project.integracion.ContadorSentencias" })
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PreinscripcionBinariosIntegrationTest extends MySqlIntegrationTest {

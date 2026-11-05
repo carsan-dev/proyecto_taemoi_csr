@@ -116,6 +116,41 @@ public class MarcaEscuelaService {
 		return lectura.marca();
 	}
 
+	/**
+	 * Decisión 391: buzón de la escuela de una entidad ({@code organizacion.email_contacto}); sin ella (aún sin guardar),
+	 * el de la activa. La misma escuela que {@link #deEntidadOActiva}. Se lee cada vez (sin la caché de la marca).
+	 *
+	 * @return el buzón sin espacios, o {@code null} si la escuela no lo tiene (nunca el de otra escuela).
+	 * @throws IllegalStateException si no hay escuela (ni de la entidad ni activa) o no existe.
+	 */
+	public String buzonDeEntidadOActiva(Long organizacionId) {
+		Long escuela = organizacionId;
+		if (escuela == null) {
+			escuela = TenantContext.get();
+			if (escuela == null) {
+				throw new IllegalStateException("No hay escuela activa para el buzón de la escuela");
+			}
+		}
+		Long id = escuela;
+		String buzon = id.equals(TenantContext.get()) ? leerBuzon(id) : enEscuela.leer(id, () -> leerBuzon(id));
+		if (buzon == null || buzon.isBlank()) {
+			log.warn("La escuela {} no tiene email_contacto: no se envía el correo a su buzón", id);
+			return null;
+		}
+		return buzon.trim();
+	}
+
+	/** Buzón de la escuela activa del hilo ({@link #buzonDeEntidadOActiva} sin entidad). */
+	public String buzonDeActiva() {
+		return buzonDeEntidadOActiva(null);
+	}
+
+	private String leerBuzon(Long organizacionId) {
+		return organizaciones.findById(organizacionId)
+				.orElseThrow(() -> new IllegalStateException("Escuela no encontrada: " + organizacionId))
+				.getEmailContacto();
+	}
+
 	/** Olvida la marca guardada de una escuela (logo subido o quitado). */
 	public void invalidar(Long organizacionId) {
 		if (organizacionId != null) {

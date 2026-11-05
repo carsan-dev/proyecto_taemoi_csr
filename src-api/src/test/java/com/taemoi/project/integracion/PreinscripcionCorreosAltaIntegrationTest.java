@@ -75,8 +75,7 @@ import com.taemoi.project.services.PreinscripcionService;
  * {@link PreinscripcionBinariosIntegrationTest} (comparten contexto de Spring).
  */
 @SpringBootTest(properties = {
-		"spring.jpa.properties.hibernate.session_factory.statement_inspector=com.taemoi.project.integracion.ContadorSentencias",
-		"app.preinscripciones.admin-email=" + AforoPreinscripcionesIntegrationTest.ADMIN })
+		"spring.jpa.properties.hibernate.session_factory.statement_inspector=com.taemoi.project.integracion.ContadorSentencias" })
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PreinscripcionCorreosAltaIntegrationTest extends MySqlIntegrationTest {
@@ -97,10 +96,16 @@ class PreinscripcionCorreosAltaIntegrationTest extends MySqlIntegrationTest {
 
 	int ipSecuencia = 1;
 	int dniSecuencia = 47_300_000;
+	/** Decisión 391: el aviso interno va al buzón de la organización 1; se fija mientras dura la clase. */
+	String buzonOriginal;
+	boolean buzonLeido;
 
 	@BeforeAll
 	void preparar() {
 		borrar();
+		buzonOriginal = jdbc.queryForObject("SELECT email_contacto FROM organizacion WHERE id = 1", String.class);
+		buzonLeido = true;
+		jdbc.update("UPDATE organizacion SET email_contacto = ? WHERE id = 1", ADMIN);
 		long tkd = jdbc.queryForObject("SELECT id FROM disciplina WHERE organizacion_id = 1 AND codigo = 'TAEKWONDO'",
 				Long.class);
 		jdbc.update("""
@@ -126,7 +131,13 @@ class PreinscripcionCorreosAltaIntegrationTest extends MySqlIntegrationTest {
 
 	@AfterAll
 	void retirar() {
-		borrar();
+		try {
+			borrar();
+		} finally {
+			if (buzonLeido) {
+				jdbc.update("UPDATE organizacion SET email_contacto = ? WHERE id = 1", buzonOriginal);
+			}
+		}
 	}
 
 	@Test
