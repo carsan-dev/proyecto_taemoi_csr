@@ -1,16 +1,17 @@
+<div class="pn lg" pnAcento>
+<div class="lg__pagina">
 <section class="plataforma-page">
   <header class="page-header">
-    <h1><i class="bi bi-palette" aria-hidden="true"></i> Logo y color</h1>
-    <p>El logo sale en los PDF y correos de la escuela. PNG, JPG o SVG, hasta 1 MB.</p>
-    <p>El color tiñe la cabecera y los botones principales del panel nuevo. El texto encima lo elige el sistema para
-      que se lea bien (al menos 4,5:1).</p>
+    <p class="miga">Plataforma</p>
+    <h1>Logo y color</h1>
+    <p class="sec">El logo sale en los PDF y correos de la escuela. El color tiñe la cabecera y los botones principales del panel; el texto encima lo elige el sistema para que se lea bien.</p>
   </header>
 
   @if (cargando) {
     <app-skeleton-card [type]="'table'" [count]="3"></app-skeleton-card>
   } @else if (errorCarga) {
-    <div class="aviso" role="alert">
-      <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+    <div class="aviso aviso--error" role="alert">
+      <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16h.01"></path></svg>
       <span>No se pudo cargar la lista de escuelas.</span>
       <button type="button" class="btn-secundario" (click)="cargar()">Reintentar</button>
     </div>
@@ -22,21 +23,25 @@
     <ul class="lista-escuelas">
       @for (fila of filas; track trackById($index, fila)) {
         <li class="escuela" [class.ocupada]="fila.ocupada" [attr.data-escuela]="fila.escuela.id">
-          <div class="miniatura" [class.vacia]="!fila.miniatura">
-            @if (fila.miniatura) {
-              <img [src]="fila.miniatura" [alt]="'Logo de ' + fila.escuela.nombre" />
-            } @else {
-              <span>{{ fila.escuela.marcaHeredada ? (fila.cargandoMiniatura ? 'Cargando…' : 'Logo de siempre') : fila.escuela.tieneLogo ? (fila.sinVistaPrevia ? 'Sin vista previa' : 'Cargando') : 'Sin logo' }}</span>
-            }
-          </div>
-
-          <div class="datos">
+          <div class="escuela-cabecera">
             <h2>{{ fila.escuela.nombre }}</h2>
             @if (fila.escuela.marcaHeredada && !fila.escuela.tieneLogo) {
               <p class="nota">Sin logo subido, sale el de siempre</p>
             }
             @if (fila.ocupada) {
               <p class="nota" role="status"><span class="girando" aria-hidden="true"></span> Guardando…</p>
+            }
+          </div>
+
+          <div class="columnas">
+          <div class="sub sub-logo">
+            <h3>Logo</h3>
+            <div class="logo-fila">
+          <div class="miniatura" [class.vacia]="!fila.miniatura">
+            @if (fila.miniatura) {
+              <img [src]="fila.miniatura" [alt]="'Logo de ' + fila.escuela.nombre" />
+            } @else {
+              <span>{{ fila.escuela.marcaHeredada ? (fila.cargandoMiniatura ? 'Cargando…' : 'Logo de siempre') : fila.escuela.tieneLogo ? (fila.sinVistaPrevia ? 'Sin vista previa' : 'Cargando') : 'Sin logo' }}</span>
             }
           </div>
 
@@ -48,33 +53,36 @@
               [accept]="formatos"
               [attr.aria-label]="'Archivo del logo de ' + fila.escuela.nombre"
               (change)="elegido(fila, $event)" />
-            <button type="button" class="btn-principal" [disabled]="fila.ocupada" (click)="selector.click()">
-              <i class="bi bi-upload" aria-hidden="true"></i>
+            <button type="button" class="btn-secundario" [disabled]="fila.ocupada" (click)="selector.click()">
+              <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"></path></svg>
               {{ fila.escuela.tieneLogo || fila.escuela.marcaHeredada ? 'Cambiar logo' : 'Subir logo' }}
             </button>
             @if (fila.escuela.tieneLogo) {
-              <button type="button" class="btn-secundario" [disabled]="fila.ocupada" (click)="quitar(fila)">
-                <i class="bi bi-trash" aria-hidden="true"></i>
-                {{ fila.escuela.marcaHeredada ? 'Volver al de siempre' : 'Quitar logo' }}
+              <button type="button" class="btn-texto" [disabled]="fila.ocupada" (click)="quitar(fila)">
+                  {{ fila.escuela.marcaHeredada ? 'Volver al de siempre' : 'Quitar logo' }}
               </button>
             }
           </div>
 
+            </div>
+            <p class="peq">PNG, JPG o SVG, hasta 1 MB.</p>
+
           @if (fila.sinVistaPrevia) {
             <div class="vista-previa-fila" role="status">
-              <p><i class="bi bi-check-circle" aria-hidden="true"></i> Logo guardado; no se pudo mostrar la vista previa</p>
+              <p><svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M7.5 12.5l3 3 6-7"></path></svg> Logo guardado; no se pudo mostrar la vista previa</p>
               <button type="button" class="btn-secundario" (click)="reintentarMiniatura(fila)">
-                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Reintentar
+                <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.5-5.8M20 4v5h-5"></path></svg> Reintentar
               </button>
             </div>
           }
           @if (fila.error) {
-            <p class="error-fila" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ fila.error }}</p>
+            <p class="error-fila" role="alert"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16h.01"></path></svg> {{ fila.error }}</p>
           }
+          </div>
 
           @let vistaColor = vista(fila);
           @let idColor = 'color-' + fila.escuela.id;
-          <div class="bloque-color">
+          <div class="sub sub-color bloque-color">
             <div class="campo-color">
               <label class="etiqueta-color" [for]="idColor">Color (#RRGGBB)</label>
               <div class="entrada-color">
@@ -126,7 +134,7 @@
                 <span class="vista-entradas" [style.color]="vistaColor.tema.sobrePrimario2"><span>Alumnos</span><span>Tesorería</span></span>
               </div>
               <figcaption>
-                <span class="visually-hidden">Vista previa de la cabecera del panel de {{ fila.escuela.nombre }}.</span>
+                <span class="oculto">Vista previa de la cabecera del panel de {{ fila.escuela.nombre }}.</span>
                 <ul class="razones">
                   <li>
                     <span class="muestra" aria-hidden="true" [style.background-color]="vistaColor.tema.primario" [style.color]="vistaColor.tema.sobrePrimario">Aa</span>
@@ -139,7 +147,7 @@
                 </ul>
                 @if (vistaColor.tema.ajustado) {
                   <p class="nota-ajuste">
-                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
                     Ni el texto blanco ni el oscuro llegan a 4,5:1 sobre este color: la cabecera usará
                     {{ vistaColor.tema.primario }}, un poco más oscuro.
                   </p>
@@ -153,11 +161,11 @@
                 class="btn-principal"
                 [disabled]="fila.guardandoColor || !hayCambioDeColor(fila)"
                 (click)="guardarColor(fila)">
-                <i class="bi bi-check2" aria-hidden="true"></i> Guardar color
+                <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg> Guardar color
               </button>
               @if (fila.escuela.colorPrimario) {
-                <button type="button" class="btn-secundario" [disabled]="fila.guardandoColor" (click)="quitarColor(fila)">
-                  <i class="bi bi-x-lg" aria-hidden="true"></i> Quitar color
+                <button type="button" class="btn-texto" [disabled]="fila.guardandoColor" (click)="quitarColor(fila)">
+                  Quitar color
                 </button>
               }
             </div>
@@ -167,12 +175,15 @@
             }
             @if (fila.errorColor) {
               <p class="error-color" role="alert" [id]="idColor + '-error'">
-                <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ fila.errorColor }}
+                <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16h.01"></path></svg> {{ fila.errorColor }}
               </p>
             }
+          </div>
           </div>
         </li>
       }
     </ul>
   }
 </section>
+</div>
+</div>
