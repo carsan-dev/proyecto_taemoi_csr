@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -53,6 +54,7 @@ import jakarta.servlet.http.Cookie;
  * <ul>
  * <li>alta de otra escuela → su aviso a SU buzón, y nada al de Moiskimdo;</li>
  * <li>escuela sin buzón (nulo o en blanco) → sin aviso interno; el correo de la familia sale igual;</li>
+ * <li>promoción de la lista de espera en otra escuela → su aviso interno a SU buzón, nada al de Moiskimdo;</li>
  * <li>contacto → al buzón de la escuela resuelta (visitante: la por defecto; con sesión: la de la sesión);</li>
  * <li>contacto sin buzón → no se envía nada y responde 409.</li>
  * </ul>
@@ -65,6 +67,7 @@ class BuzonEscuelaIntegrationTest extends MySqlIntegrationTest {
 	private static final String BUZON_OTRA = "buzon-escuela-f41@example.test";
 	private static final String FAMILIA = "familia-buzon-f41@example.test";
 	private static final String AVISO = "Nueva preinscripción recibida: ";
+	private static final String AVISO_PROMOCION = "Lista de espera promocionada: ";
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -132,6 +135,43 @@ class BuzonEscuelaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(FAMILIA), destinatarios(), "en blanco cuenta como sin buzón");
 	}
 
+	@Test
+	void promocionEnOtraEscuela_avisoASuBuzonYNuncaAlDeMoiskimdo() throws Exception {
+		buzon(BUZON_OTRA);
+		// Sede propia con aforo 1 y un turno vacío: la segunda alta queda en lista de espera.
+		String nombreSede = "IT F41 promocion " + e.marca;
+		jdbc.update("INSERT INTO sede (organizacion_id, nombre, activa, aforo_turno) VALUES (?, ?, TRUE, 1)", e.org,
+				nombreSede);
+		long sede = jdbc.queryForObject("SELECT id FROM sede WHERE organizacion_id = ? AND nombre = ?", Long.class,
+				e.org, nombreSede);
+		jdbc.update("UPDATE grupo SET sede_id = ? WHERE id = ?", sede, e.gA2);
+		jdbc.update("""
+				INSERT INTO turno (dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id)
+				VALUES ('Jueves', '18:00', '19:00', NULL, ?, ?)""", e.gA2, e.org);
+		long turno = jdbc.queryForObject("SELECT MAX(id) FROM turno WHERE organizacion_id = ?", Long.class, e.org);
+		assertEquals("PENDIENTE", alta(tokenOtra, turno).get("estado").asText());
+		JsonNode enEspera = alta(tokenOtra, turno);
+		assertEquals("EN_LISTA_ESPERA", enEspera.get("estado").asText());
+		String ref = enEspera.get("referencia").asText();
+		Mockito.reset(email);
+
+		// Subir el aforo de la sede promociona la lista de espera (gestor de la escuela, en su sesión).
+		Map<String, Object> datos = new LinkedHashMap<>();
+		datos.put("nombre", nombreSede);
+		datos.put("aforoTurno", 2);
+		MvcResult r = mvc.perform(put("/api/sedes/" + sede).cookie(new Cookie("jwt", tokenOtra))
+				.contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(datos))).andReturn();
+		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString(StandardCharsets.UTF_8));
+
+		assertEquals("PENDIENTE", jdbc.queryForObject("SELECT estado FROM preinscripcion WHERE referencia = ?",
+				String.class, ref));
+		List<String> destinos = destinatarios();
+		assertTrue(destinos.contains(FAMILIA), "aviso de plaza a la familia: " + destinos);
+		assertEquals(List.of(BUZON_OTRA), destinatariosDe(AVISO_PROMOCION + ref), "aviso interno a su buzón");
+		assertFalse(destinos.contains(buzonMoiskimdo), destinos.toString());
+		assertFalse(destinos.contains("moiskimdotaekwondo@gmail.com"), destinos.toString());
+	}
+
 	// ------------------------------------------------------------------ formulario de contacto
 
 	@Test
@@ -189,11 +229,16 @@ class BuzonEscuelaIntegrationTest extends MySqlIntegrationTest {
 
 	/** Alta real en el turno A de la escuela sintética; devuelve la referencia. */
 	private String alta(String token) throws Exception {
+		return alta(token, e.tA).get("referencia").asText();
+	}
+
+	/** Alta real en ese turno; devuelve la respuesta (referencia, estado...). */
+	private JsonNode alta(String token, long turno) throws Exception {
 		int n = 41_000_000 + (++altas) + (int) (System.nanoTime() % 1_000_000);
 		String dni = n + "" + "TRWAGMYFPDXBNJZSQVHLCKE".charAt(n % 23);
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("deporte", "TAEKWONDO");
-		body.put("turnoIds", List.of(e.tA));
+		body.put("turnoIds", List.of(turno));
 		body.put("nombre", "Alta");
 		body.put("apellidos", "Buzon Escuela");
 		body.put("dni", dni);
@@ -215,8 +260,7 @@ class BuzonEscuelaIntegrationTest extends MySqlIntegrationTest {
 		MvcResult r = mvc.perform(conSesion(peticion, token)).andReturn();
 		String contenido = r.getResponse().getContentAsString(StandardCharsets.UTF_8);
 		assertEquals(201, r.getResponse().getStatus(), contenido);
-		JsonNode respuesta = json.readTree(contenido);
-		return respuesta.get("referencia").asText();
+		return json.readTree(contenido);
 	}
 
 	private MvcResult contacto(String token) throws Exception {

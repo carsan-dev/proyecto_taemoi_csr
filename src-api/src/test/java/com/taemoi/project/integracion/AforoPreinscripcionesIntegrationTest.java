@@ -242,11 +242,15 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 			}
 		} finally {
 			try {
-				if (limiteLeido) {
-					fijarLimiteTurno(limiteOriginal);
-				}
-				if (buzonLeido) {
-					jdbc.update("UPDATE organizacion SET email_contacto = ? WHERE id = 1", buzonOriginal);
+				try {
+					if (limiteLeido) {
+						fijarLimiteTurno(limiteOriginal);
+					}
+				} finally {
+					// El buzón de la organización 1 se restaura aunque falle la restauración del límite.
+					if (buzonLeido) {
+						jdbc.update("UPDATE organizacion SET email_contacto = ? WHERE id = 1", buzonOriginal);
+					}
 				}
 			} finally {
 				try {
