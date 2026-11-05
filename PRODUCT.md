@@ -27,8 +27,9 @@ Bootstrap Icons, SweetAlert2), API Spring Boot con MySQL 8. Se usa en escritorio
 - **Responsable de sede.** Llega en la E9; hoy su rol falla cerrado. Supuesto: hará gestión acotada a sus sedes.
 - **Familias y alumnos (`ROLE_USER`).** Área de familias: consultan a sus hijos (o a sí mismos), pagos,
   convocatorias y material de examen. Supuesto: casi siempre desde el móvil y de forma ocasional.
-- **Superadmin de plataforma.** Solo edita la marca de cada escuela: logo y, con la E8b, colores
-  (decisiones 135, 136 y 212). No gestiona alumnos ni miembros.
+- **Superadmin de plataforma.** Edita la marca de cada escuela: logo y, con la E8b, colores
+  (decisiones 135, 136 y 212). Desde la fase 4 también da de alta escuelas: escuela, primera sede, invitación al
+  propietario y catálogo de las disciplinas elegidas (decisiones 390 y 444). No gestiona alumnos ni miembros.
 - **Visitantes de la web pública.** Posibles alumnos o sus familias que buscan escuela y se preinscriben.
 
 ## Product Purpose
