@@ -87,6 +87,8 @@ class AltaEscuelaIntegrationTest extends MySqlIntegrationTest {
 	Cookie cookieSuperadmin;
 	String tPropietario;
 	long examenAmarillo, recompensaAmarillo, gradoTkdAmarillo, gradoKbAmarillo;
+	long disciplinaTkd, licenciaTkd, gradoTkdEquivalente;
+	Long licenciaTkdAntes, equivalenteAmarilloAntes;
 
 	@BeforeAll
 	void preparar() throws Exception {
@@ -110,10 +112,33 @@ class AltaEscuelaIntegrationTest extends MySqlIntegrationTest {
 		recompensaAmarillo = producto("IT F42 RECOMPENSA AMARILLO " + marca, "RECOMPENSA", gradoTkdAmarillo, 5.0);
 		jdbc.update("UPDATE grado SET producto_examen_id = ?, producto_recompensa_id = ? WHERE id IN (?, ?)",
 				examenAmarillo, recompensaAmarillo, gradoTkdAmarillo, gradoKbAmarillo);
+
+		// Enlaces que la base de pruebas no trae (la migración los deja vacíos): la licencia de taekwondo (un producto
+		// suyo) y el equivalente adulto del amarillo (el último grado de su sistema). Se restauran al terminar.
+		disciplinaTkd = jdbc.queryForObject("SELECT id FROM disciplina WHERE organizacion_id = 1 AND codigo = 'TAEKWONDO'",
+				Long.class);
+		licenciaTkdAntes = jdbc.queryForObject("SELECT producto_licencia_id FROM disciplina WHERE id = ?", Long.class,
+				disciplinaTkd);
+		equivalenteAmarilloAntes = jdbc.queryForObject("SELECT equivalente_adulto_id FROM grado WHERE id = ?", Long.class,
+				gradoTkdAmarillo);
+		jdbc.update("""
+				INSERT INTO producto (concepto, precio, organizacion_id, tipo, disciplina_id, vendible_profesor)
+				VALUES (?, 30, 1, 'LICENCIA', ?, FALSE)""", "IT F42 LICENCIA " + marca, disciplinaTkd);
+		licenciaTkd = jdbc.queryForObject("SELECT id FROM producto WHERE organizacion_id = 1 AND concepto = ?", Long.class,
+				"IT F42 LICENCIA " + marca);
+		gradoTkdEquivalente = jdbc.queryForObject("""
+				SELECT g.id FROM grado g JOIN disciplina d ON d.sistema_grados_id = g.sistema_grados_id
+				WHERE d.id = ? AND g.id <> ? ORDER BY g.orden DESC, g.id DESC LIMIT 1""", Long.class, disciplinaTkd,
+				gradoTkdAmarillo);
+		jdbc.update("UPDATE disciplina SET producto_licencia_id = ? WHERE id = ?", licenciaTkd, disciplinaTkd);
+		jdbc.update("UPDATE grado SET equivalente_adulto_id = ? WHERE id = ?", gradoTkdEquivalente, gradoTkdAmarillo);
 	}
 
 	@AfterAll
 	void retirar() {
+		jdbc.update("UPDATE disciplina SET producto_licencia_id = ? WHERE id = ?", licenciaTkdAntes, disciplinaTkd);
+		jdbc.update("UPDATE grado SET equivalente_adulto_id = ? WHERE id = ?", equivalenteAmarilloAntes, gradoTkdAmarillo);
+		jdbc.update("DELETE FROM producto WHERE id = ?", licenciaTkd);
 		jdbc.update("UPDATE grado SET producto_examen_id = NULL, producto_recompensa_id = NULL WHERE id IN (?, ?)",
 				gradoTkdAmarillo, gradoKbAmarillo);
 		jdbc.update("DELETE FROM producto WHERE id IN (?, ?)", examenAmarillo, recompensaAmarillo);
@@ -288,6 +313,23 @@ class AltaEscuelaIntegrationTest extends MySqlIntegrationTest {
 							SELECT p.codigo FROM disciplina d JOIN producto p ON p.id = d.producto_competidor_id
 							WHERE d.organizacion_id = ? AND p.organizacion_id = d.organizacion_id""", String.class, org));
 		}
+
+		// Licencia de la disciplina y equivalente adulto del grado: a las filas NUEVAS (enlaces puestos en preparar()).
+		Map<String, Object> licencia = jdbc.queryForMap("""
+				SELECT p.concepto, p.organizacion_id, p.disciplina_id = d.id AS suya
+				FROM disciplina d JOIN producto p ON p.id = d.producto_licencia_id
+				WHERE d.organizacion_id = ? AND d.codigo = 'TAEKWONDO'""", org);
+		assertEquals("IT F42 LICENCIA " + marca, licencia.get("concepto"));
+		assertEquals(org, ((Number) licencia.get("organizacion_id")).longValue());
+		assertEquals(1L, ((Number) licencia.get("suya")).longValue());
+		Map<String, Object> equivalente = jdbc.queryForMap("""
+				SELECT e.codigo, e.organizacion_id, e.sistema_grados_id = g.sistema_grados_id AS mismo_sistema
+				FROM grado g JOIN grado e ON e.id = g.equivalente_adulto_id
+				WHERE g.organizacion_id = ? AND g.codigo = 'AMARILLO'""", org);
+		assertEquals(jdbc.queryForObject("SELECT codigo FROM grado WHERE id = ?", String.class, gradoTkdEquivalente),
+				equivalente.get("codigo"));
+		assertEquals(org, ((Number) equivalente.get("organizacion_id")).longValue());
+		assertEquals(1L, ((Number) equivalente.get("mismo_sistema")).longValue());
 
 		// Nada de lo que no se copia.
 		for (String tabla : List.of("plantilla_preinscripcion", "tarifa_sede", "grupo", "turno", "alumno",

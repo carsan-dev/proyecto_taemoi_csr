@@ -44,8 +44,10 @@ import jakarta.validation.constraints.Email;
  * entera y el correo de invitación, que sale tras confirmar ({@code InvitacionCorreoListener}), no se envía. Un id
  * reservado y no usado solo deja un hueco en la numeración.
  *
- * <p>Concurrencia: dos altas con el mismo nombre calculan el mismo slug; el índice único {@code uk_organizacion_slug}
- * hace esperar a la segunda hasta que la primera confirma y entonces falla: 409 como el nombre repetido.
+ * <p>Concurrencia: dos altas que calculan el mismo slug (mismo nombre, o nombres distintos con el mismo slug) o que crean
+ * la misma cuenta de propietario chocan en un índice único: la segunda espera a que la primera confirme y falla, ya
+ * deshecha. Entonces se repite el alta UNA vez ({@link #crear}), con otro id reservado: el mismo nombre da 409, otro
+ * nombre recibe el slug con sufijo y el propietario, ya con cuenta, solo recibe el rol.
  */
 @Service
 public class AltaEscuelaService {
@@ -119,6 +121,23 @@ public class AltaEscuelaService {
 		Datos datos = validar(solicitud);
 		PlantillaCatalogo plantilla = plantillas.leer(plantillaId);
 		PlantillaCatalogo.Seleccion seleccion = plantilla.seleccionar(datos.disciplinas());
+		try {
+			return intentar(datos, plantilla, seleccion);
+		} catch (DataIntegrityViolationException carrera) {
+			// Choque con otra alta que confirmó mientras tanto (ya deshecho entero, sin correo): se repite UNA vez.
+			return intentar(datos, plantilla, seleccion);
+		}
+	}
+
+	/**
+	 * Un intento completo: id reservado nuevo y UNA transacción. Un {@link DataIntegrityViolationException} sale con el
+	 * intento ya deshecho; lo provocan otra alta que confirmó antes con el mismo slug (índice {@code uk_organizacion_slug})
+	 * o con el mismo propietario nuevo (índice único de {@code usuario.email}), o un id reservado que ya existe (un
+	 * contador de AUTO_INCREMENT movido entre la reserva y el alta). La repetición vuelve a mirar el nombre (409 solo si de
+	 * verdad existe), recalcula el slug ({@code -2}…) y encuentra la cuenta del propietario (camino de la cuenta existente,
+	 * sin correo). Como {@code AltaDeMiembro}: si la repetición vuelve a chocar, el fallo se propaga.
+	 */
+	private AltaEscuelaDTO intentar(Datos datos, PlantillaCatalogo plantilla, PlantillaCatalogo.Seleccion seleccion) {
 		Long id = reservarId();
 		return enEscuela.escribir(id, () -> crearEn(id, datos, plantilla, seleccion));
 	}
@@ -131,13 +150,8 @@ public class AltaEscuelaService {
 			throw new IllegalStateException(NOMBRE_REPETIDO);
 		}
 		String slug = SlugEscuela.libre(datos.nombre(), s -> organizaciones.findBySlug(s).isPresent());
-		try {
-			organizaciones.insertarConId(id, slug, datos.nombre(), datos.emailContacto(),
-					new Organizacion().getZonaHoraria());
-		} catch (DataIntegrityViolationException e) {
-			// Otra alta con el mismo slug confirmó mientras tanto.
-			throw new IllegalStateException(NOMBRE_REPETIDO);
-		}
+		// Un slug o un id ya ocupados por otra alta confirmada entretanto: DataIntegrityViolationException (ver intentar).
+		organizaciones.insertarConId(id, slug, datos.nombre(), datos.emailContacto(), new Organizacion().getZonaHoraria());
 
 		Sede sede = new Sede();
 		sede.setNombre(datos.sede());
