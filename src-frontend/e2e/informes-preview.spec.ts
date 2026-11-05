@@ -51,7 +51,7 @@ async function preparar(page: Page) {
 }
 
 async function abrirGenerador(page: Page) {
-  await page.getByRole('button', { name: 'Informes', exact: true }).click();
+  await page.getByRole('button', { name: 'Herramientas', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Generar informe…' }).click();
   return page.getByRole('dialog', { name: 'Generar informe', exact: true });
 }
@@ -146,7 +146,7 @@ test('asistencia múltiple: fallos parciales, selector, descarga visible y scrol
       ? route.fulfill({ status: 500, json: { mensaje: 'Error de prueba' } })
       : route.fulfill({ contentType: 'application/pdf', body: pdfFixture() });
   });
-  await page.getByRole('button', { name: 'Informes', exact: true }).click();
+  await page.getByRole('button', { name: 'Herramientas', exact: true }).click();
   await page.getByRole('menuitem', { name: 'Listado de asistencia', exact: true }).click();
   const section = page.getByRole('dialog', { name: 'Listado de asistencia', exact: true });
   await section.getByLabel('Año', { exact: true }).selectOption('2026');
