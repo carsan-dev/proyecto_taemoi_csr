@@ -3,14 +3,18 @@ package com.taemoi.project.controladores;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,12 +41,14 @@ import com.taemoi.project.services.AuditoriaPayloadSanitizer;
 import com.taemoi.project.services.AuditoriaService;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.UsuarioService;
 
 /**
  * Formulario de contacto público ({@code POST /api/mail/enviar}): el texto del visitante llega escapado al
- * HTML del correo, sin saltos de línea en el asunto, y los límites de tamaño devuelven 400.
+ * HTML del correo, sin saltos de línea en el asunto, y los límites de tamaño devuelven 400. Decisión 391: el correo va
+ * al buzón de la escuela de la petición ({@code organizacion.email_contacto}); sin buzón no sale nada y responde 409.
  */
 @WebMvcTest(controllers = EmailController.class)
 @Import({ SecurityConfiguration.class, MethodSecurityCompatibilityConfig.class,
@@ -53,7 +59,7 @@ import com.taemoi.project.services.UsuarioService;
 })
 class EmailControllerWebMvcTest {
 
-	private static final String DESTINO = "moiskimdotaekwondo@gmail.com";
+	private static final String DESTINO = "buzon@escuela-contacto.example";
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -90,6 +96,14 @@ class EmailControllerWebMvcTest {
 
 	@MockitoBean
 	private MembresiaService membresiaService;
+
+	@MockitoBean
+	private MarcaEscuelaService marcaEscuela;
+
+	@BeforeEach
+	void buzonDeLaEscuela() {
+		when(marcaEscuela.buzonDeActiva()).thenReturn(DESTINO);
+	}
 
 	@Test
 	void mensajeNormalLlegaIgualConSaltosDeLineaComoBr() throws Exception {
@@ -174,6 +188,27 @@ class EmailControllerWebMvcTest {
 		enviar(payload("Ana", "Ruiz", "ana@example.com", "Asunto", "Mensaje"))
 				.andExpect(status().isOk());
 		verify(emailService).sendEmail(eq(DESTINO), anyString(), anyString());
+	}
+
+	@Test
+	void vaAlBuzonDeLaEscuelaDeLaPeticionYNoAlDeSiempre() throws Exception {
+		enviar(payload("Ana", "Ruiz", "ana@example.com", "Asunto", "Mensaje"))
+				.andExpect(status().isOk());
+
+		verify(marcaEscuela).buzonDeActiva();
+		verify(emailService).sendEmail(eq(DESTINO), anyString(), anyString());
+		verify(emailService, never()).sendEmail(eq("moiskimdotaekwondo@gmail.com"), anyString(), anyString());
+	}
+
+	@Test
+	void escuelaSinBuzonNoEnviaNadaYDevuelve409() throws Exception {
+		when(marcaEscuela.buzonDeActiva()).thenReturn(null);
+
+		enviar(payload("Ana", "Ruiz", "ana@example.com", "Asunto", "Mensaje"))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.mensaje").value("La escuela no tiene un correo de contacto configurado."));
+
+		verifyNoInteractions(emailService);
 	}
 
 	private org.springframework.test.web.servlet.ResultActions enviar(Map<String, String> cuerpo) throws Exception {

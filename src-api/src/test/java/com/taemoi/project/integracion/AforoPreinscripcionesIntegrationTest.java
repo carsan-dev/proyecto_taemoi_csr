@@ -124,12 +124,12 @@ import jakarta.servlet.http.Cookie;
  * {@code -Ddorado.aforo.regenerar=true}.
  */
 @SpringBootTest(properties = {
-		"spring.jpa.properties.hibernate.session_factory.statement_inspector=com.taemoi.project.integracion.ContadorSentencias",
-		"app.preinscripciones.admin-email=" + AforoPreinscripcionesIntegrationTest.ADMIN })
+		"spring.jpa.properties.hibernate.session_factory.statement_inspector=com.taemoi.project.integracion.ContadorSentencias" })
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 
+	/** Decisión 391: buzón de la organización 1 ({@code email_contacto}) mientras dura la clase; se restaura al final. */
 	static final String ADMIN = "admin-aforo-r2p3@example.test";
 	static final int LIMITE = 3;
 	private static final String DOMINIO = "@aforo-r2p3.test";
@@ -190,6 +190,8 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 	Long gestor;
 	String limiteOriginal;
 	boolean limiteLeido;
+	String buzonOriginal;
+	boolean buzonLeido;
 	long plantilla;
 	int ipSecuencia = 1;
 
@@ -202,6 +204,9 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 		limiteOriginal = jdbc.query("SELECT valor FROM configuracion_organizacion WHERE organizacion_id = 1 AND clave = "
 				+ "'limite_turno'", rs -> rs.next() ? rs.getString(1) : null);
 		limiteLeido = true;
+		buzonOriginal = jdbc.queryForObject("SELECT email_contacto FROM organizacion WHERE id = 1", String.class);
+		buzonLeido = true;
+		jdbc.update("UPDATE organizacion SET email_contacto = ? WHERE id = 1", ADMIN);
 		ReflectionTestUtils.setField((Object) AopTestUtils.getUltimateTargetObject(turnoService), "reloj",
 				Clock.fixed(HOY, ValidacionRelojConfig.ZONA));
 		plantilla = jdbc.queryForObject("""
@@ -237,8 +242,15 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 			}
 		} finally {
 			try {
-				if (limiteLeido) {
-					fijarLimiteTurno(limiteOriginal);
+				try {
+					if (limiteLeido) {
+						fijarLimiteTurno(limiteOriginal);
+					}
+				} finally {
+					// El buzón de la organización 1 se restaura aunque falle la restauración del límite.
+					if (buzonLeido) {
+						jdbc.update("UPDATE organizacion SET email_contacto = ? WHERE id = 1", buzonOriginal);
+					}
 				}
 			} finally {
 				try {
