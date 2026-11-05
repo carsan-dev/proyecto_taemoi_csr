@@ -2,16 +2,21 @@ package com.taemoi.project.plataforma;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,15 +40,21 @@ public class PlataformaController {
 	private final ErroresPlataformaService errores;
 	private final LogoEscuelaService logos;
 	private final MarcaPanelService marcas;
+	private final AltaEscuelaService altas;
 
-	public PlataformaController(ErroresPlataformaService errores, LogoEscuelaService logos, MarcaPanelService marcas) {
+	public PlataformaController(ErroresPlataformaService errores, LogoEscuelaService logos, MarcaPanelService marcas,
+			AltaEscuelaService altas) {
 		this.errores = errores;
 		this.logos = logos;
 		this.marcas = marcas;
+		this.altas = altas;
 	}
 
 	/** Mensaje del 400 de {@code PUT …/marca} sin la clave {@code colorPrimario}. */
 	static final String FALTA_COLOR = "Falta colorPrimario: un color #RRGGBB, o null para quitarlo.";
+
+	/** Mensaje del 400 de un cuerpo que no se puede leer (el mismo texto que {@code MiembroController}). */
+	static final String CUERPO_NO_VALIDO = "El cuerpo de la petición no es válido.";
 
 	/** Errores técnicos (4xx/5xx o sin sesión) de todas las escuelas, del más reciente al más antiguo. */
 	@GetMapping("/errores")
@@ -64,6 +75,23 @@ public class PlataformaController {
 	@GetMapping("/escuelas")
 	public ResponseEntity<List<EscuelaPlataformaDTO>> obtenerEscuelas() {
 		return ResponseEntity.ok(errores.escuelas());
+	}
+
+	/**
+	 * Fase 4, pieza F4-2 (decisiones 390, 392 y 444): da de alta una escuela con su primera sede, su propietario
+	 * (invitación, o solo el rol si el email ya tiene cuenta) y el catálogo de las disciplinas elegidas copiado de la
+	 * plantilla, con las tarifas desactivadas. 201 con {@code id}, {@code nombre} e {@code invitacionEnviadaA} (null sin
+	 * invitación); 400 datos que no valen o disciplina fuera de la plantilla; 409 nombre repetido. Todo o nada.
+	 */
+	@PostMapping("/escuelas")
+	public ResponseEntity<AltaEscuelaDTO> crearEscuela(@RequestBody(required = false) AltaEscuelaRequest solicitud) {
+		return ResponseEntity.status(HttpStatus.CREATED).body(altas.crear(solicitud));
+	}
+
+	/** Pieza F4-2: las disciplinas de la plantilla para el alta, en el orden del catálogo, con lo que copia cada una. */
+	@GetMapping("/plantilla/disciplinas")
+	public ResponseEntity<List<DisciplinaPlantillaDTO>> obtenerDisciplinasDeLaPlantilla() {
+		return ResponseEntity.ok(altas.disciplinasDeLaPlantilla());
 	}
 
 	/**
@@ -123,5 +151,16 @@ public class PlataformaController {
 			throw new IllegalArgumentException(ReglaContraste.MENSAJE_FORMATO);
 		}
 		return valor.asText();
+	}
+
+	/**
+	 * Cuerpo que no se puede leer (JSON malformado o con otra forma, p. ej. {@code {"sede": []}} en el alta): 400 con
+	 * {@code {"mensaje"}}, en cualquier endpoint de este controlador, como {@code MiembroController}. Atendido aquí,
+	 * Spring no apunta en el log el error de Jackson, que cita el texto del cuerpo (en el alta, nombres y emails); por
+	 * eso tampoco se registra nada de la excepción.
+	 */
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<Map<String, String>> cuerpoNoLegible() {
+		return ResponseEntity.badRequest().body(Map.of("mensaje", CUERPO_NO_VALIDO));
 	}
 }

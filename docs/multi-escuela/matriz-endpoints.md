@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (523 líneas; 170 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (526 líneas; 171 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -578,6 +578,28 @@ cuerpo: `GET /api/admin/users` cae en `GET /api/admin/{id}` con un id que no es 
 `PUT /api/admin/users/{id}/roles` y `/password` no tienen manejador, 404 con el cuerpo de `/error`, y no cambian nada. La
 regla de URL de `/api/admin/**` sigue por delante: sin sesión, 401; sin `ROLE_ADMIN`, 403. Lo prueba
 `DespachoDeErrorIntegrationTest`.
+
+Pieza F4-2 (alta de escuela por el superadmin, decisiones 390, 392 y 444): 3 líneas nuevas en `PlataformaController`;
+ninguna casilla existente cambia. Caen en la regla `/api/plataforma/**` (`ROLE_ADMIN_PLATAFORMA`) y en el
+`@PreAuthorize` de clase, como el logo y la marca; fuera de la lista blanca de la sesión solo-profesor.
+- `GET`/`HEAD /api/plataforma/plantilla/disciplinas` (`#obtenerDisciplinasDeLaPlantilla`): solo SOLO_PLATAFORMA
+  `PERMITE`. Las disciplinas activas de la escuela plantilla (`app.plataforma.plantilla-organizacion-id`, por defecto
+  la 1), en el orden de su catálogo: `[{codigo, nombre, conGrados, tarifas, productos}]`, con lo que se copiaría de
+  cada una. Solo lectura.
+- `POST /api/plataforma/escuelas` (`#crearEscuela`, `{nombre, emailContacto, sede: {nombre}, propietario: {nombre,
+  apellidos, email}, disciplinas: [codigo]}`): solo SOLO_PLATAFORMA `PERMITE`; el resto `DENIEGA`, también el
+  propietario de una escuela. 201 con `{id, nombre, invitacionEnviadaA}`: la escuela, su primera sede, el propietario
+  (cuenta nueva pendiente con invitación por correo, o, si el email ya tiene cuenta, solo la membresía PROPIETARIO, sin
+  correo y con `invitacionEnviadaA = null`; también si es el propio superadmin) y el catálogo de las disciplinas
+  elegidas copiado de la plantilla, con las tarifas desactivadas. Todo o nada en una transacción; el correo sale tras
+  confirmar. Datos que no valen o disciplina que no está en la plantilla, 400 con `{mensaje}`; nombre que ya existe (sin
+  distinguir mayúsculas ni espacios de los extremos), 409. Dos altas a la vez que chocan en un índice único (mismo
+  slug, mismo propietario nuevo o id reservado ya ocupado) se repiten UNA vez con otro id: el mismo nombre da 409, otro
+  nombre recibe el slug con sufijo (`-2`) y el propietario ya creado solo recibe el rol. El 201 registra en la escuela
+  NUEVA `PLATAFORMA ESCUELA_CREADA` (solo ids, sí/no y códigos de disciplina) y `MIEMBROS MIEMBRO_INVITADO`/`ROL_DADO`;
+  está en `EscrituraConRegistroPropio` (`ESCUELA_CREAR`) y el cuerpo de sus 4xx se guarda con `nombre`,
+  `emailContacto`, `email` y `apellidos` redactados.
+Lo prueban `AltaEscuelaIntegrationTest`, `AltaEscuelaDeshechaIntegrationTest` y `AltaEscuelaCarrerasIntegrationTest`.
 
 ## Cómo actualizarlo
 
