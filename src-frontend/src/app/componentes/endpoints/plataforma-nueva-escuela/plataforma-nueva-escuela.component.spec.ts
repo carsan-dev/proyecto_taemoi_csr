@@ -92,6 +92,14 @@ describe('PlataformaNuevaEscuelaComponent', () => {
     expect(texto()).toContain('0 / 100');
   });
 
+  it('cada casilla se llama como su disciplina y se describe con su detalle', () => {
+    const c = casilla('TKD');
+    expect(c.getAttribute('aria-labelledby')).toBe('ne-disc-TKD-nombre');
+    expect(el().querySelector('#ne-disc-TKD-nombre')!.textContent!.trim()).toBe('Taekwondo');
+    expect(c.getAttribute('aria-describedby')).toBe('ne-disc-TKD-detalle');
+    expect(el().querySelector('#ne-disc-TKD-detalle')!.textContent!.trim()).toBe('Con grados · 3 tarifas base · 1 producto');
+  });
+
   it('muestra el esqueleto mientras carga las disciplinas', () => {
     const pendiente = new Subject<DisciplinaPlantilla[]>();
     servicio.disciplinas.and.returnValue(pendiente);

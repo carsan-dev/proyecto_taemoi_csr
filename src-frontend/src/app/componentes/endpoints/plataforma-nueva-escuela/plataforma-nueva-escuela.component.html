@@ -163,10 +163,14 @@
             <legend class="visually-hidden">Disciplinas</legend>
             @for (d of disciplinas; track d.codigo) {
               <label class="disciplina" [class.marcada]="marcada(d.codigo)" [attr.data-codigo]="d.codigo">
-                <input type="checkbox" [checked]="marcada(d.codigo)" (change)="alternar(d.codigo, $any($event.target).checked)" />
+                <input
+                  type="checkbox"
+                  [attr.aria-labelledby]="'ne-disc-' + d.codigo + '-nombre'"
+                  [attr.aria-describedby]="'ne-disc-' + d.codigo + '-detalle'"
+                  [checked]="marcada(d.codigo)" (change)="alternar(d.codigo, $any($event.target).checked)" />
                 <span class="disciplina-texto">
-                  <span class="disciplina-nombre">{{ d.nombre }}</span>
-                  <span class="disciplina-detalle">{{ detalle(d) }}</span>
+                  <span class="disciplina-nombre" [id]="'ne-disc-' + d.codigo + '-nombre'">{{ d.nombre }}</span>
+                  <span class="disciplina-detalle" [id]="'ne-disc-' + d.codigo + '-detalle'">{{ detalle(d) }}</span>
                 </span>
               </label>
             }
