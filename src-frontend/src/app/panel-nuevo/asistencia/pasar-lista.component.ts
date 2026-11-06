@@ -22,7 +22,7 @@ import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component'
 import { mensajeDelServidor, nombreCompleto } from '../mis-grupos/profesor-textos';
 import { ConCambiosSinGuardar } from '../productos-alumno/salir-sin-guardar.guard';
 import { textoSalirSinGuardar } from '../productos-alumno/productos-alumno-vista';
-import { ImpactoFestivo } from '../festivos/festivos-vista';
+import { ImpactoFestivo, textoFestivoDeClase } from '../festivos/festivos-vista';
 import { FestivosService } from '../festivos/festivos.service';
 import {
   MOTIVOS_FALTA, cuenta, estadoClase, fechaClase, fechaClaseCapital, franja, mismaClase, textoFaltas, textoMotivo, tieneLista,
@@ -432,9 +432,9 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   }
 
   get textoFestivo(): string {
-    if (!this.clase) return '';
-    const donde = this.sede ? ` en ${this.sede.nombre}` : '';
-    return `No hay clase${donde} el ${fechaClase(this.clase.fecha)}. No cuenta como falta para nadie.`;
+    const f = this.festivo;
+    if (!this.clase || !f) return '';
+    return textoFestivoDeClase(f, this.clase.fecha, this.sede?.nombre ?? null);
   }
 
   get fechaEnFrase(): string { return this.clase ? `el ${fechaClase(this.clase.fecha)}` : ''; }

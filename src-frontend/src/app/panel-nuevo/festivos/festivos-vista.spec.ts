@@ -8,6 +8,7 @@ import {
   formularioDe,
   nombreDeFila,
   sedesEnFrase,
+  textoFestivoDeClase,
   textoImpacto,
   textoTipo,
   validarFestivo,
@@ -85,5 +86,26 @@ describe('festivos-vista', () => {
     });
     expect(detalleConLista([1, 2, 3, 4].map((d) => ({ sedeId: 1, sede: 'A', fecha: `2026-11-0${d}`, horaInicio: '', grupo: 'G' }))))
       .toBe('A, domingo 1: G; A, lunes 2: G; A, martes 3: G y 1 más');
+  });
+
+  it('texto del festivo en pasar lista, según el tipo, las fechas y las sedes', () => {
+    const f = (cambios: object) => ({ id: 1, nombre: null, tipo: 'DIA' as const, deUnDiaYUnaSede: true, fechaDesde: '2026-11-05', fechaHasta: '2026-11-05', sedes: 1, ...cambios });
+    expect(textoFestivoDeClase(f({}), '2026-11-05', 'Estepa')).toBe('No hay clase en Estepa el jueves 5 de noviembre. No cuenta como falta para nadie.');
+    expect(textoFestivoDeClase(f({ sedes: 3, deUnDiaYUnaSede: false }), '2026-11-05', 'Estepa'))
+      .toBe('No hay clase en varias sedes el jueves 5 de noviembre. No cuenta como falta para nadie.');
+    expect(textoFestivoDeClase(f({}), '2026-11-05', null)).toBe('No hay clase el jueves 5 de noviembre. No cuenta como falta para nadie.');
+    const rango = f({ tipo: 'RANGO', fechaDesde: '2026-12-23', fechaHasta: '2027-01-07', sedes: 1, deUnDiaYUnaSede: false });
+    expect(textoFestivoDeClase(rango, '2026-12-28', 'Herrera'))
+      .toBe('Del 23 de diciembre al 7 de enero, en Herrera. Esta clase no tiene lista ese día y no cuenta como falta para nadie.');
+    expect(textoFestivoDeClase({ ...rango, sedes: 6 }, '2026-12-28', 'Herrera'))
+      .toBe('Del 23 de diciembre al 7 de enero, en varias sedes. Esta clase no tiene lista ese día y no cuenta como falta para nadie.');
+    expect(textoFestivoDeClase({ ...rango, fechaDesde: '2026-03-22', fechaHasta: '2026-03-26' }, '2026-03-24', null))
+      .toBe('Del 22 al 26 de marzo. Esta clase no tiene lista ese día y no cuenta como falta para nadie.');
+    const anual = f({ tipo: 'ANUAL', fechaDesde: '2026-12-08', fechaHasta: '2026-12-08', sedes: 6, deUnDiaYUnaSede: false });
+    expect(textoFestivoDeClase(anual, '2026-12-08', 'Estepa'))
+      .toBe('Cada año, 8 de diciembre, en varias sedes. Esta clase no tiene lista ese día y no cuenta como falta para nadie.');
+    // Sin fechas del API: como un día.
+    expect(textoFestivoDeClase(f({ tipo: 'RANGO', fechaDesde: null, fechaHasta: null }), '2026-11-05', 'Estepa'))
+      .toBe('No hay clase en Estepa el jueves 5 de noviembre. No cuenta como falta para nadie.');
   });
 });

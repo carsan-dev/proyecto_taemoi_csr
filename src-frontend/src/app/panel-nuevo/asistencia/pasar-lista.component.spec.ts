@@ -701,6 +701,7 @@ describe('PasarListaComponent', () => {
       arrancarGestion(festiva);
       expect(texto('.pasar-lista__festivo h2')).toBe('Festivo en Estepa · Feria de Estepa');
       expect(texto('.pasar-lista__festivo p')).toBe('No hay clase en Estepa el miércoles 28 de octubre. No cuenta como falta para nadie.');
+      expect(boton('Ver en Festivos')).toBeUndefined();
       expect(el().querySelector('.pasar-lista__festivo')?.getAttribute('role')).toBe('status');
       expect(el().querySelector('.pasar-lista__lista')).toBeNull();
       expect(el().querySelector('.pasar-lista__barra')).toBeNull();
@@ -727,10 +728,26 @@ describe('PasarListaComponent', () => {
       expect(el().querySelector('.pasar-lista__lista')).not.toBeNull();
     });
 
-    it('festivo de varios días o sedes: «Ver en Festivos»', () => {
-      arrancarGestion(clase({ festivo: { id: 32, nombre: null, tipo: 'RANGO', deUnDiaYUnaSede: false } }));
-      expect(texto('.pasar-lista__festivo h2')).toBe('Festivo en Estepa');
+    it('festivo de varios días y sedes: texto del rango y «Ver en Festivos»', () => {
+      arrancarGestion(clase({
+        fecha: '2026-11-02',
+        festivo: { id: 32, nombre: 'Puente de Todos los Santos', tipo: 'RANGO', deUnDiaYUnaSede: false, fechaDesde: '2026-10-30', fechaHasta: '2026-11-02', sedes: 2 },
+      }));
+      expect(texto('.pasar-lista__festivo h2')).toBe('Festivo en Estepa · Puente de Todos los Santos');
+      expect(texto('.pasar-lista__festivo p')).toBe(
+        'Del 30 de octubre al 2 de noviembre, en varias sedes. Esta clase no tiene lista ese día y no cuenta como falta para nadie.');
       expect(boton('Ver en Festivos')?.getAttribute('href')).toBe('/festivos');
+      expect(boton('Quitar festivo')).toBeUndefined();
+    });
+
+    it('festivo anual: «Cada año», sin nombre, y «Ver en Festivos»', () => {
+      arrancarGestion(clase({
+        fecha: '2026-12-08',
+        festivo: { id: 33, nombre: null, tipo: 'ANUAL', deUnDiaYUnaSede: false, fechaDesde: '2026-12-08', fechaHasta: '2026-12-08', sedes: 1 },
+      }));
+      expect(texto('.pasar-lista__festivo h2')).toBe('Festivo en Estepa');
+      expect(texto('.pasar-lista__festivo p')).toBe('Cada año, 8 de diciembre, en Estepa. Esta clase no tiene lista ese día y no cuenta como falta para nadie.');
+      expect(boton('Ver en Festivos')).toBeTruthy();
       expect(boton('Quitar festivo')).toBeUndefined();
     });
 

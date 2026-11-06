@@ -1,4 +1,4 @@
-import { TipoFestivo } from '../../interfaces/asistencia';
+import { FestivoDeClase, TipoFestivo } from '../../interfaces/asistencia';
 import { fechaClase, fechaClaseCapital, nombreMesMinuscula } from '../asistencia/asistencia-textos';
 
 /** Una sede de un festivo. */
@@ -114,6 +114,28 @@ export function fechaEnFrase(f: Festivo): string {
     return `Del ${a.day} de ${nombreMesMinuscula(a.month)} al ${b.day} de ${nombreMesMinuscula(b.month)}`;
   }
   return f.fechaDesde ? `El ${fechaClase(f.fechaDesde)}` : '';
+}
+
+/**
+ * Texto del bloque de una clase festiva en Pasar lista (boceto, estados `festivo` y `festivo-rango`). Un día: «No hay
+ * clase en Estepa el jueves 5 de noviembre. No cuenta como falta para nadie.». Varios días o cada año: «Del 30 de
+ * octubre al 2 de noviembre, en Estepa. Esta clase no tiene lista ese día…» o «Cada año, 8 de diciembre, en…». La
+ * clase solo sabe cuántas sedes cubre: con más de una, «varias sedes». Sin las fechas del festivo, el texto de un día.
+ */
+export function textoFestivoDeClase(f: FestivoDeClase, fecha: string, sede: string | null): string {
+  const donde = f.sedes > 1 ? 'varias sedes' : sede;
+  const resto = 'Esta clase no tiene lista ese día y no cuenta como falta para nadie.';
+  if (f.tipo === 'RANGO' && f.fechaDesde && f.fechaHasta) {
+    const a = partes(f.fechaDesde);
+    const b = partes(f.fechaHasta);
+    const desde = a.month === b.month && a.year === b.year ? `${a.day}` : `${a.day} de ${nombreMesMinuscula(a.month)}`;
+    return `Del ${desde} al ${b.day} de ${nombreMesMinuscula(b.month)}${donde ? `, en ${donde}` : ''}. ${resto}`;
+  }
+  if (f.tipo === 'ANUAL' && f.fechaDesde) {
+    const a = partes(f.fechaDesde);
+    return `Cada año, ${a.day} de ${nombreMesMinuscula(a.month)}${donde ? `, en ${donde}` : ''}. ${resto}`;
+  }
+  return `No hay clase${donde ? ` en ${donde}` : ''} el ${fechaClase(fecha)}. No cuenta como falta para nadie.`;
 }
 
 /** «todas las sedes», «Estepa» o «Estepa y Herrera». */
