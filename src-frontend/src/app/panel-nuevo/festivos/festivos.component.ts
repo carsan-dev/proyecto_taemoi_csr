@@ -248,6 +248,10 @@ export class FestivosComponent implements OnInit {
     this.impacto$.next();
   }
 
+  errorDe(campo: string): string | null {
+    return this.panel?.errores[campo as CampoFestivo] ?? null;
+  }
+
   marcada(id: number): boolean { return !!this.panel?.form.sedeIds.includes(id); }
 
   descripcion(campo: CampoFestivo, ayuda: string | null): string | null {
