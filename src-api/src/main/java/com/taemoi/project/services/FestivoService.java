@@ -137,7 +137,10 @@ public class FestivoService {
 
 	private Map<SedeYFecha, DiaFestivo> festivosEn(Collection<Long> sedeIds, LocalDate desde, LocalDate hasta,
 			Long excluirFestivoId) {
-		Set<Long> ids = sedeIds == null ? Set.of() : new HashSet<>(sedeIds);
+		if (sedeIds == null || sedeIds.isEmpty()) {
+			return Map.of();
+		}
+		Set<Long> ids = new HashSet<>(sedeIds);
 		ids.remove(null);
 		if (ids.isEmpty() || desde == null || hasta == null || hasta.isBefore(desde)) {
 			return Map.of();
