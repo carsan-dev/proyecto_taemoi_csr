@@ -12,7 +12,7 @@ import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { PasarListaComponent } from './pasar-lista.component';
 
 const clase = (cambios: Partial<ClaseAsistencia> = {}): ClaseAsistencia => ({
-  turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 3, ...cambios,
+  turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 3, festivo: null, ...cambios,
 });
 
 const alumno = (id: number, nombre: string, presente = false): AlumnoDeLista => ({

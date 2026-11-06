@@ -131,7 +131,7 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     const fecha = consulta.get('fecha') ?? '';
     if (Number.isInteger(turno) && turno > 0 && FECHA_ISO.test(fecha)) {
       const conocida = [...clases.hoy, ...clases.recientes].find((c) => c.turnoId === turno && c.fecha === fecha);
-      this.cargarLista(conocida ?? { turnoId: turno, fecha, horaInicio: '', horaFin: '', pasada: false, presentes: null, total: null, alumnos: 0 }, false);
+      this.cargarLista(conocida ?? { turnoId: turno, fecha, horaInicio: '', horaFin: '', pasada: false, presentes: null, total: null, alumnos: 0, festivo: null }, false);
       return;
     }
     const hoy = clases.hoy.find((c) => !tieneLista(c)) ?? clases.hoy[0];

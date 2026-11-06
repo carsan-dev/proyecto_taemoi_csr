@@ -9,6 +9,7 @@ import {
   ClaseAsistencia,
   ClasesDelGrupo,
   ListaDeClase,
+  MotivoFalta,
   PrefijoAsistencia,
   ResumenAsistenciaAlumno,
 } from '../../interfaces/asistencia';
@@ -41,7 +42,14 @@ export class AsistenciaService {
   lista(prefijo: PrefijoAsistencia, grupoId: number, turnoId: number, fecha: string): Observable<ListaDeClase> {
     return this.http
       .get<ListaDeClase>(`${this.base(prefijo, grupoId)}/clases/${turnoId}/${fecha}`, this.opciones())
-      .pipe(map((l) => ({ ...l, alumnos: (l.alumnos ?? []).map((a) => ({ ...a, deportes: a.deportes ?? [] })) })));
+      .pipe(
+        map((l) => ({
+          ...l,
+          clase: { ...l.clase, festivo: l.clase?.festivo ?? null },
+          sede: l.sede ?? null,
+          alumnos: (l.alumnos ?? []).map((a) => ({ ...a, deportes: a.deportes ?? [], motivo: a.motivo ?? null })),
+        }))
+      );
   }
 
   guardar(
@@ -49,11 +57,14 @@ export class AsistenciaService {
     grupoId: number,
     turnoId: number,
     fecha: string,
-    presentes: number[]
+    presentes: number[],
+    motivos: Readonly<Record<number, MotivoFalta>> = {}
   ): Observable<ClaseAsistencia> {
+    // Los motivos solo de las faltas (decisión 455); sin ninguno, el cuerpo de siempre.
+    const cuerpo = Object.keys(motivos).length ? { presentes, motivos } : { presentes };
     return this.http.put<ClaseAsistencia>(
       `${this.base(prefijo, grupoId)}/clases/${turnoId}/${fecha}`,
-      { presentes },
+      cuerpo,
       this.opciones()
     );
   }

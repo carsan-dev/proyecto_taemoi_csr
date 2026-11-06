@@ -44,6 +44,23 @@ describe('AsistenciaService', () => {
     r.flush({});
   });
 
+  it('guardar con motivos: PUT con {presentes, motivos} (solo las faltas)', () => {
+    servicio.guardar('profesor', 7, 9, '2026-10-26', [12], { 15: 'MEDICA', 16: 'OTRA_JUSTIFICADA' }).subscribe();
+    const r = http.expectOne(`${api}/profesor/grupos/7/clases/9/2026-10-26`);
+    expect(r.request.body).toEqual({ presentes: [12], motivos: { 15: 'MEDICA', 16: 'OTRA_JUSTIFICADA' } });
+    r.flush({});
+  });
+
+  it('lista: festivo, sede y motivo ausentes quedan en null', () => {
+    let lista: unknown;
+    servicio.lista('gestion', 7, 9, '2026-10-26').subscribe((l) => (lista = l));
+    http.expectOne(`${api}/grupos/7/clases/9/2026-10-26`).flush({ clase: { turnoId: 9 }, alumnos: [{ id: 1, presente: false }] });
+    const l = lista as { clase: { festivo: unknown }; sede: unknown; alumnos: { motivo: unknown }[] };
+    expect(l.clase.festivo).toBeNull();
+    expect(l.sede).toBeNull();
+    expect(l.alumnos[0].motivo).toBeNull();
+  });
+
   it('resumen y de alumno: year y month como parámetros', () => {
     servicio.resumen('profesor', 7, 2026, 10).subscribe();
     const a = http.expectOne((r) => r.url === `${api}/profesor/grupos/7/asistencia/resumen`);

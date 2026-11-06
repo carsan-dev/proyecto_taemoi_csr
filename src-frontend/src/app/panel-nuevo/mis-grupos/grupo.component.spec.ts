@@ -384,7 +384,7 @@ describe('GrupoPanelComponent', () => {
 
   describe('tarjeta de hoy', () => {
     const clase = (cambios: Partial<ClaseAsistencia> = {}): ClaseAsistencia => ({
-      turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 18, ...cambios,
+      turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 18, festivo: null, ...cambios,
     });
     const tarjeta = () => elemento().querySelector<HTMLElement>('section[aria-label^="Clase"]')!;
 
