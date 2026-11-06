@@ -4,7 +4,7 @@ Red de seguridad de **caracterización**: fija qué rol puede llamar a cada endp
 la fase 3 (autoridades nuevas que fallan cerradas para responsable de sede y profesor, ver
 `fase3-sedes-permisos.md` §3-§4) no abran ni cierren nada sin que se vea en la revisión.
 
-- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (526 líneas; 171 son HEAD, ver más abajo).
+- Registro: `src-api/src/test/resources/seguridad/matriz-permisos.txt` (532 líneas; 172 son HEAD, ver más abajo).
 - Test: `src-api/src/test/java/com/taemoi/project/seguridad/MatrizPermisosTest.java` (etiquetas `integracion` y
   `matriz-permisos`; corre en la batería normal `-DexcludedGroups=migracion`).
 - Arnés: `EvaluadorAutorizacion.java` en el mismo paquete.
@@ -600,6 +600,22 @@ ninguna casilla existente cambia. Caen en la regla `/api/plataforma/**` (`ROLE_A
   está en `EscrituraConRegistroPropio` (`ESCUELA_CREAR`) y el cuerpo de sus 4xx se guarda con `nombre`,
   `emailContacto`, `email` y `apellidos` redactados.
 Lo prueban `AltaEscuelaIntegrationTest`, `AltaEscuelaDeshechaIntegrationTest` y `AltaEscuelaCarrerasIntegrationTest`.
+
+Festivos por sede (decisiones 455-463, V32_2, `fase3-pasar-lista.md`, «Motivos y festivos»): 6 líneas nuevas en
+`FestivoController`; ninguna casilla existente cambia. Regla de URL nueva `/api/festivos`, `/api/festivos/**` para
+ADMIN, MANAGER y RESPONSABLE_SEDE (junto a la de `/api/solicitudes`) y el mismo `@PreAuthorize` en cada método; fuera de
+la lista blanca de la sesión solo-profesor. En las seis: PROPIETARIO y GESTOR `PERMITE`; RESPONSABLE_SEDE `PERMITE`
+declarado en `RESPONSABLE_SEDE_FILTRADO_EN_SERVICIO` (`FestivoService` con `GestionPorSede.restriccion()`); ANONIMO,
+FAMILIA, SOLO_PLATAFORMA y PROFESOR `DENIEGA`.
+- `GET`/`HEAD /api/festivos?sedeId=&pasados=` (`#listar`): el responsable, solo los festivos que tocan alguna de sus
+  sedes; `sedeId` de otra escuela 400, de una sede que no es suya 403 (`exigirSedeDeFiltro`).
+- `POST /api/festivos` (`#crear`) y `POST /api/festivos/impacto` (`#impacto`): todas las `sedeIds` de la escuela y,
+  para el responsable, suyas; si no, 403.
+- `PUT /api/festivos/{id}` (`#editar`) y `DELETE /api/festivos/{id}` (`#borrar`): festivo de otra escuela o inexistente
+  404; el responsable solo cambia o quita los que tienen TODAS sus sedes entre las suyas (si no, 403).
+Las escrituras se auditan con el filtro genérico (`auditoria_evento`, cuerpo sin datos de alumnos). Lo prueba
+`FestivoIntegrationTest`. Pasar lista no gana líneas: sus DTO crecen (`festivo`, `sede`, `motivo`) y el cuerpo de los 4xx
+del PUT guarda también `motivos` redactado.
 
 ## Cómo actualizarlo
 
