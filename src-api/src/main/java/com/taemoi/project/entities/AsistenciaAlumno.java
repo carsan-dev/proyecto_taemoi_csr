@@ -64,10 +64,6 @@ public class AsistenciaAlumno extends EntidadOrganizacion {
 		return presente;
 	}
 
-	public void setPresente(boolean presente) {
-		this.presente = presente;
-	}
-
 	public MotivoFalta getMotivoFalta() {
 		return motivoFalta;
 	}
