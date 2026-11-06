@@ -166,6 +166,6 @@
 
   @if (dialogoFestivo && clase && sede) {
     <pn-dialogo-festivo [fecha]="fechaEnFrase" [sede]="sede.nombre" [impacto]="dialogoFestivo" [grupo]="nombreGrupo"
-      [horaInicio]="clase.horaInicio" [enviando]="marcandoFestivo" (confirmar)="confirmarFestivo($event)" (cerrar)="cerrarDialogoFestivo()" />
+      [horaInicio]="clase.horaInicio" [horaFin]="clase.horaFin" [enviando]="marcandoFestivo" (confirmar)="confirmarFestivo($event)" (cerrar)="cerrarDialogoFestivo()" />
   }
 </section>

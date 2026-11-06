@@ -14,7 +14,7 @@ import {
 
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco, devolverFoco, disparadorActual, esClicEnElVelo } from '../capas/capa-modal';
-import { ClaseConLista, ImpactoFestivo, NOMBRE_MAXIMO } from '../festivos/festivos-vista';
+import { ClaseDeImpacto, ImpactoFestivo, NOMBRE_MAXIMO } from '../festivos/festivos-vista';
 
 let siguienteId = 0;
 
@@ -23,8 +23,9 @@ const clases = (n: number) => `${n} ${n === 1 ? 'clase' : 'clases'}`;
 /**
  * «Marcar festivo» desde Pasar lista (decisiones 456-459; boceto `boceto-pasar-lista-motivos-festivos.html`, estados
  * `festivo-confirmar` y `festivo-aviso`). El diálogo del panel (440 px; hoja inferior por debajo de 768) con lo que
- * no tiene el de confirmación: las clases que ya tienen lista, la nota de que se quedan como están y el nombre opcional
- * con su contador. Primario y no rojo: es reversible. Esc, el velo y la X cancelan, salvo con el envío en vuelo.
+ * no tiene el de confirmación: las clases de esa sede ese día (hora, grupo, «(esta)» y, con lista, «Con lista · 11 de
+ * 14»; el API manda 20 como mucho y el resto va en «y N más»), la nota de que las que tienen lista se quedan como están
+ * y el nombre opcional con su contador. Primario y no rojo: es reversible. Esc, el velo y la X cancelan, salvo con el envío en vuelo.
  */
 @Component({
   selector: 'pn-dialogo-festivo',
@@ -42,9 +43,10 @@ export class DialogoFestivoComponent implements AfterViewInit, OnDestroy {
   @Input({ required: true }) fecha = '';
   @Input({ required: true }) sede = '';
   @Input({ required: true }) impacto!: ImpactoFestivo;
-  /** Para marcar «(esta)» en la fila de la clase abierta, si ya tiene lista. */
+  /** Para marcar «(esta)» en la fila de la clase abierta. */
   @Input() grupo = '';
   @Input() horaInicio = '';
+  @Input() horaFin = '';
   @Input() enviando = false;
   @Output() readonly confirmar = new EventEmitter<string>();
   @Output() readonly cerrar = new EventEmitter<void>();
@@ -81,8 +83,23 @@ export class DialogoFestivoComponent implements AfterViewInit, OnDestroy {
     return n === 1 ? '1 clase ya tiene lista y se queda como está.' : `${n} clases ya tienen lista y se quedan como están.`;
   }
 
-  esEsta(c: ClaseConLista): boolean {
-    return !!this.grupo && c.grupo === this.grupo && c.horaInicio === this.horaInicio;
+  /** El texto sigue con la lista de clases si la hay. */
+  get cierreMensaje(): string {
+    return this.impacto.clasesDetalle.length ? ':' : '.';
+  }
+
+  /** Las que no caben en el detalle (20 como mucho). */
+  get mas(): number {
+    return Math.max(this.impacto.clases - this.impacto.clasesDetalle.length, 0);
+  }
+
+  esEsta(c: ClaseDeImpacto): boolean {
+    return !!this.grupo && c.grupo === this.grupo && c.horaInicio === this.horaInicio && (!this.horaFin || c.horaFin === this.horaFin);
+  }
+
+  listaDe(c: ClaseDeImpacto): string | null {
+    if (!c.conLista) return null;
+    return c.presentes !== null && c.total !== null ? `Con lista · ${c.presentes} de ${c.total}` : 'Con lista';
   }
 
   ngAfterViewInit(): void {

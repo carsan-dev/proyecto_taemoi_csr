@@ -121,6 +121,12 @@
   flex: none;
 }
 
+// «y 3 más»: las que no caben en el detalle del API (20 como mucho), sin hora ni grupo.
+.festivo-dialogo__clases .festivo-dialogo__mas {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
 // Como la nota de Sedes: superficie con filete e icono en acento.
 .festivo-dialogo__nota {
   display: flex;

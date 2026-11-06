@@ -580,10 +580,18 @@ describe('PasarListaComponent', () => {
       boton('Marcar festivo')!.click();
       const impacto = http.expectOne(`${api}/festivos/impacto`);
       expect(impacto.request.body).toEqual({ tipo: 'DIA', fechaDesde: '2026-10-28', fechaHasta: '2026-10-28', sedeIds: [2] });
+      const deClase = (horaInicio: string, horaFin: string, grupo: string, presentes: number | null = null, total: number | null = null) => ({
+        sedeId: 2, sede: 'Estepa', fecha: '2026-10-28', horaInicio, horaFin, grupo, conLista: presentes !== null, presentes, total,
+      });
       impacto.flush({
-        clases: 4, conLista: 2, conListaDetalle: [
+        clases: 4, conLista: 2,
+        conListaDetalle: [
           { sedeId: 2, sede: 'Estepa', fecha: '2026-10-28', horaInicio: '17:00', grupo: 'Iniciación' },
-          { sedeId: 2, sede: 'Estepa', fecha: '2026-10-28', horaInicio: '18:00', grupo: 'Taekwondo gestión' },
+          { sedeId: 2, sede: 'Estepa', fecha: '2026-10-28', horaInicio: '19:00', grupo: 'Avanzados' },
+        ],
+        clasesDetalle: [
+          deClase('17:00', '18:00', 'Iniciación', 11, 14), deClase('18:00', '19:00', 'Taekwondo gestión'),
+          deClase('19:00', '20:00', 'Avanzados', 9, 12), deClase('20:30', '21:30', 'Adultos'),
         ],
       });
       fixture.detectChanges();
@@ -592,9 +600,12 @@ describe('PasarListaComponent', () => {
       expect(d.querySelector('h2')?.textContent?.trim()).toBe('¿Marcar festivo el miércoles 28 de octubre en Estepa?');
       expect(d.getAttribute('aria-labelledby')).toBe(d.querySelector('h2')!.id);
       const mensaje = d.querySelector('.festivo-dialogo__mensaje')!.textContent!.replace(/\s+/g, ' ').trim();
-      expect(mensaje).toBe('Ese día no habrá lista en las clases de Estepa que aún no la tienen. Afecta a 2 de sus 4 clases.');
+      expect(mensaje).toBe('Ese día no habrá lista en las clases de Estepa que aún no la tienen. Afecta a 2 de sus 4 clases:');
       const filasClases = Array.from(d.querySelectorAll('.festivo-dialogo__clases li')).map((li) => li.textContent?.replace(/\s+/g, ' ').trim());
-      expect(filasClases).toEqual(['17:00 Iniciación Con lista', '18:00 Taekwondo gestión (esta) Con lista']);
+      expect(filasClases).toEqual([
+        '17:00–18:00 Iniciación Con lista · 11 de 14', '18:00–19:00 Taekwondo gestión (esta)',
+        '19:00–20:00 Avanzados Con lista · 9 de 12', '20:30–21:30 Adultos',
+      ]);
       expect(d.querySelector('.festivo-dialogo__nota')?.textContent).toContain('2 clases ya tienen lista y se quedan como están.');
       const input = d.querySelector<HTMLInputElement>('input')!;
       expect(document.activeElement).toBe(input);
@@ -614,10 +625,29 @@ describe('PasarListaComponent', () => {
       const d = dialogo()!;
       expect(d.querySelector('.festivo-dialogo__mensaje')!.textContent!.replace(/\s+/g, ' ').trim())
         .toBe('Ese día no habrá lista en ninguna clase de Estepa. Afecta a 1 clase.');
+      expect(d.querySelector('.festivo-dialogo__clases')).toBeNull();
       expect(d.querySelector('.festivo-dialogo__nota')).toBeNull();
       Array.from(d.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Cancelar')!.click();
       fixture.detectChanges();
       expect(dialogo()).toBeNull();
+    });
+
+    it('diálogo: más de 20 clases, las del detalle y «y N más»', () => {
+      arrancarGestion(clase());
+      boton('Marcar festivo')!.click();
+      const clasesDetalle = Array.from({ length: 20 }, (_, i) => ({
+        sedeId: 2, sede: 'Estepa', fecha: '2026-10-28', horaInicio: `${String(8 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`,
+        horaFin: '23:00', grupo: `Grupo ${i + 1}`, conLista: false, presentes: null, total: null,
+      }));
+      http.expectOne(`${api}/festivos/impacto`).flush({ clases: 23, conLista: 0, conListaDetalle: [], clasesDetalle });
+      fixture.detectChanges();
+      const d = dialogo()!;
+      expect(d.querySelector('.festivo-dialogo__mensaje')!.textContent!.replace(/\s+/g, ' ').trim())
+        .toBe('Ese día no habrá lista en ninguna clase de Estepa. Afecta a 23 clases:');
+      const filasClases = Array.from(d.querySelectorAll('.festivo-dialogo__clases li'));
+      expect(filasClases.length).toBe(21);
+      expect(filasClases[0].textContent?.replace(/\s+/g, ' ').trim()).toBe('08:00–23:00 Grupo 1');
+      expect(filasClases[20].textContent?.trim()).toBe('y 3 más');
     });
 
     it('crear: POST de un día con la sede del grupo y el nombre; aviso y la lista se recarga festiva', () => {
