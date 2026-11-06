@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estepa · Taekwondo Sierra Sur · Boceto «Una sede por pantalla», página de sede</title>
+<meta name="description" content="Boceto de página de sede de la web pública de escuela: tema «Una sede por pantalla».">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root {
+  /* Color de la escuela: lo pone la escuela. El JS deriva las variantes accesibles. */
+  --escuela: #0B5CAD;
+  --boton-fondo: #0B5CAD;
+  --boton-tinta: #FFFFFF;
+  --boton-hover: #094C90;
+  --boton-contorno-claro: transparent;
+  --boton-contorno-oscuro: #FFFFFF;
+  --escuela-texto: #0B5CAD;
+
+  --blanco: #FFFFFF;
+  --papel: #F3F4F5;
+  --tinta: #101418;
+  --tinta-2: #4A525D;
+  --filete: #D3D7DC;
+  --aviso: #F2C230;
+  --velo: 16, 20, 24;
+  --sobre-foto: #FFFFFF;
+  --sobre-foto-2: #E3E6EA;
+
+  --m: clamp(20px, 5vw, 72px);
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --salida: cubic-bezier(.16, 1, .3, 1);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: #8A929C var(--papel); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0; background: var(--blanco); color: var(--tinta);
+  font: 400 1rem/1.55 var(--sans); overflow-x: clip;
+}
+@media (min-width: 900px) { body { font-size: 1.0625rem; } }
+::selection { background: var(--tinta); color: var(--blanco); }
+img, svg { display: block; }
+h1, h2, h3, p, figure, ol, ul, dl, dd { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: var(--escuela-texto); text-underline-offset: .22em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+time, .hora, .cifras { font-variant-numeric: tabular-nums; }
+
+/* Foco: doble anillo, blanco y tinta; uno de los dos contrasta con cualquier fondo y con cualquier color de escuela */
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; box-shadow: 0 0 0 2px var(--blanco); }
+.oscuro :focus-visible { outline-color: var(--blanco); box-shadow: 0 0 0 2px var(--tinta); }
+
+.oculto {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.salto {
+  position: fixed; left: 16px; top: -120px; z-index: 60;
+  background: var(--tinta); color: var(--blanco); padding: 12px 16px; font-weight: 600;
+}
+.salto:focus-visible { top: 12px; }
+
+/* ---------- Nota del boceto ---------- */
+.nota {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 20px;
+  padding: 8px var(--m); background: var(--papel); border-bottom: 1px solid var(--filete);
+  font-size: .8125rem; line-height: 1.35; color: var(--tinta);
+}
+.nota strong { font-weight: 700; }
+.probar { display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; }
+.probar legend { float: left; margin-right: 6px; font-weight: 700; }
+.muestra {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 3px 10px 3px 4px;
+  border: 1px solid #8A929C; border-radius: 4px; background: var(--blanco); color: var(--tinta);
+  font: 500 .8125rem/1 var(--sans); cursor: pointer;
+}
+.muestra-color { width: 22px; height: 22px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(16, 20, 24, .5); }
+.muestra[aria-pressed="true"] { border: 2px solid var(--tinta); padding: 2px 9px 2px 3px; font-weight: 700; }
+.muestra:hover { border-color: var(--tinta); }
+@media (max-width: 759px) {
+  .muestra { padding: 4px; }
+  .muestra[aria-pressed="true"] { padding: 3px; }
+  .muestra-nombre { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* ---------- Botones ---------- */
+.boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 48px; padding: 0 22px; border-radius: 2px;
+  font: 600 1rem/1.1 var(--sans); text-decoration: none; cursor: pointer;
+  background: var(--boton-fondo); color: var(--boton-tinta);
+  box-shadow: inset 0 0 0 2px var(--boton-contorno-claro);
+  transition: background-color .15s ease-out;
+}
+.boton:hover { background: var(--boton-hover); }
+.oscuro .boton { box-shadow: inset 0 0 0 2px var(--boton-contorno-oscuro); }
+.oscuro .boton:focus-visible { box-shadow: 0 0 0 2px var(--tinta), inset 0 0 0 2px var(--boton-contorno-oscuro); }
+.boton:focus-visible { box-shadow: 0 0 0 2px var(--blanco), inset 0 0 0 2px var(--boton-contorno-claro); }
+.boton--linea {
+  background: transparent; color: var(--sobre-foto); box-shadow: inset 0 0 0 1.5px var(--sobre-foto);
+}
+.boton--linea:hover { background: rgba(255, 255, 255, .14); }
+.oscuro .boton--linea { box-shadow: inset 0 0 0 1.5px var(--sobre-foto); }
+.oscuro .boton--linea:focus-visible { box-shadow: 0 0 0 2px var(--tinta), inset 0 0 0 1.5px var(--sobre-foto); }
+.boton--tinta { background: var(--blanco); color: var(--tinta); box-shadow: inset 0 0 0 1.5px var(--tinta); }
+.boton--tinta:hover { background: var(--papel); }
+.boton svg { flex: none; }
+.enlace-flecha { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; min-height: 44px; }
+.enlace-flecha svg { transition: transform .15s ease-out; }
+.enlace-flecha:hover svg { transform: translateX(3px); }
+.enlace-flecha--atras:hover svg { transform: translateX(-3px); }
+
+/* ---------- Cabecera sobre la foto de la sede ---------- */
+.inicio { position: relative; }
+.cabecera {
+  position: absolute; inset: 0 0 auto 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 18px var(--m); color: var(--sobre-foto);
+}
+.marca { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.logo {
+  display: grid; place-items: center; width: 40px; height: 40px; flex: none;
+  border: 1.5px dashed rgba(255, 255, 255, .8); font: 700 .75rem/1 var(--sans); letter-spacing: .04em;
+}
+.marca-nombre { font: 600 .9375rem/1.15 var(--sans); }
+.marca-nombre span { display: block; }
+.cabecera-nav ul { display: flex; gap: 4px 22px; flex-wrap: wrap; justify-content: flex-end; }
+.cabecera-nav a {
+  display: inline-flex; align-items: center; min-height: 44px;
+  color: var(--sobre-foto); font-weight: 500; font-size: .9375rem; text-decoration: none;
+}
+.cabecera-nav a:hover { text-decoration: underline; }
+@media (max-width: 420px) { .cabecera-nav ul { gap: 0 14px; } .cabecera-nav a { font-size: .875rem; } }
+
+/* ---------- La pantalla de la sede: foto a sangre con velo medido ---------- */
+.pantalla {
+  position: relative; min-height: 100vh; min-height: 100svh;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  background: var(--tinta); color: var(--sobre-foto); isolation: isolate;
+}
+.pantalla::before {
+  /* Velo de arriba, para la cabecera (el mismo que la portada) */
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(var(--velo), .86) 0, rgba(var(--velo), .6) 72px, rgba(var(--velo), 0) 160px);
+}
+.pantalla-foto { position: absolute; inset: 0; z-index: -2; margin: 0; }
+.pantalla-foto img {
+  width: 100%; height: 100%; object-fit: cover; object-position: var(--pos-movil, 50% 50%);
+}
+@media (min-width: 760px) { .pantalla-foto img { object-position: var(--pos, 50% 50%); } }
+.credito-foto {
+  position: absolute; right: 12px; top: 84px; z-index: 1;
+  font-size: .75rem; line-height: 1.2; color: var(--sobre-foto);
+  background: rgba(var(--velo), .78); padding: 4px 7px;
+}
+.sede-texto {
+  position: relative; padding: 150px var(--m) clamp(28px, 6vh, 64px);
+  background: linear-gradient(to top,
+    rgba(var(--velo), .9) 0%, rgba(var(--velo), .74) calc(100% - 150px), rgba(var(--velo), 0) 100%);
+}
+.sede-texto > * { max-width: 1100px; }
+.vecinas {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0 22px; margin-bottom: 10px;
+  font: 500 .9375rem/1.2 var(--sans);
+}
+.vecinas a { color: var(--sobre-foto); text-decoration: none; }
+.vecinas a:hover { text-decoration: underline; }
+.vecinas-pos { color: var(--sobre-foto-2); font-variant-numeric: tabular-nums; }
+.sede-pueblo {
+  font: italic 400 clamp(72px, 12.4vw, 176px)/.86 var(--serif); letter-spacing: -.025em;
+  text-wrap: balance; margin-left: -.04em;
+}
+.sede-pueblo .pre { display: block; font: 500 clamp(1rem, 1.6vw, 1.25rem)/1.2 var(--sans); font-style: normal; letter-spacing: 0; color: var(--sobre-foto-2); margin: 0 0 8px .04em; }
+.sede-lugar { margin-top: 18px; font-size: 1rem; color: var(--sobre-foto-2); }
+.sede-lugar strong { color: var(--sobre-foto); font-weight: 600; }
+.sede-proxima {
+  margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  font: 600 clamp(1.125rem, 2vw, 1.5rem)/1.25 var(--sans); font-variant-numeric: tabular-nums;
+}
+.sede-proxima .sep { opacity: .7; font-weight: 400; }
+.sede-proxima-rotulo { font: 500 .9375rem/1.2 var(--sans); color: var(--sobre-foto-2); width: 100%; }
+.sede-acciones { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 420px) { .sede-acciones .boton { flex: 1 1 140px; padding: 0 14px; } }
+.hoy {
+  display: inline-block; background: var(--aviso); color: var(--tinta);
+  padding: 2px 7px 1px; font-weight: 700; letter-spacing: .01em;
+}
+
+/* Movimiento firma: el pueblo entra con un leve desplazamiento al abrir la página */
+@media (prefers-reduced-motion: no-preference) {
+  .anima .sede-pueblo .nombre { display: inline-block; transition: transform .9s var(--salida), opacity .9s var(--salida); }
+  .anima .pantalla:not(.vista) .sede-pueblo .nombre { transform: translateX(-.18em); opacity: .001; }
+}
+
+/* ---------- Secciones editoriales ---------- */
+.envoltura { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: var(--m); }
+.seccion { padding-block: clamp(72px, 10vw, 144px); border-top: 1px solid var(--filete); }
+.seccion--primera { border-top: 0; }
+.titulo {
+  font: 400 clamp(44px, 6.4vw, 92px)/.95 var(--serif); letter-spacing: -.02em; text-wrap: balance;
+}
+.titulo em { font-style: italic; }
+.cabeza-seccion { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 32px; margin-bottom: clamp(36px, 5vw, 64px); }
+.cabeza-pista { color: var(--tinta-2); font-weight: 500; }
+.foto img { width: 100%; height: auto; object-fit: cover; background: var(--papel); }
+.pie-foto { margin-top: 10px; font-size: .875rem; color: var(--tinta-2); display: flex; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; }
+.pie-foto .credito { font-size: .75rem; }
+
+/* ---------- Grupos y horas: la lista del cajón de la portada, en página ---------- */
+.proxima {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  padding-bottom: 18px; border-bottom: 1px solid var(--tinta);
+  font: 600 clamp(1.125rem, 1.8vw, 1.375rem)/1.3 var(--sans); font-variant-numeric: tabular-nums;
+}
+.proxima-rotulo { font: 500 .9375rem/1.2 var(--sans); color: var(--tinta-2); }
+.proxima .sep { color: var(--tinta-2); font-weight: 400; }
+.proxima-grupo { font-weight: 400; color: var(--tinta-2); }
+@media (max-width: 599px) { .proxima .sep { display: none; } .proxima-grupo { flex-basis: 100%; } }
+.grupo {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 18px;
+  padding: 24px 0; border-bottom: 1px solid var(--filete);
+}
+.grupo-hora { grid-row: span 2; min-width: 5.5rem; }
+.grupo-hora .ini { display: block; font: 600 2.25rem/1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.grupo-hora .fin { display: block; margin-top: 4px; font-size: .875rem; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.grupo-hora .hoy { margin-top: 8px; font-size: .75rem; }
+.grupo-nombre { font: 600 1.125rem/1.25 var(--sans); }
+.grupo-edades { color: var(--tinta-2); font-size: .9375rem; }
+.grupo-profe { margin-top: 4px; font-size: .9375rem; }
+.grupo-detalle { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 8px; }
+.grupo-accion { grid-column: 1 / -1; margin-top: 10px; }
+.grupo-accion .boton { width: 100%; }
+.dias { display: flex; gap: 3px; }
+.dia {
+  display: grid; place-items: center; width: 24px; height: 24px;
+  font: 600 .75rem/1 var(--sans); color: var(--tinta-2); box-shadow: inset 0 0 0 1px #9AA1AA;
+}
+.dia--si { background: var(--tinta); color: var(--blanco); box-shadow: none; }
+.plazas { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: .9375rem; }
+.plazas svg { flex: none; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 22px; color: var(--tinta-2); font-size: .9375rem; }
+.leyenda li { display: inline-flex; align-items: center; gap: 8px; }
+.leyenda svg { flex: none; }
+@media (min-width: 760px) {
+  .grupo-accion { grid-column: 2; }
+  .grupo-accion .boton { width: auto; }
+}
+@media (min-width: 1000px) {
+  .grupo { grid-template-columns: 9rem minmax(0, 1.3fr) minmax(0, 1fr) auto; align-items: center; gap: 8px 32px; padding: 28px 0; }
+  .grupo-hora { grid-row: auto; }
+  .grupo-hora .ini { font-size: 3.25rem; }
+  .grupo-detalle, .grupo-accion { grid-column: auto; margin-top: 0; }
+}
+
+/* ---------- Cómo llegar ---------- */
+.llegar { display: grid; gap: 48px; }
+.ficha { border-top: 1px solid var(--tinta); }
+.ficha-fila { display: grid; grid-template-columns: minmax(110px, 30%) 1fr; gap: 4px 16px; padding: 14px 0; border-bottom: 1px solid var(--filete); }
+.ficha dt { font-weight: 600; }
+.ficha dd { color: var(--tinta); }
+.ficha-nota { display: block; color: var(--tinta-2); font-size: .9375rem; }
+.ficha-tel { display: inline-flex; align-items: center; min-height: 44px; font: 600 1.5rem/1 var(--sans); }
+.llegar-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-top: 28px; }
+.llegar-foto img { aspect-ratio: 4 / 5; }
+.llegar .titulo { margin-bottom: clamp(36px, 5vw, 64px); }
+@media (min-width: 900px) {
+  .llegar { grid-template-columns: 7fr 5fr; gap: 96px; align-items: start; }
+}
+@media (max-width: 899px) { .llegar-foto img { aspect-ratio: 3 / 2; } }
+@media (max-width: 520px) { .ficha-fila { grid-template-columns: 1fr; } }
+
+/* ---------- Profesores de la sede: una fila por profesor ---------- */
+.profe { display: grid; gap: 24px 48px; padding: 40px 0; border-top: 1px solid var(--tinta); }
+.profe + .profe { border-top-color: var(--filete); }
+.profe-foto, .monograma { max-width: 340px; }
+.profe-foto img, .monograma { aspect-ratio: 4 / 5; }
+.monograma {
+  display: grid; place-items: center; background: var(--papel); border: 1px solid var(--filete);
+  font: italic 400 clamp(64px, 9vw, 120px)/1 var(--serif); color: var(--tinta-2);
+}
+.profe-nombre { font: 400 clamp(2.5rem, 4.6vw, 4rem)/1 var(--serif); letter-spacing: -.015em; text-wrap: balance; }
+.profe-grado { margin-top: 8px; color: var(--tinta-2); font-size: 1.0625rem; }
+.profe-grupos { margin-top: 24px; border-top: 1px solid var(--filete); }
+.profe-grupos li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; padding: 12px 0; border-bottom: 1px solid var(--filete); }
+.profe-grupos b { font-weight: 600; }
+.profe-grupos span { color: var(--tinta-2); }
+.profe-otras { margin-top: 16px; color: var(--tinta-2); }
+@media (min-width: 760px) { .profe { grid-template-columns: 4fr 7fr; align-items: end; } }
+
+/* ---------- Tarifa ---------- */
+.tarifa { display: grid; gap: 24px 48px; align-items: end; }
+.tarifa-cifra { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 20px; }
+.tarifa-importe { font: 400 clamp(120px, 24vw, 320px)/.82 var(--serif); letter-spacing: -.04em; white-space: nowrap; }
+.tarifa-mes { font: italic 400 clamp(32px, 4vw, 56px)/1 var(--serif); }
+.tarifa-lado { display: grid; gap: 16px; max-width: 30em; padding-top: 16px; border-top: 1px solid var(--tinta); }
+.tarifa-igual { font-weight: 600; font-size: 1.125rem; }
+.tarifa-incluye li { padding: 6px 0; color: var(--tinta-2); border-bottom: 1px solid var(--filete); }
+.tarifa-lado .boton { justify-self: start; margin-top: 8px; }
+@media (min-width: 900px) { .tarifa { grid-template-columns: 7fr 5fr; } }
+
+/* ---------- Todas las sedes: el índice de pueblos de la portada, sobre blanco ---------- */
+.pueblos { border-top: 1px solid var(--tinta); }
+.pueblos li { border-bottom: 1px solid var(--filete); }
+.pueblos a {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 2px 20px;
+  padding: clamp(10px, 1.4vw, 16px) 0; color: var(--tinta); text-decoration: none;
+}
+.pueblos-nombre { font: italic 400 clamp(36px, 4.6vw, 60px)/1 var(--serif); letter-spacing: -.015em; }
+.pueblos-dato { grid-column: 1; color: var(--tinta-2); font-size: .9375rem; }
+.pueblos-hora { grid-column: 2; grid-row: 1; font: 600 clamp(.9375rem, 1.3vw, 1.125rem)/1.2 var(--sans); font-variant-numeric: tabular-nums; }
+.pueblos a:hover .pueblos-nombre { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .12em; }
+.pueblos a[aria-current="page"] .pueblos-nombre { color: var(--escuela-texto); }
+.aqui { display: inline-flex; align-items: center; gap: 8px; color: var(--tinta); font-weight: 600; }
+.aqui::before { content: ""; width: 10px; height: 10px; background: var(--escuela-texto); }
+
+/* ---------- Pie ---------- */
+.pie { background: var(--tinta); color: #D9DDE1; padding: 56px 0 40px; font-size: .9375rem; }
+.pie a { color: var(--blanco); }
+.pie-marca { font: italic 400 clamp(40px, 6vw, 72px)/1 var(--serif); color: var(--blanco); }
+.pie-fila { display: grid; gap: 24px; margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, .25); }
+.pie-legal { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.pie-legal a { display: inline-flex; min-height: 44px; align-items: center; }
+.pie-ejemplo strong { color: var(--blanco); }
+.pie-creditos { margin-top: 8px; font-size: .8125rem; }
+@media (min-width: 900px) { .pie-fila { grid-template-columns: auto auto 1fr; gap: 48px; } }
+</style>
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+
+<div class="nota" role="region" aria-label="Nota del boceto">
+  <p><strong>Boceto «Una sede por pantalla»</strong> · página de sede · datos y fotos de ejemplo</p>
+  <fieldset class="probar">
+    <legend>Probar color</legend>
+    <button class="muestra" type="button" data-color="#0B5CAD" aria-pressed="true"><span class="muestra-color" style="background:#0B5CAD" aria-hidden="true"></span><span class="muestra-nombre">Azul Sierra Sur</span></button>
+    <button class="muestra" type="button" data-color="#F2C230" aria-pressed="false"><span class="muestra-color" style="background:#F2C230" aria-hidden="true"></span><span class="muestra-nombre">Claro</span></button>
+    <button class="muestra" type="button" data-color="#1B2B2E" aria-pressed="false"><span class="muestra-color" style="background:#1B2B2E" aria-hidden="true"></span><span class="muestra-nombre">Muy oscuro</span></button>
+  </fieldset>
+</div>
+
+<div class="inicio">
+  <header class="cabecera oscuro">
+    <a class="marca" href="boceto-sede-por-pantalla.html" data-enlace>
+      <span class="logo" role="img" aria-label="Marcador de logo" title="Marcador de logo: lo sube la escuela">TSS</span>
+      <span class="marca-nombre"><span>Taekwondo</span><span>Sierra Sur</span></span>
+    </a>
+    <nav class="cabecera-nav" aria-label="Principal">
+      <ul>
+        <li><a href="boceto-sede-por-pantalla-tarifas.html" data-enlace>Tarifas</a></li>
+        <li><a href="boceto-sede-por-pantalla-eventos.html" data-enlace>Eventos</a></li>
+        <li><a href="boceto-sede-por-pantalla.html#contacto" data-enlace>Contacto</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="principal" tabindex="-1">
+    <!-- La pantalla de la sede: la misma que en la portada, ahora como primera pantalla -->
+    <section class="pantalla oscuro" id="sede" aria-labelledby="sede-titulo">
+      <figure class="pantalla-foto" id="sede-foto"></figure>
+      <p class="credito-foto" id="sede-credito"></p>
+      <div class="sede-texto">
+        <nav class="vecinas" id="vecinas" aria-label="Sedes vecinas"></nav>
+        <h1 class="sede-pueblo" id="sede-titulo"><span class="pre">Taekwondo en</span><span class="nombre" id="sede-nombre"></span></h1>
+        <p class="sede-lugar" id="sede-lugar"></p>
+        <p class="sede-proxima" id="sede-proxima"></p>
+        <div class="sede-acciones" id="sede-acciones"></div>
+      </div>
+    </section>
+
+    <!-- Grupos y horas -->
+    <section class="seccion seccion--primera" id="grupos" aria-labelledby="grupos-titulo">
+      <div class="envoltura">
+        <div class="cabeza-seccion">
+          <h2 class="titulo" id="grupos-titulo">Grupos y <em>horas</em></h2>
+          <p class="cabeza-pista">Curso 2026-2027</p>
+        </div>
+        <p class="proxima" id="proxima"></p>
+        <ol class="grupos" id="lista-grupos"></ol>
+        <ul class="leyenda" id="leyenda" aria-label="Qué significa cada marca de plazas"></ul>
+      </div>
+    </section>
+
+    <!-- Cómo llegar -->
+    <section class="seccion" id="llegar" aria-labelledby="llegar-titulo">
+      <div class="envoltura llegar">
+        <div>
+          <h2 class="titulo" id="llegar-titulo">Cómo <em>llegar</em></h2>
+          <dl class="ficha" id="llegar-ficha"></dl>
+          <div class="llegar-acciones" id="llegar-acciones"></div>
+        </div>
+        <figure class="foto llegar-foto" id="llegar-foto"></figure>
+      </div>
+    </section>
+
+    <!-- Profesores de la sede -->
+    <section class="seccion" id="profesores" aria-labelledby="profesores-titulo">
+      <div class="envoltura">
+        <div class="cabeza-seccion"><h2 class="titulo" id="profesores-titulo">Quién da <em>la clase</em></h2></div>
+        <ul class="profes" id="profes"></ul>
+      </div>
+    </section>
+
+    <!-- Tarifa -->
+    <section class="seccion" id="tarifas" aria-labelledby="tarifas-titulo">
+      <div class="envoltura">
+        <div class="cabeza-seccion">
+          <h2 class="titulo" id="tarifas-titulo">Tarifa</h2>
+          <a class="enlace-flecha" href="boceto-sede-por-pantalla-tarifas.html" data-enlace>Ver tarifas y condiciones
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+        <div class="tarifa">
+          <p class="tarifa-cifra"><span class="tarifa-importe">25 €</span><span class="tarifa-mes">al mes</span></p>
+          <div class="tarifa-lado">
+            <p class="tarifa-igual" id="tarifa-igual">Igual en todas las sedes</p>
+            <ul class="tarifa-incluye">
+              <li>Mensualidad por alumno</li>
+              <li>Licencia y exámenes aparte, se informan en la sede</li>
+            </ul>
+            <a class="boton" id="tarifa-cta" href="boceto-sede-por-pantalla-preinscripcion.html" data-enlace>Preinscríbete
+              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Todas las sedes, en el orden de siempre -->
+    <section class="seccion" id="sedes" aria-labelledby="sedes-titulo">
+      <div class="envoltura">
+        <div class="cabeza-seccion"><h2 class="titulo" id="sedes-titulo">Todas las <em>sedes</em></h2></div>
+        <nav aria-labelledby="sedes-titulo"><ol class="pueblos" id="pueblos"></ol></nav>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer class="pie oscuro">
+  <div class="envoltura">
+    <p class="pie-marca" aria-hidden="true">Taekwondo Sierra Sur</p>
+    <div class="pie-fila">
+      <p>© 2026 Taekwondo Sierra Sur</p>
+      <ul class="pie-legal" aria-label="Legal">
+        <li><a href="boceto-sede-por-pantalla-legales.html#aviso-legal" data-enlace>Aviso legal</a></li>
+        <li><a href="boceto-sede-por-pantalla-legales.html#privacidad" data-enlace>Privacidad</a></li>
+        <li><a href="boceto-sede-por-pantalla-legales.html#cookies" data-enlace>Cookies</a></li>
+      </ul>
+      <div>
+        <p class="pie-ejemplo"><strong>Datos y fotos de ejemplo.</strong> Son inventados los lugares, direcciones, grupos, horarios, plazas, profesores, eventos, correo y teléfono. La mensualidad de 25 € es la real. Las fotos son libres y las sustituirá el club; aquí se repiten porque el boceto solo tiene estas.</p>
+        <p class="pie-creditos">Fotos: Camila Sanabria (Unsplash); A. Villalon, cottonbro, Eden FC, Kulani Shibambu, Elshan Musaev, KKlinton y Celio Junior (Pexels).</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* color:inicio — funciones puras de contraste WCAG (las de la portada) */
+function hexARgb(hex) {
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function rgbAHex(c) {
+  return '#' + c.map(function (v) { return Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0'); }).join('').toUpperCase();
+}
+function luminancia(hex) {
+  var c = hexARgb(hex).map(function (v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contraste(a, b) {
+  var la = luminancia(a), lb = luminancia(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function rgbAHsl(c) {
+  var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0, d = max - min;
+  if (d) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hslARgb(h, s, l) {
+  function f(p, q, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  if (!s) return [l * 255, l * 255, l * 255];
+  var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  return [f(p, q, h + 1 / 3) * 255, f(p, q, h) * 255, f(p, q, h - 1 / 3) * 255];
+}
+/* Oscurece (baja la luminosidad, conserva el tono) hasta cumplir el objetivo sobre todos los fondos */
+function oscurecer(hex, objetivo, fondos) {
+  var hsl = rgbAHsl(hexARgb(hex)), actual = rgbAHex(hexARgb(hex));
+  function cumple(c) { return fondos.every(function (f) { return contraste(c, f) >= objetivo; }); }
+  while (!cumple(actual) && hsl[2] > 0) {
+    hsl[2] = Math.max(0, hsl[2] - 0.005);
+    actual = rgbAHex(hslARgb(hsl[0], hsl[1], hsl[2]));
+  }
+  return actual;
+}
+function mezclar(a, b, t) {
+  var x = hexARgb(a), y = hexARgb(b);
+  return rgbAHex(x.map(function (v, i) { return v + (y[i] - v) * t; }));
+}
+var BLANCO = '#FFFFFF', PAPEL = '#F3F4F5', TINTA = '#101418';
+function derivarColores(base) {
+  base = rgbAHex(hexARgb(base));
+  /* Botón principal: texto blanco o tinta, el que dé >= 4,5:1; si ninguno, se oscurece el fondo */
+  var fondo = base, tinta;
+  if (contraste(BLANCO, base) >= 4.5) tinta = BLANCO;
+  else if (contraste(TINTA, base) >= 4.5) tinta = TINTA;
+  else { fondo = oscurecer(base, 4.5, [BLANCO]); tinta = BLANCO; }
+  /* Hover: se aleja del texto, así el contraste nunca baja */
+  var hover = tinta === BLANCO ? mezclar(fondo, '#000000', 0.16) : mezclar(fondo, '#FFFFFF', 0.22);
+  /* Borde del botón: si su fondo no llega a 3:1 contra lo que tiene alrededor, lleva contorno */
+  var contornoClaro = contraste(fondo, BLANCO) >= 3 ? 'transparent' : TINTA;
+  var contornoOscuro = contraste(fondo, TINTA) >= 3 ? 'transparent' : BLANCO;
+  /* Enlaces y marcas sobre blanco: >= 4,5:1 sobre blanco y papel */
+  var texto = oscurecer(base, 4.5, [BLANCO, PAPEL]);
+  return {
+    base: base, fondo: fondo, tinta: tinta, hover: hover, contornoClaro: contornoClaro, contornoOscuro: contornoOscuro,
+    texto: texto,
+    cBoton: contraste(fondo, tinta), cHover: contraste(hover, tinta),
+    cBotonBlanco: contornoClaro === 'transparent' ? contraste(fondo, BLANCO) : contraste(TINTA, BLANCO),
+    cBotonOscuro: contornoOscuro === 'transparent' ? contraste(fondo, TINTA) : contraste(BLANCO, TINTA),
+    cTexto: Math.min(contraste(texto, BLANCO), contraste(texto, PAPEL))
+  };
+}
+/* color:fin */
+
+(function () {
+  var params = new URLSearchParams(location.search);
+  var raiz = document.documentElement;
+
+  /* ---- Datos de ejemplo (en la app salen de la gestión; mismo orden y fotos que la portada) ---- */
+  var SEDES = [
+    { id: 'herrera', nombre: 'Herrera', lugar: 'Pabellón municipal', dir: 'Avda. de la Constitución, s/n', tel: '600 000 001',
+      acceso: 'Entrada por la puerta principal del pabellón.', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [1, 3], h: ['17:00', '17:45'], p: { t: 'libres', n: 4 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['18:00', '19:00'], p: { t: 'completo' } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['19:30', '21:00'], p: { t: 'espera' } } ] },
+    { id: 'estepa', nombre: 'Estepa', lugar: 'Pabellón cubierto municipal', dir: 'C/ del Deporte, 2', tel: '600 000 002',
+      acceso: 'Entrada por la calle lateral, junto al aparcamiento.', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [5], h: ['17:00', '18:00'], p: { t: 'libres', n: 2 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['17:30', '18:30'], p: { t: 'libres', n: 6 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [1, 3], h: ['19:00', '20:30'], p: { t: 'completo' } } ] },
+    { id: 'casariche', nombre: 'Casariche', lugar: 'Gimnasio del colegio público', dir: 'C/ Escuelas, 5', tel: '600 000 003',
+      acceso: 'Por la puerta del patio; el colegio abre a las 16:00.', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [2, 4], h: ['16:15', '17:00'], p: { t: 'libres', n: 5 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [2, 4], h: ['17:00', '18:00'], p: { t: 'libres', n: 3 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['18:15', '19:45'], p: { t: 'espera' } } ] },
+    { id: 'lora', nombre: 'Lora de Estepa', lugar: 'Salón de usos múltiples', dir: 'Plaza de España, 1', tel: '600 000 004',
+      acceso: 'Primera planta, con ascensor.', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [5], h: ['16:00', '17:00'], p: { t: 'completo' } },
+      { n: 'Infantil', e: '7 a 11 años', d: [5], h: ['17:00', '18:30'], p: { t: 'libres', n: 5 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [5], h: ['18:30', '20:00'], p: { t: 'libres', n: 1 } } ] },
+    { id: 'roda', nombre: 'Roda de Andalucía', lugar: 'Pabellón municipal', dir: 'Avda. de Andalucía, 40', tel: '600 000 005',
+      acceso: 'Pista pequeña, al fondo a la derecha.', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [1, 3], h: ['17:00', '17:45'], p: { t: 'completo' } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['18:00', '19:00'], p: { t: 'libres', n: 2 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['19:00', '20:30'], p: { t: 'libres', n: 7 } } ] },
+    { id: 'mollina', nombre: 'Mollina', lugar: 'Gimnasio del colegio', dir: 'C/ Granada, 12', tel: '600 000 006',
+      acceso: 'Gimnasio al fondo del patio del colegio.', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [2, 4], h: ['16:30', '17:15'], p: { t: 'libres', n: 6 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [2, 4], h: ['17:30', '18:30'], p: { t: 'espera' } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['18:30', '20:00'], p: { t: 'libres', n: 4 } } ] }
+  ];
+  var PEXELS = 'https://images.pexels.com/photos/';
+  function pexels(id, w) { return PEXELS + id + '/pexels-photo-' + id + '.jpeg?auto=compress&cs=tinysrgb&w=' + w; }
+  /* Foto de cada sede (la de su pantalla en la portada); el encuadre se decide por foto, en escritorio y en móvil */
+  var FOTOS = {
+    herrera: { id: 7990087, ancho: 1600, alto: 1067, pos: '62% 30%', posMovil: '64% 50%', autor: 'cottonbro',
+      alt: 'Niña con dobok y cinturón negro lanzando una patada lateral en la sala' },
+    estepa: { id: 33122161, ancho: 1600, alto: 1067, pos: '55% 35%', posMovil: '62% 50%', autor: 'KKlinton',
+      alt: 'Un entrenador da indicaciones a una competidora con casco rojo en el pabellón' },
+    casariche: { id: 37901794, ancho: 1600, alto: 2133, pos: '50% 48%', posMovil: '48% 50%', autor: 'Eden FC',
+      alt: 'Combate infantil con petos y cascos azul y rojo sobre el tapiz' },
+    lora: { id: 7990068, ancho: 1600, alto: 1067, pos: '50% 30%', posMovil: '50% 40%', autor: 'cottonbro',
+      alt: 'Alumno anudándose el cinturón blanco sobre el dobok' },
+    roda: { id: 38963062, ancho: 1600, alto: 1067, pos: '60% 40%', posMovil: '74% 50%', autor: 'A. Villalon',
+      alt: 'Alumnas entrenando patadas con paletas al aire libre' },
+    mollina: { id: 36563836, ancho: 1600, alto: 1067, pos: '50% 28%', posMovil: '58% 40%', autor: 'Kulani Shibambu',
+      alt: 'Exhibición al aire libre: una joven lanza una patada ante el público sentado' }
+  };
+  /* Segunda foto, para «Cómo llegar»: la de la sede siguiente, para no repetir la de arriba */
+  var ORDEN_FOTOS = ['herrera', 'estepa', 'casariche', 'lora', 'roda', 'mollina'];
+  function segundaFoto(id) { return FOTOS[ORDEN_FOTOS[(ORDEN_FOTOS.indexOf(id) + 1) % ORDEN_FOTOS.length]]; }
+  var PROFES = [
+    { nombre: 'Antonio Ruiz Carmona', grado: 'Cinturón negro 5.º dan', sedes: ['herrera', 'estepa'],
+      foto: { src: pexels(20501962, 1200), autor: 'Elshan Musaev', alt: 'Retrato de un maestro de taekwondo con cinturón negro' } },
+    { nombre: 'Lucía Fernández Gómez', grado: 'Cinturón negro 3.º dan', sedes: ['casariche', 'lora'],
+      foto: { src: pexels(38233888, 1200), autor: 'Celio Junior', alt: 'Deportista con dobok celebrando tras un combate' } },
+    { nombre: 'Manuel Ortega Pozo', grado: 'Cinturón negro 2.º dan', sedes: ['roda', 'mollina'], foto: null }
+  ];
+  function idGrupo(g) { return g.n === 'Peques' ? 'peques' : g.n === 'Infantil' ? 'infantil' : 'jovenes'; }
+  SEDES.forEach(function (s) {
+    s.grupos.forEach(function (g) { g.id = idGrupo(g); });
+    s.profes = PROFES.filter(function (p) { return p.sedes.indexOf(s.id) !== -1; });
+  });
+
+  /* ---- Número de sedes (?sedes=N, de 1 a 8; el boceto tiene 6) ---- */
+  var nSedes = parseInt(params.get('sedes'), 10);
+  var sedes = SEDES;
+  if (nSedes === 1) sedes = SEDES.filter(function (s) { return s.id === 'estepa'; });
+  else if (nSedes > 1 && nSedes < SEDES.length) sedes = SEDES.slice(0, nSedes);
+  var una = sedes.length === 1;
+  function buscarSede(id) { for (var i = 0; i < sedes.length; i++) if (sedes[i].id === id) return sedes[i]; return null; }
+
+  /* ---- Enlaces: conservan color, número de sedes y hora simulada ---- */
+  var PAG_SEDE = 'boceto-sede-por-pantalla-sede.html', PAG_PRE = 'boceto-sede-por-pantalla-preinscripcion.html';
+  function enlace(pagina, extra) {
+    var ancla = '';
+    if (pagina.indexOf('#') !== -1) { ancla = pagina.slice(pagina.indexOf('#')); pagina = pagina.slice(0, pagina.indexOf('#')); }
+    var q = new URLSearchParams();
+    ['color', 'sedes', 'ahora'].forEach(function (k) { if (params.get(k)) q.set(k, params.get(k)); });
+    Object.keys(extra || {}).forEach(function (k) { q.set(k, extra[k]); });
+    var t = q.toString();
+    return pagina + (t ? '?' + t : '') + ancla;
+  }
+  function actualizarEnlaces() {
+    document.querySelectorAll('[data-enlace]').forEach(function (a) {
+      if (!a.dataset.base) a.dataset.base = a.getAttribute('href');
+      var extra = {};
+      if (a.dataset.sede) extra.sede = a.dataset.sede;
+      if (a.dataset.grupo) extra.grupo = a.dataset.grupo;
+      a.href = enlace(a.dataset.base, extra);
+    });
+  }
+
+  /* ---- Color de la escuela y conmutador «Probar color» ---- */
+  function aplicarColor(hex) {
+    var col = derivarColores(hex);
+    raiz.style.setProperty('--escuela', col.base);
+    raiz.style.setProperty('--boton-fondo', col.fondo);
+    raiz.style.setProperty('--boton-tinta', col.tinta);
+    raiz.style.setProperty('--boton-hover', col.hover);
+    raiz.style.setProperty('--boton-contorno-claro', col.contornoClaro);
+    raiz.style.setProperty('--boton-contorno-oscuro', col.contornoOscuro);
+    raiz.style.setProperty('--escuela-texto', col.texto);
+    document.querySelectorAll('.muestra').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-color').toUpperCase() === col.base));
+    });
+    window.colorEscuela = col;
+    return col;
+  }
+  var colorParam = (params.get('color') || '').replace('#', '');
+  aplicarColor(/^[0-9a-fA-F]{6}$/.test(colorParam) ? '#' + colorParam : '#0B5CAD');
+  document.querySelector('.probar').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.muestra');
+    if (!b) return;
+    aplicarColor(b.getAttribute('data-color'));
+    params.set('color', b.getAttribute('data-color').replace('#', ''));
+    try { history.replaceState(null, '', '?' + params.toString() + location.hash); } catch (e) { /* file:// en algunos navegadores */ }
+    actualizarEnlaces();
+  });
+
+  /* ---- Hora: la real, o la simulada con ?ahora=AAAA-MM-DDTHH:MM ---- */
+  var ahoraParam = params.get('ahora');
+  var ahora = ahoraParam && !isNaN(new Date(ahoraParam)) ? new Date(ahoraParam) : new Date();
+  var DIA_LETRAS = [[1, 'L'], [2, 'M'], [3, 'X'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];
+  var DIA_LARGO = { 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado', 0: 'domingo' };
+  function mayus(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  function minutos(hhmm) { var p = hhmm.split(':'); return +p[0] * 60 + +p[1]; }
+  function ordenHora(gs) { return gs.slice().sort(function (a, b) { return minutos(a.h[0]) - minutos(b.h[0]); }); }
+  function diasTexto(d) { return d.map(function (x) { return DIA_LARGO[x]; }).join(' y '); }
+  function proximaClase(sede) {
+    var hoyDia = ahora.getDay(), ahoraMin = ahora.getHours() * 60 + ahora.getMinutes();
+    for (var k = 0; k < 8; k++) {
+      var dia = (hoyDia + k) % 7, mejor = null;
+      sede.grupos.forEach(function (g) {
+        if (g.d.indexOf(dia) === -1) return;
+        if (k === 0 && minutos(g.h[0]) <= ahoraMin) return;
+        if (mejor === null || minutos(g.h[0]) < minutos(mejor.h[0])) mejor = g;
+      });
+      if (mejor) return { hoy: k === 0, cuando: k === 0 ? 'Hoy' : k === 1 ? 'Mañana' : mayus(DIA_LARGO[dia]), hora: mejor.h[0], grupo: mejor };
+    }
+    return null;
+  }
+  function cuandoHtml(p) { return p.hoy ? '<mark class="hoy">Hoy</mark>' : '<span>' + p.cuando + '</span>'; }
+  function hoyEnGrupo(g) { return g.d.indexOf(ahora.getDay()) !== -1 && minutos(g.h[0]) > ahora.getHours() * 60 + ahora.getMinutes(); }
+
+  var FLECHA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var FLECHA_IZQ = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var LISTA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 4.5h12M3 9h12M3 13.5h8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+  var EXTERNA = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7 9M11.5 9.5v4h-9v-9h4" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  /* Plazas: cada estado tiene su forma, no solo su color (los de la portada) */
+  var ICONO = {
+    libres: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="#F2C230" stroke="#101418" stroke-width="1.5"/></svg>',
+    completo: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="2" y="2" width="14" height="14" fill="#101418"/><path d="M5.5 5.5l7 7M12.5 5.5l-7 7" stroke="#FFFFFF" stroke-width="1.75" stroke-linecap="round"/></svg>',
+    espera: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2h10M4 16h10M5 2.5c0 4 4 4.5 4 6.5s-4 2.5-4 6.5M13 2.5c0 4-4 4.5-4 6.5s4 2.5 4 6.5" fill="none" stroke="#101418" stroke-width="1.5" stroke-linecap="round"/><path d="M6.5 14.6 9 12.2l2.5 2.4z" fill="#101418"/></svg>'
+  };
+  function textoPlazas(p) { return p.t === 'libres' ? (p.n === 1 ? 'Queda 1 plaza' : 'Quedan ' + p.n + ' plazas') : p.t === 'completo' ? 'Lleno' : 'Lista de espera'; }
+  function plazas(p) { return '<p class="plazas plazas--' + p.t + '">' + ICONO[p.t] + '<span class="cifras">' + textoPlazas(p) + '</span></p>'; }
+  function dias(d) {
+    return '<span class="dias" aria-hidden="true">' + DIA_LETRAS.map(function (x) {
+      return '<span class="dia' + (d.indexOf(x[0]) !== -1 ? ' dia--si' : '') + '">' + x[1] + '</span>';
+    }).join('') + '</span><span class="oculto">' + mayus(diasTexto(d)) + '</span>';
+  }
+  function mapaUrl(s) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.lugar + ', ' + s.dir + ', ' + s.nombre); }
+
+  /* ---- Sede pedida (?sede=), si no la recordada, si no la primera ---- */
+  var CLAVE = 'sede-pantalla:sede';
+  function leerSede() { try { return localStorage.getItem(CLAVE); } catch (e) { return null; } }
+  function guardarSede(id) { try { localStorage.setItem(CLAVE, id); } catch (e) { /* sin almacenamiento */ } }
+  var sede = buscarSede(params.get('sede')) || buscarSede(leerSede()) || sedes[0];
+  guardarSede(sede.id);
+  var pos = sedes.indexOf(sede), ant = sedes[pos - 1] || null, sig = sedes[pos + 1] || null;
+  document.title = sede.nombre + ' · Taekwondo Sierra Sur · Boceto «Una sede por pantalla», página de sede';
+
+  /* ---- Primera pantalla: foto a sangre, pueblo a escala de cartel, lugar, próxima clase y acciones ---- */
+  var f = FOTOS[sede.id];
+  function src(id, w) { return pexels(id, w); }
+  document.getElementById('sede-foto').innerHTML =
+    '<img src="' + src(f.id, 1600) + '" srcset="' + src(f.id, 900) + ' 900w, ' + src(f.id, 1600) + ' 1600w, ' + src(f.id, 2400) + ' 2400w" sizes="100vw"' +
+    ' width="' + f.ancho + '" height="' + f.alto + '" fetchpriority="high" style="--pos: ' + f.pos + '; --pos-movil: ' + f.posMovil + '" alt="' + f.alt + '">';
+  document.getElementById('sede-credito').textContent = 'Foto de ejemplo · ' + f.autor + ' · Pexels';
+  document.getElementById('sede-nombre').textContent = sede.nombre;
+  document.getElementById('sede-lugar').innerHTML = '<strong>' + sede.lugar + '</strong> · ' + sede.dir;
+  var prox = proximaClase(sede);
+  var proxima = document.getElementById('sede-proxima');
+  if (prox) proxima.innerHTML = '<span class="sede-proxima-rotulo">Próxima clase</span>' + cuandoHtml(prox) +
+    '<span class="sep" aria-hidden="true">·</span><span class="hora">' + prox.hora + '</span><span class="sep" aria-hidden="true">·</span><span>' + prox.grupo.n + '</span>';
+  else proxima.remove();
+  document.getElementById('sede-acciones').innerHTML =
+    '<a class="boton boton--linea" href="#grupos">' + LISTA + 'Ver grupos<span class="oculto"> de ' + sede.nombre + '</span></a>' +
+    '<a class="boton" href="' + PAG_PRE + '" data-enlace data-sede="' + sede.id + '">Preinscríbete<span class="oculto"> en ' + sede.nombre + '</span>' + FLECHA + '</a>';
+
+  /* ---- Sedes vecinas: anterior y siguiente, en el orden de siempre ---- */
+  var vecinas = document.getElementById('vecinas');
+  if (una) vecinas.remove();
+  else vecinas.innerHTML =
+    (ant ? '<a class="enlace-flecha enlace-flecha--atras" href="' + PAG_SEDE + '" data-enlace data-sede="' + ant.id + '">' + FLECHA_IZQ + '<span class="oculto">Sede anterior: </span>' + ant.nombre + '</a>' : '') +
+    '<span class="vecinas-pos">Sede ' + (pos + 1) + ' de ' + sedes.length + '</span>' +
+    (sig ? '<a class="enlace-flecha" href="' + PAG_SEDE + '" data-enlace data-sede="' + sig.id + '"><span class="oculto">Sede siguiente: </span>' + sig.nombre + FLECHA + '</a>' : '');
+
+  /* ---- Grupos y horas ---- */
+  document.getElementById('proxima').innerHTML = prox
+    ? '<span class="proxima-rotulo">Próxima clase</span>' + cuandoHtml(prox) + '<span class="hora">' + prox.hora + '</span>' +
+      '<span class="sep" aria-hidden="true">·</span><span class="proxima-grupo">' + prox.grupo.n + ', ' + prox.grupo.e.toLowerCase() + '</span>'
+    : '<span class="proxima-rotulo">Sin clases esta semana</span>';
+  function accion(g) {
+    var quien = g.n + ', ' + g.e.toLowerCase() + ', ' + sede.nombre;
+    var datos = ' href="' + PAG_PRE + '" data-enlace data-sede="' + sede.id + '" data-grupo="' + g.id + '"';
+    return g.p.t === 'libres'
+      ? '<a class="boton"' + datos + ' aria-label="Preinscríbete: ' + quien + '">Preinscríbete' + FLECHA + '</a>'
+      : '<a class="boton boton--tinta"' + datos + ' aria-label="Apúntate a la lista de espera: ' + quien + '">Apúntate a la lista de espera' + FLECHA + '</a>';
+  }
+  var lista = document.getElementById('lista-grupos');
+  lista.setAttribute('aria-label', 'Grupos de ' + sede.nombre);
+  lista.innerHTML = ordenHora(sede.grupos).map(function (g) {
+    var profe = sede.profes[0];
+    return '<li class="grupo">' +
+      '<p class="grupo-hora"><span class="ini hora">' + g.h[0] + '</span><span class="fin">hasta <span class="hora">' + g.h[1] + '</span></span>' +
+        (hoyEnGrupo(g) ? '<mark class="hoy">Hoy</mark>' : '') + '</p>' +
+      '<div><h3 class="grupo-nombre">' + g.n + '</h3><p class="grupo-edades">' + g.e + ' · Taekwondo</p>' +
+        (profe ? '<p class="grupo-profe"><span class="oculto">Profesor: </span>' + profe.nombre + '</p>' : '') + '</div>' +
+      '<div class="grupo-detalle"><p>' + dias(g.d) + '</p>' + plazas(g.p) + '</div>' +
+      '<div class="grupo-accion">' + accion(g) + '</div>' +
+      '</li>';
+  }).join('');
+  document.getElementById('leyenda').innerHTML =
+    '<li>' + ICONO.libres + 'Quedan plazas</li>' +
+    '<li>' + ICONO.completo + 'Lleno: puedes apuntarte a la lista de espera</li>' +
+    '<li>' + ICONO.espera + 'Ya hay lista de espera</li>';
+
+  /* ---- Cómo llegar y contacto ---- */
+  var telNum = '+34' + sede.tel.replace(/\s/g, '');
+  document.getElementById('llegar-ficha').innerHTML =
+    '<div class="ficha-fila"><dt>Lugar</dt><dd>' + sede.lugar + '<span class="ficha-nota">' + sede.dir + ', ' + sede.nombre + '</span></dd></div>' +
+    '<div class="ficha-fila"><dt>Entrada</dt><dd>' + sede.acceso + '</dd></div>' +
+    '<div class="ficha-fila"><dt>Teléfono</dt><dd><a class="ficha-tel cifras" href="tel:' + telNum + '">' + sede.tel + '</a><span class="ficha-nota">Llamadas y WhatsApp, por la tarde</span></dd></div>';
+  document.getElementById('llegar-acciones').innerHTML =
+    '<a class="boton boton--tinta" href="' + mapaUrl(sede) + '" target="_blank" rel="noopener">Abrir en el mapa' + EXTERNA + '<span class="oculto"> (abre en otra pestaña)</span></a>' +
+    '<a class="enlace-flecha" href="#whatsapp-ejemplo">Escribir por WhatsApp' + FLECHA + '</a>';
+  var f2 = segundaFoto(sede.id);
+  document.getElementById('llegar-foto').innerHTML =
+    '<img src="' + src(f2.id, 1200) + '" width="1200" height="1500" loading="lazy" style="object-position: ' + f2.pos + '" alt="' + f2.alt + '">' +
+    '<figcaption class="pie-foto"><span class="credito">Foto de ejemplo · ' + f2.autor + ' · Pexels</span></figcaption>';
+
+  /* ---- Profesores de esta sede ---- */
+  document.getElementById('profesores-titulo').innerHTML = 'Profesores <em>en ' + sede.nombre + '</em>';
+  document.getElementById('profes').innerHTML = sede.profes.map(function (p) {
+    var partes = p.nombre.split(' ');
+    var iniciales = partes[0].charAt(0) + (partes[1] ? partes[1].charAt(0) : '');
+    var imagen = p.foto
+      ? '<figure class="foto profe-foto"><img src="' + p.foto.src + '" width="1200" height="1500" loading="lazy" alt="' + p.foto.alt + '">' +
+        '<figcaption class="pie-foto"><span class="credito">Foto de ejemplo · ' + p.foto.autor + ' · Pexels</span></figcaption></figure>'
+      : '<div class="monograma" role="img" aria-label="Sin foto: iniciales de ' + p.nombre + '">' + iniciales + '</div>';
+    var otras = p.sedes.filter(function (id) { return id !== sede.id && buscarSede(id); }).map(function (id) { return buscarSede(id).nombre; });
+    return '<li class="profe">' + imagen + '<div>' +
+      '<h3 class="profe-nombre">' + p.nombre + '</h3><p class="profe-grado">' + p.grado + '</p>' +
+      '<ul class="profe-grupos" aria-label="Sus grupos en ' + sede.nombre + '">' + ordenHora(sede.grupos).map(function (g) {
+        return '<li><b>' + g.n + '</b><span>' + mayus(diasTexto(g.d)) + ', <span class="hora">' + g.h[0] + '</span></span></li>';
+      }).join('') + '</ul>' +
+      (otras.length ? '<p class="profe-otras">También da clase en ' + otras.join(' y ') + '.</p>' : '') +
+      '</div></li>';
+  }).join('');
+
+  /* ---- Tarifa ---- */
+  if (una) document.getElementById('tarifa-igual').textContent = 'Para todos los grupos';
+  document.getElementById('tarifa-cta').dataset.sede = sede.id;
+
+  /* ---- Todas las sedes, en el orden fijo; la actual, marcada ---- */
+  if (una) document.getElementById('sedes').remove();
+  else document.getElementById('pueblos').innerHTML = sedes.map(function (s) {
+    var esta = s.id === sede.id, p = proximaClase(s);
+    var hora = p ? '<span class="pueblos-hora"><span class="oculto">, próxima clase: </span>' + cuandoHtml(p) + ' <span class="hora">' + p.hora + '</span></span>' : '';
+    return '<li><a href="' + PAG_SEDE + '" data-enlace data-sede="' + s.id + '"' + (esta ? ' aria-current="page"' : '') + '>' +
+      '<span class="pueblos-nombre">' + s.nombre + '</span>' + hora +
+      '<span class="pueblos-dato">' + (esta ? '<span class="aqui">Estás aquí</span> · ' : '') + s.lugar + ' · ' + s.dir + '</span></a></li>';
+  }).join('');
+
+  actualizarEnlaces();
+
+  /* ---- Movimiento firma: el nombre del pueblo entra una vez al abrir la página.
+     Visible por defecto; solo se anima sin movimiento reducido y fuera de capturas sin interfaz. ---- */
+  var animar = !window.matchMedia('(prefers-reduced-motion: reduce)').matches && !/HeadlessChrome/.test(navigator.userAgent);
+  if (animar) {
+    raiz.classList.add('anima');
+    requestAnimationFrame(function () { requestAnimationFrame(function () { document.getElementById('sede').classList.add('vista'); }); });
+  }
+})();
+</script>
+</body>
+</html>

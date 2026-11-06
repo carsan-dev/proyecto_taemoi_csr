@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evento · Taekwondo Sierra Sur · Boceto «El chándal del club»</title>
+<meta name="description" content="Boceto del detalle de un evento de la web pública de escuela: tema «El chándal del club».">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Saira+Extra+Condensed:wght@700;800;900&display=swap">
+<style>
+:root {
+  /* Color de la escuela: lo pone la escuela. El JS calcula el resto por contraste WCAG. */
+  --escuela: #0B5CAD;
+  --e-fondo: var(--escuela);     /* superficies rellenas con texto encima (botón, tarifas) */
+  --e-sobre: #FFFFFF;            /* texto sobre --e-fondo: blanco o tinta, el que dé AA */
+  --e-hover: #094C90;
+  --hilo: var(--escuela);        /* pespuntes y subrayados: >= 3:1 sobre blanco y crudo */
+  --e-contorno: transparent;     /* contorno de tinta si el color no llega a 3:1 */
+
+  --blanco: #FFFFFF;
+  --crudo: #ECE7DA;
+  --tinta: #16191A;
+  --tinta-2: #4A4D4F;
+  --aviso: #F2C230;
+  --sarga: repeating-linear-gradient(45deg, rgba(22, 25, 26, .03) 0 1px, transparent 1px 5px);
+
+  --rotulo: 'Saira Extra Condensed', 'Arial Narrow', sans-serif;
+  --texto: 'Atkinson Hyperlegible', system-ui, sans-serif;
+
+  /* La franja: posición (fx), ancho (fw), arranque del contenido (cl) y margen derecho (cr) */
+  --fx: max(20px, calc((100vw - 1240px) / 2));
+  --fw: 44px;
+  --cl: calc(var(--fx) + var(--fw) + 40px);
+  --cr: max(24px, calc((100vw - 1240px) / 2));
+  --ps: 156px;
+}
+@media (max-width: 760px) {
+  :root { --fx: 8px; --fw: 11px; --cl: 33px; --cr: 16px; --ps: 112px; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--blanco); color: var(--tinta);
+  font: 400 1.0625rem/1.6 var(--texto);
+}
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration-color: var(--hilo); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+a:hover { text-decoration-thickness: 3px; }
+::selection { background: var(--tinta); color: var(--blanco); }
+:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
+.oculto {
+  position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+.salto {
+  position: absolute; left: 12px; top: -60px; z-index: 30;
+  padding: 10px 16px; background: var(--tinta); color: var(--blanco); font-weight: 700;
+}
+.salto:focus { top: 12px; }
+.crudo { background-color: var(--crudo); background-image: var(--sarga); }
+
+/* ---------- Etiqueta tejida (nota del boceto y bloque legal) ---------- */
+.tejida {
+  position: relative; display: inline-block; padding: 9px 16px;
+  background: var(--blanco); color: var(--tinta);
+  font: 400 .875rem/1.45 var(--texto);
+}
+.tejida::before {
+  content: ''; position: absolute; inset: 4px; pointer-events: none;
+  border: 1.5px dashed var(--tinta-2);
+}
+.crudo .tejida { background: var(--blanco); }
+
+/* ---------- Franja de nota del boceto ---------- */
+.nota {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px;
+  padding: 6px var(--cr) 6px var(--cl);
+  border-bottom: 1.5px dashed var(--tinta-2);
+}
+.nota .tejida { font-size: .8125rem; padding: 6px 14px; }
+@media (max-width: 760px) {
+  .nota { gap: 8px 12px; padding-top: 8px; padding-bottom: 8px; }
+  .nota .tejida { padding: 6px 10px; font-size: .75rem; }
+  .muestra { padding: 4px; }
+  .muestra[aria-pressed="true"] { padding: 3px; }
+  .muestra-nombre { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+.nota strong { font-weight: 700; }
+.probar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 0; border: 0; }
+.probar legend { float: left; margin-right: 6px; font: 700 .875rem/1 var(--texto); }
+.muestra {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 3px 12px 3px 5px;
+  border: 1.5px solid var(--tinta-2); border-radius: 999px; background: var(--blanco); color: var(--tinta);
+  font: 400 .8125rem/1 var(--texto); cursor: pointer;
+}
+.muestra-color { width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--tinta); }
+.muestra[aria-pressed="true"] { border-color: var(--tinta); border-width: 2.5px; font-weight: 700; padding-left: 5px; }
+.muestra:hover { border-color: var(--tinta); }
+
+/* ---------- La prenda: todo lo que cruza la franja ---------- */
+.prenda { position: relative; }
+.franja {
+  position: absolute; top: 0; bottom: 0; left: var(--fx); width: var(--fw); z-index: 2;
+  display: grid; grid-template-columns: 64fr 13fr 23fr; pointer-events: none;
+}
+.franja span { background: var(--escuela); box-shadow: inset 0 0 0 1.5px var(--e-contorno); }
+.franja span:nth-child(2) { background: var(--blanco); box-shadow: none; }
+@media (max-width: 760px) { .franja span { box-shadow: inset 0 0 0 1px var(--e-contorno); } }
+
+/* Cinta cosida a la franja: el rótulo de cada sección */
+.cinta {
+  position: relative; z-index: 3; display: inline-block; margin: 0;
+  margin-left: calc(var(--fx) - var(--cl) - 8px);
+  padding: 9px 34px 8px calc(var(--fw) + 22px);
+  background: var(--crudo); color: var(--tinta);
+  font: 800 1.5rem/1 var(--rotulo); letter-spacing: .06em; text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 50%, 100% 100%, 0 100%);
+}
+.cinta::before {
+  content: ''; position: absolute; top: 4px; bottom: 4px; left: 4px; right: 18px;
+  border: 1.5px dashed var(--tinta-2); border-right: 0; pointer-events: none;
+}
+.crudo .cinta { background: var(--blanco); background-image: none; }
+@media (max-width: 760px) {
+  .cinta { font-size: 1.125rem; padding: 8px 28px 7px calc(var(--fw) + 14px); margin-left: calc(var(--fx) - var(--cl) - 4px); }
+}
+
+/* ---------- Tipos ---------- */
+.dorsal { font-family: var(--rotulo); font-weight: 900; font-variant-numeric: tabular-nums lining-nums; letter-spacing: .01em; line-height: .9; }
+.grande {
+  margin: 0; font: 900 clamp(3rem, 6.4vw, 5.25rem)/.92 var(--rotulo); letter-spacing: -.005em;
+  text-transform: uppercase; text-wrap: balance;
+}
+.cuerpo { max-width: 64ch; }
+.cuerpo p { margin: 0 0 1em; }
+
+/* ---------- Botones y enlaces ---------- */
+.boton {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 12px 22px;
+  background: var(--e-fondo); color: var(--e-sobre); border: 0; border-radius: 4px;
+  box-shadow: inset 0 0 0 1.5px var(--e-contorno);
+  font: 800 1.25rem/1 var(--rotulo); letter-spacing: .06em; text-transform: uppercase; text-decoration: none;
+  transition: background-color 150ms ease-out;
+}
+.boton:hover { background: var(--e-hover); }
+.boton svg { flex: none; }
+.boton--secundario { background: var(--blanco); color: var(--tinta); box-shadow: inset 0 0 0 2px var(--tinta); }
+.boton--secundario:hover { background: var(--crudo); }
+.enlace-flecha {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+  font-weight: 700; color: var(--tinta);
+}
+.enlace-flecha svg { transition: transform 150ms ease-out; }
+.enlace-flecha:hover svg { transform: translateX(3px); }
+
+/* ---------- Cabecera ---------- */
+.cabecera {
+  position: relative; z-index: 5; display: flex; align-items: center; gap: 28px;
+  padding: 16px var(--cr) 16px var(--cl);
+}
+.marca { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; margin-right: auto; }
+.logo {
+  display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  background: var(--blanco); box-shadow: inset 0 0 0 2px var(--tinta);
+  font: 900 1rem/1 var(--rotulo); letter-spacing: .04em;
+}
+.marca-nombre { display: grid; font: 800 1.25rem/1 var(--rotulo); letter-spacing: .05em; text-transform: uppercase; }
+.nav-lista { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.nav-lista a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px;
+  font-weight: 700; text-decoration: none;
+}
+.nav-lista a:hover { text-decoration: underline; text-decoration-color: var(--hilo); }
+.cabecera .boton { min-height: 46px; padding: 10px 18px; font-size: 1.125rem; }
+.menu-boton {
+  display: none; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+  background: var(--blanco); border: 2px solid var(--tinta); border-radius: 4px; color: var(--tinta);
+  font: 700 1rem/1 var(--texto); cursor: pointer;
+}
+@media (max-width: 960px) {
+  .menu-boton { display: inline-flex; }
+  .cabecera > .boton { display: none; }
+  .nav {
+    display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
+    padding: 12px var(--cr) 20px var(--cl); background: var(--blanco); border-bottom: 1.5px dashed var(--tinta-2);
+  }
+  .nav.abierta { display: block; }
+  .nav-lista { flex-direction: column; }
+  .nav-lista a { padding: 0; font-size: 1.125rem; }
+  .nav .boton { margin-top: 10px; }
+}
+@media (min-width: 961px) { .nav .boton { display: none; } }
+@media (max-width: 760px) { .cabecera { padding-top: 12px; padding-bottom: 12px; gap: 12px; } .marca-nombre { font-size: 1.0625rem; } .logo { width: 40px; height: 40px; } }
+.credito {
+  position: absolute; right: 0; bottom: 0; z-index: 1; margin: 0; padding: 4px 10px;
+  background: rgba(22, 25, 26, .82); color: var(--blanco); font: 400 .75rem/1.4 var(--texto);
+}
+/* ---------- Secciones ---------- */
+.seccion { padding: 104px var(--cr) 112px var(--cl); }
+.seccion > .cinta + * { margin-top: 40px; }
+@media (max-width: 760px) { .seccion { padding-top: 56px; padding-bottom: 64px; } .seccion > .cinta + * { margin-top: 26px; } }
+/* Pie: etiqueta tejida de la prenda */
+.pie { padding: 72px var(--cr) 80px var(--cl); }
+.pie .tejida { display: block; max-width: 760px; padding: 26px 30px; }
+.pie .tejida::before { inset: 6px; }
+.pie-marca { margin: 0; font: 900 1.75rem/1 var(--rotulo); text-transform: uppercase; letter-spacing: .06em; }
+.pie-legal { display: flex; flex-wrap: wrap; gap: 0 22px; margin: 10px 0 14px; padding: 0; list-style: none; }
+.pie-legal a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
+.pie p { margin: 0 0 8px; }
+.pie-creditos { color: var(--tinta-2); }
+
+/* ---------- Comunes de tarifas, eventos, evento y legales ---------- */
+[hidden] { display: none !important; }
+h1, h2, h3, h4 { text-wrap: balance; }
+.nav-lista a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--hilo); text-decoration-thickness: 3px; }
+
+/* Estados alternativos del boceto, en la misma franja de la nota */
+.estados { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0; }
+.estados-titulo { margin-right: 2px; font: 700 .875rem/1 var(--texto); }
+.estado {
+  display: inline-flex; align-items: center; min-height: 34px; padding: 3px 12px;
+  border: 1.5px solid var(--tinta-2); border-radius: 999px; background: var(--blanco); color: var(--tinta);
+  font: 400 .8125rem/1.2 var(--texto); text-decoration: none; cursor: pointer;
+}
+.estado:hover { border-color: var(--tinta); }
+.estado[aria-current="true"], .estado[aria-pressed="true"] { border-color: var(--tinta); border-width: 2.5px; padding-inline: 11px; font-weight: 700; }
+@media (max-width: 760px) { .estados-titulo { font-size: .8125rem; } .estado { font-size: .75rem; padding-inline: 10px; } }
+
+/* Cabeza de página: un solo titular grande (mismo rótulo que la portada) */
+.titular {
+  margin: 0; font: 900 clamp(4.25rem, 10vw, 8rem)/.84 var(--rotulo);
+  letter-spacing: -.01em; text-transform: uppercase;
+}
+.cabeza-pagina { padding: 40px var(--cr) 56px var(--cl); }
+.cabeza-pagina .titular { font-size: clamp(4rem, 9vw, 7.5rem); }
+.cabeza-pagina .entrada { max-width: 46ch; margin: 20px 0 0; font-size: 1.1875rem; line-height: 1.5; }
+@media (max-width: 760px) {
+  .cabeza-pagina { padding-top: 20px; padding-bottom: 36px; }
+  .cabeza-pagina .entrada { font-size: 1.0625rem; }
+}
+
+/* Volver */
+.atras { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; color: var(--tinta); }
+.atras svg { transition: transform 150ms ease-out; }
+.atras:hover svg { transform: translateX(-3px); }
+
+/* Fecha como dorsal: día enorme, mes en rótulo y el día de la semana debajo */
+.fecha { display: flex; align-items: baseline; gap: 10px; }
+.fecha-dia { font-size: 4rem; }
+.fecha-mes { display: grid; font: 800 1.25rem/1.05 var(--rotulo); text-transform: uppercase; letter-spacing: .04em; }
+.fecha-mes small { font: 400 .9375rem/1.3 var(--texto); text-transform: none; letter-spacing: 0; color: var(--tinta-2); }
+
+/* Hora, lugar y sede del evento: opcionales (decisión 466); si faltan, no se pinta nada */
+.ev-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 8px 0 0; padding: 0; list-style: none; color: var(--tinta-2); }
+.ev-meta li { display: inline-flex; align-items: center; gap: 6px; }
+.ev-meta svg { flex: none; }
+.ev-meta .ev-hora { color: var(--tinta); font: 800 1.25rem/1 var(--rotulo); font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+.ev-meta .ev-sede { color: var(--tinta); font-weight: 700; }
+
+/* Anillo de sede, como en los chips de profesores de la portada */
+.anillo-sede { flex: none; }
+
+/* ---------- Cabeza del evento ---------- */
+.evento-cabeza { padding: 16px var(--cr) 48px var(--cl); }
+.evento-rejilla { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 56px; align-items: end; margin-top: 28px; }
+.evento-cabeza .fecha { flex-direction: column; gap: 6px; }
+.evento-cabeza .fecha-dia { font-size: clamp(7rem, 12vw, 11rem); line-height: .78; }
+.evento-cabeza .fecha-mes { font-size: 2rem; }
+.evento-cabeza .fecha-mes small { font-size: 1.0625rem; }
+.evento-titular { margin: 0; font: 900 clamp(3rem, 7vw, 6.5rem)/.88 var(--rotulo); text-transform: uppercase; letter-spacing: -.005em; }
+.evento-cabeza .ev-meta { margin-top: 18px; font-size: 1.0625rem; }
+.evento-cabeza .ev-meta .ev-hora { font-size: 1.5rem; }
+.evento-foto { position: relative; margin: 0; height: clamp(260px, 42vw, 540px); }
+.evento-foto img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 760px) {
+  .evento-cabeza { padding-bottom: 32px; }
+  .evento-rejilla { grid-template-columns: 1fr; margin-top: 16px; }
+  .evento-cabeza .fecha { flex-direction: row; align-items: baseline; gap: 10px; }
+  .evento-cabeza .fecha-dia { font-size: 5.5rem; }
+  .evento-cabeza .fecha-mes { font-size: 1.5rem; }
+}
+
+/* ---------- Cuerpo: descripción y documentos ---------- */
+.evento-cuerpo { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px 64px; padding: 72px var(--cr) 104px var(--cl); }
+.evento-desc { max-width: 62ch; margin: 0; font-size: 1.1875rem; line-height: 1.6; }
+.docs-titulo { margin: 0; padding-bottom: 12px; border-bottom: 2px solid var(--tinta); font: 800 1.75rem/1 var(--rotulo); text-transform: uppercase; letter-spacing: .04em; }
+.docs { margin: 0; padding: 0; list-style: none; }
+.docs li { border-bottom: 1.5px dashed var(--tinta-2); }
+.docs a { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; min-height: 64px; padding: 10px 0; color: var(--tinta); text-decoration: none; }
+.docs svg { color: var(--tinta); }
+.doc-nombre { font-weight: 700; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--hilo); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.docs a:hover .doc-nombre { text-decoration-thickness: 3px; }
+.doc-tipo { color: var(--tinta-2); }
+@media (max-width: 860px) { .evento-cuerpo { grid-template-columns: 1fr; padding-top: 40px; padding-bottom: 64px; } }
+
+/* ---------- Galería numerada ---------- */
+.galeria-cabeza { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; }
+.galeria-cuenta { margin: 0; color: var(--tinta-2); font-weight: 700; }
+.rejilla-fotos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 200px; gap: 12px; margin: 40px 0 0; padding: 0; list-style: none; }
+.rejilla-fotos li { position: relative; }
+.rejilla-fotos li:first-child { grid-column: span 2; grid-row: span 2; }
+.ampliar { position: relative; display: block; width: 100%; height: 100%; padding: 0; border: 0; margin: 0; background: var(--blanco); cursor: zoom-in; overflow: hidden; }
+.ampliar img { width: 100%; height: 100%; object-fit: cover; transition: transform 320ms cubic-bezier(.16, 1, .3, 1); }
+.ampliar:hover img { transform: scale(1.03); }
+.ampliar::after { content: ''; position: absolute; inset: 7px; border: 1.5px dashed rgba(255, 255, 255, .92); opacity: 0; transition: opacity 150ms ease-out; pointer-events: none; }
+.ampliar:hover::after { opacity: 1; }
+.ampliar:focus-visible { outline: 3px solid var(--tinta); outline-offset: 3px; }
+/* El número de cada foto, como dorsal cosido en una etiqueta blanca */
+.galeria-n {
+  position: absolute; left: 0; bottom: 0; z-index: 2; min-width: 52px; padding: 7px 10px 5px; pointer-events: none;
+  background: var(--blanco); color: var(--tinta); font-size: 2rem; text-align: center;
+}
+.rejilla-fotos li:first-child .galeria-n { font-size: 3.5rem; min-width: 80px; }
+.volver-pie { margin: 48px 0 0; }
+@media (max-width: 760px) {
+  .rejilla-fotos { grid-template-columns: 1fr 1fr; grid-auto-rows: 140px; gap: 8px; margin-top: 26px; }
+  .galeria-n { font-size: 1.5rem; min-width: 40px; }
+  .rejilla-fotos li:first-child .galeria-n { font-size: 2.5rem; min-width: 60px; }
+}
+
+/* ---------- Visor: la foto ampliada en un diálogo ---------- */
+.visor {
+  width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0;
+  background: var(--tinta); color: var(--blanco);
+}
+.visor::backdrop { background: rgba(22, 25, 26, .92); }
+.visor[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.visor :focus-visible { outline-color: var(--blanco); }
+.visor ::selection { background: var(--blanco); color: var(--tinta); }
+.visor-barra { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px var(--cr) 12px max(var(--cr), 20px); }
+.visor-n { margin: 0; font-size: 2.75rem; }
+.visor-n span { margin-left: 8px; font: 400 1rem/1 var(--texto); color: #D9DBDB; letter-spacing: 0; }
+.visor-boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 48px; min-height: 48px; padding: 0 16px;
+  background: transparent; color: var(--blanco); border: 2px solid var(--blanco); border-radius: 4px;
+  font: 800 1.125rem/1 var(--rotulo); letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+.visor-boton:hover { background: var(--blanco); color: var(--tinta); }
+.visor-foto { position: relative; display: grid; place-items: center; min-height: 0; margin: 0; padding: 0 max(var(--cr), 20px); }
+.visor-foto img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.visor-pie { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px 24px; align-items: center; padding: 14px var(--cr) 20px max(var(--cr), 20px); }
+.visor-texto { max-width: 70ch; margin: 0; color: #D9DBDB; font-size: .9375rem; }
+.visor-texto strong { display: block; color: var(--blanco); font-size: 1rem; }
+.visor-pasos { display: flex; gap: 12px; }
+@media (max-width: 760px) { .visor-pie { grid-template-columns: 1fr; } .visor-pasos .visor-boton { flex: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+
+<div class="nota">
+  <p class="tejida"><strong>Boceto «El chándal del club»</strong> · evento, documentos y fotos de ejemplo</p>
+  <fieldset class="probar">
+    <legend>Probar color</legend>
+    <button class="muestra" type="button" data-color="#0B5CAD" aria-pressed="true"><span class="muestra-color" style="background:#0B5CAD" aria-hidden="true"></span><span class="muestra-nombre">Azul Sierra Sur</span></button>
+    <button class="muestra" type="button" data-color="#F2C230" aria-pressed="false"><span class="muestra-color" style="background:#F2C230" aria-hidden="true"></span><span class="muestra-nombre">Claro</span></button>
+    <button class="muestra" type="button" data-color="#1B2B2E" aria-pressed="false"><span class="muestra-color" style="background:#1B2B2E" aria-hidden="true"></span><span class="muestra-nombre">Muy oscuro</span></button>
+  </fieldset>
+  <p class="estados"><span class="estados-titulo">Ver</span>
+    <a class="estado" href="boceto-chandal-evento.html" data-enlace data-evento="fin-curso-2026" data-estado-valor="fin-curso-2026">Pasado, con galería</a>
+    <a class="estado" href="boceto-chandal-evento.html" data-enlace data-evento="examen-nov-2026" data-estado-valor="examen-nov-2026">Próximo, sin galería</a>
+    <a class="estado" href="boceto-chandal-evento.html" data-enlace data-evento="poomsae-2027" data-estado-valor="poomsae-2027">Sin hora ni lugar</a></p>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="sarga-parche" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="1" height="5" fill="#16191A" opacity=".05"/>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="prenda">
+  <div class="franja" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="cabecera">
+    <a class="marca" href="boceto-chandal.html" data-enlace>
+      <span class="logo" role="img" aria-label="Marcador de logo" title="Marcador de logo: lo sube la escuela">TSS</span>
+      <span class="marca-nombre"><span>Taekwondo</span><span>Sierra Sur</span></span>
+    </a>
+    <nav class="nav" id="nav-principal" aria-label="Principal">
+      <ul class="nav-lista">
+        <li><a href="boceto-chandal.html#horarios" data-enlace>Horarios</a></li>
+        <li><a href="boceto-chandal.html#sedes" data-enlace>Sedes</a></li>
+        <li><a href="boceto-chandal-tarifas.html" data-enlace>Tarifas</a></li>
+        <li><a href="boceto-chandal-eventos.html" data-enlace>Eventos</a></li>
+        <li><a href="boceto-chandal.html#contacto" data-enlace>Contacto</a></li>
+      </ul>
+      <a class="boton" href="boceto-chandal-preinscripcion.html" data-enlace>Preinscríbete</a>
+    </nav>
+    <a class="boton" href="boceto-chandal-preinscripcion.html" data-enlace>Preinscríbete</a>
+    <button class="menu-boton" type="button" aria-expanded="false" aria-controls="nav-principal">
+      <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      <span class="menu-texto">Menú</span>
+    </button>
+  </header>
+
+
+  <main id="principal">
+    <article aria-labelledby="evento-titulo">
+      <div class="evento-cabeza">
+        <a class="atras" href="boceto-chandal-eventos.html" data-enlace><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Volver a eventos</a>
+        <div class="evento-rejilla">
+          <div id="evento-fecha"></div>
+          <div>
+            <h1 class="evento-titular" id="evento-titulo"></h1>
+            <div id="evento-meta"></div>
+          </div>
+        </div>
+      </div>
+      <div id="evento-foto"></div>
+
+      <div class="evento-cuerpo">
+        <p class="evento-desc" id="evento-desc"></p>
+        <section aria-labelledby="docs-titulo" id="documentos">
+          <h2 class="docs-titulo" id="docs-titulo">Documentos</h2>
+          <ul class="docs" id="docs"></ul>
+        </section>
+      </div>
+
+      <section class="seccion crudo" id="galeria" aria-labelledby="galeria-titulo">
+        <div class="galeria-cabeza">
+          <h2 class="cinta" id="galeria-titulo">Galería</h2>
+          <p class="galeria-cuenta" id="galeria-cuenta"></p>
+        </div>
+        <ol class="rejilla-fotos" id="rejilla-fotos"></ol>
+        <p class="volver-pie"><a class="atras" href="boceto-chandal-eventos.html" data-enlace><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Volver a eventos</a></p>
+      </section>
+    </article>
+  </main>
+
+  <footer class="pie">
+    <div class="tejida">
+      <p class="pie-marca">Taekwondo Sierra Sur</p>
+      <ul class="pie-legal" aria-label="Legal">
+        <li><a href="boceto-chandal-legales.html#aviso-legal" data-enlace>Aviso legal</a></li>
+        <li><a href="boceto-chandal-legales.html#privacidad" data-enlace>Privacidad</a></li>
+        <li><a href="boceto-chandal-legales.html#cookies" data-enlace>Cookies</a></li>
+      </ul>
+      <p>© 2026 Taekwondo Sierra Sur</p>
+      <p><strong>Datos y fotos de ejemplo.</strong> Son inventados los lugares, direcciones, grupos, horarios, plazas, profesores, eventos, correo y teléfono. La mensualidad de 25 € es la real. Las fotos son libres y las sustituirá el club.</p>
+      <p class="pie-creditos">Fotos: Camila Sanabria (Unsplash); A. Villalon, cottonbro, Eden FC, Kulani Shibambu, Elshan Musaev, KKlinton y Celio Junior (Pexels).</p>
+    </div>
+  </footer>
+</div>
+<dialog class="visor" id="visor" aria-labelledby="visor-titulo">
+  <div class="visor-barra">
+    <p class="visor-n dorsal" id="visor-titulo"></p>
+    <button class="visor-boton" type="button" id="visor-cerrar"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Cerrar</button>
+  </div>
+  <figure class="visor-foto"><img id="visor-img" alt=""></figure>
+  <div class="visor-pie">
+    <p class="visor-texto" id="visor-texto"></p>
+    <div class="visor-pasos">
+      <button class="visor-boton" type="button" id="visor-ant"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Anterior</button>
+      <button class="visor-boton" type="button" id="visor-sig">Siguiente<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+/* ---- Contraste WCAG 2.x: luminancia relativa ---- */
+function hexARgb(hex) {
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function rgbAHex(c) {
+  return '#' + c.map(function (v) { return Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0'); }).join('').toUpperCase();
+}
+function luminancia(hex) {
+  var c = hexARgb(hex).map(function (v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contraste(a, b) {
+  var la = luminancia(a), lb = luminancia(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function rgbAHsl(c) {
+  var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0, d = max - min;
+  if (d) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hslARgb(h, s, l) {
+  function f(p, q, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  if (!s) return [l * 255, l * 255, l * 255];
+  var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  return [f(p, q, h + 1 / 3) * 255, f(p, q, h) * 255, f(p, q, h - 1 / 3) * 255];
+}
+/* Baja la luminosidad (mismo tono) hasta llegar al objetivo sobre todos los fondos */
+function oscurecer(hex, objetivo, fondos) {
+  var hsl = rgbAHsl(hexARgb(hex)), actual = rgbAHex(hexARgb(hex));
+  function cumple(c) { return fondos.every(function (f) { return contraste(c, f) >= objetivo; }); }
+  while (!cumple(actual) && hsl[2] > 0) {
+    hsl[2] = Math.max(0, hsl[2] - 0.005);
+    actual = rgbAHex(hslARgb(hsl[0], hsl[1], hsl[2]));
+  }
+  return actual;
+}
+function mezclar(a, b, t) {
+  var x = hexARgb(a), y = hexARgb(b);
+  return rgbAHex(x.map(function (v, i) { return v + (y[i] - v) * t; }));
+}
+var BLANCO = '#FFFFFF', CRUDO = '#ECE7DA', TINTA = '#16191A';
+function derivarColores(base) {
+  base = rgbAHex(hexARgb(base));
+  /* Franja, anillo del parche y borde del botón: el color tal cual; si no llega a 3:1 sobre blanco y crudo, contorno de tinta */
+  var cGrafico = Math.min(contraste(base, BLANCO), contraste(base, CRUDO));
+  var contorno = cGrafico >= 3 ? 'transparent' : TINTA;
+  /* Superficies con texto encima: blanco o tinta, el que dé >= 4,5:1; si ninguno, se oscurece el fondo */
+  var fondo = base, sobre;
+  if (contraste(BLANCO, base) >= 4.5) sobre = BLANCO;
+  else if (contraste(TINTA, base) >= 4.5) sobre = TINTA;
+  else { fondo = oscurecer(base, 4.5, [BLANCO]); sobre = BLANCO; }
+  /* Hover: se aleja del texto, así el contraste nunca baja */
+  var hover = sobre === BLANCO ? mezclar(fondo, '#000000', 0.18) : mezclar(fondo, '#FFFFFF', 0.22);
+  /* Pespunte y subrayados: >= 3:1 sobre blanco y crudo */
+  var hilo = oscurecer(base, 3, [BLANCO, CRUDO]);
+  return {
+    base: base, contorno: contorno, fondo: fondo, sobre: sobre, hover: hover, hilo: hilo,
+    cGrafico: cGrafico,
+    cContorno: contorno === 'transparent' ? null : Math.min(contraste(TINTA, BLANCO), contraste(TINTA, CRUDO)),
+    cSobre: contraste(fondo, sobre), cHover: contraste(hover, sobre),
+    cHilo: Math.min(contraste(hilo, BLANCO), contraste(hilo, CRUDO))
+  };
+}
+
+(function () {
+  var params = new URLSearchParams(location.search);
+  var raiz = document.documentElement;
+
+  /* ---- Color de la escuela (igual que en la portada) ---- */
+  function aplicarColor(hex) {
+    var col = derivarColores(hex);
+    raiz.style.setProperty('--escuela', col.base);
+    raiz.style.setProperty('--e-fondo', col.fondo);
+    raiz.style.setProperty('--e-sobre', col.sobre);
+    raiz.style.setProperty('--e-hover', col.hover);
+    raiz.style.setProperty('--hilo', col.hilo);
+    raiz.style.setProperty('--e-contorno', col.contorno);
+    document.querySelectorAll('.muestra').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-color').toUpperCase() === col.base));
+    });
+    window.colorEscuela = col;
+    return col;
+  }
+  var colorParam = (params.get('color') || '').replace('#', '');
+  aplicarColor(/^[0-9a-fA-F]{6}$/.test(colorParam) ? '#' + colorParam : '#0B5CAD');
+  document.querySelector('.probar').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.muestra');
+    if (!b) return;
+    aplicarColor(b.getAttribute('data-color'));
+    params.set('color', b.getAttribute('data-color').replace('#', ''));
+    history.replaceState(null, '', '?' + params.toString() + location.hash);
+    actualizarEnlaces();
+  });
+
+  /* ---- Datos de ejemplo (en la app salen de la gestión; mismo orden que la portada) ---- */
+  var SEDES = [
+    { id: 'herrera', nombre: 'Herrera', lugar: 'Pabellón municipal', dir: 'Avda. de la Constitución, s/n' },
+    { id: 'estepa', nombre: 'Estepa', lugar: 'Pabellón cubierto municipal', dir: 'C/ del Deporte, 2' },
+    { id: 'casariche', nombre: 'Casariche', lugar: 'Gimnasio del colegio público', dir: 'C/ Escuelas, 5' },
+    { id: 'lora', nombre: 'Lora de Estepa', lugar: 'Salón de usos múltiples', dir: 'Plaza de España, 1' },
+    { id: 'roda', nombre: 'Roda de Andalucía', lugar: 'Pabellón municipal', dir: 'Avda. de Andalucía, 40' },
+    { id: 'mollina', nombre: 'Mollina', lugar: 'Gimnasio del colegio', dir: 'C/ Granada, 12' }
+  ];
+  var PEXELS = 'https://images.pexels.com/photos/', PX = '?auto=compress&cs=tinysrgb&w=1600';
+  var FOTOS = {
+    clase: { src: PEXELS + '38963062/pexels-photo-38963062.jpeg' + PX, autor: 'A. Villalon', fuente: 'Pexels', alt: 'Clase de niños en el tatami, atentos a las indicaciones del profesor' },
+    patada: { src: PEXELS + '7990087/pexels-photo-7990087.jpeg' + PX, autor: 'cottonbro', fuente: 'Pexels', alt: 'Niña con dobok lanzando una patada' },
+    combate: { src: PEXELS + '37901794/pexels-photo-37901794.jpeg' + PX, autor: 'Eden FC', fuente: 'Pexels', alt: 'Combate de taekwondo con petos y protecciones' },
+    cinturon: { src: PEXELS + '7990068/pexels-photo-7990068.jpeg' + PX, autor: 'cottonbro', fuente: 'Pexels', alt: 'Cinturón blanco anudado sobre un dobok' },
+    pabellon: { src: PEXELS + '33122161/pexels-photo-33122161.jpeg' + PX, autor: 'KKlinton', fuente: 'Pexels', alt: 'Pabellón deportivo con tatami de competición' },
+    voladora: { src: PEXELS + '36563836/pexels-photo-36563836.jpeg' + PX, autor: 'Kulani Shibambu', fuente: 'Pexels', alt: 'Dos jóvenes con dobok en una patada voladora' },
+    fila: { src: 'https://images.unsplash.com/photo-1530560643359-6d2fead989b3?w=1600&q=80', autor: 'Camila Sanabria', fuente: 'Unsplash', alt: 'Niños con dobok y cinturones de colores, en fila durante una clase' }
+  };
+  var nSedes = parseInt(params.get('sedes'), 10);
+  var sedes = SEDES;
+  if (nSedes === 1) sedes = SEDES.filter(function (s) { return s.id === 'estepa'; });
+  else if (nSedes > 1 && nSedes < SEDES.length) sedes = SEDES.slice(0, nSedes);
+  var una = sedes.length === 1;
+  var porId = {};
+  SEDES.forEach(function (s) { porId[s.id] = s; });
+
+  /* ---- Tiempo (?ahora=ISO simula el momento) ---- */
+  var ahoraParam = params.get('ahora');
+  var ahora = ahoraParam && !isNaN(new Date(ahoraParam)) ? new Date(ahoraParam) : new Date();
+  var DIA_LARGO = { 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado', 0: 'domingo' };
+  var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  var NUMEROS = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho'];
+  function mayus(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+
+  /* ---- Piezas compartidas ---- */
+  var FLECHA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var FLECHA_IZQ = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ANILLO = '<svg class="anillo-sede" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="#FFFFFF" stroke="var(--escuela)" stroke-width="3"/><circle cx="7" cy="7" r="6.6" fill="none" stroke="var(--e-contorno)" stroke-width="1"/></svg>';
+  var RELOJ = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M9 5v4.2l2.8 1.8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>';
+  var LUGAR = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 16.2s5.2-5 5.2-8.8a5.2 5.2 0 1 0-10.4 0c0 3.8 5.2 8.8 5.2 8.8z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><circle cx="9" cy="7.4" r="1.9" fill="currentColor"/></svg>';
+  function fotoHtml(f, clase, carga, decorativa) {
+    return '<figure class="' + clase + '"><img src="' + f.src + '" width="1600" height="1200"' + (carga === 'ya' ? ' fetchpriority="high"' : ' loading="lazy"') +
+      ' alt="' + (decorativa ? '' : f.alt) + '"><figcaption class="credito">Foto de ejemplo · ' + f.autor + ' · ' + f.fuente + '</figcaption></figure>';
+  }
+
+  /* ---- Enlaces entre las páginas del boceto: conservan color, número de sedes y hora simulada ---- */
+  var PAG = {
+    portada: 'boceto-chandal.html', tarifas: 'boceto-chandal-tarifas.html', eventos: 'boceto-chandal-eventos.html',
+    evento: 'boceto-chandal-evento.html', legales: 'boceto-chandal-legales.html',
+    pre: 'boceto-chandal-preinscripcion.html', sede: 'boceto-chandal-sede.html'
+  };
+  function enlace(pagina, extra) {
+    var partes = pagina.split('#'), q = new URLSearchParams();
+    ['color', 'sedes', 'ahora'].forEach(function (k) { if (params.get(k)) q.set(k, params.get(k)); });
+    Object.keys(extra || {}).forEach(function (k) { if (extra[k]) q.set(k, extra[k]); });
+    var t = q.toString();
+    return partes[0] + (t ? '?' + t : '') + (partes[1] ? '#' + partes[1] : '');
+  }
+  function actualizarEnlaces() {
+    document.querySelectorAll('[data-enlace]').forEach(function (a) {
+      var base = a.getAttribute('data-base') || a.getAttribute('href').split('?')[0];
+      if (base.indexOf('#') === -1 && a.getAttribute('href').indexOf('#') !== -1) base += '#' + a.getAttribute('href').split('#')[1];
+      a.setAttribute('data-base', base);
+      a.href = enlace(base, { sede: a.dataset.sede, grupo: a.dataset.grupo, evento: a.dataset.evento, estado: a.dataset.estado });
+    });
+  }
+
+  /* ---- Página actual en la cabecera ---- */
+  var paginaActual = location.pathname.split('/').pop();
+  function marcarActual(pagina) {
+    document.querySelectorAll('.nav-lista a').forEach(function (a) {
+      if (a.getAttribute('href').split(/[?#]/)[0] === pagina) a.setAttribute('aria-current', 'page');
+    });
+  }
+  marcarActual(paginaActual);
+
+  /* ---- Menú móvil ---- */
+  var menu = document.querySelector('.menu-boton'), nav = document.getElementById('nav-principal');
+  var menuTexto = menu.querySelector('.menu-texto');
+  function ponerMenu(si) {
+    menu.setAttribute('aria-expanded', String(si));
+    menuTexto.textContent = si ? 'Cerrar' : 'Menú';
+    nav.classList.toggle('abierta', si);
+  }
+  menu.addEventListener('click', function () { ponerMenu(menu.getAttribute('aria-expanded') !== 'true'); });
+  nav.addEventListener('click', function (ev) { if (ev.target.closest('a')) ponerMenu(false); });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') { ponerMenu(false); menu.focus(); }
+  });
+
+  /* ---- Estados alternativos del boceto (?estado=) ---- */
+  var estado = params.get('estado') || '';
+  function marcarEstado() {
+    document.querySelectorAll('.estado[data-estado-valor]').forEach(function (a) {
+      if (a.getAttribute('data-estado-valor') === estado) a.setAttribute('aria-current', 'true');
+    });
+  }
+
+  /* ---- Eventos de ejemplo (en la app salen de la gestión: título, descripción, foto, documentos, fecha y galería).
+     Decisión 466: hora, lugar y sede son OPCIONALES. Se pintan si existen; si no, no queda hueco. ---- */
+  var MES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  var EVENTOS = [
+    { id: 'examen-nov-2026', fecha: '2026-11-14', hora: '10:00', lugar: 'Pabellón cubierto municipal', sede: 'estepa', titulo: 'Examen de cinturones', foto: 'cinturon',
+      descripcion: 'Examen de cambio de cinturón para los alumnos que ha propuesto su profesor. Cada familia recibe en su grupo la hora a la que le toca. Se viene con el dobok limpio y el cinturón actual; los menores, con la autorización firmada.',
+      documentos: [{ nombre: 'Circular-examen-noviembre.pdf', tipo: 'PDF' }, { nombre: 'Autorizacion-menores.docx', tipo: 'Word' }], galeria: [] },
+    { id: 'torneo-nov-2026', fecha: '2026-11-29', hora: '09:30', lugar: 'Pabellón municipal', sede: 'herrera', titulo: 'Torneo comarcal infantil', foto: 'combate',
+      descripcion: 'Torneo amistoso para los grupos de peques e infantil, con combate adaptado a cada edad y prueba de poomsae. Participar es voluntario: el profesor de cada grupo informa a las familias que quieran apuntarse.',
+      documentos: [{ nombre: 'Reglamento-torneo.pdf', tipo: 'PDF' }], galeria: [] },
+    { id: 'navidad-2026', fecha: '2026-12-12', hora: '18:00', lugar: 'Pabellón municipal', sede: 'roda', titulo: 'Exhibición de Navidad', foto: 'clase',
+      descripcion: 'Los alumnos de todas las sedes enseñan a sus familias lo que han aprendido en el trimestre. Al acabar se entregan los diplomas de los cambios de cinturón.',
+      documentos: [], galeria: [] },
+    { id: 'poomsae-2027', fecha: '2027-01-23', titulo: 'Seminario de poomsae', foto: 'patada',
+      descripcion: 'Una mañana dedicada a las formas, para alumnos desde cinturón amarillo. Se repasan las de cada grado y se corrigen detalles de cara a los exámenes de primavera.',
+      documentos: [{ nombre: 'Circular-seminario.pdf', tipo: 'PDF' }], galeria: [] },
+    { id: 'fin-curso-2026', fecha: '2026-06-20', hora: '11:00', lugar: 'Pabellón cubierto municipal', sede: 'estepa', titulo: 'Exhibición de fin de curso', foto: 'voladora',
+      descripcion: 'Cerramos el curso 2025-2026 con una exhibición de todas las sedes: poomsae por grupos, rotura de tablas de los mayores y combate de demostración. Gracias a las familias que llenasteis las gradas.',
+      documentos: [{ nombre: 'Programa-exhibicion.pdf', tipo: 'PDF' }, { nombre: 'Circular.pdf', tipo: 'PDF' }],
+      galeria: ['voladora', 'clase', 'patada', 'combate', 'cinturon', 'pabellon', 'fila'] },
+    { id: 'examen-jun-2026', fecha: '2026-06-06', sede: 'casariche', titulo: 'Examen de cinturones', foto: 'cinturon',
+      descripcion: 'Examen de final de curso. Enhorabuena a todos los alumnos que cambiaron de cinturón.',
+      documentos: [], galeria: ['cinturon', 'fila', 'clase'] },
+    { id: 'provincial-2026', fecha: '2026-03-14', lugar: 'Palacio de Deportes de la capital', titulo: 'Campeonato provincial', foto: 'pabellon',
+      descripcion: 'Alumnos del club compitieron en combate y poomsae en el campeonato provincial.',
+      documentos: [], galeria: ['pabellon', 'combate', 'voladora', 'patada'] },
+    { id: 'navidad-2025', fecha: '2025-12-13', titulo: 'Exhibición de Navidad', foto: 'fila',
+      descripcion: 'Exhibición de las seis sedes y entrega de diplomas del primer trimestre.',
+      documentos: [], galeria: ['fila', 'clase'] },
+    { id: 'examen-nov-2025', fecha: '2025-11-22', titulo: 'Examen de cinturones', foto: 'patada',
+      descripcion: 'Primer examen del curso 2025-2026.',
+      documentos: [], galeria: ['patada', 'cinturon'] },
+    { id: 'inicio-2025', fecha: '2025-09-15', titulo: 'Empieza el curso 2025-2026', foto: 'clase',
+      descripcion: 'Vuelven las clases en todas las sedes con los horarios del nuevo curso.',
+      documentos: [], galeria: [] }
+  ];
+  function fechaEvento(ev) { var p = ev.fecha.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  /* Un evento es próximo hasta que acaba su día */
+  var hoyCero = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  function esProximo(ev) { return fechaEvento(ev) >= hoyCero; }
+  function buscarEvento(id) { for (var i = 0; i < EVENTOS.length; i++) if (EVENTOS[i].id === id) return EVENTOS[i]; return null; }
+  function fechaLarga(ev) { var f = fechaEvento(ev); return DIA_LARGO[f.getDay()] + ', ' + f.getDate() + ' de ' + MESES[f.getMonth()] + ' de ' + f.getFullYear(); }
+  /* Fecha como dorsal: día grande, mes (con el año si no es el actual) y día de la semana */
+  function fechaBloque(ev, clase) {
+    var f = fechaEvento(ev), otroAnio = f.getFullYear() !== ahora.getFullYear();
+    return '<time class="fecha ' + (clase || '') + '" datetime="' + ev.fecha + '">' +
+      '<span class="fecha-dia dorsal" aria-hidden="true">' + f.getDate() + '</span>' +
+      '<span class="fecha-mes" aria-hidden="true">' + MES_CORTO[f.getMonth()] + (otroAnio ? ' ' + f.getFullYear() : '') + '<small>' + DIA_LARGO[f.getDay()] + '</small></span>' +
+      '<span class="oculto">' + fechaLarga(ev) + '</span></time>';
+  }
+  /* Hora, lugar y sede: solo los que existan; la sede, con su anillo y enlace a su página si se pide */
+  function metaHtml(ev, conEnlace) {
+    var sede = ev.sede ? porId[ev.sede] : null, partes = [];
+    if (ev.hora) partes.push('<li>' + RELOJ + '<span class="oculto">Hora: </span><span class="ev-hora">' + ev.hora + '</span></li>');
+    if (ev.lugar) partes.push('<li>' + LUGAR + '<span><span class="oculto">Lugar: </span>' + ev.lugar + '</span></li>');
+    if (sede) partes.push('<li class="ev-sede">' + ANILLO + '<span class="oculto">Sede: </span>' +
+      (conEnlace ? '<a href="' + PAG.sede + '" data-enlace data-sede="' + sede.id + '">' + sede.nombre + '</a>' : sede.nombre) + '</li>');
+    return partes.length ? '<ul class="ev-meta">' + partes.join('') + '</ul>' : '';
+  }
+
+  /* ---- Evento pedido (?evento=); sin él, uno pasado con galería para ver la página entera ---- */
+  var ev = buscarEvento(params.get('evento')) || buscarEvento('fin-curso-2026');
+  estado = ev.id;
+  document.title = ev.titulo + ' · Eventos · Taekwondo Sierra Sur · Boceto «El chándal del club»';
+  /* La cabecera marca «Eventos» como sección actual */
+  marcarActual(PAG.eventos);
+
+  /* ---- Cabeza, foto y descripción ---- */
+  document.getElementById('evento-fecha').outerHTML = fechaBloque(ev);
+  document.getElementById('evento-titulo').textContent = ev.titulo;
+  document.getElementById('evento-meta').outerHTML = metaHtml(ev, true);
+  document.getElementById('evento-foto').outerHTML = fotoHtml(FOTOS[ev.foto], 'evento-foto', 'ya');
+  document.getElementById('evento-desc').textContent = ev.descripcion;
+
+  /* ---- Documentos: «nombre · tipo» ---- */
+  var DOC = '<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M7 3h10l6 6v16H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M17 3v6h6M11 15h8M11 19h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+  var docs = document.getElementById('docs');
+  docs.innerHTML = ev.documentos.map(function (d) {
+    return '<li><a href="#documento-ejemplo">' + DOC + '<span><span class="doc-nombre">' + d.nombre + '</span> <span class="doc-tipo">· ' + d.tipo + '</span></span></a></li>';
+  }).join('');
+  if (!ev.documentos.length) document.getElementById('documentos').hidden = true;
+
+  /* ---- Galería ---- */
+  var fotos = ev.galeria.map(function (k) { return FOTOS[k]; });
+  var rejilla = document.getElementById('rejilla-fotos');
+  if (!fotos.length) {
+    document.getElementById('galeria').hidden = true;
+  } else {
+    document.getElementById('galeria-cuenta').textContent = fotos.length + ' fotos';
+    rejilla.innerHTML = fotos.map(function (f, i) {
+      var n = String(i + 1).padStart(2, '0');
+      return '<li><button class="ampliar" type="button" data-i="' + i + '" aria-label="Ampliar la foto ' + (i + 1) + ' de ' + fotos.length + ': ' + f.alt + '">' +
+        '<img src="' + f.src + '" width="1600" height="1200" loading="lazy" alt=""></button>' +
+        '<span class="galeria-n dorsal" aria-hidden="true">' + n + '</span></li>';
+    }).join('');
+  }
+
+  /* ---- Visor: <dialog> modal; Esc cierra, el foco se queda dentro y vuelve a la miniatura ---- */
+  var visor = document.getElementById('visor'), img = document.getElementById('visor-img');
+  var actual = 0, origen = null;
+  function mostrar(i) {
+    actual = (i + fotos.length) % fotos.length;
+    var f = fotos[actual];
+    img.src = f.src; img.alt = f.alt;
+    document.getElementById('visor-titulo').innerHTML = String(actual + 1).padStart(2, '0') + '<span>de ' + fotos.length + '</span>';
+    document.getElementById('visor-texto').innerHTML = '<strong>' + f.alt + '</strong>Foto de ejemplo · ' + f.autor + ' · ' + f.fuente;
+  }
+  rejilla.addEventListener('click', function (e) {
+    var b = e.target.closest('.ampliar');
+    if (!b) return;
+    origen = b; mostrar(+b.dataset.i);
+    visor.showModal();
+    document.getElementById('visor-cerrar').focus();
+  });
+  document.getElementById('visor-cerrar').addEventListener('click', function () { visor.close(); });
+  document.getElementById('visor-ant').addEventListener('click', function () { mostrar(actual - 1); });
+  document.getElementById('visor-sig').addEventListener('click', function () { mostrar(actual + 1); });
+  visor.addEventListener('click', function (e) { if (e.target === visor) visor.close(); });
+  visor.addEventListener('close', function () { if (origen) origen.focus(); });
+  visor.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); mostrar(actual - 1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); mostrar(actual + 1); }
+    else if (e.key === 'Tab') {
+      /* Trampa de foco: Tab y Mayús+Tab dan la vuelta dentro del visor */
+      var f = visor.querySelectorAll('button'), primero = f[0], ultimo = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+    }
+  });
+
+  marcarEstado();
+  actualizarEnlaces();
+})();
+
+</script>
+</body>
+</html>

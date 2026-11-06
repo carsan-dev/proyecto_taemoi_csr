@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Información legal · Taekwondo Sierra Sur · Boceto «Una sede por pantalla»</title>
+<meta name="description" content="Boceto de la página legal de la web pública de escuela: tema «Una sede por pantalla».">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root {
+  /* Color de la escuela: lo pone la escuela. El JS deriva las variantes accesibles (igual que en la portada). */
+  --escuela: #0B5CAD;
+  --boton-fondo: #0B5CAD;
+  --boton-tinta: #FFFFFF;
+  --boton-hover: #094C90;
+  --boton-contorno-claro: transparent;
+  --boton-contorno-oscuro: #FFFFFF;
+  --escuela-texto: #0B5CAD;
+
+  --blanco: #FFFFFF;
+  --papel: #F3F4F5;
+  --tinta: #101418;
+  --tinta-2: #4A525D;
+  --filete: #D3D7DC;
+  --aviso: #F2C230;
+  --velo: 16, 20, 24;
+  --sobre-foto: #FFFFFF;
+  --sobre-foto-2: #E3E6EA;
+
+  --m: clamp(20px, 5vw, 72px);
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --salida: cubic-bezier(.16, 1, .3, 1);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: #8A929C var(--papel); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0; background: var(--blanco); color: var(--tinta);
+  font: 400 1rem/1.55 var(--sans); overflow-x: clip;
+}
+@media (min-width: 900px) { body { font-size: 1.0625rem; } }
+::selection { background: var(--tinta); color: var(--blanco); }
+.oscuro ::selection { background: var(--blanco); color: var(--tinta); }
+img, svg { display: block; }
+h1, h2, h3, h4, p, figure, ol, ul, dl, dd { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+h1, h2, h3, h4 { text-wrap: balance; }
+[hidden] { display: none !important; }
+a { color: var(--escuela-texto); text-underline-offset: .22em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+time, .hora, .cifras { font-variant-numeric: tabular-nums; }
+
+/* Foco: doble anillo, blanco y tinta; uno de los dos contrasta con cualquier fondo y con cualquier color de escuela */
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; box-shadow: 0 0 0 2px var(--blanco); }
+.oscuro :focus-visible { outline-color: var(--blanco); box-shadow: 0 0 0 2px var(--tinta); }
+
+.oculto {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.salto {
+  position: fixed; left: 16px; top: -120px; z-index: 60;
+  background: var(--tinta); color: var(--blanco); padding: 12px 16px; font-weight: 600;
+}
+.salto:focus-visible { top: 12px; }
+
+/* ---------- Nota del boceto ---------- */
+.nota {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 20px;
+  padding: 8px var(--m); background: var(--papel); border-bottom: 1px solid var(--filete);
+  font-size: .8125rem; line-height: 1.35; color: var(--tinta);
+}
+.nota strong { font-weight: 700; }
+.nota-controles { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; }
+.probar { display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; }
+.probar legend { float: left; margin-right: 6px; font-weight: 700; }
+.muestra, .estado {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 3px 10px 3px 4px;
+  border: 1px solid #8A929C; border-radius: 4px; background: var(--blanco); color: var(--tinta);
+  font: 500 .8125rem/1 var(--sans); cursor: pointer; text-decoration: none;
+}
+.estado { padding: 3px 10px; }
+.muestra-color { width: 22px; height: 22px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(16, 20, 24, .5); }
+.muestra[aria-pressed="true"] { border: 2px solid var(--tinta); padding: 2px 9px 2px 3px; font-weight: 700; }
+.estado[aria-current="true"], .estado[aria-pressed="true"] { border: 2px solid var(--tinta); padding: 2px 9px; font-weight: 700; }
+.muestra:hover, .estado:hover { border-color: var(--tinta); }
+.estados { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.estados-titulo { margin-right: 6px; font-weight: 700; }
+@media (max-width: 759px) {
+  .muestra { padding: 4px; }
+  .muestra[aria-pressed="true"] { padding: 3px; }
+  .muestra-nombre { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* ---------- Botones ---------- */
+.boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 48px; padding: 0 22px; border-radius: 2px; border: 0;
+  font: 600 1rem/1.1 var(--sans); text-decoration: none; cursor: pointer;
+  background: var(--boton-fondo); color: var(--boton-tinta);
+  box-shadow: inset 0 0 0 2px var(--boton-contorno-claro);
+  transition: background-color .15s ease-out;
+}
+.boton:hover { background: var(--boton-hover); }
+.oscuro .boton { box-shadow: inset 0 0 0 2px var(--boton-contorno-oscuro); }
+.oscuro .boton:focus-visible { box-shadow: 0 0 0 2px var(--tinta), inset 0 0 0 2px var(--boton-contorno-oscuro); }
+.boton:focus-visible { box-shadow: 0 0 0 2px var(--blanco), inset 0 0 0 2px var(--boton-contorno-claro); }
+.boton--linea {
+  background: transparent; color: var(--sobre-foto); box-shadow: inset 0 0 0 1.5px var(--sobre-foto);
+}
+.boton--linea:hover { background: rgba(255, 255, 255, .14); }
+.oscuro .boton--linea { box-shadow: inset 0 0 0 1.5px var(--sobre-foto); }
+.oscuro .boton--linea:focus-visible { box-shadow: 0 0 0 2px var(--tinta), inset 0 0 0 1.5px var(--sobre-foto); }
+.boton--tinta { background: var(--blanco); color: var(--tinta); box-shadow: inset 0 0 0 1.5px var(--tinta); }
+.boton--tinta:hover { background: var(--papel); }
+.boton--tinta:focus-visible { box-shadow: 0 0 0 2px var(--blanco), inset 0 0 0 1.5px var(--tinta); }
+.boton svg { flex: none; }
+.enlace-flecha { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; min-height: 44px; }
+.enlace-flecha svg { transition: transform .15s ease-out; }
+.enlace-flecha:hover svg { transform: translateX(3px); }
+.atras { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; min-height: 44px; }
+.atras svg { transition: transform .15s ease-out; }
+.atras:hover svg { transform: translateX(-3px); }
+.oscuro .atras, .oscuro .enlace-flecha { color: var(--sobre-foto); }
+
+/* ---------- Cabecera: sobre la foto (como la portada) o sobre blanco ---------- */
+.inicio { position: relative; }
+.cabecera {
+  position: absolute; inset: 0 0 auto 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 18px var(--m); color: var(--sobre-foto);
+}
+.marca { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.logo {
+  display: grid; place-items: center; width: 40px; height: 40px; flex: none;
+  border: 1.5px dashed rgba(255, 255, 255, .8); font: 700 .75rem/1 var(--sans); letter-spacing: .04em;
+}
+.marca-nombre { font: 600 .9375rem/1.15 var(--sans); }
+.marca-nombre span { display: block; }
+.cabecera-nav ul { display: flex; gap: 4px 22px; flex-wrap: wrap; justify-content: flex-end; }
+.cabecera-nav a {
+  display: inline-flex; align-items: center; min-height: 44px;
+  color: inherit; font-weight: 500; font-size: .9375rem; text-decoration: none;
+}
+.cabecera-nav a:hover { text-decoration: underline; }
+.cabecera-nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .32em; }
+@media (max-width: 420px) { .cabecera-nav ul { gap: 0 14px; } .cabecera-nav a { font-size: .875rem; } }
+.cabecera--clara { position: relative; color: var(--tinta); border-bottom: 1px solid var(--filete); }
+.cabecera--clara .logo { border-color: rgba(16, 20, 24, .62); }
+
+/* ---------- Foto a sangre con velo medido ---------- */
+.pantalla {
+  position: relative; display: flex; flex-direction: column; justify-content: flex-end;
+  background: var(--tinta); color: var(--sobre-foto); isolation: isolate;
+}
+.pantalla-foto { position: absolute; inset: 0; z-index: -2; margin: 0; }
+.pantalla-foto img {
+  width: 100%; height: 100%; object-fit: cover; object-position: var(--pos-movil, 50% 50%);
+}
+@media (min-width: 760px) { .pantalla-foto img { object-position: var(--pos, 50% 50%); } }
+/* Velo de la cabecera: el texto de la cabecera nunca cae por debajo de 0,6 */
+.pantalla--cabecera::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 160px; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(var(--velo), .86) 0, rgba(var(--velo), .6) 72px, rgba(var(--velo), 0) 160px);
+}
+/* Bloque de texto sobre la foto: el texto vive donde el velo es >= 0,74 (los 150 px de arriba son solo fundido) */
+.sobre-foto {
+  position: relative; padding: 150px var(--m) clamp(32px, 6vh, 64px);
+  background: linear-gradient(to top,
+    rgba(var(--velo), .9) 0%, rgba(var(--velo), .74) calc(100% - 150px), rgba(var(--velo), 0) 100%);
+}
+.credito-foto {
+  position: absolute; right: 12px; bottom: 12px; z-index: 1; margin: 0;
+  font-size: .75rem; line-height: 1.2; color: var(--sobre-foto);
+  background: rgba(var(--velo), .78); padding: 4px 7px;
+}
+
+/* ---------- Secciones editoriales ---------- */
+.envoltura { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: var(--m); }
+.seccion { padding-block: clamp(64px, 9vw, 128px); border-top: 1px solid var(--filete); }
+.titulo {
+  font: 400 clamp(44px, 6.4vw, 92px)/.95 var(--serif); letter-spacing: -.02em; text-wrap: balance;
+}
+.titulo em { font-style: italic; }
+.cabeza-seccion { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 32px; margin-bottom: clamp(32px, 4.5vw, 56px); }
+.cuenta { color: var(--tinta-2); font-weight: 600; }
+.cuerpo p + p { margin-top: 1em; }
+.cuerpo { max-width: 36em; color: var(--tinta); }
+
+/* Cabeza de página sobre blanco */
+.cabeza-pagina { padding-block: clamp(48px, 7vw, 104px) clamp(40px, 5vw, 72px); }
+.titular {
+  font: 400 clamp(56px, 9vw, 128px)/.9 var(--serif); letter-spacing: -.025em; text-wrap: balance; margin-left: -.03em;
+}
+.titular em { font-style: italic; }
+.entrada { margin-top: 18px; max-width: 34em; font-size: clamp(1.0625rem, 1.4vw, 1.25rem); color: var(--tinta-2); }
+.oscuro .entrada { color: var(--sobre-foto-2); }
+
+/* ---------- Pie (como la portada) ---------- */
+.pie { background: var(--tinta); color: #D9DDE1; padding: 56px 0 40px; font-size: .9375rem; }
+.pie a { color: var(--blanco); }
+.pie-marca { font: italic 400 clamp(40px, 6vw, 72px)/1 var(--serif); color: var(--blanco); }
+.pie-fila { display: grid; gap: 24px; margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, .25); }
+.pie-legal { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.pie-legal a { display: inline-flex; min-height: 44px; align-items: center; }
+.pie-ejemplo strong { color: var(--blanco); }
+.pie-creditos { margin-top: 8px; font-size: .8125rem; }
+@media (min-width: 900px) { .pie-fila { grid-template-columns: auto auto 1fr; gap: 48px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Movimiento firma de la portada: el nombre entra con un leve desplazamiento, una vez */
+@media (prefers-reduced-motion: no-preference) {
+  .anima .firma .nombre { display: inline-block; transition: transform .9s var(--salida), opacity .9s var(--salida); }
+  .anima .firma:not(.vista) .nombre { transform: translateX(-.18em); opacity: .001; }
+}
+
+/* ==================== Página: legales ==================== */
+/* ---------- Modo lectura: sin foto, texto limpio ---------- */
+.cabeza-pagina--legal { border-bottom: 1px solid var(--tinta); }
+.actualizado { margin-top: 14px; color: var(--tinta-2); }
+.actualizado time { color: var(--tinta); font-weight: 600; }
+.legal-rejilla { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px 80px; align-items: start; padding-block: clamp(40px, 5vw, 72px) clamp(72px, 9vw, 128px); }
+[id] { scroll-margin-top: 24px; }
+
+/* Índice «En esta página»: pegajoso en escritorio, lista arriba en el móvil */
+.indice { position: sticky; top: 32px; }
+.indice-titulo { padding-bottom: 10px; border-bottom: 1px solid var(--tinta); font: 600 .9375rem/1.2 var(--sans); }
+.indice-lista li { border-bottom: 1px solid var(--filete); }
+.indice-lista a {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 6px 0;
+  color: var(--tinta); font: italic 400 1.5rem/1.1 var(--serif); text-decoration: none;
+}
+.indice-lista a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .14em; }
+.indice-lista a[aria-current="true"] { color: var(--escuela-texto); }
+.indice-lista a[aria-current="true"]::after { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.indice-lista a svg { flex: none; }
+@media (min-width: 961px) { .indice-lista a svg { display: none; } }
+@media (max-width: 960px) {
+  .legal-rejilla { grid-template-columns: 1fr; gap: 32px; }
+  .indice { position: static; }
+  .indice-lista a[aria-current="true"] { color: var(--tinta); }
+  .indice-lista a[aria-current="true"]::after { display: none; }
+}
+
+/* Texto: medida de 65 a 75 caracteres */
+.legal-texto { min-width: 0; }
+.legal-seccion + .legal-seccion { margin-top: 56px; padding-top: 48px; border-top: 1px solid var(--filete); }
+.legal-h2 { margin-bottom: 20px; font: 400 clamp(2.5rem, 4.4vw, 3.75rem)/.95 var(--serif); letter-spacing: -.02em; }
+.legal-h3 { margin: 32px 0 8px; font: 600 1.125rem/1.3 var(--sans); }
+.legal-texto p, .legal-texto li { max-width: 34em; }
+.legal-texto p + p { margin-top: .9em; }
+.legal-lista { margin-top: 8px; padding-left: 1.25em; list-style: disc; }
+.legal-lista li + li { margin-top: 8px; }
+.legal-lista li::marker { color: var(--tinta-2); }
+
+/* Ficha del titular */
+.ficha { max-width: 38em; margin: 16px 0 4px; border-top: 1px solid var(--tinta); }
+.ficha div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 4px 20px; align-items: baseline; padding: 11px 0; border-bottom: 1px solid var(--filete); }
+.ficha dt { color: var(--tinta-2); }
+.ficha dd { font-weight: 600; overflow-wrap: anywhere; }
+.ficha dd a { display: inline-flex; align-items: center; min-height: 44px; }
+.ficha div:has(dd a) { padding-block: 0; align-items: center; }
+@media (max-width: 600px) { .ficha div { grid-template-columns: 1fr; gap: 0; } }
+
+/* Cookies: tabla corta */
+.tabla-cookies { width: 100%; max-width: 38em; margin: 24px 0; border-collapse: collapse; border-top: 1px solid var(--tinta); }
+.tabla-cookies caption { padding-bottom: 10px; text-align: left; font-weight: 600; }
+.tabla-cookies th, .tabla-cookies td { padding: 12px 16px 12px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--filete); }
+.tabla-cookies thead th { font: 600 .8125rem/1.2 var(--sans); color: var(--tinta-2); }
+.tabla-cookies tbody th { font-weight: 600; }
+@media (max-width: 600px) {
+  .tabla-cookies thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .tabla-cookies, .tabla-cookies tbody, .tabla-cookies tr, .tabla-cookies th, .tabla-cookies td { display: block; }
+  .tabla-cookies tr { padding: 12px 0; border-bottom: 1px solid var(--filete); }
+  .tabla-cookies th, .tabla-cookies td { padding: 2px 0; border: 0; }
+  .tabla-cookies td::before { content: attr(data-col) ": "; font-weight: 600; color: var(--tinta-2); }
+}
+
+/* Normas: numeradas en serif; el orden lo pone la escuela */
+.normas-lista { max-width: 38em; margin-top: 20px; border-top: 1px solid var(--tinta); counter-reset: norma; }
+.normas-lista li { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--filete); counter-increment: norma; }
+.normas-lista li::before { content: counter(norma); font: italic 400 2rem/.9 var(--serif); font-variant-numeric: tabular-nums; }
+
+/* Datos que salen de la gestión: el conmutador del boceto los resalta */
+.ver-gestion [data-g] { text-decoration: underline dotted 2px; text-decoration-color: var(--escuela-texto); text-underline-offset: .25em; }
+.ver-gestion [data-g]::after {
+  content: attr(data-g); display: inline-block; margin-left: 6px; padding: 0 6px; vertical-align: 1px;
+  background: var(--tinta); color: var(--blanco); font: 600 .75rem/1.5 var(--sans); text-decoration: none; letter-spacing: 0;
+}
+</style>
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+
+<div class="nota" role="region" aria-label="Nota del boceto">
+  <p><strong>Boceto «Una sede por pantalla»</strong> · texto de ejemplo; lo revisa la escuela</p>
+  <div class="nota-controles">
+    <fieldset class="probar">
+      <legend>Probar color</legend>
+      <button class="muestra" type="button" data-color="#0B5CAD" aria-pressed="true"><span class="muestra-color" style="background:#0B5CAD" aria-hidden="true"></span><span class="muestra-nombre">Azul Sierra Sur</span></button>
+      <button class="muestra" type="button" data-color="#F2C230" aria-pressed="false"><span class="muestra-color" style="background:#F2C230" aria-hidden="true"></span><span class="muestra-nombre">Claro</span></button>
+      <button class="muestra" type="button" data-color="#1B2B2E" aria-pressed="false"><span class="muestra-color" style="background:#1B2B2E" aria-hidden="true"></span><span class="muestra-nombre">Muy oscuro</span></button>
+    </fieldset>
+    <p class="estados"><button class="estado" type="button" id="ver-gestion" aria-pressed="false">Ver qué sale de la gestión</button></p>
+  </div>
+</div>
+
+<header class="cabecera cabecera--clara">
+    <a class="marca" href="boceto-sede-por-pantalla.html" data-enlace>
+      <span class="logo" role="img" aria-label="Marcador de logo" title="Marcador de logo: lo sube la escuela">TSS</span>
+      <span class="marca-nombre"><span>Taekwondo</span><span>Sierra Sur</span></span>
+    </a>
+    <nav class="cabecera-nav" aria-label="Principal">
+      <ul>
+        <li><a href="boceto-sede-por-pantalla-tarifas.html" data-enlace>Tarifas</a></li>
+        <li><a href="boceto-sede-por-pantalla-eventos.html" data-enlace>Eventos</a></li>
+        <li><a href="boceto-sede-por-pantalla.html#contacto" data-enlace>Contacto</a></li>
+      </ul>
+    </nav>
+  </header>
+
+<main id="principal" tabindex="-1">
+  <div class="envoltura cabeza-pagina cabeza-pagina--legal">
+    <h1 class="titular">Información <em>legal</em></h1>
+    <p class="entrada">Quién está detrás de esta web, qué hacemos con tus datos, qué cookies usamos y las normas del club.</p>
+    <p class="actualizado">Última actualización: <time datetime="2026-11-02">2 de noviembre de 2026</time></p>
+  </div>
+
+  <div class="envoltura legal-rejilla">
+    <nav class="indice" aria-labelledby="indice-titulo">
+      <h2 class="indice-titulo" id="indice-titulo">En esta página</h2>
+      <ol class="indice-lista">
+        <li><a href="#aviso-legal">Aviso legal</a></li>
+        <li><a href="#privacidad">Privacidad</a></li>
+        <li><a href="#cookies">Cookies</a></li>
+        <li><a href="#normas">Normas del club</a></li>
+      </ol>
+    </nav>
+
+    <div class="legal-texto">
+      <section class="legal-seccion" id="aviso-legal" aria-labelledby="t-aviso">
+        <h2 class="legal-h2" id="t-aviso">Aviso legal</h2>
+        <p>En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI), estos son los datos del titular de esta web.</p>
+        <dl class="ficha">
+          <div><dt>Titular</dt><dd data-g="nombreLegal"></dd></div>
+          <div><dt>CIF</dt><dd><span data-g="cif"></span></dd></div>
+          <div><dt>Domicilio</dt><dd><span data-g="direccion"></span>, <span data-g="codigoPostal"></span> <span data-g="localidad"></span> (<span data-g="provincia"></span>)</dd></div>
+          <div><dt>Correo</dt><dd><a data-g="emailContacto" data-href="mailto"></a></dd></div>
+          <div><dt>Teléfono</dt><dd><a class="cifras" data-g="telefono" data-href="tel"></a></dd></div>
+        </dl>
+        <h3 class="legal-h3">Para qué sirve esta web</h3>
+        <p>Informa de las actividades, sedes, horarios y tarifas del club, y permite enviar una preinscripción. La preinscripción es una solicitud: el club la revisa y te contesta.</p>
+        <h3 class="legal-h3">Propiedad intelectual</h3>
+        <p>Los textos, fotos, logotipos y diseño de esta web son de <span data-g="nombreLegal"></span> o de sus autores. No se pueden copiar ni usar con otros fines sin permiso.</p>
+        <h3 class="legal-h3">Responsabilidad</h3>
+        <p>Procuramos que la información esté al día, pero los horarios y las plazas pueden cambiar durante el curso. Si tienes dudas, confírmalo en tu sede. No respondemos del contenido de las webs de otros a las que enlazamos.</p>
+        <h3 class="legal-h3">Legislación</h3>
+        <p>Esta web se rige por la legislación española.</p>
+      </section>
+
+      <section class="legal-seccion" id="privacidad" aria-labelledby="t-privacidad">
+        <h2 class="legal-h2" id="t-privacidad">Privacidad</h2>
+        <p>Tratamos tus datos según el Reglamento (UE) 2016/679, general de protección de datos (RGPD), y la Ley Orgánica 3/2018, de protección de datos personales y garantía de los derechos digitales.</p>
+        <h3 class="legal-h3">Quién es el responsable</h3>
+        <p><span data-g="nombreLegal"></span>, con CIF <span data-g="cif"></span>. Para cualquier cosa sobre tus datos, escribe a <a data-g="emailContacto" data-href="mailto"></a>.</p>
+        <h3 class="legal-h3">Qué datos tratamos y para qué</h3>
+        <ul class="legal-lista">
+          <li><strong>Preinscripción.</strong> Los datos del alumno y, si es menor, los de su responsable legal, para estudiar la solicitud y darle plaza o apuntarle a la lista de espera.</li>
+          <li><strong>Alumnos del club.</strong> Los necesarios para llevar los grupos, la asistencia, los cobros, los grados y, si se tramita, la licencia federativa.</li>
+          <li><strong>Contacto.</strong> Los que nos des al escribirnos o llamarnos, para contestarte.</li>
+        </ul>
+        <h3 class="legal-h3">Con qué base legal</h3>
+        <p>Tu consentimiento al enviar la preinscripción, la relación con el club cuando el alumno se da de alta y las obligaciones legales que tenga el club, como las fiscales.</p>
+        <h3 class="legal-h3">Menores</h3>
+        <p>Los datos de los menores de 14 años los facilita y autoriza su padre, madre o responsable legal.</p>
+        <h3 class="legal-h3">Cuánto tiempo los guardamos</h3>
+        <p>Mientras dure la relación con el club y, después, el tiempo que exija la ley. Las preinscripciones que no terminan en alta se borran cuando ya no hacen falta.</p>
+        <h3 class="legal-h3">A quién se comunican</h3>
+        <p>Solo a quien hace falta para prestar el servicio: la federación deportiva, para tramitar la licencia; el banco, para los cobros, y el proveedor que aloja la web y la gestión del club, con contrato de encargado del tratamiento. No vendemos ni cedemos tus datos con otros fines.</p>
+        <h3 class="legal-h3">Tus derechos</h3>
+        <p>Puedes pedir el acceso, la rectificación o la supresión de tus datos, oponerte a su tratamiento, limitarlo y pedir su portabilidad escribiendo a <a data-g="emailContacto" data-href="mailto"></a>. Si crees que no los tratamos bien, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p>
+      </section>
+
+      <section class="legal-seccion" id="cookies" aria-labelledby="t-cookies">
+        <h2 class="legal-h2" id="t-cookies">Cookies</h2>
+        <p>Esta web solo usa cookies técnicas y el almacenamiento del navegador imprescindible para funcionar. No usa cookies de analítica ni de publicidad, por eso no te pide consentimiento ni muestra un aviso de cookies (artículo 22.2 de la LSSI).</p>
+        <table class="tabla-cookies">
+          <caption>Lo que guarda esta web en tu navegador</caption>
+          <thead><tr><th scope="col">Tipo</th><th scope="col">Finalidad</th><th scope="col">Duración</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Sesión</th><td data-col="Finalidad">Mantener los datos de la preinscripción mientras la rellenas</td><td data-col="Duración">Hasta que cierras la pestaña</td></tr>
+            <tr><th scope="row">Preferencias</th><td data-col="Finalidad">Recordar la última sede que has visto</td><td data-col="Duración">Hasta que borras los datos del navegador</td></tr>
+          </tbody>
+        </table>
+        <p>Si en el futuro usamos cookies de analítica, te pediremos el consentimiento antes de instalarlas y podrás retirarlo cuando quieras.</p>
+        <p>Puedes borrar las cookies y los datos guardados desde la configuración de tu navegador.</p>
+      </section>
+
+      <section class="legal-seccion" id="normas" aria-labelledby="t-normas">
+        <h2 class="legal-h2" id="t-normas">Normas del club</h2>
+        <p>Son las normas de la actividad que se aceptan al preinscribirse. Las cuotas están en <a href="boceto-sede-por-pantalla-tarifas.html" data-enlace>Tarifas</a>.</p>
+        <ol class="normas-lista" id="normas-lista"></ol>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer class="pie oscuro">
+  <div class="envoltura">
+    <p class="pie-marca" aria-hidden="true">Taekwondo Sierra Sur</p>
+    <div class="pie-fila">
+      <p>© 2026 Taekwondo Sierra Sur</p>
+      <ul class="pie-legal" aria-label="Legal">
+        <li><a href="boceto-sede-por-pantalla-legales.html#aviso-legal" data-enlace>Aviso legal</a></li>
+        <li><a href="boceto-sede-por-pantalla-legales.html#privacidad" data-enlace>Privacidad</a></li>
+        <li><a href="boceto-sede-por-pantalla-legales.html#cookies" data-enlace>Cookies</a></li>
+      </ul>
+      <div>
+        <p class="pie-ejemplo"><strong>Datos y fotos de ejemplo.</strong> Son inventados los lugares, direcciones, grupos, horarios, plazas, profesores, eventos, correo y teléfono. La mensualidad de 25 € es la real. Las fotos son libres y las sustituirá el club; aquí se repiten porque el boceto solo tiene estas.</p>
+        <p class="pie-creditos">Fotos: Camila Sanabria (Unsplash); A. Villalon, cottonbro, Eden FC, Kulani Shibambu, KKlinton (Pexels).</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* color:inicio — funciones puras de contraste WCAG (las mismas de la portada) */
+function hexARgb(hex) {
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function rgbAHex(c) {
+  return '#' + c.map(function (v) { return Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0'); }).join('').toUpperCase();
+}
+function luminancia(hex) {
+  var c = hexARgb(hex).map(function (v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contraste(a, b) {
+  var la = luminancia(a), lb = luminancia(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function rgbAHsl(c) {
+  var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0, d = max - min;
+  if (d) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hslARgb(h, s, l) {
+  function f(p, q, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  if (!s) return [l * 255, l * 255, l * 255];
+  var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  return [f(p, q, h + 1 / 3) * 255, f(p, q, h) * 255, f(p, q, h - 1 / 3) * 255];
+}
+/* Oscurece (baja la luminosidad, conserva el tono) hasta cumplir el objetivo sobre todos los fondos */
+function oscurecer(hex, objetivo, fondos) {
+  var hsl = rgbAHsl(hexARgb(hex)), actual = rgbAHex(hexARgb(hex));
+  function cumple(c) { return fondos.every(function (f) { return contraste(c, f) >= objetivo; }); }
+  while (!cumple(actual) && hsl[2] > 0) {
+    hsl[2] = Math.max(0, hsl[2] - 0.005);
+    actual = rgbAHex(hslARgb(hsl[0], hsl[1], hsl[2]));
+  }
+  return actual;
+}
+function mezclar(a, b, t) {
+  var x = hexARgb(a), y = hexARgb(b);
+  return rgbAHex(x.map(function (v, i) { return v + (y[i] - v) * t; }));
+}
+var BLANCO = '#FFFFFF', PAPEL = '#F3F4F5', TINTA = '#101418';
+function derivarColores(base) {
+  base = rgbAHex(hexARgb(base));
+  /* Botón principal: texto blanco o tinta, el que dé >= 4,5:1; si ninguno, se oscurece el fondo */
+  var fondo = base, tinta;
+  if (contraste(BLANCO, base) >= 4.5) tinta = BLANCO;
+  else if (contraste(TINTA, base) >= 4.5) tinta = TINTA;
+  else { fondo = oscurecer(base, 4.5, [BLANCO]); tinta = BLANCO; }
+  /* Hover: se aleja del texto, así el contraste nunca baja */
+  var hover = tinta === BLANCO ? mezclar(fondo, '#000000', 0.16) : mezclar(fondo, '#FFFFFF', 0.22);
+  /* Borde del botón: si su fondo no llega a 3:1 contra lo que tiene alrededor, lleva contorno */
+  var contornoClaro = contraste(fondo, BLANCO) >= 3 ? 'transparent' : TINTA;
+  var contornoOscuro = contraste(fondo, TINTA) >= 3 ? 'transparent' : BLANCO;
+  /* Enlaces sobre blanco: >= 4,5:1 sobre blanco y papel */
+  var texto = oscurecer(base, 4.5, [BLANCO, PAPEL]);
+  return {
+    base: base, fondo: fondo, tinta: tinta, hover: hover, contornoClaro: contornoClaro, contornoOscuro: contornoOscuro,
+    texto: texto,
+    cBoton: contraste(fondo, tinta), cHover: contraste(hover, tinta),
+    cBotonBlanco: contornoClaro === 'transparent' ? contraste(fondo, BLANCO) : contraste(TINTA, BLANCO),
+    cBotonOscuro: contornoOscuro === 'transparent' ? contraste(fondo, TINTA) : contraste(BLANCO, TINTA),
+    cTexto: Math.min(contraste(texto, BLANCO), contraste(texto, PAPEL))
+  };
+}
+/* Peor caso del velo: la foto es blanca pura debajo; el color resultante es la tinta mezclada con blanco */
+function veloPeorCaso(opacidad) { return mezclar(BLANCO, TINTA, opacidad); }
+/* color:fin */
+
+(function () {
+  var params = new URLSearchParams(location.search);
+  var raiz = document.documentElement;
+
+  /* ---- Color de la escuela y conmutador «Probar color» ---- */
+  function aplicarColor(hex) {
+    var col = derivarColores(hex);
+    raiz.style.setProperty('--escuela', col.base);
+    raiz.style.setProperty('--boton-fondo', col.fondo);
+    raiz.style.setProperty('--boton-tinta', col.tinta);
+    raiz.style.setProperty('--boton-hover', col.hover);
+    raiz.style.setProperty('--boton-contorno-claro', col.contornoClaro);
+    raiz.style.setProperty('--boton-contorno-oscuro', col.contornoOscuro);
+    raiz.style.setProperty('--escuela-texto', col.texto);
+    document.querySelectorAll('.muestra').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-color').toUpperCase() === col.base));
+    });
+    window.colorEscuela = col;
+    return col;
+  }
+  var colorParam = (params.get('color') || '').replace('#', '');
+  aplicarColor(/^[0-9a-fA-F]{6}$/.test(colorParam) ? '#' + colorParam : '#0B5CAD');
+  document.querySelector('.probar').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.muestra');
+    if (!b) return;
+    aplicarColor(b.getAttribute('data-color'));
+    params.set('color', b.getAttribute('data-color').replace('#', ''));
+    history.replaceState(null, '', '?' + params.toString() + location.hash);
+    actualizarEnlaces();
+  });
+
+  /* ---- Datos de ejemplo (en la app salen de la gestión; mismo orden fijo que la portada) ---- */
+  var SEDES = [
+    { id: 'herrera', nombre: 'Herrera', lugar: 'Pabellón municipal', dir: 'Avda. de la Constitución, s/n' },
+    { id: 'estepa', nombre: 'Estepa', lugar: 'Pabellón cubierto municipal', dir: 'C/ del Deporte, 2' },
+    { id: 'casariche', nombre: 'Casariche', lugar: 'Gimnasio del colegio público', dir: 'C/ Escuelas, 5' },
+    { id: 'lora', nombre: 'Lora de Estepa', lugar: 'Salón de usos múltiples', dir: 'Plaza de España, 1' },
+    { id: 'roda', nombre: 'Roda de Andalucía', lugar: 'Pabellón municipal', dir: 'Avda. de Andalucía, 40' },
+    { id: 'mollina', nombre: 'Mollina', lugar: 'Gimnasio del colegio', dir: 'C/ Granada, 12' }
+  ];
+  /* Fotos de la portada, con su encuadre por foto (escritorio y móvil) */
+  var FOTOS = {
+    patada: { pexels: 7990087, ancho: 1600, alto: 1067, pos: '62% 30%', posMovil: '64% 50%', autor: 'cottonbro', fuente: 'Pexels',
+      alt: 'Niña con dobok y cinturón negro lanzando una patada lateral en la sala' },
+    pabellon: { pexels: 33122161, ancho: 1600, alto: 1067, pos: '55% 35%', posMovil: '62% 50%', autor: 'KKlinton', fuente: 'Pexels',
+      alt: 'Un entrenador da indicaciones a una competidora con casco rojo en el pabellón' },
+    combate: { pexels: 37901794, ancho: 1600, alto: 2133, pos: '50% 48%', posMovil: '48% 50%', autor: 'Eden FC', fuente: 'Pexels',
+      alt: 'Combate infantil con petos y cascos azul y rojo sobre el tapiz' },
+    cinturon: { pexels: 7990068, ancho: 1600, alto: 1067, pos: '50% 30%', posMovil: '50% 40%', autor: 'cottonbro', fuente: 'Pexels',
+      alt: 'Alumno anudándose el cinturón blanco sobre el dobok' },
+    clase: { pexels: 38963062, ancho: 1600, alto: 1067, pos: '60% 40%', posMovil: '74% 50%', autor: 'A. Villalon', fuente: 'Pexels',
+      alt: 'Alumnas entrenando patadas con paletas al aire libre' },
+    voladora: { pexels: 36563836, ancho: 1600, alto: 1067, pos: '50% 28%', posMovil: '58% 40%', autor: 'Kulani Shibambu', fuente: 'Pexels',
+      alt: 'Exhibición al aire libre: una joven lanza una patada ante el público sentado' },
+    fila: { unsplash: 'photo-1530560643359-6d2fead989b3', ancho: 1600, alto: 2000, pos: '50% 42%', posMovil: '50% 50%', autor: 'Camila Sanabria', fuente: 'Unsplash',
+      alt: 'Alumna de espaldas, sentada en el tatami con el dobok y el cinturón negro, mientras su grupo atiende' }
+  };
+  function fotoSrc(f, w) {
+    return f.pexels
+      ? 'https://images.pexels.com/photos/' + f.pexels + '/pexels-photo-' + f.pexels + '.jpeg?auto=compress&cs=tinysrgb&w=' + w
+      : 'https://images.unsplash.com/' + f.unsplash + '?w=' + w + '&q=80';
+  }
+  /* Imagen a sangre (srcset completo) o normal; alt vacío si es decorativa */
+  function imgHtml(f, opciones) {
+    opciones = opciones || {};
+    return '<img src="' + fotoSrc(f, 1600) + '" srcset="' + fotoSrc(f, 900) + ' 900w, ' + fotoSrc(f, 1600) + ' 1600w' +
+      (opciones.sangre ? ', ' + fotoSrc(f, 2400) + ' 2400w' : '') + '" sizes="' + (opciones.sizes || '100vw') + '"' +
+      ' width="' + f.ancho + '" height="' + f.alto + '"' + (opciones.ya ? ' fetchpriority="high"' : ' loading="lazy"') +
+      ' style="--pos: ' + f.pos + '; --pos-movil: ' + f.posMovil + '"' +
+      ' alt="' + (opciones.decorativa ? '' : f.alt) + '">';
+  }
+  function creditoHtml(f) { return '<p class="credito-foto">Foto de ejemplo · ' + f.autor + ' · ' + f.fuente + '</p>'; }
+
+  var nSedes = parseInt(params.get('sedes'), 10);
+  var sedes = SEDES;
+  if (nSedes === 1) sedes = SEDES.filter(function (s) { return s.id === 'estepa'; });
+  else if (nSedes > 1 && nSedes < SEDES.length) sedes = SEDES.slice(0, nSedes);
+  var una = sedes.length === 1;
+  var porId = {};
+  SEDES.forEach(function (s) { porId[s.id] = s; });
+
+  /* ---- Tiempo (?ahora=AAAA-MM-DDTHH:MM simula el momento) ---- */
+  var ahoraParam = params.get('ahora');
+  var ahora = ahoraParam && !isNaN(new Date(ahoraParam)) ? new Date(ahoraParam) : new Date();
+  var DIA_LARGO = { 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado', 0: 'domingo' };
+  var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  var MES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+  var NUM = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho'];
+  function mayus(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+
+  /* ---- Piezas compartidas ---- */
+  var FLECHA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var FLECHA_IZQ = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  /* ---- Enlaces entre las páginas del boceto: conservan color, número de sedes y hora simulada ---- */
+  var PAG = {
+    portada: 'boceto-sede-por-pantalla.html', tarifas: 'boceto-sede-por-pantalla-tarifas.html',
+    eventos: 'boceto-sede-por-pantalla-eventos.html', evento: 'boceto-sede-por-pantalla-evento.html',
+    legales: 'boceto-sede-por-pantalla-legales.html', pre: 'boceto-sede-por-pantalla-preinscripcion.html',
+    sede: 'boceto-sede-por-pantalla-sede.html'
+  };
+  function enlace(pagina, extra) {
+    var partes = pagina.split('#'), q = new URLSearchParams();
+    ['color', 'sedes', 'ahora'].forEach(function (k) { if (params.get(k)) q.set(k, params.get(k)); });
+    Object.keys(extra || {}).forEach(function (k) { if (extra[k]) q.set(k, extra[k]); });
+    var t = q.toString();
+    return partes[0] + (t ? '?' + t : '') + (partes[1] ? '#' + partes[1] : '');
+  }
+  function actualizarEnlaces() {
+    document.querySelectorAll('[data-enlace]').forEach(function (a) {
+      if (!a.dataset.base) a.dataset.base = a.getAttribute('href');
+      a.href = enlace(a.dataset.base, { sede: a.dataset.sede, grupo: a.dataset.grupo, evento: a.dataset.evento, estado: a.dataset.estado });
+    });
+  }
+
+  /* ---- Página actual en la cabecera ---- */
+  function marcarActual(pagina) {
+    document.querySelectorAll('.cabecera-nav a').forEach(function (a) {
+      if (a.getAttribute('href').split(/[?#]/)[0] === pagina) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+  }
+  marcarActual(location.pathname.split('/').pop());
+
+  /* ---- Estados alternativos del boceto (?estado=) ---- */
+  var estado = params.get('estado') || '';
+  function marcarEstado() {
+    document.querySelectorAll('.estado[data-estado-valor]').forEach(function (a) {
+      if (a.getAttribute('data-estado-valor') === estado) a.setAttribute('aria-current', 'true');
+      else a.removeAttribute('aria-current');
+    });
+  }
+
+  /* Movimiento firma (el de la portada): el nombre entra con un leve desplazamiento al llegar a la vista.
+     Visible por defecto; solo se anima sin movimiento reducido y fuera de capturas sin interfaz. */
+  function firma(elementos) {
+    var animar = 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      !/HeadlessChrome/.test(navigator.userAgent);
+    if (!animar || !elementos.length) return;
+    raiz.classList.add('anima');
+    var io = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('vista');
+        io.unobserve(e.target);
+      });
+    }, { threshold: 0.35 });
+    elementos.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ---- Datos de la organización (en la app salen de la gestión; aquí, ficticios) ---- */
+  var ORG = {
+    nombreLegal: 'Club Deportivo Taekwondo Sierra Sur (ejemplo)', cif: 'G00000000', direccion: 'C/ Ejemplo, 1',
+    codigoPostal: '41560', localidad: 'Estepa', provincia: 'Sevilla', emailContacto: 'contacto@ejemplo.es', telefono: '600 000 000'
+  };
+  document.querySelectorAll('[data-g]').forEach(function (el) {
+    var v = ORG[el.getAttribute('data-g')];
+    el.textContent = v;
+    if (el.getAttribute('data-href') === 'mailto') el.href = 'mailto:' + v;
+    if (el.getAttribute('data-href') === 'tel') el.href = 'tel:+34' + v.replace(/\s/g, '');
+  });
+
+  /* ---- Normas: las mismas de la plantilla de preinscripción (contenido.normas[]); #normas la enlaza su casilla (454) ---- */
+  var NORMAS = [
+    'Las clases empiezan y acaban a su hora: llega cinco minutos antes.',
+    'Se entrena con dobok limpio, uñas cortas y sin pendientes, anillos ni relojes.',
+    'La mensualidad se paga en los cinco primeros días de cada mes.',
+    'Si el alumno va a faltar un mes entero, avisa al profesor para guardar la plaza.',
+    'Los menores entran y salen acompañados hasta la puerta de la sala.',
+    'Las bajas se comunican por escrito antes del día 25 del mes anterior.',
+    'El club puede proponer otro grupo si la edad o el nivel del alumno lo aconsejan.'
+  ];
+  document.getElementById('normas-lista').innerHTML = NORMAS.map(function (n) { return '<li><span>' + n + '</span></li>'; }).join('');
+
+  /* ---- Conmutador del boceto: resalta lo que sale de la gestión ---- */
+  var boton = document.getElementById('ver-gestion');
+  boton.addEventListener('click', function () {
+    var on = boton.getAttribute('aria-pressed') !== 'true';
+    boton.setAttribute('aria-pressed', String(on));
+    raiz.classList.toggle('ver-gestion', on);
+  });
+
+  /* ---- Índice: en el móvil, cada entrada lleva su flecha; marca la sección que se está leyendo ---- */
+  var BAJAR = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 3v11M4.5 9.5 9 14l4.5-4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var enlacesIndice = document.querySelectorAll('.indice-lista a');
+  enlacesIndice.forEach(function (a) { a.insertAdjacentHTML('beforeend', BAJAR); });
+  function marcar(id) { enlacesIndice.forEach(function (a) { if (a.getAttribute('href') === '#' + id) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); }); }
+  if ('IntersectionObserver' in window) {
+    var visibles = {};
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) { visibles[e.target.id] = e.isIntersecting; });
+      var primera = ['aviso-legal', 'privacidad', 'cookies', 'normas'].filter(function (id) { return visibles[id]; })[0];
+      if (primera) marcar(primera);
+    }, { rootMargin: '-24px 0px -55% 0px' });
+    document.querySelectorAll('.legal-seccion').forEach(function (s) { obs.observe(s); });
+  }
+  marcar(location.hash ? location.hash.slice(1) : 'aviso-legal');
+  /* Al llegar con ancla (p. ej. #normas desde la casilla de la preinscripción), se recoloca cuando cargan las fuentes */
+  if (location.hash && document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      var destino = document.getElementById(location.hash.slice(1));
+      if (destino) destino.scrollIntoView({ block: 'start', behavior: 'auto' });
+    });
+  }
+
+  marcarEstado();
+  actualizarEnlaces();
+})();
+</script>
+</body>
+</html>

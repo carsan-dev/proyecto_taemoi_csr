@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eventos · Taekwondo Sierra Sur · Boceto «Una sede por pantalla»</title>
+<meta name="description" content="Boceto de la lista de eventos de la web pública de escuela: tema «Una sede por pantalla».">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root {
+  /* Color de la escuela: lo pone la escuela. El JS deriva las variantes accesibles (igual que en la portada). */
+  --escuela: #0B5CAD;
+  --boton-fondo: #0B5CAD;
+  --boton-tinta: #FFFFFF;
+  --boton-hover: #094C90;
+  --boton-contorno-claro: transparent;
+  --boton-contorno-oscuro: #FFFFFF;
+  --escuela-texto: #0B5CAD;
+
+  --blanco: #FFFFFF;
+  --papel: #F3F4F5;
+  --tinta: #101418;
+  --tinta-2: #4A525D;
+  --filete: #D3D7DC;
+  --aviso: #F2C230;
+  --velo: 16, 20, 24;
+  --sobre-foto: #FFFFFF;
+  --sobre-foto-2: #E3E6EA;
+
+  --m: clamp(20px, 5vw, 72px);
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --salida: cubic-bezier(.16, 1, .3, 1);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: #8A929C var(--papel); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0; background: var(--blanco); color: var(--tinta);
+  font: 400 1rem/1.55 var(--sans); overflow-x: clip;
+}
+@media (min-width: 900px) { body { font-size: 1.0625rem; } }
+::selection { background: var(--tinta); color: var(--blanco); }
+.oscuro ::selection { background: var(--blanco); color: var(--tinta); }
+img, svg { display: block; }
+h1, h2, h3, h4, p, figure, ol, ul, dl, dd { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+h1, h2, h3, h4 { text-wrap: balance; }
+[hidden] { display: none !important; }
+a { color: var(--escuela-texto); text-underline-offset: .22em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+time, .hora, .cifras { font-variant-numeric: tabular-nums; }
+
+/* Foco: doble anillo, blanco y tinta; uno de los dos contrasta con cualquier fondo y con cualquier color de escuela */
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; box-shadow: 0 0 0 2px var(--blanco); }
+.oscuro :focus-visible { outline-color: var(--blanco); box-shadow: 0 0 0 2px var(--tinta); }
+
+.oculto {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.salto {
+  position: fixed; left: 16px; top: -120px; z-index: 60;
+  background: var(--tinta); color: var(--blanco); padding: 12px 16px; font-weight: 600;
+}
+.salto:focus-visible { top: 12px; }
+
+/* ---------- Nota del boceto ---------- */
+.nota {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 20px;
+  padding: 8px var(--m); background: var(--papel); border-bottom: 1px solid var(--filete);
+  font-size: .8125rem; line-height: 1.35; color: var(--tinta);
+}
+.nota strong { font-weight: 700; }
+.nota-controles { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; }
+.probar { display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; }
+.probar legend { float: left; margin-right: 6px; font-weight: 700; }
+.muestra, .estado {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 3px 10px 3px 4px;
+  border: 1px solid #8A929C; border-radius: 4px; background: var(--blanco); color: var(--tinta);
+  font: 500 .8125rem/1 var(--sans); cursor: pointer; text-decoration: none;
+}
+.estado { padding: 3px 10px; }
+.muestra-color { width: 22px; height: 22px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(16, 20, 24, .5); }
+.muestra[aria-pressed="true"] { border: 2px solid var(--tinta); padding: 2px 9px 2px 3px; font-weight: 700; }
+.estado[aria-current="true"], .estado[aria-pressed="true"] { border: 2px solid var(--tinta); padding: 2px 9px; font-weight: 700; }
+.muestra:hover, .estado:hover { border-color: var(--tinta); }
+.estados { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.estados-titulo { margin-right: 6px; font-weight: 700; }
+@media (max-width: 759px) {
+  .muestra { padding: 4px; }
+  .muestra[aria-pressed="true"] { padding: 3px; }
+  .muestra-nombre { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* ---------- Botones ---------- */
+.boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 48px; padding: 0 22px; border-radius: 2px; border: 0;
+  font: 600 1rem/1.1 var(--sans); text-decoration: none; cursor: pointer;
+  background: var(--boton-fondo); color: var(--boton-tinta);
+  box-shadow: inset 0 0 0 2px var(--boton-contorno-claro);
+  transition: background-color .15s ease-out;
+}
+.boton:hover { background: var(--boton-hover); }
+.oscuro .boton { box-shadow: inset 0 0 0 2px var(--boton-contorno-oscuro); }
+.oscuro .boton:focus-visible { box-shadow: 0 0 0 2px var(--tinta), inset 0 0 0 2px var(--boton-contorno-oscuro); }
+.boton:focus-visible { box-shadow: 0 0 0 2px var(--blanco), inset 0 0 0 2px var(--boton-contorno-claro); }
+.boton--linea {
+  background: transparent; color: var(--sobre-foto); box-shadow: inset 0 0 0 1.5px var(--sobre-foto);
+}
+.boton--linea:hover { background: rgba(255, 255, 255, .14); }
+.oscuro .boton--linea { box-shadow: inset 0 0 0 1.5px var(--sobre-foto); }
+.oscuro .boton--linea:focus-visible { box-shadow: 0 0 0 2px var(--tinta), inset 0 0 0 1.5px var(--sobre-foto); }
+.boton--tinta { background: var(--blanco); color: var(--tinta); box-shadow: inset 0 0 0 1.5px var(--tinta); }
+.boton--tinta:hover { background: var(--papel); }
+.boton--tinta:focus-visible { box-shadow: 0 0 0 2px var(--blanco), inset 0 0 0 1.5px var(--tinta); }
+.boton svg { flex: none; }
+.enlace-flecha { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; min-height: 44px; }
+.enlace-flecha svg { transition: transform .15s ease-out; }
+.enlace-flecha:hover svg { transform: translateX(3px); }
+.atras { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; min-height: 44px; }
+.atras svg { transition: transform .15s ease-out; }
+.atras:hover svg { transform: translateX(-3px); }
+.oscuro .atras, .oscuro .enlace-flecha { color: var(--sobre-foto); }
+
+/* ---------- Cabecera: sobre la foto (como la portada) o sobre blanco ---------- */
+.inicio { position: relative; }
+.cabecera {
+  position: absolute; inset: 0 0 auto 0; z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 18px var(--m); color: var(--sobre-foto);
+}
+.marca { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+.logo {
+  display: grid; place-items: center; width: 40px; height: 40px; flex: none;
+  border: 1.5px dashed rgba(255, 255, 255, .8); font: 700 .75rem/1 var(--sans); letter-spacing: .04em;
+}
+.marca-nombre { font: 600 .9375rem/1.15 var(--sans); }
+.marca-nombre span { display: block; }
+.cabecera-nav ul { display: flex; gap: 4px 22px; flex-wrap: wrap; justify-content: flex-end; }
+.cabecera-nav a {
+  display: inline-flex; align-items: center; min-height: 44px;
+  color: inherit; font-weight: 500; font-size: .9375rem; text-decoration: none;
+}
+.cabecera-nav a:hover { text-decoration: underline; }
+.cabecera-nav a[aria-current="page"] { font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: .32em; }
+@media (max-width: 420px) { .cabecera-nav ul { gap: 0 14px; } .cabecera-nav a { font-size: .875rem; } }
+.cabecera--clara { position: relative; color: var(--tinta); border-bottom: 1px solid var(--filete); }
+.cabecera--clara .logo { border-color: rgba(16, 20, 24, .62); }
+
+/* ---------- Foto a sangre con velo medido ---------- */
+.pantalla {
+  position: relative; display: flex; flex-direction: column; justify-content: flex-end;
+  background: var(--tinta); color: var(--sobre-foto); isolation: isolate;
+}
+.pantalla-foto { position: absolute; inset: 0; z-index: -2; margin: 0; }
+.pantalla-foto img {
+  width: 100%; height: 100%; object-fit: cover; object-position: var(--pos-movil, 50% 50%);
+}
+@media (min-width: 760px) { .pantalla-foto img { object-position: var(--pos, 50% 50%); } }
+/* Velo de la cabecera: el texto de la cabecera nunca cae por debajo de 0,6 */
+.pantalla--cabecera::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 160px; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(var(--velo), .86) 0, rgba(var(--velo), .6) 72px, rgba(var(--velo), 0) 160px);
+}
+/* Bloque de texto sobre la foto: el texto vive donde el velo es >= 0,74 (los 150 px de arriba son solo fundido) */
+.sobre-foto {
+  position: relative; padding: 150px var(--m) clamp(32px, 6vh, 64px);
+  background: linear-gradient(to top,
+    rgba(var(--velo), .9) 0%, rgba(var(--velo), .74) calc(100% - 150px), rgba(var(--velo), 0) 100%);
+}
+.credito-foto {
+  position: absolute; right: 12px; bottom: 12px; z-index: 1; margin: 0;
+  font-size: .75rem; line-height: 1.2; color: var(--sobre-foto);
+  background: rgba(var(--velo), .78); padding: 4px 7px;
+}
+
+/* ---------- Secciones editoriales ---------- */
+.envoltura { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: var(--m); }
+.seccion { padding-block: clamp(64px, 9vw, 128px); border-top: 1px solid var(--filete); }
+.titulo {
+  font: 400 clamp(44px, 6.4vw, 92px)/.95 var(--serif); letter-spacing: -.02em; text-wrap: balance;
+}
+.titulo em { font-style: italic; }
+.cabeza-seccion { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px 32px; margin-bottom: clamp(32px, 4.5vw, 56px); }
+.cuenta { color: var(--tinta-2); font-weight: 600; }
+.cuerpo p + p { margin-top: 1em; }
+.cuerpo { max-width: 36em; color: var(--tinta); }
+
+/* Cabeza de página sobre blanco */
+.cabeza-pagina { padding-block: clamp(48px, 7vw, 104px) clamp(40px, 5vw, 72px); }
+.titular {
+  font: 400 clamp(56px, 9vw, 128px)/.9 var(--serif); letter-spacing: -.025em; text-wrap: balance; margin-left: -.03em;
+}
+.titular em { font-style: italic; }
+.entrada { margin-top: 18px; max-width: 34em; font-size: clamp(1.0625rem, 1.4vw, 1.25rem); color: var(--tinta-2); }
+.oscuro .entrada { color: var(--sobre-foto-2); }
+
+/* ---------- Pie (como la portada) ---------- */
+.pie { background: var(--tinta); color: #D9DDE1; padding: 56px 0 40px; font-size: .9375rem; }
+.pie a { color: var(--blanco); }
+.pie-marca { font: italic 400 clamp(40px, 6vw, 72px)/1 var(--serif); color: var(--blanco); }
+.pie-fila { display: grid; gap: 24px; margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, .25); }
+.pie-legal { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.pie-legal a { display: inline-flex; min-height: 44px; align-items: center; }
+.pie-ejemplo strong { color: var(--blanco); }
+.pie-creditos { margin-top: 8px; font-size: .8125rem; }
+@media (min-width: 900px) { .pie-fila { grid-template-columns: auto auto 1fr; gap: 48px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Movimiento firma de la portada: el nombre entra con un leve desplazamiento, una vez */
+@media (prefers-reduced-motion: no-preference) {
+  .anima .firma .nombre { display: inline-block; transition: transform .9s var(--salida), opacity .9s var(--salida); }
+  .anima .firma:not(.vista) .nombre { transform: translateX(-.18em); opacity: .001; }
+}
+
+/* ==================== Página: eventos ==================== */
+/* Hora, lugar y sede del evento: opcionales (decisión 466); si faltan, no se pinta nada */
+.ev-meta { display: flex; flex-wrap: wrap; gap: 2px 0; color: var(--tinta-2); }
+.ev-meta li:not(:last-child)::after { content: "·"; margin: 0 .5em; opacity: .7; }
+.ev-meta .ev-hora { color: var(--tinta); font-weight: 600; }
+.ev-meta .ev-sede { color: var(--tinta); font-weight: 600; }
+.oscuro .ev-meta { color: var(--sobre-foto-2); }
+.oscuro .ev-meta .ev-hora, .oscuro .ev-meta .ev-sede, .oscuro .ev-meta a { color: var(--sobre-foto); }
+.fecha { display: grid; gap: 4px; }
+.fecha-dia { font: 400 2.25rem/1 var(--serif); white-space: nowrap; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.fecha-anio { font-style: italic; }
+.fecha-semana { font-size: .875rem; color: var(--tinta-2); }
+.oscuro .fecha-semana { color: var(--sobre-foto-2); }
+[id] { scroll-margin-top: 24px; }
+
+/* ---------- Próximos ---------- */
+.seccion--proximos { padding-top: 0; border-top: 0; }
+/* El primero, destacado: foto a sangre de borde a borde */
+.destacado { min-height: clamp(560px, 88vh, 880px); min-height: clamp(560px, 88svh, 880px); }
+.destacado .sobre-foto > * { max-width: 860px; }
+.destacado .fecha { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.destacado .fecha-dia { font-size: clamp(56px, 7vw, 104px); line-height: .9; letter-spacing: -.02em; }
+.destacado .fecha-semana { font-size: clamp(1rem, 1.4vw, 1.25rem); }
+.destacado-titulo { margin-top: 10px; font: 400 clamp(48px, 6.4vw, 96px)/.92 var(--serif); letter-spacing: -.02em; }
+.destacado .ev-meta { margin-top: 16px; font-size: 1.0625rem; }
+.destacado-desc { margin-top: 14px; max-width: 40em; color: var(--sobre-foto-2); }
+.destacado-acciones { margin-top: 24px; }
+@media (min-width: 900px) {
+  /* En escritorio el velo va de izquierda a derecha, como la portada; el texto vive en los primeros 900 px */
+  .destacado::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(to right, rgba(var(--velo), .9) 0, rgba(var(--velo), .84) 900px, rgba(var(--velo), .25) 1200px, rgba(var(--velo), .1) 100%); }
+  .destacado .sobre-foto { padding-top: 120px; background: none; }
+}
+
+/* El resto, en filas con filete */
+.ev-filas { margin-top: clamp(40px, 5vw, 64px); border-top: 1px solid var(--tinta); }
+.ev-fila {
+  display: grid; grid-template-columns: 160px minmax(0, 1fr) 220px auto; gap: 8px 32px; align-items: center;
+  padding: 24px 0; border-bottom: 1px solid var(--filete);
+}
+.ev-fila .fecha-dia { font-size: 3rem; white-space: normal; }
+.ev-fila .fecha-anio { display: block; font-size: .6em; margin-top: 2px; }
+.ev-titulo { font: 600 1.375rem/1.2 var(--sans); }
+.ev-fila .ev-meta { margin-top: 4px; }
+.ev-desc {
+  max-width: 60ch; margin-top: 8px; color: var(--tinta);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.ev-miniatura { margin: 0; aspect-ratio: 3 / 2; background: var(--papel); }
+.ev-miniatura img, .ev-mini-foto img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 960px) {
+  .ev-fila { grid-template-columns: minmax(0, 1fr) 132px; grid-template-areas: "fecha foto" "texto texto" "accion accion"; }
+  .ev-fila .fecha { grid-area: fecha; }
+  .ev-miniatura { grid-area: foto; }
+  .ev-texto { grid-area: texto; }
+  .ev-fila .enlace-flecha { grid-area: accion; justify-self: start; }
+}
+@media (max-width: 759px) { .ev-fila .fecha-dia { font-size: 2.5rem; } .ev-fila { grid-template-columns: minmax(0, 1fr) 112px; } }
+
+/* Sin próximos */
+.ev-vacio { padding-top: 8px; border-top: 1px solid var(--tinta); }
+.ev-vacio-titulo { margin-top: 24px; max-width: 14ch; font: italic 400 clamp(44px, 5.6vw, 80px)/.95 var(--serif); letter-spacing: -.02em; }
+.ev-vacio p { max-width: 46ch; margin-top: 14px; font-size: 1.125rem; color: var(--tinta-2); }
+.ev-vacio .enlace-flecha { margin-top: 12px; }
+
+/* ---------- Anteriores, por año ---------- */
+.anio + .anio { margin-top: clamp(56px, 7vw, 96px); }
+.anio-titulo { padding-bottom: 12px; border-bottom: 1px solid var(--tinta); font: italic 400 clamp(64px, 9vw, 128px)/.9 var(--serif); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.ev-rejilla { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px 24px; margin-top: 28px; }
+.ev-mini a { display: block; color: var(--tinta); text-decoration: none; }
+.ev-mini-foto { margin: 0; aspect-ratio: 3 / 2; background: var(--papel); overflow: hidden; }
+.ev-mini-foto img { transition: transform .32s var(--salida); }
+.ev-mini a:hover .ev-mini-foto img { transform: scale(1.03); }
+.ev-mini-fecha { display: block; margin-top: 12px; color: var(--tinta-2); font-size: .9375rem; }
+.ev-mini-titulo { margin-top: 2px; font: 400 1.625rem/1.1 var(--serif); }
+.ev-mini a:hover .ev-mini-titulo { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .14em; }
+.ev-mini .ev-meta { margin-top: 6px; font-size: .9375rem; }
+@media (max-width: 960px) { .ev-rejilla { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 16px; } }
+@media (max-width: 759px) { .ev-mini-titulo { font-size: 1.375rem; } .ev-mini .ev-meta { display: none; } }
+</style>
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+
+<div class="nota" role="region" aria-label="Nota del boceto">
+  <p><strong>Boceto «Una sede por pantalla»</strong> · eventos y fotos de ejemplo</p>
+  <div class="nota-controles">
+    <fieldset class="probar">
+      <legend>Probar color</legend>
+      <button class="muestra" type="button" data-color="#0B5CAD" aria-pressed="true"><span class="muestra-color" style="background:#0B5CAD" aria-hidden="true"></span><span class="muestra-nombre">Azul Sierra Sur</span></button>
+      <button class="muestra" type="button" data-color="#F2C230" aria-pressed="false"><span class="muestra-color" style="background:#F2C230" aria-hidden="true"></span><span class="muestra-nombre">Claro</span></button>
+      <button class="muestra" type="button" data-color="#1B2B2E" aria-pressed="false"><span class="muestra-color" style="background:#1B2B2E" aria-hidden="true"></span><span class="muestra-nombre">Muy oscuro</span></button>
+    </fieldset>
+    <p class="estados"><span class="estados-titulo">Ver estado</span>
+      <a class="estado" href="boceto-sede-por-pantalla-eventos.html" data-enlace data-estado-valor="">Con próximos</a>
+      <a class="estado" href="boceto-sede-por-pantalla-eventos.html" data-enlace data-estado="sin-proximos" data-estado-valor="sin-proximos">Sin próximos</a></p>
+  </div>
+</div>
+
+<header class="cabecera cabecera--clara">
+    <a class="marca" href="boceto-sede-por-pantalla.html" data-enlace>
+      <span class="logo" role="img" aria-label="Marcador de logo" title="Marcador de logo: lo sube la escuela">TSS</span>
+      <span class="marca-nombre"><span>Taekwondo</span><span>Sierra Sur</span></span>
+    </a>
+    <nav class="cabecera-nav" aria-label="Principal">
+      <ul>
+        <li><a href="boceto-sede-por-pantalla-tarifas.html" data-enlace>Tarifas</a></li>
+        <li><a href="boceto-sede-por-pantalla-eventos.html" data-enlace>Eventos</a></li>
+        <li><a href="boceto-sede-por-pantalla.html#contacto" data-enlace>Contacto</a></li>
+      </ul>
+    </nav>
+  </header>
+
+<main id="principal" tabindex="-1">
+  <div class="envoltura cabeza-pagina">
+    <h1 class="titular"><em>Eventos</em></h1>
+    <p class="entrada">Exámenes, torneos y exhibiciones del club, con sus circulares y sus fotos.</p>
+  </div>
+
+  <section class="seccion seccion--proximos" id="proximos" aria-labelledby="proximos-titulo">
+    <div class="envoltura cabeza-seccion">
+      <h2 class="titulo" id="proximos-titulo">Próximos</h2>
+      <p class="cuenta" id="proximos-cuenta"></p>
+    </div>
+    <div id="proximos-lista"></div>
+  </section>
+
+  <section class="seccion" id="anteriores" aria-labelledby="anteriores-titulo">
+    <div class="envoltura">
+      <div class="cabeza-seccion"><h2 class="titulo" id="anteriores-titulo">Anteriores</h2></div>
+      <div id="anteriores-lista"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="pie oscuro">
+  <div class="envoltura">
+    <p class="pie-marca" aria-hidden="true">Taekwondo Sierra Sur</p>
+    <div class="pie-fila">
+      <p>© 2026 Taekwondo Sierra Sur</p>
+      <ul class="pie-legal" aria-label="Legal">
+        <li><a href="boceto-sede-por-pantalla-legales.html#aviso-legal" data-enlace>Aviso legal</a></li>
+        <li><a href="boceto-sede-por-pantalla-legales.html#privacidad" data-enlace>Privacidad</a></li>
+        <li><a href="boceto-sede-por-pantalla-legales.html#cookies" data-enlace>Cookies</a></li>
+      </ul>
+      <div>
+        <p class="pie-ejemplo"><strong>Datos y fotos de ejemplo.</strong> Son inventados los lugares, direcciones, grupos, horarios, plazas, profesores, eventos, correo y teléfono. La mensualidad de 25 € es la real. Las fotos son libres y las sustituirá el club; aquí se repiten porque el boceto solo tiene estas.</p>
+        <p class="pie-creditos">Fotos: Camila Sanabria (Unsplash); A. Villalon, cottonbro, Eden FC, Kulani Shibambu, KKlinton (Pexels).</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* color:inicio — funciones puras de contraste WCAG (las mismas de la portada) */
+function hexARgb(hex) {
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function rgbAHex(c) {
+  return '#' + c.map(function (v) { return Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0'); }).join('').toUpperCase();
+}
+function luminancia(hex) {
+  var c = hexARgb(hex).map(function (v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contraste(a, b) {
+  var la = luminancia(a), lb = luminancia(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function rgbAHsl(c) {
+  var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0, d = max - min;
+  if (d) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hslARgb(h, s, l) {
+  function f(p, q, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  if (!s) return [l * 255, l * 255, l * 255];
+  var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  return [f(p, q, h + 1 / 3) * 255, f(p, q, h) * 255, f(p, q, h - 1 / 3) * 255];
+}
+/* Oscurece (baja la luminosidad, conserva el tono) hasta cumplir el objetivo sobre todos los fondos */
+function oscurecer(hex, objetivo, fondos) {
+  var hsl = rgbAHsl(hexARgb(hex)), actual = rgbAHex(hexARgb(hex));
+  function cumple(c) { return fondos.every(function (f) { return contraste(c, f) >= objetivo; }); }
+  while (!cumple(actual) && hsl[2] > 0) {
+    hsl[2] = Math.max(0, hsl[2] - 0.005);
+    actual = rgbAHex(hslARgb(hsl[0], hsl[1], hsl[2]));
+  }
+  return actual;
+}
+function mezclar(a, b, t) {
+  var x = hexARgb(a), y = hexARgb(b);
+  return rgbAHex(x.map(function (v, i) { return v + (y[i] - v) * t; }));
+}
+var BLANCO = '#FFFFFF', PAPEL = '#F3F4F5', TINTA = '#101418';
+function derivarColores(base) {
+  base = rgbAHex(hexARgb(base));
+  /* Botón principal: texto blanco o tinta, el que dé >= 4,5:1; si ninguno, se oscurece el fondo */
+  var fondo = base, tinta;
+  if (contraste(BLANCO, base) >= 4.5) tinta = BLANCO;
+  else if (contraste(TINTA, base) >= 4.5) tinta = TINTA;
+  else { fondo = oscurecer(base, 4.5, [BLANCO]); tinta = BLANCO; }
+  /* Hover: se aleja del texto, así el contraste nunca baja */
+  var hover = tinta === BLANCO ? mezclar(fondo, '#000000', 0.16) : mezclar(fondo, '#FFFFFF', 0.22);
+  /* Borde del botón: si su fondo no llega a 3:1 contra lo que tiene alrededor, lleva contorno */
+  var contornoClaro = contraste(fondo, BLANCO) >= 3 ? 'transparent' : TINTA;
+  var contornoOscuro = contraste(fondo, TINTA) >= 3 ? 'transparent' : BLANCO;
+  /* Enlaces sobre blanco: >= 4,5:1 sobre blanco y papel */
+  var texto = oscurecer(base, 4.5, [BLANCO, PAPEL]);
+  return {
+    base: base, fondo: fondo, tinta: tinta, hover: hover, contornoClaro: contornoClaro, contornoOscuro: contornoOscuro,
+    texto: texto,
+    cBoton: contraste(fondo, tinta), cHover: contraste(hover, tinta),
+    cBotonBlanco: contornoClaro === 'transparent' ? contraste(fondo, BLANCO) : contraste(TINTA, BLANCO),
+    cBotonOscuro: contornoOscuro === 'transparent' ? contraste(fondo, TINTA) : contraste(BLANCO, TINTA),
+    cTexto: Math.min(contraste(texto, BLANCO), contraste(texto, PAPEL))
+  };
+}
+/* Peor caso del velo: la foto es blanca pura debajo; el color resultante es la tinta mezclada con blanco */
+function veloPeorCaso(opacidad) { return mezclar(BLANCO, TINTA, opacidad); }
+/* color:fin */
+
+(function () {
+  var params = new URLSearchParams(location.search);
+  var raiz = document.documentElement;
+
+  /* ---- Color de la escuela y conmutador «Probar color» ---- */
+  function aplicarColor(hex) {
+    var col = derivarColores(hex);
+    raiz.style.setProperty('--escuela', col.base);
+    raiz.style.setProperty('--boton-fondo', col.fondo);
+    raiz.style.setProperty('--boton-tinta', col.tinta);
+    raiz.style.setProperty('--boton-hover', col.hover);
+    raiz.style.setProperty('--boton-contorno-claro', col.contornoClaro);
+    raiz.style.setProperty('--boton-contorno-oscuro', col.contornoOscuro);
+    raiz.style.setProperty('--escuela-texto', col.texto);
+    document.querySelectorAll('.muestra').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-color').toUpperCase() === col.base));
+    });
+    window.colorEscuela = col;
+    return col;
+  }
+  var colorParam = (params.get('color') || '').replace('#', '');
+  aplicarColor(/^[0-9a-fA-F]{6}$/.test(colorParam) ? '#' + colorParam : '#0B5CAD');
+  document.querySelector('.probar').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.muestra');
+    if (!b) return;
+    aplicarColor(b.getAttribute('data-color'));
+    params.set('color', b.getAttribute('data-color').replace('#', ''));
+    history.replaceState(null, '', '?' + params.toString() + location.hash);
+    actualizarEnlaces();
+  });
+
+  /* ---- Datos de ejemplo (en la app salen de la gestión; mismo orden fijo que la portada) ---- */
+  var SEDES = [
+    { id: 'herrera', nombre: 'Herrera', lugar: 'Pabellón municipal', dir: 'Avda. de la Constitución, s/n' },
+    { id: 'estepa', nombre: 'Estepa', lugar: 'Pabellón cubierto municipal', dir: 'C/ del Deporte, 2' },
+    { id: 'casariche', nombre: 'Casariche', lugar: 'Gimnasio del colegio público', dir: 'C/ Escuelas, 5' },
+    { id: 'lora', nombre: 'Lora de Estepa', lugar: 'Salón de usos múltiples', dir: 'Plaza de España, 1' },
+    { id: 'roda', nombre: 'Roda de Andalucía', lugar: 'Pabellón municipal', dir: 'Avda. de Andalucía, 40' },
+    { id: 'mollina', nombre: 'Mollina', lugar: 'Gimnasio del colegio', dir: 'C/ Granada, 12' }
+  ];
+  /* Fotos de la portada, con su encuadre por foto (escritorio y móvil) */
+  var FOTOS = {
+    patada: { pexels: 7990087, ancho: 1600, alto: 1067, pos: '62% 30%', posMovil: '64% 50%', autor: 'cottonbro', fuente: 'Pexels',
+      alt: 'Niña con dobok y cinturón negro lanzando una patada lateral en la sala' },
+    pabellon: { pexels: 33122161, ancho: 1600, alto: 1067, pos: '55% 35%', posMovil: '62% 50%', autor: 'KKlinton', fuente: 'Pexels',
+      alt: 'Un entrenador da indicaciones a una competidora con casco rojo en el pabellón' },
+    combate: { pexels: 37901794, ancho: 1600, alto: 2133, pos: '50% 48%', posMovil: '48% 50%', autor: 'Eden FC', fuente: 'Pexels',
+      alt: 'Combate infantil con petos y cascos azul y rojo sobre el tapiz' },
+    cinturon: { pexels: 7990068, ancho: 1600, alto: 1067, pos: '50% 30%', posMovil: '50% 40%', autor: 'cottonbro', fuente: 'Pexels',
+      alt: 'Alumno anudándose el cinturón blanco sobre el dobok' },
+    clase: { pexels: 38963062, ancho: 1600, alto: 1067, pos: '60% 40%', posMovil: '74% 50%', autor: 'A. Villalon', fuente: 'Pexels',
+      alt: 'Alumnas entrenando patadas con paletas al aire libre' },
+    voladora: { pexels: 36563836, ancho: 1600, alto: 1067, pos: '50% 28%', posMovil: '58% 40%', autor: 'Kulani Shibambu', fuente: 'Pexels',
+      alt: 'Exhibición al aire libre: una joven lanza una patada ante el público sentado' },
+    fila: { unsplash: 'photo-1530560643359-6d2fead989b3', ancho: 1600, alto: 2000, pos: '50% 42%', posMovil: '50% 50%', autor: 'Camila Sanabria', fuente: 'Unsplash',
+      alt: 'Alumna de espaldas, sentada en el tatami con el dobok y el cinturón negro, mientras su grupo atiende' }
+  };
+  function fotoSrc(f, w) {
+    return f.pexels
+      ? 'https://images.pexels.com/photos/' + f.pexels + '/pexels-photo-' + f.pexels + '.jpeg?auto=compress&cs=tinysrgb&w=' + w
+      : 'https://images.unsplash.com/' + f.unsplash + '?w=' + w + '&q=80';
+  }
+  /* Imagen a sangre (srcset completo) o normal; alt vacío si es decorativa */
+  function imgHtml(f, opciones) {
+    opciones = opciones || {};
+    return '<img src="' + fotoSrc(f, 1600) + '" srcset="' + fotoSrc(f, 900) + ' 900w, ' + fotoSrc(f, 1600) + ' 1600w' +
+      (opciones.sangre ? ', ' + fotoSrc(f, 2400) + ' 2400w' : '') + '" sizes="' + (opciones.sizes || '100vw') + '"' +
+      ' width="' + f.ancho + '" height="' + f.alto + '"' + (opciones.ya ? ' fetchpriority="high"' : ' loading="lazy"') +
+      ' style="--pos: ' + f.pos + '; --pos-movil: ' + f.posMovil + '"' +
+      ' alt="' + (opciones.decorativa ? '' : f.alt) + '">';
+  }
+  function creditoHtml(f) { return '<p class="credito-foto">Foto de ejemplo · ' + f.autor + ' · ' + f.fuente + '</p>'; }
+
+  var nSedes = parseInt(params.get('sedes'), 10);
+  var sedes = SEDES;
+  if (nSedes === 1) sedes = SEDES.filter(function (s) { return s.id === 'estepa'; });
+  else if (nSedes > 1 && nSedes < SEDES.length) sedes = SEDES.slice(0, nSedes);
+  var una = sedes.length === 1;
+  var porId = {};
+  SEDES.forEach(function (s) { porId[s.id] = s; });
+
+  /* ---- Tiempo (?ahora=AAAA-MM-DDTHH:MM simula el momento) ---- */
+  var ahoraParam = params.get('ahora');
+  var ahora = ahoraParam && !isNaN(new Date(ahoraParam)) ? new Date(ahoraParam) : new Date();
+  var DIA_LARGO = { 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado', 0: 'domingo' };
+  var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  var MES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+  var NUM = ['cero', 'una', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho'];
+  function mayus(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+
+  /* ---- Piezas compartidas ---- */
+  var FLECHA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var FLECHA_IZQ = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  /* ---- Enlaces entre las páginas del boceto: conservan color, número de sedes y hora simulada ---- */
+  var PAG = {
+    portada: 'boceto-sede-por-pantalla.html', tarifas: 'boceto-sede-por-pantalla-tarifas.html',
+    eventos: 'boceto-sede-por-pantalla-eventos.html', evento: 'boceto-sede-por-pantalla-evento.html',
+    legales: 'boceto-sede-por-pantalla-legales.html', pre: 'boceto-sede-por-pantalla-preinscripcion.html',
+    sede: 'boceto-sede-por-pantalla-sede.html'
+  };
+  function enlace(pagina, extra) {
+    var partes = pagina.split('#'), q = new URLSearchParams();
+    ['color', 'sedes', 'ahora'].forEach(function (k) { if (params.get(k)) q.set(k, params.get(k)); });
+    Object.keys(extra || {}).forEach(function (k) { if (extra[k]) q.set(k, extra[k]); });
+    var t = q.toString();
+    return partes[0] + (t ? '?' + t : '') + (partes[1] ? '#' + partes[1] : '');
+  }
+  function actualizarEnlaces() {
+    document.querySelectorAll('[data-enlace]').forEach(function (a) {
+      if (!a.dataset.base) a.dataset.base = a.getAttribute('href');
+      a.href = enlace(a.dataset.base, { sede: a.dataset.sede, grupo: a.dataset.grupo, evento: a.dataset.evento, estado: a.dataset.estado });
+    });
+  }
+
+  /* ---- Página actual en la cabecera ---- */
+  function marcarActual(pagina) {
+    document.querySelectorAll('.cabecera-nav a').forEach(function (a) {
+      if (a.getAttribute('href').split(/[?#]/)[0] === pagina) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+  }
+  marcarActual(location.pathname.split('/').pop());
+
+  /* ---- Estados alternativos del boceto (?estado=) ---- */
+  var estado = params.get('estado') || '';
+  function marcarEstado() {
+    document.querySelectorAll('.estado[data-estado-valor]').forEach(function (a) {
+      if (a.getAttribute('data-estado-valor') === estado) a.setAttribute('aria-current', 'true');
+      else a.removeAttribute('aria-current');
+    });
+  }
+
+  /* Movimiento firma (el de la portada): el nombre entra con un leve desplazamiento al llegar a la vista.
+     Visible por defecto; solo se anima sin movimiento reducido y fuera de capturas sin interfaz. */
+  function firma(elementos) {
+    var animar = 'IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      !/HeadlessChrome/.test(navigator.userAgent);
+    if (!animar || !elementos.length) return;
+    raiz.classList.add('anima');
+    var io = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('vista');
+        io.unobserve(e.target);
+      });
+    }, { threshold: 0.35 });
+    elementos.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ---- Eventos de ejemplo (en la app salen de la gestión: título, descripción, foto, documentos, fecha y galería).
+     Decisión 466: hora, lugar y sede son OPCIONALES. Se pintan si existen; si no, no queda hueco. ---- */
+  var EVENTOS = [
+    { id: 'examen-nov-2026', ancla: 'examen-cinturones', fecha: '2026-11-14', hora: '10:00', lugar: 'Pabellón cubierto municipal', sede: 'estepa', titulo: 'Examen de cinturones', foto: 'cinturon',
+      descripcion: 'Examen de cambio de cinturón para los alumnos que ha propuesto su profesor. Cada familia recibe en su grupo la hora a la que le toca. Se viene con el dobok limpio y el cinturón actual; los menores, con la autorización firmada.',
+      documentos: [{ nombre: 'Circular-examen-noviembre.pdf', tipo: 'PDF' }, { nombre: 'Autorizacion-menores.docx', tipo: 'Word' }], galeria: [] },
+    { id: 'torneo-nov-2026', ancla: 'torneo-comarcal-infantil', fecha: '2026-11-29', hora: '09:30', lugar: 'Pabellón municipal', sede: 'herrera', titulo: 'Torneo comarcal infantil', foto: 'combate',
+      descripcion: 'Torneo amistoso para los grupos de peques e infantil, con combate adaptado a cada edad y prueba de poomsae. Participar es voluntario: el profesor de cada grupo informa a las familias que quieran apuntarse.',
+      documentos: [{ nombre: 'Reglamento-torneo.pdf', tipo: 'PDF' }], galeria: [] },
+    { id: 'navidad-2026', ancla: 'exhibicion-navidad', fecha: '2026-12-12', hora: '18:00', lugar: 'Pabellón municipal', sede: 'roda', titulo: 'Exhibición de Navidad', foto: 'clase',
+      descripcion: 'Los alumnos de todas las sedes enseñan a sus familias lo que han aprendido en el trimestre. Al acabar se entregan los diplomas de los cambios de cinturón.',
+      documentos: [], galeria: [] },
+    { id: 'poomsae-2027', fecha: '2027-01-23', titulo: 'Seminario de poomsae', foto: 'patada',
+      descripcion: 'Una mañana dedicada a las formas, para alumnos desde cinturón amarillo. Se repasan las de cada grado y se corrigen detalles de cara a los exámenes de primavera.',
+      documentos: [{ nombre: 'Circular-seminario.pdf', tipo: 'PDF' }], galeria: [] },
+    { id: 'fin-curso-2026', fecha: '2026-06-20', hora: '11:00', lugar: 'Pabellón cubierto municipal', sede: 'estepa', titulo: 'Exhibición de fin de curso', foto: 'voladora',
+      descripcion: 'Cerramos el curso 2025-2026 con una exhibición de todas las sedes: poomsae por grupos, rotura de tablas de los mayores y combate de demostración. Gracias a las familias que llenasteis las gradas.',
+      documentos: [{ nombre: 'Programa-exhibicion.pdf', tipo: 'PDF' }, { nombre: 'Circular.pdf', tipo: 'PDF' }],
+      galeria: ['voladora', 'clase', 'patada', 'combate', 'cinturon', 'pabellon', 'fila'] },
+    { id: 'examen-jun-2026', fecha: '2026-06-06', sede: 'casariche', titulo: 'Examen de cinturones', foto: 'cinturon',
+      descripcion: 'Examen de final de curso. Enhorabuena a todos los alumnos que cambiaron de cinturón.',
+      documentos: [], galeria: ['cinturon', 'fila', 'clase'] },
+    { id: 'provincial-2026', fecha: '2026-03-14', lugar: 'Palacio de Deportes de la capital', titulo: 'Campeonato provincial', foto: 'pabellon',
+      descripcion: 'Alumnos del club compitieron en combate y poomsae en el campeonato provincial.',
+      documentos: [], galeria: ['pabellon', 'combate', 'voladora', 'patada'] },
+    { id: 'navidad-2025', fecha: '2025-12-13', titulo: 'Exhibición de Navidad', foto: 'fila',
+      descripcion: 'Exhibición de las seis sedes y entrega de diplomas del primer trimestre.',
+      documentos: [], galeria: ['fila', 'clase'] },
+    { id: 'examen-nov-2025', fecha: '2025-11-22', titulo: 'Examen de cinturones', foto: 'patada',
+      descripcion: 'Primer examen del curso 2025-2026.',
+      documentos: [], galeria: ['patada', 'cinturon'] },
+    { id: 'inicio-2025', fecha: '2025-09-15', titulo: 'Empieza el curso 2025-2026', foto: 'clase',
+      descripcion: 'Vuelven las clases en todas las sedes con los horarios del nuevo curso.',
+      documentos: [], galeria: [] }
+  ];
+  function fechaEvento(ev) { var p = ev.fecha.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  /* Un evento es próximo hasta que acaba su día */
+  var hoyCero = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  function esProximo(ev) { return fechaEvento(ev) >= hoyCero; }
+  function buscarEvento(id) { for (var i = 0; i < EVENTOS.length; i++) if (EVENTOS[i].id === id) return EVENTOS[i]; return null; }
+  function fechaLarga(ev) { var f = fechaEvento(ev); return DIA_LARGO[f.getDay()] + ', ' + f.getDate() + ' de ' + MESES[f.getMonth()] + ' de ' + f.getFullYear(); }
+  /* Fecha: día y mes en serif, con el año si no es el actual, y el día de la semana debajo */
+  function fechaHtml(ev, clase) {
+    var f = fechaEvento(ev), otroAnio = f.getFullYear() !== ahora.getFullYear();
+    return '<time class="fecha ' + (clase || '') + '" datetime="' + ev.fecha + '">' +
+      '<span class="fecha-dia" aria-hidden="true">' + f.getDate() + ' ' + MES_CORTO[f.getMonth()] + (otroAnio ? ' <span class="fecha-anio">' + f.getFullYear() + '</span>' : '') + '</span>' +
+      '<span class="fecha-semana" aria-hidden="true">' + DIA_LARGO[f.getDay()] + '</span>' +
+      '<span class="oculto">' + fechaLarga(ev) + '</span></time>';
+  }
+  /* Hora, lugar y sede: solo los que existan; la sede, con enlace a su página si se pide */
+  function metaHtml(ev, conEnlace) {
+    var sede = ev.sede ? porId[ev.sede] : null, partes = [];
+    if (ev.hora) partes.push('<li><span class="oculto">Hora: </span><span class="hora ev-hora">' + ev.hora + '</span></li>');
+    if (ev.lugar) partes.push('<li><span class="oculto">Lugar: </span>' + ev.lugar + '</li>');
+    if (sede) partes.push('<li class="ev-sede"><span class="oculto">Sede: </span>' +
+      (conEnlace ? '<a href="' + PAG.sede + '" data-enlace data-sede="' + sede.id + '">' + sede.nombre + '</a>' : sede.nombre) + '</li>');
+    return partes.length ? '<ul class="ev-meta">' + partes.join('') + '</ul>' : '';
+  }
+
+  var proximos = EVENTOS.filter(esProximo).sort(function (a, b) { return a.fecha < b.fecha ? -1 : 1; });
+  var anteriores = EVENTOS.filter(function (e) { return !esProximo(e); }).sort(function (a, b) { return a.fecha < b.fecha ? 1 : -1; });
+  if (estado === 'sin-proximos') proximos = [];
+  function verEvento(ev, texto, clase) {
+    return '<a class="' + clase + '" href="' + PAG.evento + '" data-enlace data-evento="' + ev.id + '">' + texto + '<span class="oculto">: ' + ev.titulo + '</span>' + FLECHA + '</a>';
+  }
+  /* La portada enlaza los próximos con su ancla (eventos.html#examen-cinturones); cada uno la lleva */
+  function ancla(ev) { return ev.ancla ? ' id="' + ev.ancla + '"' : ''; }
+
+  /* ---- Próximos ---- */
+  document.getElementById('proximos-cuenta').textContent = proximos.length ? (proximos.length === 1 ? '1 evento' : proximos.length + ' eventos') : '';
+  var caja = document.getElementById('proximos-lista');
+  if (!proximos.length) {
+    caja.innerHTML = '<div class="envoltura"><div class="ev-vacio"><h3 class="ev-vacio-titulo">No hay eventos próximos</h3><p>Cuando el club anuncie uno, aparecerá aquí.</p>' +
+      '<a class="enlace-flecha" href="#anteriores">Ver los eventos anteriores' + FLECHA + '</a></div></div>';
+  } else {
+    var d = proximos[0], fd = FOTOS[d.foto];
+    caja.innerHTML = '<article class="pantalla destacado oscuro firma" aria-labelledby="ev-' + d.id + '"' + ancla(d) + '>' +
+        '<figure class="pantalla-foto">' + imgHtml(fd, { sangre: true, ya: true }) + '</figure>' + creditoHtml(fd) +
+        '<div class="sobre-foto">' + fechaHtml(d) +
+          '<h3 class="destacado-titulo" id="ev-' + d.id + '"><span class="nombre">' + d.titulo + '</span></h3>' + metaHtml(d) +
+          '<p class="destacado-desc">' + d.descripcion + '</p>' +
+          '<p class="destacado-acciones">' + verEvento(d, 'Ver evento', 'boton') + '</p>' +
+        '</div></article>' +
+      (proximos.length > 1 ? '<div class="envoltura"><ol class="ev-filas" aria-label="Más eventos próximos">' + proximos.slice(1).map(function (e) {
+        return '<li class="ev-fila"' + ancla(e) + '>' + fechaHtml(e) +
+          '<div class="ev-texto"><h3 class="ev-titulo">' + e.titulo + '</h3>' + metaHtml(e) + '<p class="ev-desc">' + e.descripcion + '</p></div>' +
+          '<figure class="ev-miniatura">' + imgHtml(FOTOS[e.foto], { decorativa: true, sizes: '(min-width: 960px) 220px, 132px' }) + '</figure>' +
+          verEvento(e, 'Ver evento', 'enlace-flecha') + '</li>';
+      }).join('') + '</ol></div>' : '');
+    firma([caja.querySelector('.destacado')]);
+  }
+
+  /* ---- Anteriores, por año ---- */
+  var anios = [];
+  anteriores.forEach(function (e) { var a = e.fecha.slice(0, 4); if (anios.indexOf(a) === -1) anios.push(a); });
+  document.getElementById('anteriores-lista').outerHTML = anios.length ? anios.map(function (a) {
+    return '<section class="anio" aria-labelledby="anio-' + a + '"><h3 class="anio-titulo" id="anio-' + a + '">' + a + '</h3><ul class="ev-rejilla">' +
+      anteriores.filter(function (e) { return e.fecha.slice(0, 4) === a; }).map(function (e) {
+        var f = fechaEvento(e);
+        return '<li class="ev-mini"><a href="' + PAG.evento + '" data-enlace data-evento="' + e.id + '">' +
+          '<figure class="ev-mini-foto">' + imgHtml(FOTOS[e.foto], { decorativa: true, sizes: '(min-width: 960px) 25vw, 50vw' }) + '</figure>' +
+          '<time class="ev-mini-fecha" datetime="' + e.fecha + '">' + f.getDate() + ' de ' + MESES[f.getMonth()] + '</time>' +
+          '<h4 class="ev-mini-titulo">' + e.titulo + '</h4>' + metaHtml(e) + '</a></li>';
+      }).join('') + '</ul></section>';
+  }).join('') : '<p class="cuenta">Todavía no hay eventos anteriores.</p>';
+  if (!anteriores.length && !proximos.length) document.getElementById('anteriores').hidden = true;
+
+  /* Llegada con ancla desde la portada: la lista se pinta con JS, así que se recoloca al final */
+  if (location.hash && document.getElementById(location.hash.slice(1))) {
+    var destino = document.getElementById(location.hash.slice(1));
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { destino.scrollIntoView({ block: 'start', behavior: 'auto' }); });
+  }
+
+  marcarEstado();
+  actualizarEnlaces();
+})();
+</script>
+</body>
+</html>
