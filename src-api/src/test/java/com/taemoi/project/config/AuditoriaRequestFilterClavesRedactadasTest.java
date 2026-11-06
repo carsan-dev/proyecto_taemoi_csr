@@ -79,13 +79,16 @@ class AuditoriaRequestFilterClavesRedactadasTest {
 		}
 	}
 
-	/** Decisión 324: los ids de {@code presentes} no se guardan en el cuerpo de un 4xx del PUT, por ningún prefijo. */
+	/**
+	 * Decisión 324: los ids de {@code presentes} no se guardan en el cuerpo de un 4xx del PUT, por ningún prefijo; desde
+	 * las decisiones 455-463, tampoco {@code motivos} (ids de alumnos y, con «médica», un dato de salud).
+	 */
 	@Test
-	void pasarLista_redactaLosPresentes() {
+	void pasarLista_redactaLosPresentesYLosMotivos() {
 		for (String ruta : List.of("/api/profesor/grupos/3/clases/9/2026-10-26", "/api/grupos/3/clases/9/2026-10-26",
 				"/api/profesor/grupos/3/clases/9/2026-10-26/", "/API/GRUPOS/3/CLASES/9/2026-10-26",
 				"/api//profesor/grupos/3/clases/9/2026-10-26", "/api/%67rupos/3/clases/9/2026-10-26")) {
-			assertEquals(Set.of("presentes"), AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
+			assertEquals(Set.of("presentes", "motivos"), AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
 		}
 		for (String ruta : List.of("/api/grupos/3/clases", "/api/profesor/grupos/3/clases",
 				"/api/grupos/3/clases/9/2026-10-26/otra", "/api/otro/grupos/3/clases/9/2026-10-26")) {
