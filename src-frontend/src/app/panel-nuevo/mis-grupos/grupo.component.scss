@@ -64,6 +64,9 @@
   .grupo-profesor__hoy-texto { margin: 0; font: var(--pn-secundario); color: var(--pn-tinta-2); }
   .grupo-profesor__hoy-hecha { display: flex; align-items: center; gap: 6px; font: var(--pn-secundario); font-weight: 600; color: var(--pn-bien); font-variant-numeric: tabular-nums; }
   .grupo-profesor__hoy-hecha svg { width: 16px; height: 16px; }
+  // Clase festiva: «Festivo» con su icono, como en la hoja «Elegir clase» de Pasar lista; sin invitar a pasar lista.
+  .grupo-profesor__hoy-festivo { display: flex; align-items: center; gap: 6px; font: var(--pn-secundario); color: var(--pn-tinta-2); }
+  .grupo-profesor__hoy-festivo svg { flex: none; width: 16px; height: 16px; }
   .grupo-profesor__boton--ancho { width: 100%; }
   .grupo-profesor__boton--primario { @include c.boton-primario; }
   .grupo-profesor__hoy-fila .grupo-profesor__boton { flex: none; width: auto; min-height: 44px; padding: 0 14px; }
