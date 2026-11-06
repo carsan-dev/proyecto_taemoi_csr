@@ -103,6 +103,17 @@ describe('FestivosComponent (decisión 458)', () => {
       expect(f[0].querySelector('.festivos__quitar')?.getAttribute('aria-label')).toBe('Quitar Feria de Estepa');
     });
 
+    it('los pasados salen del más reciente al más antiguo', () => {
+      arrancar();
+      boton('Ver pasados')!.click();
+      lista(true).flush([
+        festivo({ id: 10, nombre: 'Antiguo', fechaDesde: '2025-12-08', fechaHasta: '2025-12-08' }),
+        festivo({ id: 11, nombre: 'Reciente', fechaDesde: '2026-03-01', fechaHasta: '2026-03-01' }),
+      ]);
+      fixture.detectChanges();
+      expect(filas().map((f) => texto(f.querySelector('.festivos__nombre')))).toEqual(['Reciente', 'Antiguo']);
+    });
+
     it('«Ver pasados» pide los pasados y vuelve con «Ver próximos»', () => {
       arrancar();
       boton('Ver pasados')!.click();
@@ -320,6 +331,69 @@ describe('FestivosComponent (decisión 458)', () => {
       fixture.detectChanges();
       expect(avisos.exito).toHaveBeenCalledWith('Cambios guardados.');
       lista().flush([NAVIDAD]);
+    }));
+  });
+
+  describe('errores del API', () => {
+    it('alta: avisa con el mensaje del servidor y deja el panel abierto', fakeAsync(() => {
+      arrancar();
+      boton('Nuevo festivo')!.click();
+      fixture.detectChanges();
+      escribir('#fv-fecha', '2026-11-05');
+      marcarSede('Estepa');
+      tick(400);
+      http.expectOne(`${url}/impacto`).flush({ clases: 0, conLista: 0, conListaDetalle: [] });
+      boton('Crear festivo')!.click();
+      http.expectOne((r) => r.url === url && r.method === 'POST')
+        .flush({ mensaje: 'Ya hay un festivo ese día en Estepa.' }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges();
+      expect(avisos.error).toHaveBeenCalledWith('Ya hay un festivo ese día en Estepa.');
+      expect(panel()).not.toBeNull();
+    }));
+
+    it('edición: avisa con el mensaje del servidor', fakeAsync(() => {
+      arrancar();
+      el().querySelector<HTMLButtonElement>('[data-id="2"]')!.click();
+      fixture.detectChanges();
+      tick(400);
+      http.expectOne(`${url}/impacto`).flush({ clases: 1, conLista: 0, conListaDetalle: [] });
+      boton('Guardar cambios')!.click();
+      http.expectOne(`${url}/2`).flush({ mensaje: 'Se solapa con otro festivo.' }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges();
+      expect(avisos.error).toHaveBeenCalledWith('Se solapa con otro festivo.');
+    }));
+
+    it('quitar: avisa con el mensaje del servidor', async () => {
+      arrancar();
+      el().querySelectorAll<HTMLButtonElement>('.festivos__quitar')[1].click();
+      const impacto = http.expectOne(`${url}/impacto`);
+      confirmar.and.callFake((o: { ejecutar: () => { subscribe: (x: object) => void } }) =>
+        new Promise((resolver) => {
+          o.ejecutar().subscribe({ error: (error: unknown) => resolver({ confirmado: true, valor: null, error }) });
+        })
+      );
+      impacto.flush({ clases: 1, conLista: 0, conListaDetalle: [] });
+      await fixture.whenStable();
+      http.expectOne(`${url}/2`).flush({ mensaje: 'No se puede quitar.' }, { status: 409, statusText: 'Conflict' });
+      await fixture.whenStable();
+      expect(avisos.error).toHaveBeenCalledWith('No se puede quitar.');
+    });
+  });
+
+  describe('impacto tardío', () => {
+    it('una respuesta que llega con el panel cerrado y reabierto no se pinta', fakeAsync(() => {
+      arrancar();
+      el().querySelector<HTMLButtonElement>('[data-id="2"]')!.click();
+      fixture.detectChanges();
+      tick(400);
+      const tardio = http.expectOne(`${url}/impacto`);
+      fixture.componentInstance.cerrarPanel();
+      boton('Nuevo festivo')!.click();
+      fixture.detectChanges();
+      tardio.flush({ clases: 46, conLista: 0, conListaDetalle: [] });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.panel?.impacto).toBeNull();
+      expect(el().querySelector('.festivos__nota')).toBeNull();
     }));
   });
 

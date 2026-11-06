@@ -27,7 +27,11 @@ export class FestivosService {
     }
     return this.http
       .get<Festivo[]>(this.url, { ...this.opciones(), params })
-      .pipe(map((lista) => (lista ?? []).map((f) => ({ ...f, sedes: f.sedes ?? [] }))));
+      .pipe(map((lista) => {
+        const filas = (lista ?? []).map((f) => ({ ...f, sedes: f.sedes ?? [] }));
+        // El API da los pasados del más antiguo al más reciente; aquí salen del más reciente al más antiguo.
+        return pasados ? filas.reverse() : filas;
+      }));
   }
 
   crear(cuerpo: CuerpoFestivo): Observable<Festivo> {

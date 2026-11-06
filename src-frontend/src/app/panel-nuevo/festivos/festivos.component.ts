@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectorRef, Component, DestroyRef, ElementRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, Subject, Subscription, catchError, debounceTime, of, switchMap } from 'rxjs';
+import { Observable, Subject, Subscription, catchError, debounceTime, map, of, switchMap } from 'rxjs';
 
 import { TipoFestivo } from '../../interfaces/asistencia';
 import { PermisosSesionService, SedeVisible } from '../../servicios/authentication/permisos-sesion.service';
@@ -103,12 +103,17 @@ export class FestivosComponent implements OnInit {
       debounceTime(400),
       switchMap(() => {
         const panel = this.panel;
-        if (!panel || Object.keys(validarFestivo(panel.form)).length) return of(null);
-        return this.api.impacto(cuerpoFestivo(panel.form), panel.festivo?.id ?? null).pipe(catchError(() => of(null)));
+        if (!panel || Object.keys(validarFestivo(panel.form)).length) return of({ panel, form: panel?.form, impacto: null });
+        const form = panel.form;
+        return this.api.impacto(cuerpoFestivo(form), panel.festivo?.id ?? null).pipe(
+          catchError(() => of(null)),
+          map((impacto) => ({ panel, form, impacto })),
+        );
       }),
       takeUntilDestroyed(this.destruir),
-    ).subscribe((impacto) => {
-      if (this.panel) this.panel.impacto = impacto;
+    ).subscribe(({ panel, form, impacto }) => {
+      // Una respuesta tardía no vale si el panel o el formulario que la pidió ya no son los actuales.
+      if (panel && this.panel === panel && panel.form === form) panel.impacto = impacto;
       this.cdr.detectChanges();
     });
     this.cargar();
