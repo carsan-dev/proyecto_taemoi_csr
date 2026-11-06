@@ -213,6 +213,29 @@ describe('menu-panel: Sedes (E9-3)', () => {
   });
 });
 
+describe('menu-panel: Festivos (decisión 458)', () => {
+  const base: ContextoMenu = { propietario: true, gestion: true, profesor: false, misGrupos: false, plataforma: false };
+
+  it('«Festivos» va en Grupos, tras «Mis grupos» y antes de las altas, sin condición', () => {
+    const grupos = MENU_PANEL.find((s) => s.id === 'grupos')!;
+    const rutas = grupos.entradas.map((e) => e.ruta);
+    expect(rutas.indexOf('/festivos')).toBe(rutas.indexOf('/mis-grupos') + 1);
+    expect(rutas.indexOf('/festivos')).toBeLessThan(rutas.indexOf('/gruposCrear'));
+    expect(grupos.entradas.find((e) => e.ruta === '/festivos')).toEqual({ etiqueta: 'Festivos', ruta: '/festivos', icono: 'bi-calendar-x' });
+  });
+
+  it('la ven la gestión y el responsable de sede; quien solo es profesor, no', () => {
+    expect(rutasDeGestion(base)).toContain('/festivos');
+    expect(rutasDeGestion({ ...base, propietario: false })).toContain('/festivos');
+    expect(rutasDeGestion({ ...base, propietario: false, gestion: false, panelSede: true })).toContain('/festivos');
+    expect(rutasDeGestion({ ...base, propietario: false, gestion: false, soloProfesor: true, profesor: true, misGrupos: true })).not.toContain('/festivos');
+  });
+
+  it('/festivos enciende la entrada Grupos', () => {
+    expect(seccionActiva('/festivos')).toBe('grupos');
+  });
+});
+
 describe('menu-panel: Miembros (E9-4)', () => {
   const base: ContextoMenu = { propietario: true, gestion: true, profesor: false, misGrupos: false, plataforma: false };
 

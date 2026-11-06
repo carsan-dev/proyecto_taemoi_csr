@@ -384,7 +384,7 @@ describe('GrupoPanelComponent', () => {
 
   describe('tarjeta de hoy', () => {
     const clase = (cambios: Partial<ClaseAsistencia> = {}): ClaseAsistencia => ({
-      turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 18, ...cambios,
+      turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 18, festivo: null, ...cambios,
     });
     const tarjeta = () => elemento().querySelector<HTMLElement>('section[aria-label^="Clase"]')!;
 
@@ -447,6 +447,27 @@ describe('GrupoPanelComponent', () => {
       expect(filas[0].querySelector('a')?.textContent?.trim()).toBe('Corregir');
       expect(filas[1].querySelector('a')?.textContent?.trim()).toBe('Pasar lista');
       expect(filas[1].querySelector('a')?.getAttribute('href')).toBe('/mis-grupos/7/lista?turno=10&fecha=2026-10-28');
+    });
+
+    const festivo = { id: 31, nombre: 'Feria de Estepa', tipo: 'DIA' as const, deUnDiaYUnaSede: true, fechaDesde: '2026-10-28', fechaHasta: '2026-10-28', sedes: 1 };
+
+    it('clase festiva: «Festivo» con su icono, sin «Sin pasar lista» ni botón de pasar lista', () => {
+      conClases({ hoy: [clase({ festivo })] });
+      expect(tarjeta().textContent).toContain('Hoy, miércoles · 18:00–19:00');
+      const estado = tarjeta().querySelector('.grupo-profesor__hoy-festivo')!;
+      expect(estado.textContent?.trim()).toBe('Festivo');
+      expect(estado.querySelector('svg')).not.toBeNull();
+      expect(tarjeta().textContent).not.toContain('Sin pasar lista');
+      expect(tarjeta().querySelector('a, button')).toBeNull();
+    });
+
+    it('dos clases hoy, una festiva: esa fila dice «Festivo» y no ofrece pasar lista', () => {
+      conClases({ hoy: [clase({ festivo }), clase({ turnoId: 10, horaInicio: '19:00', horaFin: '20:00' })] });
+      const filas = elemento().querySelectorAll('.grupo-profesor__hoy-fila');
+      expect(filas[0].querySelector('.grupo-profesor__hoy-festivo')?.textContent?.trim()).toBe('Festivo');
+      expect(filas[0].textContent).not.toContain('Sin pasar lista');
+      expect(filas[0].querySelector('a')).toBeNull();
+      expect(filas[1].querySelector('a')?.textContent?.trim()).toBe('Pasar lista');
     });
 
     it('sin clase hoy: próxima y «Pasar otra clase» si hay recientes', () => {

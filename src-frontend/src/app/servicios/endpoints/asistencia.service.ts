@@ -8,10 +8,19 @@ import {
   AsistenciaDeAlumno,
   ClaseAsistencia,
   ClasesDelGrupo,
+  FestivoDeClase,
   ListaDeClase,
+  MotivoFalta,
   PrefijoAsistencia,
   ResumenAsistenciaAlumno,
 } from '../../interfaces/asistencia';
+
+/** El festivo de una clase con los campos que un API anterior no mandaba: fechas en null y una sede. */
+function festivoDeClase(f: FestivoDeClase | null | undefined): FestivoDeClase | null {
+  return f ? { ...f, fechaDesde: f.fechaDesde ?? null, fechaHasta: f.fechaHasta ?? null, sedes: f.sedes ?? 1 } : null;
+}
+
+const conFestivo = (c: ClaseAsistencia): ClaseAsistencia => ({ ...c, festivo: festivoDeClase(c.festivo) });
 
 /**
  * Pasar lista (decisión 324): las cinco rutas de asistencia de un grupo. Las dos familias de rutas
@@ -34,14 +43,21 @@ export class AsistenciaService {
 
   clases(prefijo: PrefijoAsistencia, grupoId: number): Observable<ClasesDelGrupo> {
     return this.http.get<ClasesDelGrupo>(`${this.base(prefijo, grupoId)}/clases`, this.opciones()).pipe(
-      map((c) => ({ hoy: c?.hoy ?? [], recientes: c?.recientes ?? [], proxima: c?.proxima ?? null }))
+      map((c) => ({ hoy: (c?.hoy ?? []).map(conFestivo), recientes: (c?.recientes ?? []).map(conFestivo), proxima: c?.proxima ?? null }))
     );
   }
 
   lista(prefijo: PrefijoAsistencia, grupoId: number, turnoId: number, fecha: string): Observable<ListaDeClase> {
     return this.http
       .get<ListaDeClase>(`${this.base(prefijo, grupoId)}/clases/${turnoId}/${fecha}`, this.opciones())
-      .pipe(map((l) => ({ ...l, alumnos: (l.alumnos ?? []).map((a) => ({ ...a, deportes: a.deportes ?? [] })) })));
+      .pipe(
+        map((l) => ({
+          ...l,
+          clase: { ...l.clase, festivo: festivoDeClase(l.clase?.festivo) },
+          sede: l.sede ?? null,
+          alumnos: (l.alumnos ?? []).map((a) => ({ ...a, deportes: a.deportes ?? [], motivo: a.motivo ?? null })),
+        }))
+      );
   }
 
   guardar(
@@ -49,11 +65,15 @@ export class AsistenciaService {
     grupoId: number,
     turnoId: number,
     fecha: string,
-    presentes: number[]
+    presentes: number[],
+    motivos: Readonly<Record<number, MotivoFalta>> = {}
   ): Observable<ClaseAsistencia> {
+    // Los motivos solo de las faltas (decisión 455), siempre, aunque vayan vacíos: un PUT sin `motivos` deja todas las
+    // faltas sin motivo.
+    const cuerpo = { presentes, motivos };
     return this.http.put<ClaseAsistencia>(
       `${this.base(prefijo, grupoId)}/clases/${turnoId}/${fecha}`,
-      { presentes },
+      cuerpo,
       this.opciones()
     );
   }

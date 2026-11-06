@@ -23,6 +23,7 @@ import { GestionarAlumnosComponent } from './panel-nuevo/grupos/gestionar-alumno
 import { GestionarTurnosAlumnoComponent } from './panel-nuevo/grupos/gestionar-turnos-alumno.component';
 import { TesoreriaComponent } from './panel-nuevo/tesoreria/tesoreria.component';
 import { ConvocatoriasComponent } from './panel-nuevo/convocatorias/convocatorias.component';
+import { FestivosComponent } from './panel-nuevo/festivos/festivos.component';
 import { EventosPanelComponent } from './panel-nuevo/eventos/eventos.component';
 import { EventoFormularioComponent } from './panel-nuevo/eventos/evento-formulario.component';
 import { ProductosComponent } from './panel-nuevo/productos/productos.component';
@@ -84,6 +85,7 @@ const REDISENADAS: Rediseno[] = [
   ['solicitudes', SolicitudesPanelComponent, GESTION],
   ['auditoriaSistema', RegistroAccionesComponent, PROPIETARIO],
   ['convocatoriasListar', ConvocatoriasComponent, GESTION],
+  ['festivos', FestivosComponent, GESTION],
   ['configuracion-sistema', ConfiguracionPanelComponent, PROPIETARIO],
 ];
 

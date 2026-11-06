@@ -1,0 +1,62 @@
+<dialog #dialogo class="festivo-dialogo" [class.festivo-dialogo--hoja]="hoja" [attr.aria-labelledby]="id + '-titulo'"
+  [attr.aria-describedby]="id + '-mensaje'" data-dialogo="marcar-festivo" (cancel)="alCancelarNativo($event)"
+  (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
+  <form class="festivo-dialogo__caja" novalidate (submit)="$event.preventDefault(); aceptar()">
+    @if (hoja) {
+    <div class="festivo-dialogo__asa" aria-hidden="true"></div>
+    }
+    <div class="festivo-dialogo__cabecera">
+      <h2 class="festivo-dialogo__titulo" [id]="id + '-titulo'">{{ titulo }}</h2>
+      <button type="button" class="festivo-dialogo__cerrar" aria-label="Cerrar" [disabled]="enviando" (click)="cancelar()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="festivo-dialogo__cuerpo">
+      @if (impacto.conLista) {
+      <p class="festivo-dialogo__mensaje" [id]="id + '-mensaje'">Ese día no habrá lista en las clases de <strong>{{ sede }}</strong>
+        que aún no la tienen. Afecta a <strong>{{ textoAfecta }}</strong>{{ cierreMensaje }}</p>
+      } @else {
+      @if (impacto.clases) {
+      <p class="festivo-dialogo__mensaje" [id]="id + '-mensaje'">Ese día no habrá lista en ninguna clase de <strong>{{ sede }}</strong>.
+        Afecta a <strong>{{ textoAfecta }}</strong>{{ cierreMensaje }}</p>
+      } @else {
+      <p class="festivo-dialogo__mensaje" [id]="id + '-mensaje'">No afecta a ninguna clase.</p>
+      }
+      }
+      @if (impacto.clasesDetalle.length) {
+      <ul class="festivo-dialogo__clases" aria-label="Clases de ese día">
+        @for (c of impacto.clasesDetalle; track $index) {
+        <li>
+          <span class="festivo-dialogo__hora">{{ c.horaInicio }}–{{ c.horaFin }}</span>&ngsp;
+          <span class="festivo-dialogo__grupo">{{ c.grupo }}@if (esEsta(c)) {&ngsp;<span class="festivo-dialogo__esta">(esta)</span>}</span>
+          @if (listaDe(c); as lista) {&ngsp;<span class="festivo-dialogo__con-lista">{{ lista }}</span>}
+        </li>
+        }
+        @if (mas) {
+        <li class="festivo-dialogo__mas">y {{ mas }} más</li>
+        }
+      </ul>
+      }
+      @if (impacto.conLista) {
+      <p class="festivo-dialogo__nota" role="note">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.5h.01"></path></svg>
+        <span><strong>{{ textoNota }}</strong> Conservan sus marcas en la ficha y en el PDF.</span>
+      </p>
+      }
+      <div class="festivo-dialogo__campo">
+        <label class="festivo-dialogo__etiqueta" [for]="id + '-nombre'">Nombre del festivo <span>(opcional)</span></label>
+        <input class="festivo-dialogo__control" [id]="id + '-nombre'" type="text" autocomplete="off" [attr.maxlength]="maximo"
+          [value]="nombre" [disabled]="enviando" [attr.placeholder]="'Por ejemplo, Feria de ' + sede" [attr.aria-describedby]="id + '-ayuda'"
+          (input)="escribir($event)" />
+        <p class="festivo-dialogo__ayuda" [id]="id + '-ayuda'"><span>Sale en la lista y en el PDF.</span>&ngsp;<span data-cifras>{{ nombre.length }} / {{ maximo }}</span></p>
+      </div>
+    </div>
+    <div class="festivo-dialogo__pie">
+      <button type="button" class="festivo-dialogo__cancelar" [disabled]="enviando" (click)="cancelar()">Cancelar</button>
+      <button type="submit" pnOcupado class="festivo-dialogo__accion" [ocupado]="enviando" textoOcupado="Marcando…">Marcar festivo</button>
+    </div>
+  </form>
+</dialog>

@@ -1,4 +1,4 @@
-import { ClaseAsistencia } from '../../interfaces/asistencia';
+import { ClaseAsistencia, MotivoFalta } from '../../interfaces/asistencia';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 const DIAS_CORTOS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
@@ -62,9 +62,33 @@ export function cuenta(presentes: number, total: number): string {
   return `${presentes} de ${total}`;
 }
 
-/** Estado de una clase en la hoja «Elegir clase»: «Sin pasar» o «12 de 18». */
+/** Estado de una clase en la hoja «Elegir clase»: «Festivo», «Sin pasar» o «12 de 18». */
 export function estadoClase(clase: ClaseAsistencia): string {
+  if (clase.festivo) return 'Festivo';
   return clase.presentes === null ? 'Sin pasar' : cuenta(clase.presentes, clase.total ?? clase.alumnos);
+}
+
+/** Motivos de falta (decisión 455), en el orden del menú; la letra es la del PDF de asistencia. */
+export const MOTIVOS_FALTA: readonly { valor: MotivoFalta; texto: string; letra: string }[] = [
+  { valor: 'INJUSTIFICADA', texto: 'Injustificada', letra: 'I' },
+  { valor: 'MEDICA', texto: 'Médica', letra: 'M' },
+  { valor: 'FAMILIAR', texto: 'Familiar', letra: 'F' },
+  { valor: 'OTRA_JUSTIFICADA', texto: 'Otra justificada', letra: 'J' },
+];
+
+export function textoMotivo(motivo: MotivoFalta | null | undefined): string {
+  return MOTIVOS_FALTA.find((m) => m.valor === motivo)?.texto ?? '';
+}
+
+export function letraMotivo(motivo: MotivoFalta | null | undefined): string {
+  return MOTIVOS_FALTA.find((m) => m.valor === motivo)?.letra ?? '';
+}
+
+/** Segunda línea de la barra de guardar: «Ninguna falta», «2 faltas» o «2 faltas · 1 con motivo». */
+export function textoFaltas(faltas: number, conMotivo: number): string {
+  if (faltas === 0) return 'Ninguna falta';
+  const base = `${faltas} ${faltas === 1 ? 'falta' : 'faltas'}`;
+  return conMotivo ? `${base} · ${conMotivo} con motivo` : base;
 }
 
 /** La misma clase (turno y fecha). */

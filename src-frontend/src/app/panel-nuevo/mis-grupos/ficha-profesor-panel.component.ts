@@ -36,7 +36,7 @@ import { BloqueErrorComponent } from '../carga/bloque-error.component';
 import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { CampoDialogo } from '../dialogo/dialogo.component';
-import { diaCorto, diaLargo } from '../asistencia/asistencia-textos';
+import { diaCorto, diaLargo, letraMotivo, textoMotivo } from '../asistencia/asistencia-textos';
 import { eur } from '../formato/formato-es';
 
 /** Texto de la confirmación de un pase (D7-6). Igual que en la ficha de hoy. */
@@ -121,6 +121,7 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   readonly esqueletos = [0, 1, 2];
   readonly meses = mesesAsistencia();
   readonly diaCorto = diaCorto;
+  readonly letraMotivo = letraMotivo;
 
   ficha: FichaAlumnoProfesor | null = null;
   cargando = false;
@@ -292,7 +293,9 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   /** Dos clases el mismo día: la hora entra en el nombre de la celda. */
   etiquetaDia(dia: DiaAsistencia): string {
     const repetido = (this.datosAsistencia?.dias ?? []).filter((d) => d.fecha === dia.fecha).length > 1;
-    const estado = dia.estado === 'PRESENTE' ? 'asistió' : dia.estado === 'FALTA' ? 'faltó' : 'sin lista';
+    const motivo = dia.estado === 'FALTA' && dia.motivo ? ` (${textoMotivo(dia.motivo).toLocaleLowerCase('es-ES')})` : '';
+    const estado =
+      dia.estado === 'PRESENTE' ? 'asistió' : dia.estado === 'FALTA' ? `faltó${motivo}` : dia.estado === 'FESTIVO' ? 'festivo' : 'sin lista';
     return diaLargo(dia.fecha) + (repetido ? ', ' + dia.horaInicio : '') + ': ' + estado;
   }
 

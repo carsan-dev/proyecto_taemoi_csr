@@ -562,6 +562,8 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
       expect(marcar.getAttribute('aria-checked')).toBe('true');
       expect(marcar.getAttribute('aria-describedby')).toBe('pn-asistencia-marcar-ayuda');
       expect(panel().querySelector('#pn-asistencia-marcar-ayuda')!.textContent).toContain('Apágalo para la hoja en blanco');
+      // Decisión 455: las letras del motivo y el festivo, como en la leyenda del PDF.
+      expect(panel().querySelector('#pn-asistencia-marcar-ayuda')!.textContent).toContain('I, M, F o J si faltó con motivo (injustificada, médica, familiar u otra justificada). Los festivos salen en gris.');
       marcar.click();
       pintar();
       expect(marcar.getAttribute('aria-checked')).toBe('false');
