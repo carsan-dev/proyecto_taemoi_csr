@@ -462,6 +462,8 @@ describe('FichaProfesorPanelComponent', () => {
           { fecha: '2026-10-05', horaInicio: '18:00', estado: 'PRESENTE' },
           { fecha: '2026-10-07', horaInicio: '18:00', estado: 'FALTA' },
           { fecha: '2026-10-12', horaInicio: '18:00', estado: 'SIN_LISTA' },
+          { fecha: '2026-10-14', horaInicio: '18:00', estado: 'FALTA', motivo: 'MEDICA' },
+          { fecha: '2026-10-19', horaInicio: '18:00', estado: 'FESTIVO' },
         ],
       }));
       componente.cargarAsistencia();
@@ -469,7 +471,7 @@ describe('FichaProfesorPanelComponent', () => {
       expect(bloques()[0].querySelector('h2')?.textContent?.trim()).toBe('Contacto');
       expect(bloques()[1].querySelector('h2')?.textContent?.trim()).toBe('Asistencia');
       expect(texto('.ficha__cuenta')).toBe('1 de 2 clases');
-      expect(celdas().length).toBe(3);
+      expect(celdas().length).toBe(5);
       expect(celdas()[0].textContent).toContain('lun 5');
       expect(celdas()[0].getAttribute('aria-label')).toBe('Lunes 5: asistió');
       expect(celdas()[0].querySelector('svg')).not.toBeNull();
@@ -478,7 +480,13 @@ describe('FichaProfesorPanelComponent', () => {
       expect(celdas()[1].querySelector('.ficha__dia-casilla')).not.toBeNull();
       expect(celdas()[2].textContent).toContain('Sin lista');
       expect(celdas()[2].querySelector('.ficha__dia-casilla')).toBeNull();
-      expect(el().textContent).toContain('Casilla vacía: faltó. Las clases sin lista no cuentan.');
+      expect(celdas()[1].querySelector('.ficha__dia-motivo')).toBeNull();
+      expect(celdas()[3].getAttribute('aria-label')).toBe('Miércoles 14: faltó (médica)');
+      expect(celdas()[3].querySelector('.ficha__dia-motivo')?.textContent?.trim()).toBe('M');
+      expect(celdas()[4].getAttribute('aria-label')).toBe('Lunes 19: festivo');
+      expect(celdas()[4].textContent).toContain('Festivo');
+      expect(celdas()[4].querySelector('.ficha__dia-casilla')).toBeNull();
+      expect(el().textContent).toContain('Casilla vacía: faltó; la letra es el motivo (I injustificada, M médica, F familiar, J otra justificada). Las clases sin lista y los festivos no cuentan.');
     });
 
     it('pide el grupo de origen y el mes actual; el selector vuelve a pedir', () => {

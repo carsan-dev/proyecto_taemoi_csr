@@ -86,17 +86,21 @@
                   <span class="ficha__dia-fecha">{{ diaCorto(dia.fecha) }}</span>
                   @if (dia.estado === 'SIN_LISTA') {
                     <span class="ficha__dia-sin">Sin lista</span>
+                  } @else if (dia.estado === 'FESTIVO') {
+                    <span class="ficha__dia-sin">Festivo</span>
                   } @else {
                     <span class="ficha__dia-casilla" [class.ficha__dia-casilla--presente]="dia.estado === 'PRESENTE'">
                       @if (dia.estado === 'PRESENTE') {
                         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10" /></svg>
+                      } @else if (dia.motivo) {
+                        <span class="ficha__dia-motivo" aria-hidden="true">{{ letraMotivo(dia.motivo) }}</span>
                       }
                     </span>
                   }
                 </div>
               }
             </div>
-            <p class="ficha__pista">Casilla vacía: faltó. Las clases sin lista no cuentan.</p>
+            <p class="ficha__pista">Casilla vacía: faltó; la letra es el motivo (I injustificada, M médica, F familiar, J otra justificada). Las clases sin lista y los festivos no cuentan.</p>
           }
         }
       </section>

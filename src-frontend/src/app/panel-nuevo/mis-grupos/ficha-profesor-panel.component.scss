@@ -492,6 +492,13 @@
   }
 }
 
+// Motivo de la falta: la letra del PDF (I, M, F, J) dentro de la casilla vacía.
+.ficha__dia-motivo {
+  font: var(--pn-etiqueta);
+  font-weight: 700;
+  color: var(--pn-tinta-2);
+}
+
 .ficha__dia-casilla--presente {
   border-color: var(--pn-bien);
   background: var(--pn-bien);
