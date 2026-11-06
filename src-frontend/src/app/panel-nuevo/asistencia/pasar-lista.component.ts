@@ -179,7 +179,7 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
       this.cargarLista(conocida ?? { turnoId: turno, fecha, horaInicio: '', horaFin: '', pasada: false, presentes: null, total: null, alumnos: 0, festivo: null }, false);
       return;
     }
-    const hoy = clases.hoy.find((c) => !tieneLista(c)) ?? clases.hoy[0];
+    const hoy = clases.hoy.find((c) => !tieneLista(c) && !c.festivo) ?? clases.hoy.find((c) => !c.festivo) ?? clases.hoy[0];
     if (hoy) {
       this.cargarLista(hoy, false);
     } else if (clases.recientes.length) {
@@ -406,7 +406,11 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
         this.actualizarReciente(guardada);
       },
       // Las marcas se conservan: solo se avisa.
-      error: (e) => this.avisos.error(mensajeDelServidor(e, this.textos.errorGuardar)),
+      error: (e) => {
+        this.avisos.error(mensajeDelServidor(e, this.textos.errorGuardar));
+        // 409: la clase ya es festiva; se recarga para verla como tal en vez de seguir editable.
+        if (e?.status === 409) this.recargarTrasFestivo(clase);
+      },
     });
   }
 

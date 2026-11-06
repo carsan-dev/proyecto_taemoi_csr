@@ -18,8 +18,12 @@
       <p class="festivo-dialogo__mensaje" [id]="id + '-mensaje'">Ese día no habrá lista en las clases de <strong>{{ sede }}</strong>
         que aún no la tienen. Afecta a <strong>{{ textoAfecta }}</strong>{{ cierreMensaje }}</p>
       } @else {
+      @if (impacto.clases) {
       <p class="festivo-dialogo__mensaje" [id]="id + '-mensaje'">Ese día no habrá lista en ninguna clase de <strong>{{ sede }}</strong>.
         Afecta a <strong>{{ textoAfecta }}</strong>{{ cierreMensaje }}</p>
+      } @else {
+      <p class="festivo-dialogo__mensaje" [id]="id + '-mensaje'">No afecta a ninguna clase.</p>
+      }
       }
       @if (impacto.clasesDetalle.length) {
       <ul class="festivo-dialogo__clases" aria-label="Clases de ese día">

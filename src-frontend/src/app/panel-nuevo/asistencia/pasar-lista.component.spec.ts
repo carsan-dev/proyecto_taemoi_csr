@@ -100,6 +100,22 @@ describe('PasarListaComponent', () => {
     expect(texto('.pasar-lista__clase')).toContain('18:00–19:00');
   });
 
+  it('una clase festiva no se abre como inicial: solo se pide la siguiente normal sin lista', () => {
+    crear();
+    const festiva = clase({ turnoId: 8, horaInicio: '17:00', horaFin: '18:00', festivo: { id: 31, nombre: 'Feria', tipo: 'DIA', deUnDiaYUnaSede: true, fechaDesde: '2026-10-28', fechaHasta: '2026-10-28', sedes: 1 } });
+    const normal = clase({ turnoId: 9 });
+    arrancar({ hoy: [festiva, normal] }, { clase: normal, alumnos: ALUMNOS });
+    expect(texto('.pasar-lista__clase')).toContain('18:00–19:00');
+  });
+
+  it('hoy = festiva y otra con lista: abre la que tiene lista', () => {
+    crear();
+    const festiva = clase({ turnoId: 8, horaInicio: '17:00', horaFin: '18:00', festivo: { id: 31, nombre: 'Feria', tipo: 'DIA', deUnDiaYUnaSede: true, fechaDesde: '2026-10-28', fechaHasta: '2026-10-28', sedes: 1 } });
+    const hecha = clase({ turnoId: 9, presentes: 2, total: 3 });
+    arrancar({ hoy: [festiva, hecha] }, { clase: hecha, alumnos: ALUMNOS });
+    expect(texto('.pasar-lista__clase')).toContain('18:00–19:00');
+  });
+
   it('con turno y fecha en la URL abre esa clase', () => {
     crear({ consulta: { turno: '8', fecha: '2026-10-26' } });
     const lunes = clase({ turnoId: 8, fecha: '2026-10-26' });
@@ -663,6 +679,16 @@ describe('PasarListaComponent', () => {
       expect(d.querySelector('.festivo-dialogo__ayuda')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Sale en la lista y en el PDF. 15 / 60');
     });
 
+    it('con 0 clases: «No afecta a ninguna clase.», no «Afecta a 0 clases»', () => {
+      arrancarGestion(clase());
+      boton('Marcar festivo')!.click();
+      http.expectOne(`${api}/festivos/impacto`).flush({ clases: 0, conLista: 0, conListaDetalle: [] });
+      fixture.detectChanges();
+      const t = dialogo()!.querySelector('.festivo-dialogo__mensaje')!.textContent!.replace(/\s+/g, ' ').trim();
+      expect(t).toBe('No afecta a ninguna clase.');
+      expect(t).not.toContain('0 clases');
+    });
+
     it('sin listas guardadas: «ninguna clase», sin nota; cancelar cierra sin crear', () => {
       arrancarGestion(clase());
       boton('Marcar festivo')!.click();
@@ -827,6 +853,13 @@ describe('PasarListaComponent', () => {
       http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ mensaje: 'Ese día es festivo en Estepa.' }, { status: 409, statusText: 'Conflict' });
       fixture.detectChanges();
       expect(avisos.error).toHaveBeenCalledWith('Ese día es festivo en Estepa.');
+      // Se recarga la clase (y la hoja) para verla como festiva.
+      http.expectOne(`${gestion}/clases`).flush({ hoy: [clase()], recientes: [], proxima: null });
+      const festiva = clase({ festivo: festivoDia });
+      http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: festiva, alumnos: ALUMNOS, sede: ESTEPA });
+      fixture.detectChanges();
+      expect(boton('Guardar lista')).toBeUndefined();
+      expect(el().textContent).toContain('Feria de Estepa');
     });
   });
 });
