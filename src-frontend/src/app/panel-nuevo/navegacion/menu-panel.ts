@@ -92,6 +92,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
     entradas: [
       { etiqueta: 'Grupos y turnos', ruta: '/gruposListar', icono: 'bi-list-ul' },
       { etiqueta: 'Mis grupos', ruta: '/mis-grupos', icono: 'bi-person-badge', condicion: 'misGrupos' },
+      { etiqueta: 'Festivos', ruta: '/festivos', icono: 'bi-calendar-x' },
       { etiqueta: 'Crear grupo', ruta: '/gruposCrear', icono: 'bi-plus-square', grupo: 'Altas' },
       { etiqueta: 'Crear turno', ruta: '/turnosCrear', icono: 'bi-calendar-plus' },
     ],
@@ -105,6 +106,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       '/turnosCrear',
       '/turnosEditar',
       '/mis-grupos',
+      '/festivos',
     ],
   },
   {
@@ -185,6 +187,7 @@ const RUTAS_PANEL_SEDE: ReadonlySet<string> = new Set([
   '/alumnosCrear',
   '/gruposListar',
   '/mis-grupos',
+  '/festivos',
   '/gruposCrear',
   '/turnosCrear',
   '/tesoreriaCobros',

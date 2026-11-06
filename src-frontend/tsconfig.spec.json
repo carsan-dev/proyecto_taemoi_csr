@@ -108,6 +108,7 @@
     "src/app/servicios/endpoints/asistencia.service.spec.ts",
     "src/app/panel-nuevo/festivos/festivos-vista.spec.ts",
     "src/app/panel-nuevo/festivos/festivos.service.spec.ts",
+    "src/app/panel-nuevo/festivos/festivos.component.spec.ts",
     "src/app/panel-nuevo/carga/lecturas-panel.service.spec.ts",
     "src/app/componentes/vistas/escaparate-principal/escaparate-principal.component.spec.ts",
     "src/app/componentes/vistas/layout/skeleton/skeleton.component.spec.ts",

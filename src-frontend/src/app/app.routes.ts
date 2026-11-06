@@ -461,6 +461,15 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Festivos (decisión 458): gestión y responsable de sede, como Convocatorias; entrada en Grupos.
+    path: 'festivos',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.panelSede),
+    loadComponent: () => import('./panel-nuevo/festivos/festivos.component').then(m => m.FestivosComponent),
+    canActivate: [roleGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'convocatoriasListar',
     canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.panelSede),

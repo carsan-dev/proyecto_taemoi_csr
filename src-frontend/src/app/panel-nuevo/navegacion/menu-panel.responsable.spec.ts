@@ -9,6 +9,7 @@ const RUTAS_370 = [
   '/convocatoriasListar',
   '/alumnosCrear',
   '/gruposListar',
+  '/festivos',
   '/gruposCrear',
   '/turnosCrear',
   '/tesoreriaCobros',
