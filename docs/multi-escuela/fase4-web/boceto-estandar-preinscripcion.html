@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preinscripción · Taekwondo Sierra Sur · Boceto «El estándar del sector»</title>
+<meta name="description" content="Boceto de la preinscripción en la web pública de escuela: tema «El estándar del sector».">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+:root {
+  /* Color de la escuela: lo pone la escuela. El JS deriva las variantes accesibles (igual que la portada). */
+  --escuela: #0B5CAD;
+  --boton-fondo: #0B5CAD;
+  --boton-tinta: #FFFFFF;
+  --boton-hover: #094C90;
+  --boton-aro: transparent;
+  --marca: #0B5CAD;
+  --marca-tinta: #FFFFFF;
+  --enlace: #0B5CAD;
+
+  --blanco: #FFFFFF;
+  --gris: #F3F4F6;
+  --tinta: #12161C;
+  --tinta-2: #4A5260;
+  --tinta-3: #646B78;
+  --borde: #DDE1E6;
+  --borde-fuerte: #C4CAD2;
+  --aviso: #F2C230;
+  --peligro: #B42318;
+  --peligro-suave: #FDF1F0;
+  --foco: var(--tinta);
+
+  --m: clamp(20px, 4.5vw, 64px);
+  --ancho: 1200px;
+  --cab: 64px;
+  --radio: 12px;
+  --titulos: "Archivo", "Arial", sans-serif;
+  --texto: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+  scroll-padding-top: calc(var(--cab) + 16px);
+}
+@media (min-width: 960px) { :root { --cab: 76px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: var(--borde-fuerte) var(--gris); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0; background: var(--gris); color: var(--tinta);
+  font: 400 1.0625rem/1.55 var(--texto);
+  overflow-x: clip;
+}
+body.menu-abierto { overflow: hidden; }
+::selection { background: var(--tinta); color: var(--blanco); }
+img, svg { display: block; }
+h1, h2, h3, p, figure, ol, ul, dl, dd, fieldset { margin: 0; }
+fieldset { padding: 0; border: 0; min-width: 0; }
+legend { padding: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: var(--enlace); text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; border-radius: 4px; }
+[tabindex="-1"]:focus { outline: none; }
+.oculto { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.cifras, .hora { font-variant-numeric: tabular-nums; }
+.envoltura { width: 100%; max-width: calc(var(--ancho) + 2 * var(--m)); margin: 0 auto; padding: 0 var(--m); }
+
+.salto {
+  position: absolute; left: 12px; top: -80px; z-index: 50;
+  padding: 10px 16px; background: var(--tinta); color: var(--blanco); border-radius: 8px; font-weight: 600;
+}
+.salto:focus { top: 12px; }
+
+/* ---------- Nota del boceto (no es parte de la web) ---------- */
+.nota {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px;
+  padding: 8px var(--m); background: var(--gris); border-bottom: 1px dashed var(--borde-fuerte);
+  font-size: .875rem; color: var(--tinta-2);
+}
+.nota strong { color: var(--tinta); font-weight: 700; }
+.probar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; }
+.probar legend { float: left; margin-right: 6px; font-weight: 700; color: var(--tinta); }
+.muestra {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 12px 4px 5px;
+  border: 1px solid var(--borde-fuerte); border-radius: 999px; background: var(--blanco); color: var(--tinta);
+  font: 400 .8125rem/1 var(--texto); cursor: pointer;
+}
+.muestra:hover { border-color: var(--tinta-2); }
+.muestra[aria-pressed="true"] { border-color: var(--tinta); box-shadow: inset 0 0 0 1px var(--tinta); font-weight: 700; }
+.muestra-color { width: 24px; height: 24px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(18,22,28,.5); }
+@media (max-width: 640px) {
+  .muestra { padding: 5px; }
+  .muestra-nombre { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* ---------- Botones ---------- */
+.boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 48px; padding: 0 22px; border-radius: 8px; border: 0;
+  background: var(--boton-fondo); color: var(--boton-tinta);
+  box-shadow: inset 0 0 0 1.5px var(--boton-aro);
+  font: 700 1rem/1.1 var(--texto); text-decoration: none; cursor: pointer; text-align: center;
+  transition: background-color 140ms ease-out;
+}
+.boton:hover { background: var(--boton-hover); }
+.boton svg { flex: none; }
+.boton--contorno { background: transparent; color: var(--tinta); box-shadow: inset 0 0 0 1.5px var(--tinta); }
+.boton--contorno:hover { background: var(--tinta); color: var(--blanco); }
+.boton--texto {
+  min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--enlace); cursor: pointer;
+  font: 700 .9375rem/1 var(--texto); text-decoration: underline; text-underline-offset: .22em;
+}
+.enlace-flecha {
+  display: inline-flex; align-items: center; gap: 6px; font-weight: 700; text-decoration: none;
+  color: var(--enlace); min-height: 44px;
+}
+.enlace-flecha:hover { text-decoration: underline; }
+
+/* ---------- Cabecera (la de la portada, siempre sólida: aquí no hay foto) ---------- */
+.cabecera {
+  position: sticky; top: 0; z-index: 20; height: var(--cab);
+  background: var(--blanco); color: var(--tinta); --foco: var(--tinta);
+  box-shadow: 0 1px 0 var(--borde);
+}
+.cabecera .envoltura { height: 100%; display: flex; align-items: center; gap: 24px; }
+.marca { display: inline-flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; margin-right: auto; }
+.logo {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px;
+  border: 1.5px solid currentColor; font: 800 .8125rem/1 var(--titulos); letter-spacing: .02em;
+}
+.marca-nombre { font: 800 1.0625rem/1.05 var(--titulos); font-stretch: 112%; letter-spacing: -.01em; }
+.marca-nombre span { display: block; }
+.nav-lista { display: flex; gap: 4px; }
+.nav-lista a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 6px;
+  color: inherit; font-weight: 600; text-decoration: none;
+}
+.nav-lista a:hover { text-decoration: underline; }
+.cabecera-cta { min-height: 44px; padding: 0 18px; }
+.menu-boton {
+  display: none; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+  border: 1.5px solid currentColor; border-radius: 8px; background: transparent; color: inherit;
+  font: 700 .9375rem/1 var(--texto); cursor: pointer;
+}
+@media (max-width: 959px) {
+  .menu-boton { display: inline-flex; }
+  .cabecera-cta { display: none; }
+  .nav { display: none; }
+  .nav.abierta {
+    display: block; position: fixed; inset: var(--cab) 0 0 0; z-index: 19;
+    background: var(--blanco); color: var(--tinta); padding: 16px var(--m) 32px; overflow-y: auto;
+    border-top: 1px solid var(--borde);
+  }
+  .nav.abierta .nav-lista { flex-direction: column; gap: 0; }
+  .nav.abierta .nav-lista a {
+    min-height: 60px; padding: 0; border-bottom: 1px solid var(--borde); border-radius: 0;
+    font: 800 1.5rem/1 var(--titulos); font-stretch: 110%;
+  }
+  .nav-cta-movil { display: flex; margin-top: 24px; width: 100%; }
+}
+@media (min-width: 960px) { .nav-cta-movil { display: none; } }
+
+/* ---------- Flujo ---------- */
+.flujo { padding: clamp(24px, 4vw, 48px) 0 clamp(64px, 8vw, 112px); }
+.flujo-rejilla { display: grid; gap: 32px; align-items: start; }
+@media (min-width: 1000px) { .flujo-rejilla { grid-template-columns: minmax(0, 1fr) 21rem; gap: 48px; } }
+.flujo-principal { min-width: 0; }
+.atras { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 700; color: var(--enlace); text-decoration: none; }
+.atras:hover { text-decoration: underline; }
+
+/* Progreso: barra por pasos, con el número y el nombre */
+.progreso { margin: 8px 0 20px; }
+.progreso-texto { font-weight: 700; color: var(--tinta-2); font-size: .9375rem; }
+.progreso-pasos { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 8px; margin-top: 8px; }
+.progreso-paso { display: grid; gap: 8px; font-size: .9375rem; color: var(--tinta-2); }
+.progreso-paso::before { content: ''; height: 6px; border-radius: 3px; background: var(--borde-fuerte); }
+.progreso-paso span { display: inline-flex; align-items: center; gap: 6px; }
+.progreso-paso--hecho::before, .progreso-paso--ahora::before { background: var(--marca); }
+.progreso-paso--ahora { color: var(--tinta); font-weight: 700; }
+.progreso-paso--hecho { color: var(--tinta); }
+
+.tarjeta { background: var(--blanco); border: 1px solid var(--borde); border-radius: var(--radio); }
+.paso-caja { padding: clamp(20px, 4vw, 40px); box-shadow: 0 1px 2px rgba(18,22,28,.06), 0 4px 12px -6px rgba(18,22,28,.16); }
+
+.pregunta-titulo {
+  font: 800 clamp(1.875rem, 1.25rem + 2.2vw, 2.5rem)/1.05 var(--titulos); font-stretch: 108%;
+  letter-spacing: -.02em; text-wrap: balance;
+}
+.pista { margin-top: 8px; color: var(--tinta-2); max-width: 40rem; }
+.contexto { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 10px; color: var(--tinta-2); }
+.contexto strong { color: var(--tinta); }
+.contexto a { font-weight: 700; display: inline-flex; min-height: 44px; align-items: center; }
+.continuar { margin-top: 32px; }
+.continuar .boton, .enviar .boton { min-width: 14rem; }
+@media (max-width: 640px) { .continuar .boton, .enviar .boton { width: 100%; } }
+
+/* Paso 1: elegir pueblo */
+.selector { display: grid; gap: 10px; margin-top: 24px; }
+.sel label {
+  position: relative; display: grid; grid-template-columns: 24px 1fr; gap: 2px 14px; align-items: start;
+  padding: 16px 18px; border: 1px solid var(--borde-fuerte); border-radius: 10px; background: var(--blanco); cursor: pointer;
+}
+.sel label:hover { border-color: var(--tinta-2); }
+.sel input { position: absolute; opacity: 0; width: 24px; height: 24px; margin: 0; left: 18px; top: 18px; }
+.sel-circulo { grid-row: span 2; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; border: 2px solid var(--tinta-3); background: var(--blanco); }
+.sel-nombre { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font: 800 1.25rem/1.25 var(--titulos); font-stretch: 106%; }
+.sel-dato { color: var(--tinta-2); }
+.sel-dato .hora { color: var(--tinta); font-weight: 600; }
+.sel-elegida { display: none; padding: 2px 10px; border-radius: 999px; background: var(--marca); color: var(--marca-tinta); font: 700 .8125rem/1.35 var(--texto); }
+.sel input:checked + label { border-color: var(--marca); box-shadow: inset 0 0 0 1px var(--marca); }
+.sel input:checked + label .sel-circulo { border-color: var(--marca); box-shadow: inset 0 0 0 5px var(--blanco); background: var(--marca); }
+.sel input:checked + label .sel-elegida { display: inline-block; }
+.sel input:focus-visible + label { outline: 3px solid var(--foco); outline-offset: 2px; }
+
+/* Paso 2: fecha y grupos */
+.nacimiento { margin-top: 28px; padding: 20px; border-radius: 10px; background: var(--gris); }
+.nacimiento legend { float: left; width: 100%; font: 800 1.1875rem/1.2 var(--titulos); font-stretch: 104%; }
+.nacimiento legend + * { clear: both; }
+.campo-pista { margin-top: 4px; color: var(--tinta-2); }
+.nacimiento-fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 24px; margin-top: 12px; }
+.fecha { display: flex; gap: 12px; }
+.fecha label { display: block; font-weight: 700; margin-bottom: 4px; }
+.fecha .control.fecha-dia, .fecha .control.fecha-mes { width: 4.5rem; }
+.fecha .control.fecha-anio { width: 6.25rem; }
+.edad-estado { margin-top: 20px; font-size: 1.125rem; }
+.edad-estado:empty { display: none; }
+.grupos-espera { margin-top: 20px; padding: 18px 20px; border: 1px dashed var(--borde-fuerte); border-radius: 10px; color: var(--tinta-2); }
+
+.salidas { margin-top: 16px; border-top: 1px solid var(--borde); }
+.grupo {
+  display: grid; gap: 12px 20px; padding: 20px 0; border-bottom: 1px solid var(--borde);
+  grid-template-columns: auto 1fr; grid-template-areas: "hora grupo" "detalle detalle" "accion accion" "nota nota" "dias dias";
+  align-items: center;
+}
+.grupo--elegido { background: var(--gris); margin: 0 -16px; padding: 20px 16px; border-radius: 10px; border-bottom-color: transparent; }
+.grupo-hora { grid-area: hora; font: 700 2rem/1 var(--titulos); font-variant-numeric: tabular-nums; letter-spacing: -.02em; min-width: 5.2ch; }
+.grupo-hora small { display: block; margin-top: 6px; font: 400 .9375rem/1 var(--texto); letter-spacing: 0; color: var(--tinta-2); }
+.grupo-datos { grid-area: grupo; }
+.grupo-nombre { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-weight: 700; font-size: 1.125rem; line-height: 1.25; }
+.grupo-edades { color: var(--tinta-2); }
+.grupo-detalle { grid-area: detalle; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 24px; }
+.grupo-accion { grid-area: accion; }
+.grupo-accion .boton { width: 100%; }
+.grupo-nota { grid-area: nota; color: var(--tinta-2); font-size: .9375rem; max-width: 38rem; }
+.grupo-dias { grid-area: dias; }
+@media (min-width: 760px) {
+  .grupo {
+    grid-template-columns: 6.5rem minmax(9rem, 1fr) auto; grid-template-areas: "hora grupo accion" "hora detalle accion" "nota nota nota" "dias dias dias";
+    padding: 18px 0;
+  }
+  .grupo--elegido { padding: 18px 16px; }
+  .grupo-hora { align-self: start; }
+  .grupo-accion { justify-self: end; }
+  .grupo-accion .boton { width: auto; }
+}
+.elegido { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 6px; border-radius: 999px; background: var(--marca); color: var(--marca-tinta); font-size: .8125rem; }
+.elegido svg { flex: none; }
+.dias { display: flex; gap: 4px; }
+.dia {
+  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px;
+  font: 600 .8125rem/1 var(--texto); color: var(--tinta-3); background: transparent; box-shadow: inset 0 0 0 1px var(--borde);
+}
+.dia--si { background: var(--marca); color: var(--marca-tinta); box-shadow: none; font-weight: 700; }
+.grupo--elegido .dia:not(.dia--si) { background: var(--blanco); }
+.plazas { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.plazas svg { flex: none; }
+.plazas--completo, .plazas--espera { color: var(--tinta-2); }
+mark.hoy {
+  display: inline-block; padding: 1px 6px; border-radius: 4px; background: var(--aviso); color: var(--tinta);
+  font: 700 .75rem/1.35 var(--texto); letter-spacing: .04em; vertical-align: 1px;
+}
+
+.salida-dias { margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--borde-fuerte); }
+.salida-dias legend { float: left; width: 100%; font-weight: 700; font-size: 1.0625rem; }
+.salida-dias legend + * { clear: both; }
+.casillas-dia { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.casilla-dia {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 16px 0 12px;
+  border: 1.5px solid var(--tinta-3); border-radius: 8px; background: var(--blanco); font-weight: 600; cursor: pointer;
+}
+.casilla-dia:has(input:checked) { border-color: var(--marca); box-shadow: inset 0 0 0 1px var(--marca); }
+.casilla-hoy { padding: 0 6px; border-radius: 4px; background: var(--aviso); color: var(--tinta); font-size: .75rem; font-weight: 700; letter-spacing: .04em; }
+.dia-unico { margin-top: 4px; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--marca); width: 22px; height: 22px; margin: 0; flex: none; }
+
+.vacio { margin-top: 20px; padding: 24px; border: 1px solid var(--borde-fuerte); border-radius: 10px; }
+.vacio h2 { font: 800 1.375rem/1.2 var(--titulos); font-stretch: 106%; }
+.vacio > p { margin-top: 8px; color: var(--tinta-2); }
+.otras { margin-top: 16px; border-top: 1px solid var(--borde); }
+.otra a {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: center; padding: 14px 0;
+  border-bottom: 1px solid var(--borde); color: var(--tinta); text-decoration: none;
+}
+.otra a:hover .otra-nombre { text-decoration: underline; }
+.otra-nombre { font-weight: 700; color: var(--enlace); }
+.otra-dato { grid-column: 1; color: var(--tinta-2); }
+.otra svg { grid-row: 1 / span 2; grid-column: 2; color: var(--enlace); }
+.vacio .vacio-contacto { color: var(--tinta); }
+
+/* Paso 3: datos */
+.eleccion {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; align-items: center; margin-top: 18px;
+  padding: 14px 18px; border-radius: 10px; background: var(--gris);
+}
+.eleccion strong { font: 800 1.125rem/1.2 var(--titulos); font-stretch: 104%; }
+.eleccion span { grid-column: 1; color: var(--tinta-2); }
+.eleccion a { grid-row: 1 / span 2; grid-column: 2; font-weight: 700; display: inline-flex; align-items: center; min-height: 44px; }
+.aviso-espera {
+  display: grid; grid-template-columns: 24px 1fr; gap: 12px; margin-top: 16px; padding: 16px 18px;
+  border: 1.5px solid var(--tinta); border-radius: 10px; background: var(--blanco);
+}
+.aviso-espera strong { display: block; }
+.bloque-form { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--borde); }
+.bloque-form > h2 { font: 800 1.375rem/1.2 var(--titulos); font-stretch: 106%; }
+.bloque-form > .pista { margin-top: 4px; }
+.campo { margin-top: 20px; }
+.campo-etiqueta, .campo > legend { display: block; font-weight: 700; font-size: 1.0625rem; }
+.opcional { font-weight: 400; color: var(--tinta-2); }
+.control {
+  display: block; width: 100%; min-height: 48px; margin-top: 8px; padding: 10px 12px;
+  border: 1.5px solid var(--tinta-3); border-radius: 8px; background: var(--blanco); color: var(--tinta);
+  font: 400 1.0625rem/1.4 var(--texto);
+}
+.control:hover { border-color: var(--tinta); }
+.control:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; border-color: var(--tinta); }
+textarea.control { resize: vertical; min-height: 120px; }
+.fecha .control { margin-top: 0; }
+.ancho-12 { max-width: 13rem; }
+.ancho-20 { max-width: 20rem; }
+.contador { display: block; margin-top: 4px; text-align: right; color: var(--tinta-2); font-size: .875rem; font-variant-numeric: tabular-nums; }
+.opciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.opcion {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 18px 0 14px;
+  border: 1.5px solid var(--tinta-3); border-radius: 8px; background: var(--blanco); font-weight: 600; cursor: pointer;
+}
+.opcion:has(input:checked) { border-color: var(--marca); box-shadow: inset 0 0 0 1px var(--marca); }
+.marca-casilla { display: flex; align-items: flex-start; gap: 12px; margin-top: 16px; cursor: pointer; }
+.marca-casilla input { margin-top: 2px; }
+.desplegable { margin-top: 12px; border: 1px solid var(--borde-fuerte); border-radius: 10px; background: var(--blanco); }
+.desplegable summary {
+  display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; cursor: pointer;
+  font-weight: 700; color: var(--enlace); list-style: none; border-radius: 10px;
+}
+.desplegable summary::-webkit-details-marker { display: none; }
+.desplegable summary svg { transition: transform 160ms ease-out; }
+.desplegable[open] summary svg { transform: rotate(90deg); }
+.desplegable summary:focus-visible { outline-offset: -1px; }
+.normas { padding: 0 16px 16px; color: var(--tinta-2); }
+.normas ol { margin-top: 10px; padding-left: 1.4em; list-style: decimal; }
+.normas li + li { margin-top: 6px; }
+.firma-mano { padding-bottom: 0; }
+.firma-mano > :not(summary) { margin-left: 16px; margin-right: 16px; }
+.firma-mano .campo-etiqueta { margin-top: 4px; }
+.firma { display: block; width: calc(100% - 32px); height: 180px; margin-top: 8px; background: var(--blanco); border: 1.5px solid var(--tinta-3); border-radius: 8px; touch-action: none; cursor: crosshair; }
+.firma-pie { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
+.enviar { margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--borde); }
+
+/* Errores */
+.errores {
+  margin-bottom: 24px; padding: 18px 20px; border: 2px solid var(--peligro); border-radius: 10px; background: var(--peligro-suave);
+}
+.errores h2 { display: flex; align-items: center; gap: 10px; font: 800 1.25rem/1.2 var(--titulos); color: var(--peligro); }
+.errores ul { margin-top: 10px; padding-left: 34px; list-style: disc; }
+.errores li + li { margin-top: 4px; }
+.errores a { color: var(--peligro); font-weight: 700; }
+.campo-error { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; color: var(--peligro); font-weight: 700; }
+.campo-error svg { flex: none; margin-top: 3px; }
+.campo--error .control, .campo--error .casilla-dia, .campo--error .opcion { border-color: var(--peligro); border-width: 2px; }
+.campo--error.nacimiento, .campo--error.salida-dias { box-shadow: inset 0 0 0 2px var(--peligro); }
+.campo--error.salida-dias { padding: 16px; border-radius: 10px; }
+.aviso-edad { display: grid; grid-template-columns: 18px 1fr; gap: 8px; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: var(--peligro-suave); color: var(--peligro); font-weight: 600; }
+.aviso-edad svg { margin-top: 3px; }
+.aviso-edad a { color: var(--peligro); font-weight: 700; }
+
+/* Resumen lateral */
+.resumen { padding: 24px; }
+@media (min-width: 1000px) { .resumen { position: sticky; top: calc(var(--cab) + 24px); margin-top: 52px; } }
+.resumen h2 { font: 800 1.25rem/1.2 var(--titulos); font-stretch: 106%; }
+.resumen dl { margin-top: 14px; border-top: 1px solid var(--borde); }
+.resumen-fila { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid var(--borde); }
+.resumen-fila dt { grid-column: 1; font-weight: 700; font-size: .9375rem; color: var(--tinta-2); }
+.resumen-fila dd { grid-column: 1; }
+.resumen-fila .resumen-cambiar { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.resumen-cambiar a { font-weight: 700; font-size: .9375rem; display: inline-flex; align-items: center; min-height: 44px; }
+.resumen-vacio { color: var(--tinta-2); }
+.resumen-tarifa { margin-top: 14px; color: var(--tinta-2); }
+.resumen-tarifa strong { color: var(--tinta); }
+
+/* Paso 4: confirmación */
+.flujo--fin .flujo-rejilla { grid-template-columns: minmax(0, 1fr); }
+.fin { display: grid; gap: 24px; }
+.fin-cabeza { padding: clamp(24px, 4vw, 44px); }
+.fin-icono { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--marca); color: var(--marca-tinta); margin-bottom: 18px; }
+.fin-icono--espera { background: var(--blanco); color: var(--tinta); box-shadow: inset 0 0 0 2px var(--tinta); }
+.fin-ref { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 14px; color: var(--tinta-2); }
+.fin-ref strong { font: 800 1.375rem/1.2 var(--titulos); font-stretch: 104%; color: var(--tinta); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.fin-estado { margin-top: 12px; font-size: 1.125rem; max-width: 42rem; }
+.fin-rejilla { display: grid; gap: 24px; }
+@media (min-width: 900px) { .fin-rejilla { grid-template-columns: 1.2fr 1fr; } }
+.fin-bloque { padding: clamp(20px, 3vw, 32px); }
+.fin-bloque h2 { font: 800 1.375rem/1.2 var(--titulos); font-stretch: 106%; }
+.siguientes { margin-top: 16px; counter-reset: paso; }
+.siguientes li { position: relative; padding: 0 0 20px 48px; counter-increment: paso; }
+.siguientes li::before {
+  content: counter(paso); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--gris); box-shadow: inset 0 0 0 1px var(--borde-fuerte);
+  font: 800 1rem/1 var(--titulos); font-variant-numeric: tabular-nums;
+}
+.siguientes li:not(:last-child)::after { content: ''; position: absolute; left: 15.5px; top: 36px; bottom: 4px; width: 1px; background: var(--borde-fuerte); }
+.siguientes b { display: block; font-weight: 700; font-size: 1.0625rem; padding-top: 4px; }
+.siguientes span { color: var(--tinta-2); }
+.fin-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-top: 8px; }
+.ficha { margin-top: 12px; border-top: 1px solid var(--borde); }
+.ficha-fila { display: grid; gap: 2px 20px; padding: 12px 0; border-bottom: 1px solid var(--borde); }
+@media (min-width: 640px) { .ficha-fila { grid-template-columns: 8rem 1fr; } }
+.ficha dt { font-weight: 700; }
+
+/* Pie (el de la portada) */
+.pie { background: var(--tinta); color: #C3C8D0; padding: clamp(48px, 6vw, 72px) 0 40px; --foco: #FFFFFF; font-size: .9375rem; }
+.pie a { color: #FFFFFF; }
+.pie-arriba { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 28px; border-bottom: 1px solid #2C333C; }
+.pie-marca { display: flex; align-items: center; gap: 12px; color: #FFFFFF; }
+.pie-legal { display: flex; flex-wrap: wrap; gap: 4px 24px; }
+.pie-legal a { display: inline-flex; min-height: 44px; align-items: center; }
+.pie-abajo { display: grid; gap: 12px; padding-top: 24px; max-width: 72rem; }
+.pie-ejemplo strong { color: #FFFFFF; }
+.pie-creditos { color: #A9B0BA; }
+
+@media (prefers-reduced-motion: reduce) {
+  .boton, .desplegable summary svg { transition: none; }
+}
+</style>
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+
+<div class="nota">
+  <p><strong>Boceto «El estándar del sector»</strong> · preinscripción · datos de ejemplo</p>
+  <fieldset class="probar">
+    <legend>Probar color</legend>
+    <button class="muestra" type="button" data-color="#0B5CAD" aria-pressed="true"><span class="muestra-color" style="background:#0B5CAD" aria-hidden="true"></span><span class="muestra-nombre">Azul Sierra Sur</span></button>
+    <button class="muestra" type="button" data-color="#F2C230" aria-pressed="false"><span class="muestra-color" style="background:#F2C230" aria-hidden="true"></span><span class="muestra-nombre">Claro</span></button>
+    <button class="muestra" type="button" data-color="#1B2B2E" aria-pressed="false"><span class="muestra-color" style="background:#1B2B2E" aria-hidden="true"></span><span class="muestra-nombre">Muy oscuro</span></button>
+  </fieldset>
+</div>
+
+<header class="cabecera" id="cabecera">
+  <div class="envoltura">
+    <a class="marca" href="boceto-estandar.html" data-enlace>
+      <span class="logo" role="img" aria-label="Marcador de logo" title="Marcador de logo: lo sube la escuela">TSS</span>
+      <span class="marca-nombre"><span>Taekwondo</span><span>Sierra Sur</span></span>
+    </a>
+    <nav class="nav" id="nav-principal" aria-label="Principal">
+      <ul class="nav-lista">
+        <li><a href="boceto-estandar.html#horarios" data-enlace>Horarios</a></li>
+        <li data-solo-varias><a href="boceto-estandar-sede.html#sedes" data-enlace>Sedes</a></li>
+        <li><a href="boceto-estandar-tarifas.html" data-enlace>Tarifas</a></li>
+        <li><a href="boceto-estandar-eventos.html" data-enlace>Eventos</a></li>
+        <li><a href="boceto-estandar.html#contacto" data-enlace>Contacto</a></li>
+      </ul>
+      <a class="boton nav-cta-movil" href="boceto-estandar-preinscripcion.html" data-enlace aria-current="page">Preinscríbete</a>
+    </nav>
+    <a class="boton cabecera-cta" href="boceto-estandar-preinscripcion.html" data-enlace aria-current="page">Preinscríbete</a>
+    <button class="menu-boton" type="button" aria-expanded="false" aria-controls="nav-principal">
+      <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      <span class="menu-texto">Menú</span>
+    </button>
+  </div>
+</header>
+
+<main id="principal" class="flujo">
+  <div class="envoltura flujo-rejilla">
+    <div class="flujo-principal">
+      <a class="atras" id="atras" href="boceto-estandar.html"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Atrás</a>
+      <div class="progreso" id="progreso"></div>
+      <div id="paso"></div>
+    </div>
+    <aside class="tarjeta resumen" id="resumen" aria-labelledby="resumen-titulo"></aside>
+  </div>
+</main>
+
+<footer class="pie">
+  <div class="envoltura">
+    <div class="pie-arriba">
+      <p class="pie-marca"><span class="logo" aria-hidden="true">TSS</span><span class="marca-nombre"><span>Taekwondo</span><span>Sierra Sur</span></span></p>
+      <ul class="pie-legal" aria-label="Legal">
+        <li><a href="boceto-estandar-legales.html#aviso-legal" data-enlace>Aviso legal</a></li>
+        <li><a href="boceto-estandar-legales.html#privacidad" data-enlace>Privacidad</a></li>
+        <li><a href="boceto-estandar-legales.html#cookies" data-enlace>Cookies</a></li>
+      </ul>
+    </div>
+    <div class="pie-abajo">
+      <p>© 2026 Taekwondo Sierra Sur</p>
+      <p class="pie-ejemplo"><strong>Datos y fotos de ejemplo.</strong> Son inventados los lugares, direcciones, grupos, horarios, plazas, profesores, eventos, correo y teléfono. La mensualidad de 25 € es la real. Las fotos son libres y las sustituirá el club.</p>
+      <p class="pie-creditos">Fotos: Camila Sanabria (Unsplash); A. Villalon, cottonbro, Eden FC, Kulani Shibambu, Elshan Musaev, KKlinton y Celio Junior (Pexels).</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* color:inicio — funciones puras de contraste WCAG (las mismas que la portada) */
+function hexARgb(hex) {
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function rgbAHex(c) {
+  return '#' + c.map(function (v) { return Math.round(v).toString(16).padStart(2, '0'); }).join('').toUpperCase();
+}
+function luminancia(hex) {
+  var c = hexARgb(hex).map(function (v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contraste(a, b) {
+  var la = luminancia(a), lb = luminancia(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function rgbAHsl(c) {
+  var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0, d = max - min;
+  if (d) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hslARgb(h, s, l) {
+  function f(p, q, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  if (!s) return [l * 255, l * 255, l * 255];
+  var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  return [f(p, q, h + 1 / 3) * 255, f(p, q, h) * 255, f(p, q, h - 1 / 3) * 255];
+}
+/* Oscurece (baja la luminosidad, mantiene el tono) hasta cumplir el objetivo sobre todos los fondos */
+function oscurecer(hex, objetivo, fondos) {
+  var hsl = rgbAHsl(hexARgb(hex)), actual = rgbAHex(hexARgb(hex));
+  function cumple(c) { return fondos.every(function (f) { return contraste(c, f) >= objetivo; }); }
+  while (!cumple(actual) && hsl[2] > 0) {
+    hsl[2] = Math.max(0, hsl[2] - 0.005);
+    actual = rgbAHex(hslARgb(hsl[0], hsl[1], hsl[2]));
+  }
+  return actual;
+}
+function mezclar(a, b, t) {
+  var x = hexARgb(a), y = hexARgb(b);
+  return rgbAHex(x.map(function (v, i) { return v + (y[i] - v) * t; }));
+}
+var BLANCO = '#FFFFFF', GRIS = '#F3F4F6', TINTA = '#12161C';
+/* Superficie con texto encima: el color tal cual con blanco o tinta (el que dé >= 4,5:1); si ninguno, se oscurece */
+function superficie(base) {
+  if (contraste(BLANCO, base) >= 4.5) return { fondo: base, tinta: BLANCO };
+  if (contraste(TINTA, base) >= 4.5) return { fondo: base, tinta: TINTA };
+  return { fondo: oscurecer(base, 4.5, [BLANCO]), tinta: BLANCO };
+}
+function derivarColores(base) {
+  base = rgbAHex(hexARgb(base));
+  var boton = superficie(base);
+  var hover = boton.tinta === BLANCO ? mezclar(boton.fondo, '#000000', 0.16) : mezclar(boton.fondo, '#FFFFFF', 0.24);
+  /* Marcas (barra de progreso, elegido, días, bordes de lo marcado): >= 3:1 sobre blanco y gris; su letra, >= 4,5:1 */
+  var marca = oscurecer(base, 3, [BLANCO, GRIS]);
+  var marcaSup = superficie(marca);
+  /* Enlaces: >= 4,5:1 sobre blanco y gris */
+  var enlace = oscurecer(base, 4.5, [BLANCO, GRIS]);
+  return {
+    base: base, botonFondo: boton.fondo, botonTinta: boton.tinta, botonHover: hover,
+    marca: marcaSup.fondo, marcaTinta: marcaSup.tinta, enlace: enlace,
+    c: {
+      boton: contraste(boton.fondo, boton.tinta), botonHover: contraste(hover, boton.tinta),
+      marca: Math.min(contraste(marcaSup.fondo, BLANCO), contraste(marcaSup.fondo, GRIS)),
+      marcaLetra: contraste(marcaSup.fondo, marcaSup.tinta),
+      enlace: Math.min(contraste(enlace, BLANCO), contraste(enlace, GRIS))
+    }
+  };
+}
+/* color:fin */
+
+(function () {
+  var params = new URLSearchParams(location.search);
+  var raiz = document.documentElement;
+
+  /* ---- Color de la escuela ---- */
+  function aplicarColor(hex) {
+    var col = derivarColores(hex);
+    var v = {
+      '--escuela': col.base, '--boton-fondo': col.botonFondo, '--boton-tinta': col.botonTinta,
+      '--boton-hover': col.botonHover, '--marca': col.marca, '--marca-tinta': col.marcaTinta, '--enlace': col.enlace
+    };
+    Object.keys(v).forEach(function (k) { raiz.style.setProperty(k, v[k]); });
+    document.querySelectorAll('.muestra').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-color').toUpperCase() === col.base));
+    });
+    window.colorEscuela = col;
+  }
+  var colorParam = (params.get('color') || '').replace('#', '');
+  aplicarColor(/^[0-9a-fA-F]{6}$/.test(colorParam) ? '#' + colorParam : '#0B5CAD');
+  document.querySelector('.probar').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.muestra');
+    if (!b) return;
+    aplicarColor(b.getAttribute('data-color'));
+    params.set('color', b.getAttribute('data-color').replace('#', ''));
+    /* El paso se pinta con los colores ya derivados: se recarga con el color nuevo (los datos siguen en sessionStorage) */
+    location.search = params.toString();
+  });
+
+  /* ---- Datos de ejemplo (en la app salen de la gestión; mismo orden que la portada) ---- */
+  var SEDES = [
+    { id: 'herrera', nombre: 'Herrera', lugar: 'Pabellón municipal', dir: 'Avda. de la Constitución, s/n', tel: '600 000 001', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [1, 3], h: ['17:00', '17:45'], p: { t: 'libres', n: 4 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['18:00', '19:00'], p: { t: 'completo' } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['19:30', '21:00'], p: { t: 'espera' } } ] },
+    { id: 'estepa', nombre: 'Estepa', lugar: 'Pabellón cubierto municipal', dir: 'C/ del Deporte, 2', tel: '600 000 002', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [5], h: ['17:00', '18:00'], p: { t: 'libres', n: 2 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['17:30', '18:30'], p: { t: 'libres', n: 6 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [1, 3], h: ['19:00', '20:30'], p: { t: 'completo' } } ] },
+    { id: 'casariche', nombre: 'Casariche', lugar: 'Gimnasio del colegio público', dir: 'C/ Escuelas, 5', tel: '600 000 003', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [2, 4], h: ['16:15', '17:00'], p: { t: 'libres', n: 5 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [2, 4], h: ['17:00', '18:00'], p: { t: 'libres', n: 3 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['18:15', '19:45'], p: { t: 'espera' } } ] },
+    { id: 'lora', nombre: 'Lora de Estepa', lugar: 'Salón de usos múltiples', dir: 'Plaza de España, 1', tel: '600 000 004', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [5], h: ['16:00', '17:00'], p: { t: 'completo' } },
+      { n: 'Infantil', e: '7 a 11 años', d: [5], h: ['17:00', '18:30'], p: { t: 'libres', n: 5 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [5], h: ['18:30', '20:00'], p: { t: 'libres', n: 1 } } ] },
+    { id: 'roda', nombre: 'Roda de Andalucía', lugar: 'Pabellón municipal', dir: 'Avda. de Andalucía, 40', tel: '600 000 005', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [1, 3], h: ['17:00', '17:45'], p: { t: 'completo' } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['18:00', '19:00'], p: { t: 'libres', n: 2 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['19:00', '20:30'], p: { t: 'libres', n: 7 } } ] },
+    { id: 'mollina', nombre: 'Mollina', lugar: 'Gimnasio del colegio', dir: 'C/ Granada, 12', tel: '600 000 006', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [2, 4], h: ['16:30', '17:15'], p: { t: 'libres', n: 6 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [2, 4], h: ['17:30', '18:30'], p: { t: 'espera' } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['18:30', '20:00'], p: { t: 'libres', n: 4 } } ] }
+  ];
+  var PROFES = [
+    { nombre: 'Antonio Ruiz Carmona', sedes: ['herrera', 'estepa'] },
+    { nombre: 'Lucía Fernández Gómez', sedes: ['casariche', 'lora'] },
+    { nombre: 'Manuel Ortega Pozo', sedes: ['roda', 'mollina'] }
+  ];
+  function idGrupo(g) { return g.n === 'Peques' ? 'peques' : g.n === 'Infantil' ? 'infantil' : 'jovenes'; }
+  SEDES.forEach(function (s) {
+    s.grupos.forEach(function (g) { g.id = idGrupo(g); g.min = parseInt(g.e.match(/\d+/)[0], 10); g.max = /Desde/.test(g.e) ? 99 : parseInt(g.e.match(/a (\d+)/)[1], 10); });
+    s.profes = PROFES.filter(function (p) { return p.sedes.indexOf(s.id) !== -1; });
+  });
+
+  var nSedes = parseInt(params.get('sedes'), 10);
+  var sedes = SEDES;
+  if (nSedes === 1) sedes = SEDES.filter(function (s) { return s.id === 'estepa'; });
+  else if (nSedes > 1 && nSedes < SEDES.length) sedes = SEDES.slice(0, nSedes);
+  var una = sedes.length === 1;
+  if (una) document.querySelectorAll('[data-solo-varias]').forEach(function (el) { el.remove(); });
+  function buscarSede(id) { for (var i = 0; i < sedes.length; i++) if (sedes[i].id === id) return sedes[i]; return null; }
+  function buscarGrupo(sede, id) { if (!sede) return null; for (var i = 0; i < sede.grupos.length; i++) if (sede.grupos[i].id === id) return sede.grupos[i]; return null; }
+
+  /* ---- Tiempo (?ahora=ISO simula el momento) ---- */
+  var ahoraParam = params.get('ahora');
+  var ahora = ahoraParam && !isNaN(new Date(ahoraParam)) ? new Date(ahoraParam) : new Date();
+  var DIA_LETRAS = [[1, 'L'], [2, 'M'], [3, 'X'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];
+  var DIA_LARGO = { 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado', 0: 'domingo' };
+  var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function mayus(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  function minutos(hhmm) { var p = hhmm.split(':'); return +p[0] * 60 + +p[1]; }
+  function ordenHora(gs) { return gs.slice().sort(function (a, b) { return minutos(a.h[0]) - minutos(b.h[0]); }); }
+  function diasTexto(d) { return d.map(function (x) { return DIA_LARGO[x]; }).join(' y '); }
+  function proximaClase(sede) {
+    var hoyDia = ahora.getDay(), ahoraMin = ahora.getHours() * 60 + ahora.getMinutes();
+    for (var k = 0; k < 8; k++) {
+      var dia = (hoyDia + k) % 7, mejor = null;
+      sede.grupos.forEach(function (g) {
+        if (g.d.indexOf(dia) === -1) return;
+        var m = minutos(g.h[0]);
+        if (k === 0 && m <= ahoraMin) return;
+        if (!mejor || m < minutos(mejor.h[0])) mejor = g;
+      });
+      if (mejor) return { hoy: k === 0, cuando: k === 1 ? 'Mañana' : mayus(DIA_LARGO[dia]), hora: mejor.h[0], grupo: mejor };
+    }
+    return null;
+  }
+
+  /* ---- Piezas compartidas con la portada ---- */
+  var FLECHA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  /* Plazas: cada estado con su forma, no solo su color (decisión 470): punto, cuadro tachado, reloj de arena */
+  var ICONO = {
+    libres: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="6.5" fill="#F2C230" stroke="#12161C" stroke-width="1.75"/></svg>',
+    completo: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="2.5" y="2.5" width="13" height="13" fill="none" stroke="#12161C" stroke-width="1.75"/><path d="M4 14 14 4M4 4l10 10" stroke="#12161C" stroke-width="1.75"/></svg>',
+    espera: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2.5h10L9 9l5 6.5H4L9 9z" fill="none" stroke="#12161C" stroke-width="1.75" stroke-linejoin="round"/><path d="M6.5 14.2h5L9 11z" fill="#12161C"/></svg>'
+  };
+  function hayPlaza(g) { return g.p.t === 'libres'; }
+  function textoPlazas(p) {
+    return p.t === 'libres' ? (p.n === 1 ? 'Queda 1 plaza' : 'Quedan ' + p.n + ' plazas') : p.t === 'completo' ? 'Lleno' : 'Lista de espera';
+  }
+  function plazasHtml(p) {
+    return '<p class="plazas plazas--' + p.t + '">' + ICONO[p.t] + '<span class="cifras">' + textoPlazas(p) + '</span></p>';
+  }
+  function diasHtml(d) {
+    return '<p><span class="dias" aria-hidden="true">' + DIA_LETRAS.map(function (x) {
+      return '<span class="dia' + (d.indexOf(x[0]) !== -1 ? ' dia--si' : '') + '">' + x[1] + '</span>';
+    }).join('') + '</span><span class="oculto">' + mayus(diasTexto(d)) + '</span></p>';
+  }
+
+  /* ---- Enlaces entre las páginas del boceto: conservan color, número de sedes y hora simulada ---- */
+  var PAG_PORTADA = 'boceto-estandar.html', PAG_PRE = 'boceto-estandar-preinscripcion.html';
+  function enlace(pagina, extra) {
+    var q = new URLSearchParams(), partes = pagina.split('#');
+    ['color', 'sedes', 'ahora'].forEach(function (k) { if (params.get(k)) q.set(k, params.get(k)); });
+    Object.keys(extra || {}).forEach(function (k) { if (extra[k] !== null && extra[k] !== undefined) q.set(k, extra[k]); });
+    var t = q.toString();
+    return partes[0] + (t ? '?' + t : '') + (partes[1] ? '#' + partes[1] : '');
+  }
+  document.querySelectorAll('[data-enlace]').forEach(function (a) { a.href = enlace(a.getAttribute('href')); });
+
+  var CLAVE = 'estandar:sede';
+  function leerSede() { try { return localStorage.getItem(CLAVE); } catch (e) { return null; } }
+  function guardarSede(id) { try { localStorage.setItem(CLAVE, id); } catch (e) { /* sin almacenamiento */ } }
+
+  /* ---- Menú móvil ---- */
+  (function () {
+    var menu = document.querySelector('.menu-boton'), nav = document.getElementById('nav-principal');
+    var menuTexto = menu.querySelector('.menu-texto');
+    function ponerMenu(abrir) {
+      menu.setAttribute('aria-expanded', String(abrir));
+      menuTexto.textContent = abrir ? 'Cerrar' : 'Menú';
+      nav.classList.toggle('abierta', abrir);
+      document.body.classList.toggle('menu-abierto', abrir);
+    }
+    menu.addEventListener('click', function () { ponerMenu(menu.getAttribute('aria-expanded') !== 'true'); });
+    nav.addEventListener('click', function (ev) { if (ev.target.closest('a')) ponerMenu(false); });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') { ponerMenu(false); menu.focus(); }
+    });
+  })();
+
+  /* ---- Estado: todo va en la dirección (?paso=&sede=&grupo=&dias=) y los datos en sessionStorage ----
+     Solo del boceto: ?nac=AAAA-MM-DD rellena la fecha de nacimiento; ?quitar=peques|infantil|jovenes simula
+     que la sede no tiene ese grupo (para ver el estado vacío); ?errores=1 (paso 3) y ?errores=2 (paso 2) muestran errores. */
+  var sede = una ? sedes[0] : buscarSede(params.get('sede'));
+  if (sede && params.get('quitar')) {
+    var quitar = params.get('quitar');
+    sede = Object.assign({}, sede, { grupos: sede.grupos.filter(function (g) { return g.id !== quitar; }) });
+  }
+  var grupo = buscarGrupo(sede, params.get('grupo'));
+  var paso = parseInt(params.get('paso'), 10);
+  var errores = params.get('errores');
+  var conErrores = errores === '1';
+
+  var CLAVE_DATOS = 'estandar:preinscripcion';
+  function leerDatos() { try { return JSON.parse(sessionStorage.getItem(CLAVE_DATOS)) || {}; } catch (e) { return {}; } }
+  function guardarDatos(d) { try { sessionStorage.setItem(CLAVE_DATOS, JSON.stringify(d)); } catch (e) { /* sin almacenamiento */ } }
+  var datos = leerDatos();
+  var nac = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(params.get('nac') || '');
+  if (nac) { datos.anio = nac[1]; datos.mes = String(+nac[2]); datos.dia = String(+nac[3]); }
+  if (conErrores) datos = {
+    nombre: '', apellidos: 'García Ruiz', dia: '14', mes: '3', anio: '2017', dni: '', direccion: 'C/ Ejemplo, 1, Estepa',
+    discapacidad: '', tutorNombre: 'Ana Ruiz Pérez', tutorDni: '1234', telefono: '61234', telefono2: '', email: 'ana@ejemplo.es',
+    observaciones: '', normas: false, fotos: false, firmante: 'Ana Ruiz Pérez', declaro: false
+  };
+  if (errores === '2') { datos.dia = '31'; datos.mes = '2'; datos.anio = '2017'; }
+
+  /* Fecha de nacimiento: se pide al principio del paso 2 y el paso 3 la trae rellena */
+  var TEMPORADA = 2026; /* temporada 2026-2027: la edad que cuenta es la que cumple este año */
+  function diasDelMes(mm, aa) { return new Date(aa, mm, 0).getDate(); }
+  function errorFecha(d) {
+    var dia = String(d.dia || '').trim(), mes = String(d.mes || '').trim(), anio = String(d.anio || '').trim();
+    if (!dia && !mes && !anio) return { id: 'dia', msg: 'Escribe la fecha de nacimiento del alumno.' };
+    if (!dia) return { id: 'dia', msg: 'Falta el día de la fecha de nacimiento.' };
+    if (!mes) return { id: 'mes', msg: 'Falta el mes de la fecha de nacimiento.' };
+    if (!anio) return { id: 'anio', msg: 'Falta el año de la fecha de nacimiento.' };
+    if (!/^\d+$/.test(dia + mes + anio)) return { id: 'dia', msg: 'Escribe la fecha solo con números, por ejemplo 14 3 2016.' };
+    if (anio.length !== 4) return { id: 'anio', msg: 'Escribe el año con cuatro cifras, por ejemplo 2016.' };
+    if (+mes < 1 || +mes > 12) return { id: 'mes', msg: 'El mes tiene que ir del 1 al 12.' };
+    var tope = diasDelMes(+mes, +anio);
+    if (+dia < 1 || +dia > tope) return { id: 'dia', msg: 'Esa fecha no existe: ' + MESES[+mes - 1] + ' de ' + anio + ' tiene ' + tope + ' días.' };
+    var f = new Date(+anio, +mes - 1, +dia);
+    if (f >= ahora) return { id: 'dia', msg: 'La fecha de nacimiento tiene que ser anterior a hoy.' };
+    if (+anio < 1900) return { id: 'anio', msg: 'Revisa el año: ' + anio + ' no parece un año de nacimiento.' };
+    return null;
+  }
+  function fechaValida(d) { return errorFecha(d) ? null : new Date(+d.anio, +d.mes - 1, +d.dia); }
+  function edadTemporada(d) { var f = fechaValida(d); return f ? TEMPORADA - f.getFullYear() : null; }
+  function encaja(g, edad) { return edad !== null && edad >= g.min && edad <= g.max; }
+
+  if (!(paso >= 1 && paso <= 4)) paso = sede && !una ? 2 : 1;
+  if (una && paso === 1) paso = 2;
+  if (paso >= 2 && !sede) paso = 1;
+  if (paso >= 3 && !grupo) paso = 2;
+  if (paso === 3 && !fechaValida(datos)) paso = 2;
+  if (sede) guardarSede(sede.id);
+
+  /* Días elegidos dentro del grupo (?dias=1,3); sin parámetro, todos los del grupo */
+  function leerDias(g, texto) {
+    if (!g) return [];
+    var lista = String(texto || '').split(',').map(Number).filter(function (x) { return g.d.indexOf(x) !== -1; });
+    return lista.length ? g.d.filter(function (x) { return lista.indexOf(x) !== -1; }) : g.d.slice();
+  }
+  var dias = leerDias(grupo, params.get('dias'));
+  var espera = grupo ? !hayPlaza(grupo) : false;
+
+  function url(p, extra) {
+    var e = { paso: p, sede: sede && !una ? sede.id : null, grupo: grupo ? grupo.id : null,
+      dias: grupo && dias.length && dias.length < grupo.d.length ? dias.join(',') : null };
+    if (params.get('quitar')) e.quitar = params.get('quitar');
+    Object.keys(extra || {}).forEach(function (k) { e[k] = extra[k]; });
+    if (una) e.sede = null;
+    return enlace(PAG_PRE, e);
+  }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var ICONO_ERROR = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="currentColor"/><path d="M9 4.8v5.2" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="13" r="1.2" fill="#FFFFFF"/></svg>';
+  var ICONO_ELEGIDO = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.8 8.4 6.6 11.2 12.2 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICONO_HECHO = '<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.8 8.4 6.6 11.2 12.2 5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICONO_ARENA = '<svg width="24" height="24" viewBox="0 0 18 18" aria-hidden="true"><path d="M4 2.5h10L9 9l5 6.5H4L9 9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6.5 14.2h5L9 11z" fill="currentColor"/></svg>';
+  var ICONO_ABRIR = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function grupoTexto(g) { return g.n + ', ' + g.e.toLowerCase(); }
+  function horarioTexto(g, ds) { return mayus(diasTexto(ds || g.d)) + ', ' + g.h[0] + '–' + g.h[1]; }
+  /* Si se queda con parte de los días, se dice cuáles faltan, para que no haya dudas */
+  function restoTexto(g, ds) {
+    var resto = g.d.filter(function (x) { return ds.indexOf(x) === -1; });
+    return resto.length ? (ds.length === 1 ? 'Solo ese día' : 'Solo esos días') + '; el grupo también entrena el ' + diasTexto(resto) + '.' : '';
+  }
+  function campoFecha() {
+    return '<div id="fecha-error"></div>' +
+      '<div class="fecha">' +
+        '<div><label for="dia">Día</label><input class="control fecha-dia" id="dia" name="dia" inputmode="numeric" maxlength="2" autocomplete="bday-day" value="' + esc(datos.dia || '') + '"></div>' +
+        '<div><label for="mes">Mes</label><input class="control fecha-mes" id="mes" name="mes" inputmode="numeric" maxlength="2" autocomplete="bday-month" value="' + esc(datos.mes || '') + '"></div>' +
+        '<div><label for="anio">Año</label><input class="control fecha-anio" id="anio" name="anio" inputmode="numeric" maxlength="4" autocomplete="bday-year" value="' + esc(datos.anio || '') + '"></div>' +
+      '</div>';
+  }
+
+  /* ---- Atrás y progreso ---- */
+  var atras = document.getElementById('atras');
+  if (paso === 4) atras.hidden = true;
+  else if (paso === 1 || (una && paso === 2)) atras.href = enlace(PAG_PORTADA + '#horarios');
+  else atras.href = url(paso - 1, paso - 1 === 2 ? { grupo: grupo ? grupo.id : null } : {});
+  var PASOS = una ? [[2, 'Grupo'], [3, 'Datos']] : [[1, 'Pueblo'], [2, 'Grupo'], [3, 'Datos']];
+  var indice = PASOS.map(function (x) { return x[0]; }).indexOf(paso);
+  if (paso < 4) {
+    document.getElementById('progreso').innerHTML =
+      '<p class="progreso-texto">Paso ' + (indice + 1) + ' de ' + PASOS.length + '<span class="oculto">: ' + PASOS[indice][1] + '</span></p>' +
+      '<ol class="progreso-pasos" style="--n:' + PASOS.length + '" aria-hidden="true">' +
+      PASOS.map(function (x, i) {
+        var clase = i < indice ? ' progreso-paso--hecho' : i === indice ? ' progreso-paso--ahora' : '';
+        return '<li class="progreso-paso' + clase + '"><span>' + (i < indice ? ICONO_HECHO : '') + x[1] + '</span></li>';
+      }).join('') + '</ol>';
+  } else document.getElementById('progreso').hidden = true;
+
+  /* ---- Resumen lateral ---- */
+  function filaResumen(dt, dd, cambiar) {
+    return '<div class="resumen-fila"><dt>' + dt + '</dt>' + (dd ? '<dd>' + dd + '</dd>' : '<dd class="resumen-vacio">Sin elegir</dd>') +
+      (cambiar ? '<dd class="resumen-cambiar"><a href="' + cambiar[0] + '">Cambiar<span class="oculto"> ' + cambiar[1] + '</span></a></dd>' : '') + '</div>';
+  }
+  function diasResumen() {
+    if (!grupo) return '';
+    var resto = restoTexto(grupo, dias);
+    return horarioTexto(grupo, dias) + (resto ? '<br><span class="opcional">' + resto + '</span>' : '');
+  }
+  function pintarResumen() {
+    var edad = edadTemporada(datos);
+    document.getElementById('resumen').innerHTML = '<h2 id="resumen-titulo">Tu preinscripción</h2><dl>' +
+      filaResumen('Pueblo', sede ? sede.nombre + '<br><span class="opcional">' + sede.lugar + '</span>' : '', sede && !una && paso > 1 ? [url(1), 'el pueblo'] : null) +
+      (paso >= 2 ? filaResumen('Edad', edad !== null ? 'Cumple ' + edad + ' años este año' : '') : '') +
+      filaResumen('Grupo', grupo ? grupoTexto(grupo) : '', grupo && paso > 2 ? [url(2), 'el grupo'] : null) +
+      filaResumen('Días y hora', diasResumen(), grupo && paso > 2 ? [url(2), 'los días'] : null) +
+      (grupo ? filaResumen('Plaza', espera ? 'Lista de espera: no hay plaza ahora' : textoPlazas(grupo.p)) : '') +
+      '</dl><p class="resumen-tarifa"><strong>25 € al mes</strong>, ' + (una ? 'para todos los grupos.' : 'igual en todas las sedes.') + '</p>';
+  }
+  if (paso < 4) pintarResumen();
+  else document.getElementById('resumen').hidden = true;
+
+  var cont = document.getElementById('paso');
+
+  /* ================= Paso 1: pueblo ================= */
+  function paso1() {
+    var elegida = sede ? sede.id : leerSede();
+    cont.innerHTML = '<form class="tarjeta paso-caja" id="form" novalidate>' +
+      '<div id="errores"></div>' +
+      '<fieldset class="pregunta" id="campo-sede" aria-describedby="sede-pista">' +
+        '<legend><h1 class="pregunta-titulo" tabindex="-1">¿En qué pueblo?</h1></legend>' +
+        '<p class="pista" id="sede-pista">Elige la sede donde quieres entrenar. Después verás sus grupos y horas.</p>' +
+        '<div id="sede-error"></div>' +
+        '<ul class="selector">' + sedes.map(function (s) {
+          var p = proximaClase(s);
+          return '<li class="sel"><input type="radio" name="sede" id="s-' + s.id + '" value="' + s.id + '"' + (s.id === elegida ? ' checked' : '') + '>' +
+            '<label for="s-' + s.id + '"><span class="sel-circulo" aria-hidden="true"></span>' +
+            '<span class="sel-nombre">' + s.nombre + '<span class="sel-elegida" aria-hidden="true">Elegida</span></span>' +
+            '<span class="sel-dato">' + s.lugar + ' · ' + s.grupos.length + ' grupos' + (p ? ' · próxima clase ' + (p.hoy ? 'hoy' : p.cuando.toLowerCase()) + ' a las <span class="hora">' + p.hora + '</span>' : '') + '</span></label></li>';
+        }).join('') + '</ul>' +
+      '</fieldset>' +
+      '<div class="continuar"><button class="boton" type="submit">Continuar' + FLECHA + '</button></div></form>';
+    document.getElementById('form').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var marcada = cont.querySelector('input[name="sede"]:checked');
+      if (!marcada) return mostrarErrores([{ id: 's-' + sedes[0].id, campo: 'sede', msg: 'Elige el pueblo donde quieres entrenar.' }]);
+      guardarSede(marcada.value);
+      location.href = enlace(PAG_PRE, { paso: 2, sede: marcada.value });
+    });
+  }
+
+  /* ================= Paso 2: grupo ================= */
+  function paso2() {
+    var hoyDia = ahora.getDay();
+    cont.innerHTML = '<form class="tarjeta paso-caja" id="form" novalidate>' +
+      '<div id="errores"></div>' +
+      '<h1 class="pregunta-titulo" tabindex="-1">¿Qué grupo?</h1>' +
+      '<p class="contexto"><span>En <strong>' + sede.nombre + '</strong> · ' + sede.lugar + '</span>' +
+        (una ? '' : '<a href="' + url(1) + '">Cambiar de pueblo</a>') + '</p>' +
+      '<fieldset class="nacimiento" id="campo-fecha" aria-describedby="fecha-pista fecha-error"><legend>Fecha de nacimiento del alumno</legend>' +
+        '<p class="campo-pista" id="fecha-pista">Los grupos van por edad: cuenta los años que cumple este año. Por ejemplo, 14 3 2016.</p>' +
+        '<div class="nacimiento-fila"><div>' + campoFecha() + '</div>' +
+        '<button class="boton boton--contorno" type="button" id="ver-grupos">Ver sus grupos</button></div>' +
+      '</fieldset>' +
+      '<p class="edad-estado" id="edad-estado" role="status"></p>' +
+      '<div id="campo-grupos"><div id="grupos-error"></div><div id="grupos"></div></div>' +
+      '<div class="continuar" id="continuar"><button class="boton" type="submit">Continuar' + FLECHA + '</button></div>' +
+      '</form>';
+
+    var form = document.getElementById('form'), lista = document.getElementById('grupos');
+    var estado = document.getElementById('edad-estado'), continuar = document.getElementById('continuar');
+    var mostrada = null; /* edad con la que está pintada la lista */
+
+    function filaGrupo(g) {
+      var elegido = grupo && grupo.id === g.id, libre = hayPlaza(g);
+      var quien = g.n + ', ' + g.e.toLowerCase();
+      var texto = libre ? 'Elegir este grupo' : 'Apuntarme a la lista de espera';
+      var bloqueDias = '';
+      if (elegido && g.d.length > 1) {
+        bloqueDias = '<fieldset class="salida-dias grupo-dias" id="campo-dias" tabindex="-1" aria-describedby="dias-pista dias-error">' +
+          '<legend>' + (libre ? '¿Qué días vendrá?' : '¿Para qué días te apuntas a la lista?') + '</legend>' +
+          '<p class="campo-pista" id="dias-pista">Vienen marcados todos los días del grupo. Desmarca los que no pueda venir; tiene que quedar al menos uno.</p>' +
+          '<div id="dias-error" aria-live="assertive"></div>' +
+          '<div class="casillas-dia">' + g.d.map(function (x, i) {
+            return '<label class="casilla-dia"><input type="checkbox" name="dia-semana" value="' + x + '"' + (i === 0 ? ' id="d-primero"' : '') +
+              (dias.indexOf(x) !== -1 ? ' checked' : '') + '>' + mayus(DIA_LARGO[x]) + (x === hoyDia ? '<span class="casilla-hoy">HOY</span>' : '') + '</label>';
+          }).join('') + '</div></fieldset>';
+      } else if (elegido) {
+        bloqueDias = '<p class="dia-unico grupo-dias" id="campo-dias" tabindex="-1">Este grupo entrena un día a la semana: <strong>el ' + DIA_LARGO[g.d[0]] + '</strong>.</p>';
+      }
+      return '<li class="grupo' + (elegido ? ' grupo--elegido' : '') + '">' +
+        '<p class="grupo-hora"><span class="hora">' + g.h[0] + '</span><small class="hora">hasta las ' + g.h[1] + '</small></p>' +
+        '<div class="grupo-datos"><p class="grupo-nombre">' + g.n + (elegido ? '<span class="elegido">' + ICONO_ELEGIDO + 'Elegido</span>' : '') + '</p>' +
+          '<p class="grupo-edades">' + g.e + ' · Taekwondo' + (sede.profes[0] ? ' · ' + sede.profes[0].nombre : '') + '</p></div>' +
+        '<div class="grupo-detalle">' + diasHtml(g.d) + plazasHtml(g.p) + (g.d.indexOf(hoyDia) !== -1 ? '<mark class="hoy">HOY</mark>' : '') + '</div>' +
+        (elegido ? '' : '<div class="grupo-accion"><button class="boton' + (libre ? '' : ' boton--contorno') + '" type="button" id="g-' + g.id + '" data-grupo="' + g.id + '" aria-label="' + texto + ': ' + quien + '">' + texto + (libre ? FLECHA : '') + '</button></div>') +
+        (libre ? '' : '<p class="grupo-nota">Ahora no hay plaza. Si te apuntas, entras en la lista de espera de los días que elijas y te avisamos cuando se libere una.</p>') +
+        bloqueDias + '</li>';
+    }
+
+    function vacio(edad) {
+      var otras = sedes.filter(function (s) { return s.id !== sede.id; }).map(function (s) {
+        var gs = s.grupos.filter(function (g) { return encaja(g, edad); });
+        return gs.length ? { s: s, g: gs[0] } : null;
+      }).filter(Boolean);
+      var minimo = Math.min.apply(null, SEDES.reduce(function (a, s) { return a.concat(s.grupos.map(function (g) { return g.min; })); }, []));
+      return '<div class="vacio"><h2>En ' + sede.nombre + ' no hay grupo para ' + edad + ' años</h2>' +
+        (otras.length
+          ? '<p>Estas sedes sí tienen grupo para su edad. Al elegir una, mantenemos la fecha.</p><ul class="otras">' + otras.map(function (o) {
+              return '<li class="otra"><a href="' + enlace(PAG_PRE, { paso: 2, sede: o.s.id }) + '">' +
+                '<span class="otra-nombre">' + o.s.nombre + '</span>' +
+                '<span class="otra-dato">' + grupoTexto(o.g) + ' · ' + horarioTexto(o.g) + ' · ' + textoPlazas(o.g.p) + '</span>' + FLECHA + '</a></li>';
+            }).join('') + '</ul>'
+          : '<p>' + (edad < minimo ? 'Los grupos del club empiezan a los ' + minimo + ' años; ninguna sede tiene uno para ' + edad + '.' : 'Ninguna sede tiene ahora un grupo para ' + edad + ' años.') + '</p>') +
+        '<p class="vacio-contacto">¿Prefieres ' + sede.nombre + ' o tienes dudas? Llama a la sede al <a href="tel:+34' + sede.tel.replace(/\s/g, '') + '">' + sede.tel + '</a> y te orientamos.</p>' +
+        '<p class="vacio-contacto"><a href="#fecha-pista" id="revisar-fecha">Revisar la fecha de nacimiento</a></p></div>';
+    }
+
+    function pintar(forzar) {
+      var edad = edadTemporada(datos);
+      if (edad === mostrada && !forzar) return;
+      mostrada = edad;
+      if (edad === null) {
+        estado.textContent = '';
+        lista.innerHTML = '<p class="grupos-espera">Escribe su fecha de nacimiento y aquí verás los grupos de ' + sede.nombre + ' para su edad.</p>';
+        continuar.hidden = false;
+        return;
+      }
+      var gs = ordenHora(sede.grupos).filter(function (g) { return encaja(g, edad); });
+      if (grupo && !encaja(grupo, edad)) { grupo = null; dias = []; espera = false; }
+      if (!gs.length) {
+        estado.innerHTML = 'Este año cumple <strong>' + edad + ' años</strong>.';
+        lista.innerHTML = vacio(edad);
+        continuar.hidden = true;
+      } else {
+        estado.innerHTML = 'Este año cumple <strong>' + edad + ' años</strong>: ' + (gs.length === 1 ? 'hay 1 grupo' : 'hay ' + gs.length + ' grupos') + ' de su edad en ' + sede.nombre + '.';
+        lista.innerHTML = '<ol class="salidas" aria-label="Grupos de ' + sede.nombre + ' para ' + edad + ' años">' + gs.map(filaGrupo).join('') + '</ol>';
+        continuar.hidden = false;
+      }
+      pintarResumen();
+    }
+    function actualizarDireccion() {
+      try { history.replaceState(null, '', url(2)); } catch (e) { /* file:// en algunos navegadores */ }
+    }
+
+    lista.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-grupo]');
+      if (b) {
+        grupo = buscarGrupo(sede, b.getAttribute('data-grupo')); dias = grupo.d.slice(); espera = !hayPlaza(grupo);
+        document.getElementById('grupos-error').innerHTML = '';
+        document.getElementById('campo-grupos').classList.remove('campo--error');
+        pintar(true); actualizarDireccion();
+        var foco = document.getElementById('campo-dias');
+        if (foco) foco.focus();
+        return;
+      }
+      if (ev.target.id === 'revisar-fecha') { ev.preventDefault(); document.getElementById('campo-fecha').scrollIntoView({ block: 'start' }); document.getElementById('dia').focus({ preventScroll: true }); }
+    });
+    lista.addEventListener('change', function (ev) {
+      if (ev.target.name !== 'dia-semana') return;
+      dias = Array.prototype.map.call(lista.querySelectorAll('input[name="dia-semana"]:checked'), function (i) { return +i.value; });
+      var hueco = document.getElementById('dias-error'), caja = document.getElementById('campo-dias');
+      if (!dias.length) {
+        hueco.innerHTML = '<p class="campo-error">' + ICONO_ERROR + '<span><span class="oculto">Error: </span>Marca al menos un día. Si no puede venir ninguno, elige otro grupo.</span></p>';
+        caja.classList.add('campo--error');
+      } else { hueco.innerHTML = ''; caja.classList.remove('campo--error'); }
+      pintarResumen(); if (dias.length) actualizarDireccion();
+    });
+
+    /* La lista se filtra al escribir una fecha completa y válida; «Ver sus grupos» la comprueba y avisa si falla */
+    form.addEventListener('input', function (ev) {
+      var t = ev.target;
+      if (t.name !== 'dia' && t.name !== 'mes' && t.name !== 'anio') return;
+      datos[t.name] = t.value; guardarDatos(datos);
+      if (fechaValida(datos) || mostrada !== null) pintar();
+    });
+    function comprobarFecha() {
+      var e = errorFecha(datos);
+      if (e) { mostrarErrores([{ id: e.id, campo: 'fecha', msg: e.msg }]); return false; }
+      var r = document.getElementById('errores');
+      if (r.querySelector('.errores') && document.querySelector('#campo-fecha.campo--error')) {
+        r.innerHTML = ''; document.getElementById('fecha-error').innerHTML = ''; document.getElementById('campo-fecha').classList.remove('campo--error');
+        ['dia', 'mes', 'anio'].forEach(function (k) { document.getElementById(k).removeAttribute('aria-invalid'); });
+      }
+      return true;
+    }
+    document.getElementById('ver-grupos').addEventListener('click', function () {
+      if (!comprobarFecha()) return;
+      pintar(true);
+      estado.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    });
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var e = [], fe = errorFecha(datos);
+      if (fe) e.push({ id: fe.id, campo: 'fecha', msg: fe.msg });
+      else if (!grupo) {
+        var primero = lista.querySelector('[data-grupo]');
+        e.push({ id: primero ? primero.id : 'dia', campo: 'grupos', msg: 'Elige un grupo para seguir.' });
+      } else if (!dias.length) e.push({ id: 'd-primero', campo: 'dias', msg: 'Marca al menos un día. Si no puede venir ninguno, elige otro grupo.' });
+      if (e.length) return mostrarErrores(e);
+      location.href = url(3);
+    });
+
+    pintar(true);
+    if (errores === '2') mostrarErrores([(function (x) { return { id: x.id, campo: 'fecha', msg: x.msg }; })(errorFecha(datos))], true);
+  }
+
+  /* ================= Paso 3: datos (campos reales del formulario público) ================= */
+  var PATRON_DNI = /^[0-9XYZ][0-9]{7}[A-Z]$/i, PATRON_TEL = /^(?:(?:\+|00)34[ ]*)?[6789](?:[ ]*\d){8}$/;
+  function esMenor(d) {
+    var f = fechaValida(d); if (!f) return false;
+    var edad = ahora.getFullYear() - f.getFullYear();
+    if (ahora < new Date(ahora.getFullYear(), f.getMonth(), f.getDate())) edad--;
+    return edad < 18;
+  }
+  function campo(o) {
+    var desc = [o.pista ? o.id + '-pista' : '', o.id + '-error'].join(' ').trim();
+    var control = o.tipo === 'textarea'
+      ? '<textarea class="control" id="' + o.id + '" name="' + o.id + '" rows="4" maxlength="1000" aria-describedby="' + desc + ' ' + o.id + '-contador">' + esc(datos[o.id] || '') + '</textarea>' +
+        '<span class="contador" id="' + o.id + '-contador" aria-live="polite">' + (datos[o.id] || '').length + '/1000</span>'
+      : '<input class="control ' + (o.ancho || '') + '" id="' + o.id + '" name="' + o.id + '" type="' + (o.tipo || 'text') + '"' +
+        (o.auto ? ' autocomplete="' + o.auto + '"' : '') + (o.modo ? ' inputmode="' + o.modo + '"' : '') + (o.max ? ' maxlength="' + o.max + '"' : '') +
+        ' spellcheck="false" value="' + esc(datos[o.id] || '') + '" aria-describedby="' + desc + '">';
+    return '<div class="campo" id="campo-' + o.id + '"><label class="campo-etiqueta" for="' + o.id + '">' + o.etiqueta +
+      (o.opcional ? ' <span class="opcional">(' + o.opcional + ')</span>' : '') + '</label>' +
+      (o.pista ? '<p class="campo-pista" id="' + o.id + '-pista">' + o.pista + '</p>' : '') +
+      '<div id="' + o.id + '-error"></div>' + control + '</div>';
+  }
+  var NORMAS = [
+    'Las clases empiezan y acaban a su hora: llega cinco minutos antes.',
+    'Se entrena con dobok limpio, uñas cortas y sin pendientes, anillos ni relojes.',
+    'La mensualidad se paga en los cinco primeros días de cada mes.',
+    'Si el alumno va a faltar un mes entero, avisa al profesor para guardar la plaza.',
+    'Los menores entran y salen acompañados hasta la puerta de la sala.',
+    'Las bajas se comunican por escrito antes del día 25 del mes anterior.',
+    'El club puede proponer otro grupo si la edad o el nivel del alumno lo aconsejan.'
+  ];
+  function paso3() {
+    var menor = esMenor(datos);
+    var enviarTexto = espera ? 'Enviar y apuntarme a la lista de espera' : 'Enviar preinscripción';
+    cont.innerHTML = '<form class="tarjeta paso-caja" id="form" novalidate>' +
+      '<div id="errores"></div>' +
+      '<h1 class="pregunta-titulo" tabindex="-1">Datos y firma</h1>' +
+      '<p class="eleccion"><strong>' + sede.nombre + '</strong><span>' + grupoTexto(grupo) + ' · ' + horarioTexto(grupo, dias) + '</span><a href="' + url(2) + '">Cambiar<span class="oculto"> el grupo o los días</span></a></p>' +
+      (espera ? '<div class="aviso-espera" role="note">' + ICONO_ARENA + '<p><strong>Este grupo está lleno: te apuntas a la lista de espera.</strong>No es una plaza. Te avisaremos cuando haya una libre en ' + grupo.n + ' para ' + (dias.length === 1 ? 'el ' : 'los días ') + diasTexto(dias) + '.</p></div>' : '') +
+      '<p class="pista">Te pedimos lo mismo que en la hoja de inscripción del club. Todo es obligatorio salvo lo que pone «opcional».</p>' +
+
+      '<section class="bloque-form" aria-labelledby="b-alumno"><h2 id="b-alumno">El alumno o la alumna</h2>' +
+        campo({ id: 'nombre', etiqueta: 'Nombre', auto: 'given-name', ancho: 'ancho-20' }) +
+        campo({ id: 'apellidos', etiqueta: 'Apellidos', auto: 'family-name' }) +
+        '<fieldset class="campo" id="campo-fecha" aria-describedby="fecha-pista fecha-error"><legend>Fecha de nacimiento</legend>' +
+          '<p class="campo-pista" id="fecha-pista">La que escribiste al elegir grupo. Si la corriges, comprobamos que el grupo sigue siendo de su edad.</p>' +
+          '<div style="margin-top:8px">' + campoFecha() + '</div><div id="aviso-edad" role="status"></div></fieldset>' +
+        campo({ id: 'dni', etiqueta: 'DNI o NIE', opcional: menor ? 'opcional para menores' : '', max: 9, ancho: 'ancho-12', pista: 'Ocho números y una letra, sin espacios ni guiones.' }) +
+        campo({ id: 'direccion', etiqueta: 'Dirección', auto: 'street-address' }) +
+        '<fieldset class="campo" id="campo-discapacidad" aria-describedby="discapacidad-error"><legend>¿Tiene discapacidad?</legend><div id="discapacidad-error"></div>' +
+          '<div class="opciones">' +
+            '<label class="opcion"><input type="radio" name="discapacidad" id="discapacidad" value="si"' + (datos.discapacidad === 'si' ? ' checked' : '') + '>Sí</label>' +
+            '<label class="opcion"><input type="radio" name="discapacidad" value="no"' + (datos.discapacidad === 'no' ? ' checked' : '') + '>No</label>' +
+          '</div></fieldset>' +
+      '</section>' +
+
+      '<section class="bloque-form" id="bloque-tutor" aria-labelledby="b-tutor"' + (menor ? '' : ' hidden') + '><h2 id="b-tutor">Responsable legal</h2>' +
+        '<p class="pista">Porque el alumno es menor de edad. Es quien firma la solicitud.</p>' +
+        campo({ id: 'tutorNombre', etiqueta: 'Nombre y apellidos', auto: 'name' }) +
+        campo({ id: 'tutorDni', etiqueta: 'DNI o NIE', max: 9, ancho: 'ancho-12' }) +
+      '</section>' +
+
+      '<section class="bloque-form" aria-labelledby="b-contacto"><h2 id="b-contacto">Contacto</h2>' +
+        '<p class="pista">Para enviarte la solicitud y avisarte' + (espera ? ' cuando haya plaza' : '') + '.</p>' +
+        campo({ id: 'telefono', etiqueta: 'Teléfono', tipo: 'tel', auto: 'tel', modo: 'tel', ancho: 'ancho-20', pista: 'Nueve cifras; puedes añadir el prefijo +34.' }) +
+        campo({ id: 'telefono2', etiqueta: 'Teléfono secundario', opcional: 'opcional', tipo: 'tel', modo: 'tel', ancho: 'ancho-20' }) +
+        campo({ id: 'email', etiqueta: 'Email', tipo: 'email', auto: 'email', pista: 'Te llegará aquí la solicitud firmada en PDF.' }) +
+      '</section>' +
+
+      '<section class="bloque-form" aria-labelledby="b-obs"><h2 id="b-obs">Sobre el horario</h2>' +
+        campo({ id: 'observaciones', etiqueta: 'Observaciones sobre el horario', opcional: 'opcional', tipo: 'textarea',
+          pista: '¿Crees que otro grupo puede encajar mejor por edad, experiencia o recomendación del profesor? Cuéntanoslo y lo revisamos.' }) +
+      '</section>' +
+
+      '<section class="bloque-form" aria-labelledby="b-normas"><h2 id="b-normas">Normas y consentimientos</h2>' +
+        '<div class="campo" id="campo-normas"><p class="campo-pista" id="normas-pista">Son las normas de la actividad en el club. Puedes leerlas aquí antes de aceptarlas.</p>' +
+          '<details class="desplegable" id="normas-texto"><summary>' + ICONO_ABRIR + 'Leer las normas (' + NORMAS.length + ' puntos)</summary>' +
+            '<div class="normas"><p>Mensualidad: 25 € al mes por alumno. Licencia federativa y exámenes de grado, aparte (normas de ejemplo).</p>' +
+            '<ol>' + NORMAS.map(function (n) { return '<li>' + n + '</li>'; }).join('') + '</ol></div></details>' +
+          '<div id="normas-error"></div>' +
+          '<label class="marca-casilla"><input type="checkbox" id="normas" name="normas" aria-describedby="normas-pista normas-error"' + (datos.normas ? ' checked' : '') + '>' +
+            '<span>He leído y acepto las normas de la actividad</span></label></div>' +
+        '<label class="marca-casilla"><input type="checkbox" id="fotos" name="fotos"' + (datos.fotos ? ' checked' : '') + '>' +
+          '<span>Autorizo el uso de imágenes en actividades del club <span class="opcional">(opcional)</span></span></label>' +
+      '</section>' +
+
+      '<section class="bloque-form" aria-labelledby="b-firma"><h2 id="b-firma">Firma</h2>' +
+        '<p class="pista" id="firma-quien"><span id="firma-quien-texto">' + (menor ? 'Firma el responsable legal.' : 'Firma el alumno o la alumna.') + '</span> Basta con escribir tu nombre completo y marcar la casilla.</p>' +
+        campo({ id: 'firmante', etiqueta: 'Nombre y apellidos de quien firma', auto: 'name' }) +
+        '<div class="campo" id="campo-declaro"><div id="declaro-error"></div>' +
+          '<label class="marca-casilla"><input type="checkbox" id="declaro" name="declaro" aria-describedby="firma-quien declaro-error"' + (datos.declaro ? ' checked' : '') + '>' +
+            '<span>Firmo esta preinscripción con mi nombre</span></label>' +
+        '</div>' +
+        '<details class="desplegable firma-mano" id="campo-firma"><summary>' + ICONO_ABRIR + 'Prefiero firmar a mano</summary>' +
+          '<p class="campo-etiqueta" id="firma-etiqueta">Firma a mano <span class="opcional">(opcional)</span></p>' +
+          '<p class="campo-pista" id="firma-pista">Con el dedo, el ratón o un lápiz. Se añade a la solicitud junto a tu nombre. Si firmas aquí, no hace falta marcar la casilla.</p>' +
+          '<canvas class="firma" id="firma" role="img" aria-labelledby="firma-etiqueta" aria-describedby="firma-pista"></canvas>' +
+          '<div class="firma-pie"><span class="opcional" id="firma-estado" aria-live="polite">Sin firmar</span><button class="boton--texto" type="button" id="borrar-firma">Borrar firma</button></div>' +
+        '</details>' +
+      '</section>' +
+
+      '<div class="enviar"><button class="boton" type="submit">' + enviarTexto + FLECHA + '</button></div>' +
+      '</form>';
+
+    var form = document.getElementById('form');
+
+    /* Firma a mano, opcional: el lienzo se prepara al abrir el desplegable (cerrado no tiene tamaño) */
+    var lienzo = document.getElementById('firma'), ctx = lienzo.getContext('2d'), firmado = false, trazando = false;
+    document.getElementById('campo-firma').addEventListener('toggle', function () { if (this.open && !firmado) prepararLienzo(); });
+    function prepararLienzo() {
+      var r = lienzo.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      lienzo.width = Math.round(r.width * dpr); lienzo.height = Math.round(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.lineWidth = 2.25; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = TINTA;
+      firmado = false; document.getElementById('firma-estado').textContent = 'Sin firmar';
+    }
+    prepararLienzo();
+    function punto(e) { var r = lienzo.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+    lienzo.addEventListener('pointerdown', function (e) { trazando = true; lienzo.setPointerCapture(e.pointerId); var p = punto(e); ctx.beginPath(); ctx.moveTo(p[0], p[1]); });
+    lienzo.addEventListener('pointermove', function (e) { if (!trazando) return; var p = punto(e); ctx.lineTo(p[0], p[1]); ctx.stroke(); firmado = true; });
+    function fin() { if (trazando && firmado) document.getElementById('firma-estado').textContent = 'Firmado'; trazando = false; }
+    lienzo.addEventListener('pointerup', fin); lienzo.addEventListener('pointercancel', fin);
+    document.getElementById('borrar-firma').addEventListener('click', prepararLienzo);
+
+    /* Guardar lo escrito y mostrar el bloque del responsable legal según la fecha */
+    form.addEventListener('input', function (ev) {
+      var t = ev.target;
+      if (!t.name) return;
+      datos[t.name] = t.type === 'checkbox' ? t.checked : t.value;
+      guardarDatos(datos);
+      if (t.name === 'observaciones') document.getElementById('observaciones-contador').textContent = t.value.length + '/1000';
+      if (t.name === 'dia' || t.name === 'mes' || t.name === 'anio') {
+        var m = esMenor(datos);
+        document.getElementById('bloque-tutor').hidden = !m;
+        var et = document.querySelector('label[for="dni"]');
+        et.innerHTML = 'DNI o NIE' + (m ? ' <span class="opcional">(opcional para menores)</span>' : '');
+        document.getElementById('firma-quien-texto').textContent = m ? 'Firma el responsable legal.' : 'Firma el alumno o la alumna.';
+        avisarEdad();
+      }
+    });
+    /* Si la fecha corregida deja de encajar con el grupo, se avisa aquí y se lleva al paso 2 (no es un error al enviar) */
+    function avisarEdad() {
+      var edad = edadTemporada(datos), hueco = document.getElementById('aviso-edad');
+      hueco.innerHTML = edad !== null && !encaja(grupo, edad)
+        ? '<div class="aviso-edad">' + ICONO_ERROR + '<p>Con esta fecha cumple ' + edad + ' años este año y ' + grupo.n + ' es de ' + grupo.e.toLowerCase() + '. ' +
+          '<a href="' + url(2, { grupo: null, dias: null }) + '">Elegir un grupo de su edad</a></p></div>'
+        : '';
+    }
+    form.addEventListener('change', function (ev) { if (ev.target.type === 'radio' || ev.target.type === 'checkbox') { datos[ev.target.name] = ev.target.type === 'checkbox' ? ev.target.checked : ev.target.value; guardarDatos(datos); } });
+
+    function validar() {
+      var e = [], m = esMenor(datos), v = function (k) { return String(datos[k] || '').trim(); };
+      if (!v('nombre')) e.push({ id: 'nombre', msg: 'Escribe el nombre del alumno.' });
+      if (!v('apellidos')) e.push({ id: 'apellidos', msg: 'Escribe los apellidos del alumno.' });
+      var fe = errorFecha(datos);
+      if (fe) e.push({ id: fe.id, campo: 'fecha', msg: fe.msg });
+      if (v('dni') ? !PATRON_DNI.test(v('dni')) : !m) e.push({ id: 'dni', msg: m ? 'Si lo indicas, debe tener un formato válido.' : 'El DNI/NIE es obligatorio y debe tener un formato válido.' });
+      if (!v('direccion')) e.push({ id: 'direccion', msg: 'Escribe la dirección.' });
+      if (!datos.discapacidad) e.push({ id: 'discapacidad', msg: 'Indica si el alumno tiene discapacidad.' });
+      if (m && !v('tutorNombre')) e.push({ id: 'tutorNombre', msg: 'Escribe el nombre y apellidos del responsable legal.' });
+      if (m && !PATRON_DNI.test(v('tutorDni'))) e.push({ id: 'tutorDni', msg: 'Introduce un DNI/NIE válido del responsable legal.' });
+      if (!PATRON_TEL.test(v('telefono'))) e.push({ id: 'telefono', msg: 'Introduce un teléfono de nueve dígitos; puedes añadir el prefijo +34.' });
+      if (v('telefono2') && !PATRON_TEL.test(v('telefono2'))) e.push({ id: 'telefono2', msg: 'Introduce un teléfono secundario de nueve dígitos, o déjalo vacío.' });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v('email'))) e.push({ id: 'email', msg: 'Escribe un email válido, como nombre@ejemplo.es.' });
+      if (v('observaciones').length > 1000) e.push({ id: 'observaciones', msg: 'La observación no puede superar los 1.000 caracteres.' });
+      if (!datos.normas) e.push({ id: 'normas', msg: 'Marca que aceptas las normas de la actividad.' });
+      if (!v('firmante')) e.push({ id: 'firmante', msg: 'Escribe el nombre y apellidos de quien firma.' });
+      if (!datos.declaro && !firmado) e.push({ id: 'declaro', msg: 'Marca «Firmo esta preinscripción con mi nombre» para firmar, o firma a mano.' });
+      return e;
+    }
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var e = validar();
+      if (e.length) return mostrarErrores(e);
+      var aviso = document.querySelector('#aviso-edad .aviso-edad');
+      if (aviso) { document.getElementById('campo-fecha').scrollIntoView({ block: 'start' }); aviso.querySelector('a').focus({ preventScroll: true }); return; }
+      location.href = url(4);
+    });
+    avisarEdad();
+    if (conErrores) mostrarErrores(validar(), true);
+  }
+
+  function mostrarErrores(lista, sinFoco) {
+    cont.querySelectorAll('.campo--error').forEach(function (c) { c.classList.remove('campo--error'); });
+    cont.querySelectorAll('[aria-invalid]').forEach(function (c) { c.removeAttribute('aria-invalid'); });
+    cont.querySelectorAll('[id$="-error"]').forEach(function (c) { c.innerHTML = ''; });
+    lista.forEach(function (x) {
+      var clave = x.campo || x.id;
+      var hueco = document.getElementById(clave + '-error');
+      if (hueco) hueco.innerHTML = '<p class="campo-error">' + ICONO_ERROR + '<span><span class="oculto">Error: </span>' + x.msg + '</span></p>';
+      var caja = document.getElementById('campo-' + clave);
+      if (caja) caja.classList.add('campo--error');
+      var control = document.getElementById(x.id);
+      if (control) control.setAttribute('aria-invalid', 'true');
+    });
+    var n = lista.length;
+    var resumen = document.getElementById('errores');
+    resumen.innerHTML = '<div class="errores" role="alert" tabindex="-1" aria-labelledby="errores-titulo"><h2 id="errores-titulo">' + ICONO_ERROR.replace('18', '24').replace('18', '24') +
+      (n === 1 ? 'Revisa este dato' : 'Revisa estos ' + n + ' datos') + '</h2><ul>' +
+      lista.map(function (x) { return '<li><a href="#' + x.id + '">' + x.msg + '</a></li>'; }).join('') + '</ul></div>';
+    resumen.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function (ev) {
+        var destino = document.getElementById(a.getAttribute('href').slice(1));
+        if (!destino) return;
+        ev.preventDefault();
+        var caja = destino.closest('.campo, fieldset') || destino;
+        caja.scrollIntoView({ block: 'start' });
+        destino.focus({ preventScroll: true });
+      });
+    });
+    if (!sinFoco) { var r = resumen.querySelector('.errores'); r.scrollIntoView({ block: 'start' }); r.focus({ preventScroll: true }); }
+    document.title = 'Error: ' + document.title.replace(/^Error: /, '');
+  }
+
+  /* ================= Paso 4: confirmación ================= */
+  function paso4() {
+    document.querySelector('.flujo').classList.add('flujo--fin');
+    var d = datos.nombre ? datos : { nombre: 'Lucía', apellidos: 'García Ruiz', tutorNombre: 'Ana Ruiz Pérez', telefono: '600 000 000', email: 'ana@ejemplo.es', dia: '14', mes: '3', anio: '2017' };
+    var ref = 'TSS-2026-0142';
+    var titulo = espera ? 'Estás en la lista de espera' : 'Preinscripción enviada';
+    var estado = espera
+      ? 'Todavía no tienes plaza. Estás en la posición 3 de la lista de espera de ' + grupo.n + ' en ' + sede.nombre + ', para ' + (dias.length === 1 ? 'el ' : 'los días ') + diasTexto(dias) + ' (de ejemplo).'
+      : 'Tu preinscripción ya cuenta en las plazas de ' + grupo.n + ' en ' + sede.nombre + '.';
+    var pasos = espera ? [
+      ['Te llega un correo', 'Con la solicitud firmada en PDF y tu posición en la lista. Mira también en correo no deseado.'],
+      ['Esperas turno', 'No hace falta que hagas nada. Si cambias de idea, llama a la sede y te quitamos de la lista.'],
+      ['Te avisamos si hay plaza', 'Cuando se libere una en ' + grupo.n + ' para esos días, te avisamos por correo. Hasta entonces no tienes plaza.']
+    ] : [
+      ['Te llega un correo', 'Con la solicitud firmada en PDF y las instrucciones del club. Mira también en correo no deseado.'],
+      ['El club la revisa', 'Si falta algo, te llaman al ' + esc(d.telefono || 'teléfono que has dejado') + '.'],
+      ['Al primer entrenamiento', horarioTexto(grupo, dias) + ', en ' + sede.lugar + '. Ropa cómoda y agua; el dobok se pide en el club.']
+    ];
+    var icono = espera
+      ? '<span class="fin-icono fin-icono--espera" aria-hidden="true">' + ICONO_ARENA + '</span>'
+      : '<span class="fin-icono" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 16 16"><path d="M3.8 8.4 6.6 11.2 12.2 5" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+    cont.innerHTML = '<div class="fin">' +
+      '<section class="tarjeta fin-cabeza paso-caja" aria-labelledby="fin-titulo">' + icono +
+        '<h1 class="pregunta-titulo" id="fin-titulo" tabindex="-1">' + titulo + '</h1>' +
+        '<p class="fin-ref">Referencia <strong>' + ref + '</strong></p>' +
+        '<p class="fin-estado">' + estado + '</p>' +
+      '</section>' +
+      '<div class="fin-rejilla">' +
+        '<section class="tarjeta fin-bloque" aria-labelledby="fin-ahora"><h2 id="fin-ahora">Qué pasa ahora</h2><ol class="siguientes">' +
+          pasos.map(function (p) { return '<li><b>' + p[0] + '</b><span>' + p[1] + '</span></li>'; }).join('') +
+        '</ol>' +
+        '<div class="fin-acciones"><a class="boton boton--contorno" href="#solicitud-ejemplo">Descargar solicitud firmada</a>' +
+          '<a class="enlace-flecha" href="' + enlace(PAG_PORTADA) + '">Volver al inicio' + FLECHA + '</a></div></section>' +
+        '<section class="tarjeta fin-bloque" aria-labelledby="fin-res"><h2 id="fin-res">Resumen</h2><dl class="ficha">' +
+          '<div class="ficha-fila"><dt>Estado</dt><dd>' + (espera ? 'Lista de espera, sin plaza' : 'Con plaza en el grupo') + '</dd></div>' +
+          '<div class="ficha-fila"><dt>Pueblo</dt><dd>' + sede.nombre + ' · ' + sede.lugar + '</dd></div>' +
+          '<div class="ficha-fila"><dt>Grupo</dt><dd>' + grupoTexto(grupo) + '</dd></div>' +
+          '<div class="ficha-fila"><dt>Días y hora</dt><dd>' + diasResumen() + '</dd></div>' +
+          '<div class="ficha-fila"><dt>Alumno</dt><dd>' + esc(d.nombre + ' ' + (d.apellidos || '')) + '</dd></div>' +
+          (esMenor(d) && d.tutorNombre ? '<div class="ficha-fila"><dt>Responsable</dt><dd>' + esc(d.tutorNombre) + '</dd></div>' : '') +
+          '<div class="ficha-fila"><dt>Contacto</dt><dd>' + esc(d.email || '') + '</dd></div>' +
+        '</dl></section></div></div>';
+    document.title = titulo + ' · Taekwondo Sierra Sur · Boceto «El estándar del sector»';
+  }
+
+  [null, paso1, paso2, paso3, paso4][paso]();
+  if (params.get('paso') || params.get('sede')) {
+    var h = cont.querySelector('.pregunta-titulo');
+    if (h && !conErrores) h.focus({ preventScroll: true });
+  }
+})();
+</script>
+</body>
+</html>
