@@ -366,8 +366,16 @@ export class SearchableSelectDirective implements AfterViewInit, OnDestroy {
       }
 
       this.detachListeners.push(
+        // Solo mantiene el foco en el campo; la elección espera al clic.
         this.renderer.listen(optionEl, 'mousedown', (event: MouseEvent) => {
           event.preventDefault();
+        })
+      );
+
+      // Elegir en el mousedown ocultaba la lista antes del mouseup y el clic iba al ancestro común: dentro de un
+      // <dialog> (searchDropdownEnDialogo), el propio <dialog>, que lo tomaba por un clic en el velo y se cerraba.
+      this.detachListeners.push(
+        this.renderer.listen(optionEl, 'click', () => {
           if (option.disabled) {
             return;
           }

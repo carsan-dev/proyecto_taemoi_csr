@@ -269,3 +269,62 @@ describe('SearchableSelectDirective: variables de la lista flotante (8b-C)', () 
     fixture.destroy();
   });
 });
+
+@Component({
+  standalone: true,
+  imports: [FormsModule, SearchableSelectDirective],
+  template: `
+    <dialog id="capa" (click)="alClic($event)">
+      <div class="caja">
+        <select id="en-dialogo" appSearchableSelect [searchDropdownEnDialogo]="true" [(ngModel)]="valor">
+          <option value="a">Uno</option>
+          <option value="b">Dos</option>
+        </select>
+      </div>
+    </dialog>
+  `,
+})
+class HostEnDialogoComponent {
+  valor = 'a';
+  clicsEnElDialogo = 0;
+  alClic(evento: MouseEvent): void {
+    if (evento.target === evento.currentTarget) {
+      this.clicsEnElDialogo++;
+    }
+  }
+}
+
+describe('SearchableSelectDirective: elegir dentro de un <dialog>', () => {
+  itSinReloj('el mousedown no elige ni oculta la lista; el clic elige sin llegar al <dialog> como clic en el velo', async () => {
+    await TestBed.configureTestingModule({ imports: [HostEnDialogoComponent] }).compileComponents();
+    const fixture = TestBed.createComponent(HostEnDialogoComponent);
+    const host = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const dialogo = document.getElementById('capa') as HTMLDialogElement;
+    dialogo.showModal();
+    const entrada = document.getElementById('en-dialogo-input') as HTMLInputElement;
+    entrada.dispatchEvent(new Event('focus'));
+    const lista = document.getElementById(entrada.getAttribute('aria-controls')!)!;
+    expect(lista.parentElement).withContext('la lista va dentro del <dialog>').toBe(dialogo);
+    const dos = Array.from(lista.querySelectorAll<HTMLElement>('.admin-select-option')).find(
+      (o) => o.textContent?.trim() === 'Dos'
+    )!;
+
+    const pulsar = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    dos.dispatchEvent(pulsar);
+    expect(pulsar.defaultPrevented).withContext('el campo no pierde el foco').toBeTrue();
+    expect(lista.classList.contains('is-open')).withContext('la lista sigue bajo el puntero hasta el clic').toBeTrue();
+    expect(host.valor).toBe('a');
+
+    dos.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(host.valor).toBe('b');
+    expect(entrada.value).toBe('Dos');
+    expect(lista.classList.contains('is-open')).toBeFalse();
+    expect(host.clicsEnElDialogo).withContext('ningún clic con destino el propio <dialog>').toBe(0);
+    dialogo.close();
+    fixture.destroy();
+  });
+});
