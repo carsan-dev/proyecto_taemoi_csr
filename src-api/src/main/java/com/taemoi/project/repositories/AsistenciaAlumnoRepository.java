@@ -43,9 +43,12 @@ public interface AsistenciaAlumnoRepository extends JpaRepository<AsistenciaAlum
 	List<Object[]> resumenDelGrupo(@Param("grupo") Long grupoId, @Param("desde") LocalDate desde,
 			@Param("hasta") LocalDate hasta);
 
-	/** Filas {@code [turnoId, fecha, horaInicio, presente]} del alumno en clases del grupo en esas fechas. */
+	/**
+	 * Filas {@code [turnoId, fecha, horaInicio, presente, motivoFalta]} del alumno en clases del grupo en esas fechas.
+	 * {@code motivoFalta} (V32_2) va al final para no mover las posiciones anteriores.
+	 */
 	@Query("""
-			SELECT c.turnoId, c.fecha, c.horaInicio, f.presente
+			SELECT c.turnoId, c.fecha, c.horaInicio, f.presente, f.motivoFalta
 			FROM AsistenciaAlumno f JOIN ClaseAsistencia c ON c.id = f.claseId
 			WHERE f.alumnoId = :alumno AND c.grupoId = :grupo AND c.fecha BETWEEN :desde AND :hasta""")
 	List<Object[]> filasDelAlumno(@Param("alumno") Long alumnoId, @Param("grupo") Long grupoId,
