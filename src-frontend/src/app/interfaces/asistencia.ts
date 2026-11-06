@@ -12,6 +12,11 @@ export interface FestivoDeClase {
   tipo: TipoFestivo;
   /** Un solo día y una sola sede: se quita desde la propia lista. */
   deUnDiaYUnaSede: boolean;
+  /** `yyyy-MM-dd`; en un ANUAL, la fecha de la clase en los dos. `null` si el API no los manda. */
+  fechaDesde: string | null;
+  fechaHasta: string | null;
+  /** Sedes que cubre (1 si el API no lo manda). */
+  sedes: number;
 }
 
 export interface SedeDeClase {

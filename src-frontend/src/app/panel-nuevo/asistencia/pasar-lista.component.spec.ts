@@ -543,7 +543,9 @@ describe('PasarListaComponent', () => {
   describe('festivos (decisiones 456-460)', () => {
     const gestion = `${api}/grupos/7`;
     const ESTEPA = { id: 2, nombre: 'Estepa' };
-    const festivoDia = { id: 31, nombre: 'Feria de Estepa', tipo: 'DIA' as const, deUnDiaYUnaSede: true };
+    const festivoDia = {
+      id: 31, nombre: 'Feria de Estepa', tipo: 'DIA' as const, deUnDiaYUnaSede: true, fechaDesde: '2026-10-28', fechaHasta: '2026-10-28', sedes: 1,
+    };
 
     function arrancarGestion(c: ClaseAsistencia, alumnos: AlumnoDeLista[] = ALUMNOS, recientes: ClaseAsistencia[] = []): void {
       crear({ prefijo: 'gestion', variasSedes: true });

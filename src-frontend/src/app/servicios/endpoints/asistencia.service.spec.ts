@@ -61,6 +61,19 @@ describe('AsistenciaService', () => {
     expect(l.alumnos[0].motivo).toBeNull();
   });
 
+  it('lista: festivo con fechas y sedes; sin ellas, null y 1', () => {
+    let festivo: unknown;
+    servicio.lista('gestion', 7, 9, '2026-12-28').subscribe((l) => (festivo = l.clase.festivo));
+    http.expectOne(`${api}/grupos/7/clases/9/2026-12-28`).flush({
+      clase: { turnoId: 9, festivo: { id: 3, nombre: 'Navidad', tipo: 'RANGO', deUnDiaYUnaSede: false, fechaDesde: '2026-12-23', fechaHasta: '2027-01-07', sedes: 6 } },
+      alumnos: [],
+    });
+    expect(festivo).toEqual({ id: 3, nombre: 'Navidad', tipo: 'RANGO', deUnDiaYUnaSede: false, fechaDesde: '2026-12-23', fechaHasta: '2027-01-07', sedes: 6 });
+    servicio.lista('gestion', 7, 9, '2026-12-08').subscribe((l) => (festivo = l.clase.festivo));
+    http.expectOne(`${api}/grupos/7/clases/9/2026-12-08`).flush({ clase: { festivo: { id: 4, nombre: null, tipo: 'DIA', deUnDiaYUnaSede: true } }, alumnos: [] });
+    expect(festivo).toEqual({ id: 4, nombre: null, tipo: 'DIA', deUnDiaYUnaSede: true, fechaDesde: null, fechaHasta: null, sedes: 1 });
+  });
+
   it('resumen y de alumno: year y month como parámetros', () => {
     servicio.resumen('profesor', 7, 2026, 10).subscribe();
     const a = http.expectOne((r) => r.url === `${api}/profesor/grupos/7/asistencia/resumen`);

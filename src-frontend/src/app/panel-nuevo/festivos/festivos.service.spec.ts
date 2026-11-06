@@ -62,10 +62,21 @@ describe('FestivosService', () => {
     expect(a.request.method).toBe('POST');
     expect(a.request.body).toEqual(cuerpo);
     a.flush(null);
-    expect(impacto).toEqual({ clases: 0, conLista: 0, conListaDetalle: [] });
+    expect(impacto).toEqual({ clases: 0, conLista: 0, conListaDetalle: [], clasesDetalle: [] });
     servicio.impacto(cuerpo, 9).subscribe();
     const b = http.expectOne(`${url}/impacto`);
     expect(b.request.body).toEqual({ ...cuerpo, excluirFestivoId: 9 });
     b.flush({ clases: 3, conLista: 0, conListaDetalle: [] });
+  });
+
+  it('impacto: pasa clasesDetalle con su lista (presentes y total)', () => {
+    const detalle = [
+      { sedeId: 2, sede: 'Estepa', fecha: '2026-11-05', horaInicio: '17:00', horaFin: '18:00', grupo: 'Iniciación', conLista: true, presentes: 11, total: 14 },
+      { sedeId: 2, sede: 'Estepa', fecha: '2026-11-05', horaInicio: '18:00', horaFin: '19:00', grupo: 'Infantiles', conLista: false, presentes: null, total: null },
+    ];
+    let impacto: unknown;
+    servicio.impacto({ tipo: 'DIA', fechaDesde: '2026-11-05', fechaHasta: '2026-11-05', sedeIds: [2] }).subscribe((i) => (impacto = i));
+    http.expectOne(`${url}/impacto`).flush({ clases: 2, conLista: 1, conListaDetalle: [], clasesDetalle: detalle });
+    expect((impacto as { clasesDetalle: unknown }).clasesDetalle).toEqual(detalle);
   });
 });

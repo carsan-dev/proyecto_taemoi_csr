@@ -47,6 +47,13 @@ export class FestivosService {
     const body = excluirFestivoId === null ? cuerpo : { ...cuerpo, excluirFestivoId };
     return this.http
       .post<ImpactoFestivo>(`${this.url}/impacto`, body, this.opciones())
-      .pipe(map((i) => ({ clases: i?.clases ?? 0, conLista: i?.conLista ?? 0, conListaDetalle: i?.conListaDetalle ?? [] })));
+      .pipe(
+        map((i) => ({
+          clases: i?.clases ?? 0,
+          conLista: i?.conLista ?? 0,
+          conListaDetalle: i?.conListaDetalle ?? [],
+          clasesDetalle: i?.clasesDetalle ?? [],
+        }))
+      );
   }
 }

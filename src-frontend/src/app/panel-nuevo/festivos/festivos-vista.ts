@@ -43,11 +43,28 @@ export interface ClaseConLista {
   grupo: string;
 }
 
-/** `POST /api/festivos/impacto`: clases que cubriría y, de ellas, las que ya tienen lista (se quedan como están). */
+/** Una clase que cubriría el festivo; con lista, `presentes` y `total` de esa lista (si no, null). */
+export interface ClaseDeImpacto {
+  sedeId: number;
+  sede: string;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  grupo: string;
+  conLista: boolean;
+  presentes: number | null;
+  total: number | null;
+}
+
+/**
+ * `POST /api/festivos/impacto`: clases que cubriría y, de ellas, las que ya tienen lista (se quedan como están). No
+ * cuenta las que ya son festivo por otro festivo. `clasesDetalle`: 20 como mucho, por fecha y hora.
+ */
 export interface ImpactoFestivo {
   clases: number;
   conLista: number;
   conListaDetalle: ClaseConLista[];
+  clasesDetalle: ClaseDeImpacto[];
 }
 
 export const NOMBRE_MAXIMO = 60;
@@ -219,7 +236,7 @@ const clasesTexto = (n: number) => `${n} ${n === 1 ? 'clase' : 'clases'}`;
  * Nota de impacto del panel: «Afecta a 9 clases; 2 ya tienen lista y se quedan como están» (y el detalle entre
  * paréntesis), «Afecta a 18 clases; ninguna tiene lista todavía.» o «No afecta a ninguna clase.».
  */
-export function textoImpacto(i: ImpactoFestivo): { fuerte: string; resto: string } {
+export function textoImpacto(i: Pick<ImpactoFestivo, 'clases' | 'conLista' | 'conListaDetalle'>): { fuerte: string; resto: string } {
   if (i.clases === 0) {
     return { fuerte: 'No afecta a ninguna clase.', resto: '' };
   }

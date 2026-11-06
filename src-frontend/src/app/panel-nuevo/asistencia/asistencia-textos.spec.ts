@@ -24,7 +24,7 @@ describe('asistencia-textos', () => {
   });
 
   it('clase festiva: «Festivo» en la hoja', () => {
-    expect(estadoClase(clase({ festivo: { id: 1, nombre: null, tipo: 'DIA', deUnDiaYUnaSede: true } }))).toBe('Festivo');
+    expect(estadoClase(clase({ festivo: { id: 1, nombre: null, tipo: 'DIA', deUnDiaYUnaSede: true, fechaDesde: '2026-10-28', fechaHasta: '2026-10-28', sedes: 1 } }))).toBe('Festivo');
   });
 
   it('motivos de falta: orden, texto y letra del PDF', () => {
