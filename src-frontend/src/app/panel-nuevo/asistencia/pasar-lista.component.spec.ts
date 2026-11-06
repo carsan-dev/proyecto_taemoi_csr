@@ -157,7 +157,7 @@ describe('PasarListaComponent', () => {
     boton('Guardar lista')!.click();
     const put = http.expectOne(`${base()}/clases/9/2026-10-28`);
     expect(put.request.method).toBe('PUT');
-    expect(put.request.body).toEqual({ presentes: [1, 3] });
+    expect(put.request.body).toEqual({ presentes: [1, 3], motivos: {} });
     put.flush(clase({ presentes: 2, total: 3 }));
     fixture.detectChanges();
     expect(texto('.pasar-lista__guardada')).toBe('Lista guardada');

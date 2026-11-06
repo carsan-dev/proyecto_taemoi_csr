@@ -36,11 +36,11 @@ describe('AsistenciaService', () => {
     expect((alumnos as { deportes: unknown[] }[])[0].deportes).toEqual([]);
   });
 
-  it('guardar: PUT con {presentes}', () => {
+  it('guardar sin motivos: PUT con {presentes, motivos: {}} (sin motivos, el API borraría los guardados)', () => {
     servicio.guardar('gestion', 7, 9, '2026-10-26', [12, 15]).subscribe();
     const r = http.expectOne(`${api}/grupos/7/clases/9/2026-10-26`);
     expect(r.request.method).toBe('PUT');
-    expect(r.request.body).toEqual({ presentes: [12, 15] });
+    expect(r.request.body).toEqual({ presentes: [12, 15], motivos: {} });
     r.flush({});
   });
 

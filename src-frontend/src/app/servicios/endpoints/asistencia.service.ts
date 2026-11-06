@@ -60,8 +60,9 @@ export class AsistenciaService {
     presentes: number[],
     motivos: Readonly<Record<number, MotivoFalta>> = {}
   ): Observable<ClaseAsistencia> {
-    // Los motivos solo de las faltas (decisión 455); sin ninguno, el cuerpo de siempre.
-    const cuerpo = Object.keys(motivos).length ? { presentes, motivos } : { presentes };
+    // Los motivos solo de las faltas (decisión 455), siempre, aunque vayan vacíos: un PUT sin `motivos` deja todas las
+    // faltas sin motivo.
+    const cuerpo = { presentes, motivos };
     return this.http.put<ClaseAsistencia>(
       `${this.base(prefijo, grupoId)}/clases/${turnoId}/${fecha}`,
       cuerpo,
