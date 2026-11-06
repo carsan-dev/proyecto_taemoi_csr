@@ -1,0 +1,264 @@
+// «Marcar festivo» (boceto `boceto-pasar-lista-motivos-festivos.html`, festivo-confirmar y festivo-aviso): la forma del
+// diálogo del panel (dialogo.component.scss, decisión 271) con la lista de clases con lista, la nota y el campo con
+// contador. Solo tokens de panel-nuevo.scss bajo .pn.
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.festivo-dialogo {
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  box-shadow: var(--pn-sombra-dialogo);
+
+  &::backdrop {
+    background: var(--pn-velo);
+  }
+
+  button:focus-visible,
+  input:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.festivo-dialogo__caja {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.festivo-dialogo__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 0 24px;
+}
+
+.festivo-dialogo__titulo {
+  margin: 8px 0 0;
+  font: var(--pn-titulo-dialogo);
+  text-wrap: balance;
+}
+
+.festivo-dialogo__cerrar {
+  @include c.boton-icono;
+}
+
+.festivo-dialogo__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 24px 0;
+}
+
+.festivo-dialogo__mensaje {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--pn-tinta-2);
+
+  strong {
+    color: var(--pn-tinta);
+    font-weight: 600;
+  }
+}
+
+.festivo-dialogo__clases {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--pn-linea);
+  border-bottom: 1px solid var(--pn-linea);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 6px 0;
+  }
+
+  li + li {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.festivo-dialogo__hora {
+  flex: none;
+  width: 96px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.festivo-dialogo__grupo {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.festivo-dialogo__esta,
+.festivo-dialogo__con-lista {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.festivo-dialogo__con-lista {
+  flex: none;
+}
+
+// Como la nota de Sedes: superficie con filete e icono en acento.
+.festivo-dialogo__nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+  font: var(--pn-secundario);
+
+  svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    color: var(--pn-acento);
+  }
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.festivo-dialogo__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.festivo-dialogo__etiqueta {
+  font: var(--pn-etiqueta);
+
+  span {
+    font-weight: 400;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.festivo-dialogo__control {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+
+  &::placeholder {
+    color: var(--pn-tinta-2);
+  }
+}
+
+.festivo-dialogo__ayuda {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.festivo-dialogo__pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 24px;
+}
+
+.festivo-dialogo__cancelar {
+  @include c.boton-secundario;
+}
+
+.festivo-dialogo__accion {
+  @include c.boton-primario;
+}
+
+// Hoja inferior (por debajo de 768 px): pegada abajo, radio 14, asa y botones de 44 px a lo ancho con la acción arriba.
+.festivo-dialogo--hoja {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100dvh - 24px);
+  margin: auto 0 0;
+  border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+  box-shadow: var(--pn-sombra-hoja);
+
+  .festivo-dialogo__caja {
+    max-height: calc(100dvh - 24px);
+    padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .festivo-dialogo__asa {
+    flex: none;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 8px;
+    border-radius: var(--pn-radio-pastilla);
+    background: var(--pn-linea-fuerte);
+  }
+
+  .festivo-dialogo__cabecera {
+    gap: 12px;
+    padding: 0;
+  }
+
+  .festivo-dialogo__titulo {
+    margin-top: 10px;
+  }
+
+  .festivo-dialogo__cerrar {
+    width: 44px;
+    height: 44px;
+    margin-right: -8px;
+  }
+
+  .festivo-dialogo__cuerpo {
+    padding: 4px 0 0;
+  }
+
+  .festivo-dialogo__pie {
+    flex-direction: column-reverse;
+    padding: 16px 0 0;
+  }
+
+  .festivo-dialogo__cancelar,
+  .festivo-dialogo__accion {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 399.98px) {
+  .festivo-dialogo__hora {
+    width: 88px;
+  }
+}

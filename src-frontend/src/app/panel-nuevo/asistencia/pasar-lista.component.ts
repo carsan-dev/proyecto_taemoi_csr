@@ -1,10 +1,11 @@
-import { Component, DestroyRef, HostListener, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, Subscription, catchError, finalize, forkJoin, map, of } from 'rxjs';
 
-import { AlumnoDeLista, ClaseAsistencia, ClasesDelGrupo, PrefijoAsistencia } from '../../interfaces/asistencia';
+import { AlumnoDeLista, ClaseAsistencia, ClasesDelGrupo, FestivoDeClase, MotivoFalta, PrefijoAsistencia, SedeDeClase } from '../../interfaces/asistencia';
 import { DeporteEnLista } from '../../interfaces/profesor';
+import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AsistenciaService } from '../../servicios/endpoints/asistencia.service';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
@@ -21,7 +22,12 @@ import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component'
 import { mensajeDelServidor, nombreCompleto } from '../mis-grupos/profesor-textos';
 import { ConCambiosSinGuardar } from '../productos-alumno/salir-sin-guardar.guard';
 import { textoSalirSinGuardar } from '../productos-alumno/productos-alumno-vista';
-import { cuenta, estadoClase, fechaClaseCapital, franja, mismaClase, tieneLista } from './asistencia-textos';
+import { ImpactoFestivo } from '../festivos/festivos-vista';
+import { FestivosService } from '../festivos/festivos.service';
+import {
+  MOTIVOS_FALTA, cuenta, estadoClase, fechaClase, fechaClaseCapital, franja, mismaClase, textoFaltas, textoMotivo, tieneLista,
+} from './asistencia-textos';
+import { DialogoFestivoComponent } from './dialogo-festivo.component';
 
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -30,17 +36,29 @@ export const TEXTOS_PASAR_LISTA = {
   errorGuardar: 'No se ha podido guardar la lista. Inténtalo de nuevo.',
   sinAlumnos: 'Este turno no tiene alumnos asignados.',
   sinClases: 'No hay clases en los últimos 14 días.',
+  errorImpacto: 'No se han podido consultar las clases de ese día. Inténtalo de nuevo.',
+  errorMarcarFestivo: 'No se ha podido marcar el festivo. Inténtalo de nuevo.',
+  errorQuitarFestivo: 'No se ha podido quitar el festivo. Inténtalo de nuevo.',
+  profesorFestivo: 'Si ese día hay clase, pide a la escuela que quite el festivo.',
 } as const;
 
 /**
  * Pasar lista (decisión 324; boceto `Lista.dc.html`): una clase es un turno y una fecha. Una sola pantalla con dos rutas
  * (`data.prefijoAsistencia`: profesor o gestión). Sin marcar cuenta como falta; guardar reemplaza la lista de esa
  * clase. Todo contador usa el tamaño de la lista de la clase, nunca el del grupo.
+ *
+ * Motivo de la falta y festivos (decisiones 455-460; boceto `boceto-pasar-lista-motivos-festivos.html`): cada fila sin
+ * marcar lleva «Motivo», un menú con «Sin motivo» y los cuatro motivos; marcar presente lo borra. Desde la ruta de
+ * gestión, «Marcar festivo» crea un festivo de un día en la sede del grupo. Una clase festiva sin lista enseña el
+ * bloque del festivo en lugar de la lista.
  */
 @Component({
   selector: 'pn-pasar-lista',
   standalone: true,
-  imports: [RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, BloqueVacioComponent, BotonOcupadoComponent, EsqueletoComponent, PanelLateralComponent],
+  imports: [
+    RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, BloqueVacioComponent, BotonOcupadoComponent, DialogoFestivoComponent,
+    EsqueletoComponent, PanelLateralComponent,
+  ],
   templateUrl: './pasar-lista.component.html',
   styleUrl: './pasar-lista.component.scss',
 })
@@ -53,6 +71,10 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   private readonly avisos = inject(AvisosService);
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly destruir = inject(DestroyRef);
+  private readonly festivos = inject(FestivosService);
+  private readonly permisos = inject(PermisosSesionService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private carga?: Subscription;
   private cargaLista?: Subscription;
 
@@ -63,6 +85,8 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   readonly estadoClase = estadoClase;
   readonly tieneLista = tieneLista;
   readonly nombreCompleto = nombreCompleto;
+  readonly motivosFalta = MOTIVOS_FALTA;
+  readonly textoMotivo = textoMotivo;
 
   prefijo: PrefijoAsistencia = 'profesor';
   grupoId = 0;
@@ -73,6 +97,17 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   /** Marcas actuales y las de partida (servidor o último guardado): su diferencia son los cambios sin guardar. */
   marcados = new Set<number>();
   private base = new Set<number>();
+  /** Motivos de las faltas, actuales y de partida (como las marcas). */
+  motivos = new Map<number, MotivoFalta>();
+  private baseMotivos = new Map<number, MotivoFalta>();
+  /** Alumno con el menú de motivo abierto. */
+  menuAbierto: number | null = null;
+  sede: SedeDeClase | null = null;
+  /** La sede se nombra en la línea de la clase solo con dos o más sedes (regla 9-1). */
+  variasSedes = false;
+  consultandoImpacto = false;
+  dialogoFestivo: ImpactoFestivo | null = null;
+  marcandoFestivo = false;
   cargando = true;
   cargandoLista = false;
   error: string | null = null;
@@ -85,6 +120,10 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     const datos = this.ruta.snapshot.data;
     this.prefijo = datos['prefijoAsistencia'] === 'gestion' ? 'gestion' : 'profesor';
     this.grupoId = Number(this.ruta.snapshot.paramMap.get('grupoId'));
+    // Falla cerrado: sin permisos, la línea no nombra la sede.
+    this.permisos.obtener().pipe(takeUntilDestroyed(this.destruir), catchError(() => of(null))).subscribe((p) => {
+      this.variasSedes = !!p?.variasSedes;
+    });
     this.cargar();
   }
 
@@ -160,10 +199,19 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
       next: (lista) => {
         this.clase = lista.clase;
         this.alumnos = lista.alumnos;
-        // Lista sin guardar: ninguna marcada, vengan como vengan.
-        const inicial = new Set(tieneLista(lista.clase) ? lista.alumnos.filter((a) => a.presente).map((a) => a.id) : []);
+        this.sede = lista.sede ?? null;
+        this.menuAbierto = null;
+        // Lista sin guardar: ninguna marcada ni con motivo, vengan como vengan.
+        const guardada = tieneLista(lista.clase);
+        const inicial = new Set(guardada ? lista.alumnos.filter((a) => a.presente).map((a) => a.id) : []);
         this.base = inicial;
         this.marcados = new Set(inicial);
+        const motivos = new Map<number, MotivoFalta>();
+        if (guardada) {
+          for (const a of lista.alumnos) if (!a.presente && a.motivo) motivos.set(a.id, a.motivo);
+        }
+        this.baseMotivos = motivos;
+        this.motivos = new Map(motivos);
       },
       error: (e) => {
         this.clase = null;
@@ -181,22 +229,117 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   get cuenta(): string { return cuenta(this.marcados.size, this.total); }
   get todosMarcados(): boolean { return this.total > 0 && this.marcados.size === this.total; }
   get hayCambios(): boolean { return this.cambiosPendientes() > 0; }
-  get titulo(): string { return this.clase ? `${fechaClaseCapital(this.clase.fecha)} · ${franja(this.clase)}` : ''; }
+  get titulo(): string {
+    if (!this.clase) return '';
+    const sede = this.variasSedes && this.sede ? ` · ${this.sede.nombre}` : '';
+    return `${fechaClaseCapital(this.clase.fecha)} · ${franja(this.clase)}${sede}`;
+  }
+  get textoPresentes(): string { return this.marcados.size === 1 ? 'presente' : 'presentes'; }
+  get faltas(): string {
+    const ausentes = this.alumnos.filter((a) => !this.marcados.has(a.id));
+    return textoFaltas(ausentes.length, ausentes.filter((a) => this.motivos.has(a.id)).length);
+  }
 
   estaMarcado(alumno: AlumnoDeLista): boolean { return this.marcados.has(alumno.id); }
 
   alternar(alumno: AlumnoDeLista): void {
     if (this.guardando) return;
     const siguiente = new Set(this.marcados);
-    if (!siguiente.delete(alumno.id)) siguiente.add(alumno.id);
+    if (!siguiente.delete(alumno.id)) {
+      siguiente.add(alumno.id);
+      // Presente: la falta y su motivo se van.
+      this.quitarMotivo(alumno.id);
+    }
     this.marcados = siguiente;
+    this.menuAbierto = null;
     this.guardada = false;
   }
 
   alternarTodos(): void {
     if (this.guardando) return;
-    this.marcados = this.todosMarcados ? new Set() : new Set(this.alumnos.map((a) => a.id));
+    const marcar = !this.todosMarcados;
+    this.marcados = marcar ? new Set(this.alumnos.map((a) => a.id)) : new Set();
+    if (marcar) this.motivos = new Map();
+    this.menuAbierto = null;
     this.guardada = false;
+  }
+
+  // ------------------------------------------------------------------ motivo de la falta
+  motivoDe(alumno: AlumnoDeLista): MotivoFalta | null { return this.motivos.get(alumno.id) ?? null; }
+
+  etiquetaMotivo(alumno: AlumnoDeLista): string {
+    const motivo = this.motivoDe(alumno);
+    return `Motivo de la falta de ${nombreCompleto(alumno.nombre, alumno.apellidos)}: ${motivo ? textoMotivo(motivo) : 'sin motivo'}`;
+  }
+
+  alternarMenu(alumno: AlumnoDeLista): void {
+    if (this.guardando) return;
+    if (this.menuAbierto === alumno.id) {
+      this.cerrarMenu(true);
+      return;
+    }
+    this.menuAbierto = alumno.id;
+    this.cdr.detectChanges();
+    const menu = this.host.nativeElement.querySelector('.pasar-lista__menu');
+    (menu?.querySelector<HTMLElement>('[aria-checked="true"]') ?? menu?.querySelector<HTMLElement>('[role="menuitemradio"]'))?.focus();
+  }
+
+  elegirMotivo(alumno: AlumnoDeLista, motivo: MotivoFalta | null): void {
+    if (motivo) {
+      this.motivos = new Map(this.motivos).set(alumno.id, motivo);
+    } else {
+      this.quitarMotivo(alumno.id);
+    }
+    this.guardada = false;
+    this.cerrarMenu(true);
+  }
+
+  private quitarMotivo(id: number): void {
+    if (!this.motivos.has(id)) return;
+    const siguiente = new Map(this.motivos);
+    siguiente.delete(id);
+    this.motivos = siguiente;
+  }
+
+  /** Cierra el menú; con `enfocar`, el foco vuelve a su botón. */
+  private cerrarMenu(enfocar: boolean): void {
+    const id = this.menuAbierto;
+    this.menuAbierto = null;
+    if (!enfocar || id === null) return;
+    this.cdr.detectChanges();
+    this.host.nativeElement.querySelector<HTMLElement>(`[data-motivo="${id}"]`)?.focus();
+  }
+
+  /** Flechas (con vuelta), Inicio, Fin y Esc, como en el boceto. */
+  teclaMenu(evento: KeyboardEvent): void {
+    const opciones = Array.from((evento.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="menuitemradio"]'));
+    const i = opciones.indexOf(this.host.nativeElement.ownerDocument.activeElement as HTMLElement);
+    let destino: number;
+    switch (evento.key) {
+      case 'Escape':
+        evento.preventDefault();
+        evento.stopPropagation();
+        this.cerrarMenu(true);
+        return;
+      case 'Tab':
+        this.menuAbierto = null;
+        return;
+      case 'ArrowDown': destino = (i + 1) % opciones.length; break;
+      case 'ArrowUp': destino = (i - 1 + opciones.length) % opciones.length; break;
+      case 'Home': destino = 0; break;
+      case 'End': destino = opciones.length - 1; break;
+      default: return;
+    }
+    evento.preventDefault();
+    opciones[destino]?.focus();
+  }
+
+  @HostListener('document:click', ['$event'])
+  alClicFuera(evento: MouseEvent): void {
+    if (this.menuAbierto === null) return;
+    const objetivo = evento.target as HTMLElement | null;
+    if (objetivo?.closest('.pasar-lista__menu, .pasar-lista__motivo')) return;
+    this.menuAbierto = null;
   }
 
   /** El deporte del grupo (con varias disciplinas) o, si no, el primero. */
@@ -216,13 +359,20 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     const clase = this.clase;
     if (!clase || this.guardando) return;
     const marcados = this.alumnos.filter((a) => this.marcados.has(a.id)).map((a) => a.id);
+    const motivos: Record<number, MotivoFalta> = {};
+    for (const a of this.alumnos) {
+      const motivo = this.motivos.get(a.id);
+      if (motivo && !this.marcados.has(a.id)) motivos[a.id] = motivo;
+    }
     this.guardando = true;
-    this.asistencia.guardar(this.prefijo, this.grupoId, clase.turnoId, clase.fecha, marcados).pipe(
+    this.menuAbierto = null;
+    this.asistencia.guardar(this.prefijo, this.grupoId, clase.turnoId, clase.fecha, marcados, motivos).pipe(
       takeUntilDestroyed(this.destruir),
       finalize(() => (this.guardando = false)),
     ).subscribe({
       next: (guardada) => {
         this.base = new Set(this.marcados);
+        this.baseMotivos = new Map(this.motivos);
         this.guardada = true;
         this.clase = guardada;
         this.actualizarReciente(guardada);
@@ -261,8 +411,106 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     }
     if (this.hayCambios && !(await this.confirmarSalida('¿Cambiar de clase sin guardar?', 'Cambiar de clase'))) return;
     this.marcados = new Set(this.base);
+    this.motivos = new Map(this.baseMotivos);
     this.hojaAbierta = false;
     this.cargarLista(clase, true);
+  }
+
+  // ------------------------------------------------------------------ festivo
+  get festivo(): FestivoDeClase | null { return this.clase?.festivo ?? null; }
+
+  /** Solo desde la ruta de gestión, con la sede del grupo conocida y una clase que aún no es festiva. */
+  get puedeMarcarFestivo(): boolean {
+    return this.esGestion && !!this.sede && !!this.clase && !this.festivo && !this.cargandoLista && !this.error;
+  }
+
+  get tituloFestivo(): string {
+    const f = this.festivo;
+    if (!f) return '';
+    const base = this.sede ? `Festivo en ${this.sede.nombre}` : 'Festivo';
+    return f.nombre ? `${base} · ${f.nombre}` : base;
+  }
+
+  get textoFestivo(): string {
+    if (!this.clase) return '';
+    const donde = this.sede ? ` en ${this.sede.nombre}` : '';
+    return `No hay clase${donde} el ${fechaClase(this.clase.fecha)}. No cuenta como falta para nadie.`;
+  }
+
+  get fechaEnFrase(): string { return this.clase ? `el ${fechaClase(this.clase.fecha)}` : ''; }
+
+  /** Consulta las clases de esa sede ese día y abre la confirmación. */
+  marcarFestivo(): void {
+    const clase = this.clase;
+    const sede = this.sede;
+    if (!clase || !sede || this.consultandoImpacto || this.guardando) return;
+    this.consultandoImpacto = true;
+    this.festivos.impacto(this.cuerpoFestivo(clase, sede, '')).pipe(
+      takeUntilDestroyed(this.destruir),
+      finalize(() => (this.consultandoImpacto = false)),
+    ).subscribe({
+      next: (impacto) => (this.dialogoFestivo = impacto),
+      error: (e) => this.avisos.error(mensajeDelServidor(e, this.textos.errorImpacto)),
+    });
+  }
+
+  cerrarDialogoFestivo(): void {
+    if (!this.marcandoFestivo) this.dialogoFestivo = null;
+  }
+
+  confirmarFestivo(nombre: string): void {
+    const clase = this.clase;
+    const sede = this.sede;
+    if (!clase || !sede || this.marcandoFestivo) return;
+    this.marcandoFestivo = true;
+    this.festivos.crear(this.cuerpoFestivo(clase, sede, nombre)).pipe(
+      takeUntilDestroyed(this.destruir),
+      finalize(() => (this.marcandoFestivo = false)),
+    ).subscribe({
+      next: () => {
+        this.dialogoFestivo = null;
+        this.avisos.exito('Festivo marcado.');
+        this.recargarTrasFestivo(clase);
+      },
+      // El diálogo sigue abierto con lo escrito.
+      error: (e) => this.avisos.error(mensajeDelServidor(e, this.textos.errorMarcarFestivo)),
+    });
+  }
+
+  async quitarFestivo(): Promise<void> {
+    const clase = this.clase;
+    const festivo = this.festivo;
+    if (!clase || !festivo) return;
+    const donde = this.sede ? ` en ${this.sede.nombre}` : '';
+    const r = await this.confirmacion.confirmar<void>({
+      titulo: `¿Quitar el festivo del ${fechaClase(clase.fecha)}${donde}?`,
+      mensaje: `Ese día volverá a haber clase${donde}: sus clases pedirán lista otra vez. No se borra ninguna lista.`,
+      accion: 'Quitar festivo',
+      accionOcupada: 'Quitando…',
+      destructivo: true,
+      nombre: 'quitar-festivo',
+      ejecutar: () => this.festivos.quitar(festivo.id),
+    });
+    if (!r.confirmado) return;
+    if (r.error) {
+      this.avisos.error(mensajeDelServidor(r.error, this.textos.errorQuitarFestivo));
+      return;
+    }
+    this.avisos.exito('Festivo quitado.');
+    this.recargarTrasFestivo(clase);
+  }
+
+  private cuerpoFestivo(clase: ClaseAsistencia, sede: SedeDeClase, nombre: string) {
+    return { tipo: 'DIA' as const, fechaDesde: clase.fecha, fechaHasta: clase.fecha, sedeIds: [sede.id], ...(nombre ? { nombre } : {}) };
+  }
+
+  /** La lista y la hoja «Elegir clase» se ponen al día; si la hoja falla, se queda como estaba. */
+  private recargarTrasFestivo(clase: ClaseAsistencia): void {
+    this.asistencia.clases(this.prefijo, this.grupoId).pipe(takeUntilDestroyed(this.destruir)).subscribe({
+      next: (clases) => (this.clases = clases),
+      error: () => undefined,
+    });
+    this.cargarLista(clase, false);
   }
 
   // ------------------------------------------------------------------ cambios sin guardar
@@ -278,11 +526,15 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     return r.confirmado;
   }
 
-  /** Alumnos cuya marca difiere de la de partida. */
+  /** Alumnos cuya marca o motivo difiere de la de partida. */
   private cambiosPendientes(): number {
     let n = 0;
-    for (const id of this.marcados) if (!this.base.has(id)) n++;
-    for (const id of this.base) if (!this.marcados.has(id)) n++;
+    const ids = new Set([...this.marcados, ...this.base, ...this.motivos.keys(), ...this.baseMotivos.keys()]);
+    for (const id of ids) {
+      const marca = this.marcados.has(id) !== this.base.has(id);
+      const motivo = (this.motivos.get(id) ?? null) !== (this.baseMotivos.get(id) ?? null);
+      if (marca || motivo) n++;
+    }
     return n;
   }
 
