@@ -352,7 +352,7 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 		MvcResult r = peticion(get(ruta).param("year", "2026").param("month", "9").param("marcada", "true"), tProfA);
 		assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
 		String marcada = texto(r.getResponse().getContentAsByteArray());
-		assertTrue(marcada.contains("X:asistió·–:faltó·Vacía:sinlista"), marcada);
+		assertTrue(marcada.contains("X:asistió·–:faltó·I:injustificada·M:médica·F:familiar·J:otrajustificada·Gris:festivo·Vacía:sinlista"), marcada);
 		assertEquals(cuenta(sin, 'X') + 2, cuenta(marcada, 'X'), "la X del 7 y la de la leyenda; nada del 14 ni del 21");
 
 		// Gestión: el mismo criterio por turno y fecha.
@@ -360,7 +360,7 @@ class ProfesorSaludAsistenciaIntegrationTest extends MySqlIntegrationTest {
 				.param("grupo", "lunes").param("deporte", "TAEKWONDO").param("marcada", "true"), tGestor);
 		assertEquals(200, g.getResponse().getStatus(), g.getResponse().getContentAsString());
 		String deGestion = texto(g.getResponse().getContentAsByteArray());
-		assertTrue(deGestion.contains("X:asistió·–:faltó·Vacía:sinlista"), deGestion);
+		assertTrue(deGestion.contains("X:asistió·–:faltó·I:injustificada·M:médica·F:familiar·J:otrajustificada·Gris:festivo·Vacía:sinlista"), deGestion);
 		long leyendas = paginas(pdfGestion()).size();
 		assertEquals(cuenta(texto(pdfGestion()), 'X') + leyendas + 1, cuenta(deGestion, 'X'),
 				"la X del 7 y una leyenda por página");
