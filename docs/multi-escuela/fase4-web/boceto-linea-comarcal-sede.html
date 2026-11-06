@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estepa · Taekwondo Sierra Sur · Boceto «La línea comarcal», página de sede</title>
+<meta name="description" content="Boceto de página de sede de la web pública de escuela: tema «La línea comarcal».">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  /* Color de la escuela: lo pone la escuela. El JS deriva las variantes accesibles. */
+  --escuela: #0B5CAD;
+  --escuela-trazo: var(--escuela);
+  --escuela-texto: var(--escuela);
+  --boton-fondo: var(--escuela);
+  --boton-tinta: #FFFFFF;
+  --boton-hover: #094C90;
+  --tarifa-fondo: var(--escuela);
+  --tarifa-tinta: #FFFFFF;
+  --tarifa-boton-tinta: var(--escuela);
+
+  --blanco: #FFFFFF;
+  --anden: #ECEEF0;
+  --tinta: #101418;
+  --tinta-2: #4B5360;
+  --filete: #D5D9DE;
+  --apagado: #8A929C;
+  --aviso: #F2C230;
+  --foco: var(--tinta);
+
+  --m: clamp(20px, 5vw, 72px);
+  --hueco: 16px;
+  --seccion: clamp(72px, 10vw, 144px);
+  --cabecera: 72px;
+  --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --texto: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+  scroll-padding-top: calc(var(--cabecera) + 16px);
+}
+@media (min-width: 900px) { :root { --hueco: 24px; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: var(--apagado) var(--anden); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0; padding-top: var(--cabecera);
+  background: var(--blanco); color: var(--tinta);
+  font: 400 1rem/1.55 var(--texto);
+  overflow-x: clip;
+}
+@media (min-width: 900px) { body { font-size: 1.0625rem; } }
+body.menu-abierto { overflow: hidden; }
+::selection { background: var(--tinta); color: var(--blanco); }
+img, svg { display: block; }
+h1, h2, h3, p, figure, ol, ul, dl, dd { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: var(--escuela-texto); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+.cifras, time, .hora { font-variant-numeric: tabular-nums; }
+.oculto {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.salto {
+  position: fixed; left: var(--m); top: -120px; z-index: 50;
+  background: var(--tinta); color: var(--blanco); padding: 12px 16px; font-weight: 600;
+}
+.salto:focus-visible { top: 12px; }
+.envoltura { width: 100%; max-width: 1360px; margin-inline: auto; padding-inline: var(--m); }
+
+/* ---------- Tipografía ---------- */
+.titular, .titulo-seccion {
+  font-family: var(--display); font-weight: 800; text-transform: uppercase;
+  letter-spacing: -0.01em; text-wrap: balance;
+}
+.titular { font-size: clamp(64px, 21vw, 88px); line-height: 0.88; }
+.titulo-seccion { font-size: clamp(56px, 7vw, 112px); line-height: 0.9; }
+@media (min-width: 900px) { .titular { font-size: clamp(80px, 10.4vw, 142px); } }
+.rotulo {
+  font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--tinta-2);
+}
+.cuerpo { max-width: 60ch; }
+.cuerpo p + p { margin-top: 1em; }
+
+/* ---------- Botones y enlaces ---------- */
+.boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 48px; padding: 0 20px;
+  background: var(--boton-fondo); color: var(--boton-tinta);
+  border: 2px solid var(--boton-fondo); border-radius: 4px;
+  font: 600 1rem/1.2 var(--texto); text-decoration: none; text-align: center; cursor: pointer;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out;
+}
+.boton:hover { background: var(--boton-hover); border-color: var(--boton-hover); }
+.boton svg { flex: none; transition: transform 160ms ease-out; }
+.boton:hover svg { transform: translateX(3px); }
+.boton--secundario { background: var(--blanco); color: var(--escuela-texto); border-color: var(--escuela-texto); }
+.boton--secundario:hover { background: var(--anden); border-color: var(--escuela-texto); }
+.enlace-flecha {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  font-weight: 600; color: var(--escuela-texto); text-decoration: underline;
+}
+.enlace-flecha svg { flex: none; transition: transform 160ms ease-out; }
+.enlace-flecha:hover svg { transform: translateX(3px); }
+
+/* ---------- Fotos: un solo tratamiento ---------- */
+.foto { position: relative; overflow: hidden; background: var(--filete); }
+.foto img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.85) contrast(1.05); }
+.credito {
+  position: absolute; top: 0; right: 0; z-index: 2;
+  padding: 3px 8px 4px; max-width: 90%;
+  background: var(--tinta); color: var(--blanco);
+  font: 500 0.75rem/1.35 var(--texto);
+}
+
+/* ---------- Cabecera ---------- */
+.cabecera {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 30; height: var(--cabecera);
+  background: var(--blanco); border-bottom: 1px solid var(--filete);
+}
+.cabecera .envoltura { display: flex; align-items: center; gap: 8px; height: 100%; }
+.marca { position: relative; display: flex; align-items: center; gap: 10px; margin-right: auto; min-height: 44px; color: var(--tinta); text-decoration: none; }
+.logo {
+  flex: none; display: grid; place-items: center; width: 40px; height: 40px;
+  background: var(--boton-fondo); color: var(--boton-tinta);
+  font: 900 1.0625rem/1 var(--display); letter-spacing: 0.02em;
+}
+.marca-nombre { font: 800 1.125rem/0.95 var(--display); text-transform: uppercase; letter-spacing: 0; }
+.marca-nombre span { display: block; }
+.cabecera-cta { min-height: 44px; padding: 0 10px; font-size: 0.9375rem; }
+.menu-boton {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px;
+  background: var(--blanco); color: var(--tinta); border: 1px solid var(--tinta-2); border-radius: 4px;
+  font: 600 0.9375rem/1 var(--texto); cursor: pointer;
+}
+.nav { display: none; }
+.nav-lista a {
+  display: flex; align-items: center; min-height: 44px; color: var(--tinta); text-decoration: none; font-weight: 600;
+}
+.nav-lista a:hover { text-decoration: underline; text-underline-offset: 0.3em; }
+.nav.abierta {
+  display: block; position: fixed; top: var(--cabecera); left: 0; right: 0; bottom: 0; z-index: 29;
+  background: var(--blanco); padding: 24px var(--m) 40px; overflow-y: auto;
+}
+.nav.abierta .nav-lista li { border-bottom: 1px solid var(--filete); }
+.nav.abierta .nav-lista a {
+  min-height: 72px; font: 800 2.75rem/1 var(--display); text-transform: uppercase;
+}
+@media (max-width: 359px) { .marca-nombre { display: none; } }
+@media (min-width: 1100px) {
+  .menu-boton { display: none; }
+  .cabecera .envoltura { gap: 32px; }
+  .marca-nombre { font-size: 1.375rem; line-height: 1; }
+  .marca-nombre span { display: inline; }
+  .marca-nombre span + span::before { content: " "; }
+  .nav, .nav.abierta { display: block; position: static; padding: 0; background: none; overflow: visible; }
+  .nav-lista { display: flex; gap: 28px; }
+  .nav.abierta .nav-lista li { border: 0; }
+  .nav.abierta .nav-lista a { min-height: 44px; font: 600 1rem/1.55 var(--texto); text-transform: none; }
+  .cabecera-cta { padding: 0 20px; font-size: 1rem; min-height: 48px; }
+}
+/* ---------- Secciones ---------- */
+.seccion { position: relative; padding: calc(var(--seccion) * 1.1) 0 var(--seccion); }
+.seccion--anden { background: var(--anden); }
+.cabeza-seccion { margin-bottom: clamp(36px, 4.5vw, 64px); }
+.cabeza-seccion .rotulo { margin-bottom: 18px; }
+/* ---------- Página de sede: cartel del pueblo ---------- */
+.sede-texto { padding: 28px 0 40px; }
+.acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.sede-titular {
+  margin: 24px 0 20px; font-family: var(--display); font-weight: 900; text-transform: uppercase;
+  letter-spacing: -0.01em; line-height: 0.86; text-wrap: balance; font-size: clamp(64px, 22vw, 88px);
+}
+.sede-titular--largo { font-size: clamp(52px, 18vw, 76px); }
+.sede-lugar { font-size: 1.125rem; line-height: 1.45; max-width: 40ch; margin-bottom: 28px; }
+.sede-lugar strong { display: block; font-weight: 600; }
+.sede-lugar span { color: var(--tinta-2); }
+.sede-foto { aspect-ratio: 4 / 3; margin-inline: calc(-1 * var(--m)); }
+@media (min-width: 900px) {
+  .sede-rejilla { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); }
+  .sede-texto { grid-column: 1 / 7; align-self: center; padding: 48px 0 64px; }
+  .sede-titular { font-size: clamp(104px, 12.5vw, 160px); margin: 48px 0 28px; }
+  .sede-titular--largo { font-size: clamp(80px, 9vw, 128px); }
+  .sede-lugar { font-size: 1.1875rem; }
+  .sede-foto {
+    grid-column: 7 / 13; margin-left: 0; aspect-ratio: auto; min-height: 480px;
+    height: min(calc((50vw - var(--hueco) / 2) * 1.25), calc(100svh - var(--cabecera)));
+    margin-right: calc((100vw - min(100vw, 1360px)) / -2 - var(--m));
+  }
+}
+
+/* El tramo: la parada actual entre sus vecinas, sobre el trazo de la línea */
+.tramo { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); --y: 18px; --sangra-izq: calc(-1 * var(--m)); --sangra-der: calc(-1 * var(--m)); }
+@media (min-width: 900px) { .tramo { --sangra-der: 0px; } }
+.tramo--una { grid-template-columns: 10rem; }
+.tramo-linea { position: absolute; top: calc(var(--y) - 6px); height: 12px; background: var(--escuela-trazo); border-radius: 6px; }
+.tramo-term { position: absolute; top: calc(var(--y) - 18px); width: 12px; height: 36px; margin-left: -6px; background: var(--escuela-trazo); border-radius: 6px; }
+.tramo-parada {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-height: 44px; padding: calc(var(--y) + 24px) 4px 4px; text-align: center; color: var(--tinta); text-decoration: none;
+}
+.tramo-circulo {
+  position: absolute; left: 50%; top: calc(var(--y) - 12px); width: 24px; height: 24px; margin-left: -12px;
+  border-radius: 50%; background: var(--blanco); border: 4px solid var(--escuela-trazo);
+  transition: transform 180ms ease-out, background-color 180ms ease-out;
+}
+.tramo-parada--actual .tramo-circulo { top: calc(var(--y) - 18px); width: 36px; height: 36px; margin-left: -18px; background: var(--escuela-trazo); }
+.tramo-parada--actual .tramo-circulo::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--blanco); }
+.tramo-sentido { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8125rem; line-height: 1.3; color: var(--tinta-2); }
+.tramo-nombre { font: 800 1.25rem/0.95 var(--display); text-transform: uppercase; text-wrap: balance; }
+a.tramo-parada:hover .tramo-nombre, a.tramo-parada:focus-visible .tramo-nombre { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.12em; text-decoration-color: var(--escuela-trazo); }
+a.tramo-parada:hover .tramo-circulo, a.tramo-parada:focus-visible .tramo-circulo { transform: scale(1.25); background: color-mix(in srgb, var(--escuela-trazo) 30%, var(--blanco)); }
+.tramo-parada--actual .tramo-nombre { font-size: 1rem; font-family: var(--texto); font-weight: 600; text-transform: none; }
+@media (min-width: 900px) { .tramo-nombre { font-size: 1.5rem; } }
+
+/* ---------- Horarios: el tablero de salidas completo ---------- */
+.tablero { padding: 8px 0 32px; }
+.tablero-cabeza { display: grid; gap: 6px 24px; padding-bottom: 16px; border-bottom: 1px solid var(--tinta); }
+.tablero-sede { font: 900 clamp(40px, 4.4vw, 64px)/0.9 var(--display); text-transform: uppercase; letter-spacing: -0.01em; }
+.tablero-lugar { color: var(--tinta-2); }
+.tablero-lugar strong { color: var(--tinta); font-weight: 600; }
+.tablero-enlaces { display: flex; flex-wrap: wrap; gap: 0 24px; }
+.salidas { counter-reset: salida; }
+.salida {
+  display: grid; gap: 10px; padding: 20px 0 24px; border-bottom: 1px solid var(--filete);
+  grid-template-areas: "hora" "grupo" "detalle" "accion";
+}
+.salida-hora { grid-area: hora; font-family: var(--texto); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.hora-ini { font-size: 2rem; letter-spacing: -0.01em; }
+.hora-fin { font-size: 1.125rem; color: var(--tinta-2); margin-left: 2px; }
+.salida-grupo { grid-area: grupo; }
+.grupo-nombre { font: 800 1.375rem/1 var(--display); text-transform: uppercase; }
+.grupo-edades { color: var(--tinta-2); margin-top: 4px; }
+.salida-detalle { grid-area: detalle; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.dias { display: flex; gap: 3px; }
+.dia {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  font: 600 0.875rem/1 var(--texto); color: var(--apagado); border: 2px solid transparent;
+}
+.dia--si { color: var(--tinta); font-weight: 700; border-color: var(--escuela-trazo); }
+.plazas { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.plazas svg { flex: none; }
+.plazas--completo, .plazas--espera { color: var(--tinta-2); }
+.salida-accion { grid-area: accion; }
+.salida-accion .boton { width: 100%; }
+@media (min-width: 900px) {
+  .salida { grid-template-columns: 11.5rem minmax(0, 1fr) auto; grid-template-areas: "hora grupo accion" "hora detalle accion"; align-items: center; column-gap: 24px; padding: 22px 0; }
+  .salida-hora { align-self: start; padding-top: 2px; }
+  .hora-ini { font-size: 2.5rem; }
+  .hora-fin { display: block; margin: 6px 0 0; font-size: 1.125rem; }
+  .salida-accion .boton { width: auto; }
+}
+@media (min-width: 1180px) {
+  .salida { grid-template-columns: 13.5rem minmax(0, 1fr) 27.5rem 19.5rem; grid-template-areas: "hora grupo detalle accion"; }
+  .salida-hora { align-self: center; padding-top: 0; }
+  .hora-fin { display: inline; margin-left: 2px; }
+  .salida-detalle { flex-wrap: nowrap; }
+  .plazas { min-width: 11rem; }
+  .salida-accion { justify-self: end; }
+}
+.hoy {
+  display: inline-block; padding: 1px 6px; margin-right: 6px; vertical-align: 2px;
+  background: var(--aviso); color: var(--tinta);
+  font: 700 0.8125rem/1.3 var(--texto); letter-spacing: 0.08em;
+}
+.dia--hoy { background: var(--aviso); border-color: var(--tinta); }
+.plazas--pocas { color: var(--tinta); }
+.salida-hora .hoy { display: table; margin: 0 0 8px; }
+@media (min-width: 1180px) {
+  .salida { grid-template-columns: 11.5rem minmax(0, 1fr) 23rem 19rem; }
+  .salida-accion { justify-self: end; }
+  .salida-hora { align-self: start; }
+}
+.grupo-profe { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 0.9375rem; }
+.grupo-profe::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; border: 2.5px solid var(--escuela-trazo); }
+.proxima {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px;
+  padding: 0 0 18px; border-bottom: 1px solid var(--tinta);
+}
+.proxima-rotulo { font-weight: 600; color: var(--tinta-2); }
+.proxima-cuando { font: 700 1.5rem/1.2 var(--texto); font-variant-numeric: tabular-nums; }
+.proxima-grupo { color: var(--tinta-2); }
+.salidas-cabeza { display: none; }
+@media (min-width: 1180px) {
+  .salidas-cabeza {
+    display: grid; grid-template-columns: 11.5rem minmax(0, 1fr) 23rem 19rem; column-gap: 24px;
+    padding: 14px 0 12px; border-bottom: 1px solid var(--filete);
+    font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2);
+  }
+}
+.leyenda { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 24px; font-size: 0.9375rem; color: var(--tinta-2); }
+.leyenda li { display: inline-flex; align-items: center; gap: 8px; }
+.leyenda svg { flex: none; color: var(--tinta-2); }
+
+/* ---------- Cómo llegar ---------- */
+.llegar { display: grid; gap: 48px; }
+.llegar-foto { aspect-ratio: 3 / 4; margin-inline: calc(-1 * var(--m)); }
+.ficha { border-top: 1px solid var(--tinta); margin-bottom: 32px; }
+.ficha-fila { display: grid; gap: 2px; padding: 14px 0 16px; border-bottom: 1px solid var(--filete); }
+.ficha dt { font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); }
+.ficha dd { font-weight: 600; }
+.ficha dd a { display: inline-flex; align-items: center; min-height: 44px; font: 600 1.375rem/1.2 var(--texto); color: var(--tinta); }
+.ficha-nota { display: block; font-weight: 400; color: var(--tinta-2); font-size: 0.9375rem; }
+.llegar-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+@media (min-width: 900px) {
+  .llegar { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: start; }
+  .llegar-texto { grid-column: 1 / 7; }
+  .llegar-foto { grid-column: 8 / 13; margin: 0; }
+  .ficha-fila { grid-template-columns: 10rem minmax(0, 1fr); gap: 16px; align-items: baseline; }
+}
+
+/* ---------- Profesores de la sede: una fila por profesor ---------- */
+.profe-fila { display: grid; gap: 24px; padding: 32px 0; border-top: 1px solid var(--tinta); }
+.profe-fila + .profe-fila { border-top-color: var(--filete); }
+.profe-foto, .monograma { aspect-ratio: 4 / 5; max-width: 420px; }
+.profe-foto { position: relative; overflow: hidden; }
+.monograma {
+  display: grid; place-items: center; background: var(--anden);
+  color: var(--escuela-trazo); font: 900 clamp(120px, 14vw, 200px)/1 var(--display); letter-spacing: -0.01em;
+}
+.profe-nombre { font: 900 clamp(2.75rem, 6vw, 5rem)/0.9 var(--display); text-transform: uppercase; text-wrap: balance; }
+.profe-grado { margin-top: 10px; font-size: 1.125rem; color: var(--tinta-2); }
+.profe-grupos { margin-top: 28px; border-top: 1px solid var(--filete); }
+.profe-grupos li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; padding: 12px 0; border-bottom: 1px solid var(--filete); }
+.profe-grupos b { font: 800 1.25rem/1.1 var(--display); text-transform: uppercase; }
+.profe-otras { margin-top: 20px; color: var(--tinta-2); }
+@media (min-width: 900px) {
+  .profe-fila { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: end; }
+  .profe-fila > :first-child { grid-column: 1 / 5; }
+  .profe-datos { grid-column: 6 / 13; padding-bottom: 8px; }
+}
+
+/* 7. Tarifas: sección a sangre del color de la escuela */
+.tarifas { position: relative; background: var(--tarifa-fondo); color: var(--tarifa-tinta); --foco: var(--tarifa-tinta); padding: calc(var(--seccion) * 1.1) 0 var(--seccion); }
+.tarifas .rotulo { color: var(--tarifa-tinta); margin-bottom: 12px; }
+.tarifas-rejilla { display: grid; gap: 32px; }
+.tarifa-cifra { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 20px; }
+.tarifa-importe { font: 900 clamp(132px, 22vw, 220px)/0.88 var(--display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.tarifa-mes { font: 800 clamp(1.75rem, 2.6vw, 2.5rem)/1 var(--display); text-transform: uppercase; }
+.tarifa-igual { font: 800 clamp(1.75rem, 2.6vw, 2.5rem)/0.95 var(--display); text-transform: uppercase; }
+.tarifa-incluye { margin: 20px 0 32px; border-top: 1px solid currentColor; }
+.tarifa-incluye li { padding: 12px 0; border-bottom: 1px solid currentColor; }
+.boton--blanco { background: var(--blanco); border-color: var(--blanco); color: var(--tarifa-boton-tinta); }
+.boton--blanco:hover { background: var(--anden); border-color: var(--anden); }
+@media (min-width: 900px) {
+  .tarifas-rejilla { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: end; }
+  .tarifas .rotulo { grid-column: 1 / -1; }
+  .tarifa-cifra { grid-column: 1 / 8; }
+  .tarifa-lado { grid-column: 8 / 13; padding-bottom: 12px; }
+}
+
+/* ---------- Todas las sedes: la línea entera en pequeño ---------- */
+.ruta { position: relative; padding: 18px 0; max-width: 40rem; }
+.ruta::before, .ruta::after { content: ""; position: absolute; left: 0; width: 24px; height: 6px; background: var(--escuela-trazo); }
+.ruta::before { top: 0; }
+.ruta::after { bottom: 0; }
+.ruta-sede { position: relative; padding: 0 0 20px 40px; }
+.ruta-sede::before { content: ""; position: absolute; left: 9px; top: 0; bottom: 0; width: 6px; background: var(--escuela-trazo); }
+.ruta-sede:first-child::before { top: -18px; }
+.ruta-sede:last-child { padding-bottom: 0; }
+.ruta-sede:last-child::before { bottom: -18px; }
+.ruta-sede::after {
+  content: ""; position: absolute; left: 2px; top: 2px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--blanco); border: 4px solid var(--escuela-trazo);
+}
+.ruta-sede--actual::after { background: var(--escuela-trazo); box-shadow: inset 0 0 0 4px var(--escuela-trazo), inset 0 0 0 10px var(--blanco); }
+.ruta-nombre { display: inline-block; font: 800 1.5rem/1 var(--display); text-transform: uppercase; }
+a.ruta-nombre { color: var(--tinta); text-decoration: underline; text-decoration-color: var(--escuela-trazo); text-decoration-thickness: 2px; text-underline-offset: 0.15em; }
+a.ruta-nombre:hover { text-decoration-thickness: 3px; }
+.ruta-aqui { margin-left: 10px; font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); }
+.ruta-dir { display: block; margin-top: 4px; color: var(--tinta-2); font-size: 0.9375rem; }
+
+/* Pie */
+.pie { background: var(--blanco); padding: clamp(56px, 7vw, 104px) 0 40px; border-top: 1px solid var(--filete); }
+.pie-marca { font: 900 19.5vw/0.86 var(--display); text-transform: uppercase; letter-spacing: -0.01em; }
+.pie-marca span { display: block; }
+.pie-fila { display: grid; gap: 24px; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--tinta); font-size: 0.9375rem; color: var(--tinta-2); }
+.pie-legal { display: flex; flex-wrap: wrap; gap: 0 24px; }
+.pie-legal a { display: inline-flex; align-items: center; min-height: 44px; color: var(--tinta); font-weight: 600; }
+.pie-ejemplo strong { color: var(--tinta); }
+.pie-creditos { margin-top: 8px; font-size: 0.875rem; }
+@media (min-width: 900px) {
+  .pie-marca { font-size: min(10vw, 136px); white-space: nowrap; }
+  .pie-marca span { display: inline; }
+  .pie-marca span + span::before { content: " "; }
+  .pie-fila { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); }
+  .pie-fila > :nth-child(1) { grid-column: 1 / 4; }
+  .pie-fila > :nth-child(2) { grid-column: 4 / 7; }
+  .pie-fila > :nth-child(3) { grid-column: 7 / 13; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boton, .boton svg, .enlace-flecha svg, .tramo-circulo { transition: none; }
+}
+</style>
+</head>
+<body>
+<a class="salto" href="#principal">Saltar al contenido</a>
+<header class="cabecera">
+  <div class="envoltura">
+    <a class="marca" href="boceto-linea-comarcal.html" data-enlace>
+      <span class="logo" role="img" aria-label="Marcador de logo" title="Marcador de logo: lo sube la escuela">TSS</span>
+      <span class="marca-nombre"><span>Taekwondo</span><span>Sierra Sur</span></span>
+    </a>
+    <nav class="nav" id="nav-principal" aria-label="Principal">
+      <ul class="nav-lista">
+        <li><a href="boceto-linea-comarcal.html#linea" data-enlace>Horarios</a></li>
+        <li><a href="boceto-linea-comarcal.html#sedes" data-enlace>Sedes</a></li>
+        <li><a href="boceto-linea-comarcal-tarifas.html" data-enlace>Tarifas</a></li>
+        <li><a href="boceto-linea-comarcal-eventos.html" data-enlace>Eventos</a></li>
+        <li><a href="boceto-linea-comarcal.html#contacto" data-enlace>Contacto</a></li>
+      </ul>
+    </nav>
+    <a class="boton cabecera-cta" href="boceto-linea-comarcal-preinscripcion.html" data-enlace>Preinscribirme</a>
+    <button class="menu-boton" type="button" aria-expanded="false" aria-controls="nav-principal">
+      <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      <span class="menu-texto">Menú</span>
+    </button>
+  </div>
+</header>
+
+<main id="principal">
+  <!-- Cartel del pueblo -->
+  <section class="sede-portada" aria-labelledby="sede-titulo">
+    <div class="envoltura sede-rejilla">
+      <div class="sede-texto">
+        <nav class="tramo" id="tramo" aria-label="Posición en la línea"></nav>
+        <h1 class="sede-titular" id="sede-titulo"></h1>
+        <p class="sede-lugar" id="sede-lugar"></p>
+        <div class="acciones" id="sede-acciones"></div>
+      </div>
+      <div id="sede-foto"></div>
+    </div>
+  </section>
+
+  <!-- Horarios -->
+  <section class="seccion seccion--anden" id="horarios" aria-labelledby="horarios-titulo">
+    <div class="envoltura">
+      <div class="cabeza-seccion">
+        <p class="rotulo">Horarios · curso 2026-2027</p>
+        <h2 class="titulo-seccion" id="horarios-titulo">Grupos y horas</h2>
+      </div>
+      <div class="tablero">
+        <p class="proxima" id="proxima"></p>
+        <div class="salidas-cabeza" aria-hidden="true"><span>Hora</span><span>Grupo y profesor</span><span>Días y plazas</span><span></span></div>
+        <ol class="salidas" id="salidas"></ol>
+        <ul class="leyenda" aria-label="Qué significa cada marca de plazas"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cómo llegar -->
+  <section class="seccion" id="llegar" aria-labelledby="llegar-titulo">
+    <div class="envoltura llegar">
+      <div class="llegar-texto">
+        <div class="cabeza-seccion">
+          <p class="rotulo">Dirección y contacto</p>
+          <h2 class="titulo-seccion" id="llegar-titulo">Cómo llegar</h2>
+        </div>
+        <dl class="ficha" id="llegar-ficha"></dl>
+        <div class="llegar-acciones" id="llegar-acciones"></div>
+      </div>
+      <div id="llegar-foto"></div>
+    </div>
+  </section>
+
+  <!-- Profesores -->
+  <section class="seccion seccion--anden" id="profesores" aria-labelledby="profesores-titulo">
+    <div class="envoltura">
+      <div class="cabeza-seccion">
+        <p class="rotulo" id="profes-rotulo">Profesores</p>
+        <h2 class="titulo-seccion" id="profesores-titulo">Quién da la clase</h2>
+      </div>
+      <ul id="profes"></ul>
+    </div>
+  </section>
+
+  <!-- Tarifa -->
+  <section class="tarifas" id="tarifas" aria-labelledby="tarifas-titulo">
+    <div class="envoltura tarifas-rejilla">
+      <h2 class="rotulo" id="tarifas-titulo">Tarifa</h2>
+      <p class="tarifa-cifra"><span class="tarifa-importe">25 €</span><span class="tarifa-mes">al mes</span></p>
+      <div class="tarifa-lado">
+        <p class="tarifa-igual" id="tarifa-igual">Igual en todas las sedes</p>
+        <ul class="tarifa-incluye">
+          <li>Mensualidad por alumno</li>
+          <li>Licencia y exámenes aparte, se informan en la sede</li>
+        </ul>
+        <a class="boton boton--blanco" id="tarifa-cta" href="#">Preinscribirme<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Todas las sedes -->
+  <section class="seccion" id="sedes" aria-labelledby="sedes-titulo">
+    <div class="envoltura">
+      <div class="cabeza-seccion">
+        <p class="rotulo">La línea</p>
+        <h2 class="titulo-seccion" id="sedes-titulo">Todas las sedes</h2>
+      </div>
+      <ol class="ruta" id="ruta"></ol>
+    </div>
+  </section>
+</main>
+
+<footer class="pie">
+  <div class="envoltura">
+    <p class="pie-marca" aria-hidden="true"><span>Taekwondo</span><span>Sierra Sur</span></p>
+    <div class="pie-fila">
+      <p>© 2026 Taekwondo Sierra Sur</p>
+      <ul class="pie-legal" aria-label="Legal">
+        <li><a href="boceto-linea-comarcal-legales.html#aviso-legal">Aviso legal</a></li>
+        <li><a href="boceto-linea-comarcal-legales.html#privacidad">Privacidad</a></li>
+        <li><a href="boceto-linea-comarcal-legales.html#cookies">Cookies</a></li>
+      </ul>
+      <div>
+        <p class="pie-ejemplo"><strong>Datos y fotos de ejemplo.</strong> Son inventados los lugares, direcciones, grupos, horarios, plazas, profesores, eventos, correo y teléfono. La mensualidad de 25 € es la real. Las fotos son libres y las sustituirá el club.</p>
+        <p class="pie-creditos">Fotos: Camila Sanabria (Unsplash); A. Villalon, cottonbro, Eden FC, Kulani Shibambu, Elshan Musaev, KKlinton y Celio Junior (Pexels).</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* color:inicio — funciones puras de contraste WCAG (las comprueba un script aparte) */
+function hexARgb(hex) {
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function rgbAHex(c) {
+  return '#' + c.map(function (v) { return Math.round(v).toString(16).padStart(2, '0'); }).join('').toUpperCase();
+}
+function luminancia(hex) {
+  var c = hexARgb(hex).map(function (v) {
+    v = v / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function contraste(a, b) {
+  var la = luminancia(a), lb = luminancia(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function rgbAHsl(c) {
+  var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, h = 0, s = 0, d = max - min;
+  if (d) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hslARgb(h, s, l) {
+  function f(p, q, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  if (!s) return [l * 255, l * 255, l * 255];
+  var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  return [f(p, q, h + 1 / 3) * 255, f(p, q, h) * 255, f(p, q, h - 1 / 3) * 255];
+}
+/* Oscurece (baja la luminosidad, mantiene el tono) hasta cumplir el objetivo sobre todos los fondos */
+function oscurecer(hex, objetivo, fondos) {
+  var hsl = rgbAHsl(hexARgb(hex)), actual = rgbAHex(hexARgb(hex));
+  function cumple(c) { return fondos.every(function (f) { return contraste(c, f) >= objetivo; }); }
+  while (!cumple(actual) && hsl[2] > 0) {
+    hsl[2] = Math.max(0, hsl[2] - 0.005);
+    actual = rgbAHex(hslARgb(hsl[0], hsl[1], hsl[2]));
+  }
+  return actual;
+}
+function mezclar(a, b, t) {
+  var x = hexARgb(a), y = hexARgb(b);
+  return rgbAHex(x.map(function (v, i) { return v + (y[i] - v) * t; }));
+}
+var BLANCO = '#FFFFFF', ANDEN = '#ECEEF0', TINTA = '#101418';
+function derivarColores(base) {
+  base = rgbAHex(hexARgb(base));
+  /* Trazo, anillos de parada y días: >= 3:1 sobre blanco y sobre el gris de andén */
+  var trazo = oscurecer(base, 3, [BLANCO, ANDEN]);
+  /* Botón primario: texto blanco o tinta, el que dé >= 4,5:1; si ninguno, se oscurece el fondo para el blanco */
+  var botonFondo = trazo, botonTinta;
+  if (contraste(BLANCO, trazo) >= 4.5) botonTinta = BLANCO;
+  else if (contraste(TINTA, trazo) >= 4.5) botonTinta = TINTA;
+  else { botonFondo = oscurecer(trazo, 4.5, [BLANCO]); botonTinta = BLANCO; }
+  /* Hover: se aleja del texto, así el contraste nunca baja */
+  var botonHover = botonTinta === BLANCO ? mezclar(botonFondo, '#000000', 0.16) : mezclar(botonFondo, '#FFFFFF', 0.2);
+  /* Enlaces y botón secundario en el color: >= 4,5:1 sobre blanco y andén */
+  var texto = oscurecer(base, 4.5, [BLANCO, ANDEN]);
+  /* Tarifas: la sección se pinta con el color tal cual si blanco o tinta dan >= 4,5:1; si no, se oscurece */
+  var tarifaFondo = base, tarifaTinta;
+  if (contraste(BLANCO, base) >= 4.5) tarifaTinta = BLANCO;
+  else if (contraste(TINTA, base) >= 4.5) tarifaTinta = TINTA;
+  else { tarifaFondo = oscurecer(base, 4.5, [BLANCO]); tarifaTinta = BLANCO; }
+  /* Botón blanco de tarifas: texto del color si da AA sobre blanco; si no, tinta */
+  var tarifaBotonTinta = contraste(tarifaFondo, BLANCO) >= 4.5 ? tarifaFondo : TINTA;
+  return {
+    base: base, trazo: trazo, botonFondo: botonFondo, botonTinta: botonTinta, botonHover: botonHover, texto: texto,
+    tarifaFondo: tarifaFondo, tarifaTinta: tarifaTinta, tarifaBotonTinta: tarifaBotonTinta,
+    cTrazo: Math.min(contraste(trazo, BLANCO), contraste(trazo, ANDEN)),
+    cBoton: contraste(botonFondo, botonTinta), cBotonHover: contraste(botonHover, botonTinta),
+    cTexto: Math.min(contraste(texto, BLANCO), contraste(texto, ANDEN)),
+    cTarifa: contraste(tarifaFondo, tarifaTinta), cTarifaBoton: contraste(tarifaBotonTinta, BLANCO)
+  };
+}
+/* color:fin */
+
+(function () {
+  var params = new URLSearchParams(location.search);
+  var raiz = document.documentElement;
+  raiz.classList.add('js');
+
+  /* ---- Color de la escuela (igual que en la portada) ---- */
+  var colorParam = (params.get('color') || '').replace('#', '');
+  if (/^[0-9a-fA-F]{6}$/.test(colorParam)) raiz.style.setProperty('--escuela', '#' + colorParam.toUpperCase());
+  var base = getComputedStyle(raiz).getPropertyValue('--escuela').trim() || '#0B5CAD';
+  var col = derivarColores(base);
+  raiz.style.setProperty('--escuela-trazo', col.trazo);
+  raiz.style.setProperty('--escuela-texto', col.texto);
+  raiz.style.setProperty('--boton-fondo', col.botonFondo);
+  raiz.style.setProperty('--boton-tinta', col.botonTinta);
+  raiz.style.setProperty('--boton-hover', col.botonHover);
+  raiz.style.setProperty('--tarifa-fondo', col.tarifaFondo);
+  raiz.style.setProperty('--tarifa-tinta', col.tarifaTinta);
+  raiz.style.setProperty('--tarifa-boton-tinta', col.tarifaBotonTinta);
+
+  /* ---- Datos de ejemplo (en la app salen de la gestión; mismo orden que la portada) ---- */
+  var PEXELS = 'https://images.pexels.com/photos/', PX = '?auto=compress&cs=tinysrgb&w=1600';
+  var FOTOS = {
+    clase: { src: PEXELS + '38963062/pexels-photo-38963062.jpeg' + PX, autor: 'A. Villalon', fuente: 'Pexels', alt: 'Clase de niños en el tatami, atentos a las indicaciones del profesor' },
+    patada: { src: PEXELS + '7990087/pexels-photo-7990087.jpeg' + PX, autor: 'cottonbro', fuente: 'Pexels', alt: 'Niña con dobok lanzando una patada' },
+    combate: { src: PEXELS + '37901794/pexels-photo-37901794.jpeg' + PX, autor: 'Eden FC', fuente: 'Pexels', alt: 'Combate de taekwondo con petos y protecciones' },
+    cinturon: { src: PEXELS + '7990068/pexels-photo-7990068.jpeg' + PX, autor: 'cottonbro', fuente: 'Pexels', alt: 'Cinturón blanco anudado sobre un dobok' },
+    pabellon: { src: PEXELS + '33122161/pexels-photo-33122161.jpeg' + PX, autor: 'KKlinton', fuente: 'Pexels', alt: 'Pabellón deportivo con tatami de competición' },
+    voladora: { src: PEXELS + '36563836/pexels-photo-36563836.jpeg' + PX, autor: 'Kulani Shibambu', fuente: 'Pexels', alt: 'Dos jóvenes con dobok en una patada voladora' },
+    fila: { src: 'https://images.unsplash.com/photo-1530560643359-6d2fead989b3?w=1600&q=80', autor: 'Camila Sanabria', fuente: 'Unsplash', alt: 'Niños con dobok y cinturones de colores, en fila durante una clase' }
+  };
+  var SEDES = [
+    { id: 'herrera', nombre: 'Herrera', lugar: 'Pabellón municipal', dir: 'Avda. de la Constitución, s/n', tel: '600 000 001',
+      acceso: 'Entrada por la puerta principal del pabellón.', foto: 'pabellon', foto2: 'clase', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [1, 3], h: ['17:00', '17:45'], p: { t: 'libres', n: 4 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['18:00', '19:00'], p: { t: 'completo' } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['19:30', '21:00'], p: { t: 'espera' } } ] },
+    { id: 'estepa', nombre: 'Estepa', lugar: 'Pabellón cubierto municipal', dir: 'C/ del Deporte, 2', tel: '600 000 002',
+      acceso: 'Entrada por la calle lateral, junto al aparcamiento.', foto: 'clase', foto2: 'pabellon', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [5], h: ['17:00', '18:00'], p: { t: 'libres', n: 2 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['17:30', '18:30'], p: { t: 'libres', n: 6 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [1, 3], h: ['19:00', '20:30'], p: { t: 'completo' } } ] },
+    { id: 'casariche', nombre: 'Casariche', lugar: 'Gimnasio del colegio público', dir: 'C/ Escuelas, 5', tel: '600 000 003',
+      acceso: 'Por la puerta del patio; el colegio abre a las 16:00.', foto: 'patada', foto2: 'cinturon', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [2, 4], h: ['16:15', '17:00'], p: { t: 'libres', n: 5 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [2, 4], h: ['17:00', '18:00'], p: { t: 'libres', n: 3 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['18:15', '19:45'], p: { t: 'espera' } } ] },
+    { id: 'lora', nombre: 'Lora de Estepa', lugar: 'Salón de usos múltiples', dir: 'Plaza de España, 1', tel: '600 000 004',
+      acceso: 'Primera planta, con ascensor.', foto: 'cinturon', foto2: 'patada', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [5], h: ['16:00', '17:00'], p: { t: 'completo' } },
+      { n: 'Infantil', e: '7 a 11 años', d: [5], h: ['17:00', '18:30'], p: { t: 'libres', n: 5 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [5], h: ['18:30', '20:00'], p: { t: 'libres', n: 1 } } ] },
+    { id: 'roda', nombre: 'Roda de Andalucía', lugar: 'Pabellón municipal', dir: 'Avda. de Andalucía, 40', tel: '600 000 005',
+      acceso: 'Pista pequeña, al fondo a la derecha.', foto: 'voladora', foto2: 'combate', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [1, 3], h: ['17:00', '17:45'], p: { t: 'completo' } },
+      { n: 'Infantil', e: '7 a 11 años', d: [1, 3], h: ['18:00', '19:00'], p: { t: 'libres', n: 2 } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['19:00', '20:30'], p: { t: 'libres', n: 7 } } ] },
+    { id: 'mollina', nombre: 'Mollina', lugar: 'Gimnasio del colegio', dir: 'C/ Granada, 12', tel: '600 000 006',
+      acceso: 'Gimnasio al fondo del patio del colegio.', foto: 'combate', foto2: 'voladora', grupos: [
+      { n: 'Peques', e: '4 a 6 años', d: [2, 4], h: ['16:30', '17:15'], p: { t: 'libres', n: 6 } },
+      { n: 'Infantil', e: '7 a 11 años', d: [2, 4], h: ['17:30', '18:30'], p: { t: 'espera' } },
+      { n: 'Jóvenes y adultos', e: 'Desde 12 años', d: [2, 4], h: ['18:30', '20:00'], p: { t: 'libres', n: 4 } } ] }
+  ];
+  var PROFES = [
+    { nombre: 'Antonio Ruiz Carmona', grado: 'Cinturón negro 5.º dan', sedes: ['herrera', 'estepa'],
+      foto: { src: PEXELS + '20501962/pexels-photo-20501962.jpeg' + PX, autor: 'Elshan Musaev', fuente: 'Pexels', alt: 'Retrato de un maestro de taekwondo con cinturón negro' } },
+    { nombre: 'Lucía Fernández Gómez', grado: 'Cinturón negro 3.º dan', sedes: ['casariche', 'lora'],
+      foto: { src: PEXELS + '38233888/pexels-photo-38233888.jpeg' + PX, autor: 'Celio Junior', fuente: 'Pexels', alt: 'Deportista con dobok celebrando tras un combate' } },
+    { nombre: 'Manuel Ortega Pozo', grado: 'Cinturón negro 2.º dan', sedes: ['roda', 'mollina'], foto: null }
+  ];
+  function idGrupo(g) { return g.n === 'Peques' ? 'peques' : g.n === 'Infantil' ? 'infantil' : 'jovenes'; }
+  SEDES.forEach(function (s) {
+    s.grupos.forEach(function (g) { g.id = idGrupo(g); g.min = parseInt(g.e.match(/\d+/)[0], 10); g.max = /Desde/.test(g.e) ? 99 : parseInt(g.e.match(/a (\d+)/)[1], 10); });
+    s.profes = PROFES.filter(function (p) { return p.sedes.indexOf(s.id) !== -1; });
+  });
+
+  var nSedes = parseInt(params.get('sedes'), 10);
+  var sedes = SEDES;
+  if (nSedes === 1) sedes = SEDES.filter(function (s) { return s.id === 'estepa'; });
+  else if (nSedes > 1 && nSedes < SEDES.length) sedes = SEDES.slice(0, nSedes);
+  var una = sedes.length === 1;
+  function buscarSede(id) { for (var i = 0; i < sedes.length; i++) if (sedes[i].id === id) return sedes[i]; return null; }
+  function buscarGrupo(sede, id) { if (!sede) return null; for (var i = 0; i < sede.grupos.length; i++) if (sede.grupos[i].id === id) return sede.grupos[i]; return null; }
+
+  /* ---- Tiempo (?ahora=ISO simula el momento) ---- */
+  var ahoraParam = params.get('ahora');
+  var ahora = ahoraParam && !isNaN(new Date(ahoraParam)) ? new Date(ahoraParam) : new Date();
+  var DIA_LETRAS = [[1, 'L'], [2, 'M'], [3, 'X'], [4, 'J'], [5, 'V'], [6, 'S'], [0, 'D']];
+  var DIA_LARGO = { 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado', 0: 'domingo' };
+  var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function mayus(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  function minutos(hhmm) { var p = hhmm.split(':'); return +p[0] * 60 + +p[1]; }
+  function ordenHora(gs) { return gs.slice().sort(function (a, b) { return minutos(a.h[0]) - minutos(b.h[0]); }); }
+  function diasTexto(d) { return d.map(function (x) { return DIA_LARGO[x]; }).join(' y '); }
+  function proximaClase(sede) {
+    var hoyDia = ahora.getDay(), ahoraMin = ahora.getHours() * 60 + ahora.getMinutes();
+    for (var k = 0; k < 8; k++) {
+      var dia = (hoyDia + k) % 7, mejor = null;
+      sede.grupos.forEach(function (g) {
+        if (g.d.indexOf(dia) === -1) return;
+        var m = minutos(g.h[0]);
+        if (k === 0 && m <= ahoraMin) return;
+        if (!mejor || m < minutos(mejor.h[0])) mejor = g;
+      });
+      if (mejor) return { hoy: k === 0, cuando: k === 1 ? 'Mañana' : mayus(DIA_LARGO[dia]), hora: mejor.h[0], grupo: mejor };
+    }
+    return null;
+  }
+
+  /* ---- Piezas compartidas ---- */
+  var FLECHA = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var FLECHA_IZQ = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var EXTERNA = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7 9M11.5 9.5v4h-9v-9h4" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICONO = {
+    libres: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="#F2C230" stroke="#101418" stroke-width="1.5"/></svg>',
+    pocas: '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="#FFFFFF" stroke="#101418" stroke-width="1.5"/><path d="M7 1.5a5.5 5.5 0 0 0 0 11z" fill="#F2C230" stroke="#101418" stroke-width="1.5"/></svg>',
+    completo: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M4.1 13.9l9.8-9.8" stroke="currentColor" stroke-width="1.75"/></svg>',
+    espera: '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M9 5.2V9l2.8 1.8" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round"/></svg>'
+  };
+  /* libres (3 o más) / pocas (1 o 2) / completo / lista de espera: forma y texto, no solo color */
+  function tipoPlazas(p) { return p.t === 'libres' ? (p.n <= 2 ? 'pocas' : 'libres') : p.t; }
+  function hayPlaza(g) { return g.p.t === 'libres'; }
+  function textoPlazas(p) {
+    var t = tipoPlazas(p);
+    if (t === 'libres') return 'Quedan ' + p.n + ' plazas';
+    if (t === 'pocas') return p.n === 1 ? 'Última plaza' : 'Últimas ' + p.n + ' plazas';
+    return t === 'completo' ? 'Completo' : 'Lista de espera';
+  }
+  function plazasHtml(p) {
+    var t = tipoPlazas(p);
+    return '<p class="plazas plazas--' + t + '">' + ICONO[t] + '<span class="cifras">' + textoPlazas(p) + '</span></p>';
+  }
+  function diasHtml(d) {
+    var hoy = ahora.getDay();
+    return '<p class="dias-p"><span class="dias" aria-hidden="true">' + DIA_LETRAS.map(function (x) {
+      var si = d.indexOf(x[0]) !== -1;
+      return '<span class="dia' + (si ? ' dia--si' : '') + (si && x[0] === hoy ? ' dia--hoy' : '') + '">' + x[1] + '</span>';
+    }).join('') + '</span><span class="oculto">' + diasTexto(d) + '</span></p>';
+  }
+  function fotoHtml(f, clase, carga) {
+    return '<figure class="foto ' + clase + '"><img src="' + f.src + '" width="1600" height="2000"' + (carga === 'ya' ? ' fetchpriority="high"' : ' loading="lazy"') +
+      ' alt="' + f.alt + '"><figcaption class="credito">Foto de ejemplo · ' + f.autor + ' · ' + f.fuente + '</figcaption></figure>';
+  }
+  function mapaUrl(s) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.lugar + ', ' + s.dir + ', ' + s.nombre); }
+
+  /* Enlaces entre las páginas del boceto: conservan color, número de sedes y hora simulada */
+  var PAG_PORTADA = 'boceto-linea-comarcal.html', PAG_SEDE = 'boceto-linea-comarcal-sede.html', PAG_PRE = 'boceto-linea-comarcal-preinscripcion.html';
+  function enlace(pagina, extra) {
+    var q = new URLSearchParams(), partes = pagina.split('#');
+    ['color', 'sedes', 'ahora'].forEach(function (k) { if (params.get(k)) q.set(k, params.get(k)); });
+    Object.keys(extra || {}).forEach(function (k) { if (extra[k] !== null && extra[k] !== undefined) q.set(k, extra[k]); });
+    var t = q.toString();
+    return partes[0] + (t ? '?' + t : '') + (partes[1] ? '#' + partes[1] : '');
+  }
+  document.querySelectorAll('[data-enlace]').forEach(function (a) { a.href = enlace(a.getAttribute('href')); });
+
+  var CLAVE = 'linea-comarcal:sede';
+  function leerSede() { try { return localStorage.getItem(CLAVE); } catch (e) { return null; } }
+  function guardarSede(id) { try { localStorage.setItem(CLAVE, id); } catch (e) { /* sin almacenamiento */ } }
+
+  /* ---- Menú móvil a pantalla completa ---- */
+  (function () {
+    var menu = document.querySelector('.menu-boton'), nav = document.getElementById('nav-principal');
+    if (!menu || !nav) return;
+    var menuTexto = menu.querySelector('.menu-texto');
+    function ponerMenu(abrir) {
+      menu.setAttribute('aria-expanded', String(abrir));
+      menuTexto.textContent = abrir ? 'Cerrar' : 'Menú';
+      nav.classList.toggle('abierta', abrir);
+      document.body.classList.toggle('menu-abierto', abrir);
+    }
+    menu.addEventListener('click', function () { ponerMenu(menu.getAttribute('aria-expanded') !== 'true'); });
+    nav.addEventListener('click', function (ev) { if (ev.target.closest('a')) ponerMenu(false); });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') { ponerMenu(false); menu.focus(); }
+    });
+  })();
+
+  /* ---- Sede pedida (?sede=), si no la recordada, si no la primera ---- */
+  var sede = buscarSede(params.get('sede')) || buscarSede(leerSede()) || sedes[0];
+  guardarSede(sede.id);
+  var pos = sedes.indexOf(sede), ant = sedes[pos - 1] || null, sig = sedes[pos + 1] || null;
+  document.title = sede.nombre + ' · Taekwondo Sierra Sur · Boceto «La línea comarcal», página de sede';
+  var preSede = enlace(PAG_PRE, { sede: sede.id });
+
+  /* ---- Tramo: anterior, actual y siguiente; el trazo sigue si hay más paradas ---- */
+  var C = ['16.6667%', '50%', '83.3333%'];
+  var ini, fin, terms = [];
+  if (una) { ini = 'calc(50% - 72px)'; fin = 'calc(50% + 72px)'; terms = [ini, fin]; document.getElementById('tramo').classList.add('tramo--una'); }
+  else {
+    /* Principio o final de línea: el trazo acaba en un terminal un poco más allá de la última parada */
+    if (!ant) ini = 'calc(' + C[1] + ' - 64px)';
+    else if (pos - 1 === 0) ini = 'calc(' + C[0] + ' - 40px)';
+    else ini = 'var(--sangra-izq)';
+    if (!sig) fin = 'calc(' + C[1] + ' + 64px)';
+    else if (pos + 1 === sedes.length - 1) fin = 'calc(' + C[2] + ' + 40px)';
+    else fin = 'calc(100% - var(--sangra-der))';
+    if (ini.indexOf('calc(') === 0) terms.push(ini);
+    if (fin.indexOf('calc(') === 0 && fin.indexOf('sangra') === -1) terms.push(fin);
+  }
+  function vecina(s, sentido) {
+    if (!s) return '<span class="tramo-hueco" aria-hidden="true"></span>';
+    return '<a class="tramo-parada" href="' + enlace(PAG_SEDE, { sede: s.id }) + '">' +
+      '<span class="tramo-circulo" aria-hidden="true"></span>' +
+      '<span class="tramo-sentido">' + (sentido === 'ant' ? FLECHA_IZQ + 'Anterior' : 'Siguiente' + FLECHA) + '</span>' +
+      '<span class="tramo-nombre">' + s.nombre + '</span></a>';
+  }
+  document.getElementById('tramo').innerHTML =
+    '<span class="tramo-linea" aria-hidden="true" style="left:' + ini + ';right:calc(100% - ' + fin + ')"></span>' +
+    terms.map(function (x) { return '<span class="tramo-term" aria-hidden="true" style="left:' + x + '"></span>'; }).join('') +
+    (una ? '' : vecina(ant, 'ant')) +
+    '<p class="tramo-parada tramo-parada--actual" aria-current="page"><span class="tramo-circulo" aria-hidden="true"></span>' +
+      '<span class="tramo-nombre">' + (una ? 'Única sede' : 'Parada ' + (pos + 1) + ' de ' + sedes.length) + '</span></p>' +
+    (una ? '' : vecina(sig, 'sig'));
+
+  /* ---- Cartel ---- */
+  var titular = document.getElementById('sede-titulo');
+  titular.textContent = sede.nombre;
+  var palabraLarga = Math.max.apply(null, sede.nombre.split(' ').map(function (w) { return w.length; }));
+  if (palabraLarga > 7) titular.classList.add('sede-titular--largo');
+  document.getElementById('sede-lugar').innerHTML = '<strong>' + sede.lugar + '</strong><span>' + sede.dir + ', ' + sede.nombre + '</span>';
+  document.getElementById('sede-acciones').innerHTML =
+    '<a class="boton" href="' + preSede + '" aria-label="Preinscribirme en ' + sede.nombre + '">Preinscribirme' + FLECHA + '</a>' +
+    '<a class="enlace-flecha" href="#horarios">Ver grupos y horas' + FLECHA + '</a>';
+  document.getElementById('sede-foto').outerHTML = fotoHtml(FOTOS[sede.foto], 'sede-foto', 'ya');
+
+  /* ---- Tablero de salidas ---- */
+  var prox = proximaClase(sede);
+  document.getElementById('proxima').innerHTML = prox
+    ? '<span class="proxima-rotulo">Próxima clase</span><span class="proxima-cuando">' + (prox.hoy ? '<mark class="hoy">HOY</mark>' : prox.cuando + ' ') +
+      '<span class="hora">' + prox.hora + '</span></span><span class="proxima-grupo">' + prox.grupo.n + ', ' + prox.grupo.e.toLowerCase() + '</span>'
+    : '<span class="proxima-rotulo">Sin clases esta semana</span>';
+  var hoyDia = ahora.getDay();
+  function accion(g) {
+    var quien = g.n + ', ' + g.e.toLowerCase() + ', ' + sede.nombre;
+    var destino = enlace(PAG_PRE, { sede: sede.id, grupo: g.id });
+    return hayPlaza(g)
+      ? '<a class="boton" href="' + destino + '" aria-label="Preinscribirme: ' + quien + '">Preinscribirme' + FLECHA + '</a>'
+      : '<a class="boton boton--secundario" href="' + destino + '" aria-label="Apuntarme a la lista de espera: ' + quien + '">Apuntarme a la lista de espera' + FLECHA + '</a>';
+  }
+  document.getElementById('salidas').setAttribute('aria-label', 'Grupos de ' + sede.nombre);
+  document.getElementById('salidas').innerHTML = ordenHora(sede.grupos).map(function (g) {
+    var hoy = g.d.indexOf(hoyDia) !== -1;
+    var profe = sede.profes[0];
+    return '<li class="salida">' +
+      '<p class="salida-hora">' + (hoy ? '<mark class="hoy">HOY</mark>' : '') + '<span class="hora-ini">' + g.h[0] + '</span><span class="hora-fin">–' + g.h[1] + '</span></p>' +
+      '<div class="salida-grupo"><p class="grupo-nombre">' + g.n + '</p><p class="grupo-edades">' + g.e + ' · Taekwondo</p>' +
+        (profe ? '<p class="grupo-profe"><span class="oculto">Profesor: </span>' + profe.nombre + '</p>' : '') + '</div>' +
+      '<div class="salida-detalle">' + diasHtml(g.d) + plazasHtml(g.p) + '</div>' +
+      '<div class="salida-accion">' + accion(g) + '</div>' +
+      '</li>';
+  }).join('');
+  document.querySelector('.leyenda').innerHTML =
+    '<li>' + ICONO.libres + 'Quedan plazas</li><li>' + ICONO.pocas + 'Últimas plazas</li>' +
+    '<li>' + ICONO.completo + 'Completo: puedes apuntarte a la lista de espera</li>' +
+    '<li>' + ICONO.espera + 'Ya hay lista de espera</li>';
+
+  /* ---- Cómo llegar y contacto ---- */
+  var telNum = '+34' + sede.tel.replace(/\s/g, '');
+  document.getElementById('llegar-ficha').innerHTML =
+    '<div class="ficha-fila"><dt>Lugar</dt><dd>' + sede.lugar + '<span class="ficha-nota">' + sede.dir + ', ' + sede.nombre + '</span></dd></div>' +
+    '<div class="ficha-fila"><dt>Entrada</dt><dd>' + sede.acceso + '</dd></div>' +
+    '<div class="ficha-fila"><dt>Teléfono</dt><dd><a class="cifras" href="tel:' + telNum + '">' + sede.tel + '</a><span class="ficha-nota">Llamadas y WhatsApp, por la tarde</span></dd></div>';
+  document.getElementById('llegar-acciones').innerHTML =
+    '<a class="boton boton--secundario" href="' + mapaUrl(sede) + '" target="_blank" rel="noopener">Abrir en el mapa' + EXTERNA + '<span class="oculto"> (abre en otra pestaña)</span></a>' +
+    '<a class="enlace-flecha" href="#whatsapp-ejemplo">Escribir por WhatsApp' + FLECHA + '</a>';
+  document.getElementById('llegar-foto').outerHTML = fotoHtml(FOTOS[sede.foto2], 'llegar-foto');
+
+  /* ---- Profesores de esta sede ---- */
+  document.getElementById('profes-rotulo').textContent = 'Profesores en ' + sede.nombre;
+  document.getElementById('profes').innerHTML = sede.profes.map(function (p) {
+    var partes = p.nombre.split(' ');
+    var iniciales = partes[0].charAt(0) + (partes[1] ? partes[1].charAt(0) : '');
+    var imagen = p.foto ? fotoHtml(p.foto, 'profe-foto')
+      : '<div class="monograma" role="img" aria-label="Sin foto: iniciales de ' + p.nombre + '">' + iniciales + '</div>';
+    var otras = p.sedes.filter(function (id) { return id !== sede.id && buscarSede(id); }).map(function (id) { return buscarSede(id).nombre; });
+    return '<li class="profe-fila">' + imagen + '<div class="profe-datos">' +
+      '<h3 class="profe-nombre">' + p.nombre + '</h3><p class="profe-grado">' + p.grado + '</p>' +
+      '<ul class="profe-grupos" aria-label="Sus grupos en ' + sede.nombre + '">' + ordenHora(sede.grupos).map(function (g) {
+        return '<li><b>' + g.n + '</b><span>' + mayus(diasTexto(g.d)) + ', <span class="hora">' + g.h[0] + '</span></span></li>';
+      }).join('') + '</ul>' +
+      (otras.length ? '<p class="profe-otras">También da clase en ' + otras.join(' y ') + '.</p>' : '') +
+      '</div></li>';
+  }).join('');
+
+  /* ---- Tarifa ---- */
+  if (una) document.getElementById('tarifa-igual').textContent = 'Para todos los grupos';
+  document.getElementById('tarifa-cta').href = preSede;
+
+  /* ---- La línea entera ---- */
+  document.getElementById('ruta').innerHTML = sedes.map(function (s) {
+    var esta = s.id === sede.id;
+    return '<li class="ruta-sede' + (esta ? ' ruta-sede--actual' : '') + '">' +
+      (esta ? '<span class="ruta-nombre">' + s.nombre + '</span><span class="ruta-aqui">Estás aquí</span>'
+            : '<a class="ruta-nombre" href="' + enlace(PAG_SEDE, { sede: s.id }) + '">' + s.nombre + '</a>') +
+      '<span class="ruta-dir">' + s.lugar + ' · ' + s.dir + '</span></li>';
+  }).join('');
+  if (una) document.getElementById('sedes').hidden = true;
+})();
+</script>
+</body>
+</html>
