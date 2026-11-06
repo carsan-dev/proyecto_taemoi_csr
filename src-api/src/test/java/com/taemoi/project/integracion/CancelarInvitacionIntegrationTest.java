@@ -112,7 +112,8 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 			"producto_alumno.cancelado_por_usuario_id", "producto_alumno.vendido_por_usuario_id",
 			"solicitud.solicitado_por_usuario_id", "solicitud.resuelto_por_usuario_id",
 			"solicitud.encargado_por_usuario_id", "solicitud.recibido_por_usuario_id",
-			"clase_asistencia.registrado_por_usuario_id", "clase_asistencia.modificado_por_usuario_id");
+			"clase_asistencia.registrado_por_usuario_id", "clase_asistencia.modificado_por_usuario_id",
+			"festivo.creado_por_usuario_id", "festivo.modificado_por_usuario_id");
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -574,6 +575,13 @@ class CancelarInvitacionIntegrationTest extends MySqlIntegrationTest {
 				jdbc.update("INSERT INTO clase_asistencia (organizacion_id, grupo_id, fecha, hora_inicio, hora_fin, "
 						+ "registrado_en, " + columna + ") VALUES (?, ?, '2026-09-07', '18:00', '19:00', NOW(6), ?)",
 						escuela.org, escuela.gA, id);
+			});
+		}
+		// Decisiones 455-463: autoría de un festivo (alta o último cambio).
+		for (String columna : List.of("creado_por_usuario_id", "modificado_por_usuario_id")) {
+			casos.put("festivo." + columna, id -> {
+				jdbc.update("INSERT INTO festivo (organizacion_id, tipo, fecha_desde, fecha_hasta, creado_en, " + columna
+						+ ") VALUES (?, 'DIA', '2026-12-08', '2026-12-08', NOW(), ?)", escuela.org, id);
 			});
 		}
 		return casos;

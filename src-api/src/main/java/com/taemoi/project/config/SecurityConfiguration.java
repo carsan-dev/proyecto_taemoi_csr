@@ -569,6 +569,12 @@ public class SecurityConfiguration {
 						.requestMatchers("/api/solicitudes", "/api/solicitudes/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_RESPONSABLE_SEDE.toString())
+						// Decisiones 455-463: festivos por sede. Propietario, gestor y responsable de sede (sus sedes, en
+						// FestivoService); el profesor los ve en sus clases, no aquí. Fuera de la lista blanca de la sesión
+						// solo-profesor.
+						.requestMatchers("/api/festivos", "/api/festivos/**")
+						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
+								Roles.ROLE_RESPONSABLE_SEDE.toString())
 						.requestMatchers("/api/admin/**").hasAnyAuthority(Roles.ROLE_ADMIN.toString())
 						// Administrador de plataforma (lecturas entre escuelas); el controlador lo exige también.
 						.requestMatchers("/api/plataforma/**").hasAuthority(AutoridadPlataforma.ADMIN_PLATAFORMA)

@@ -32,6 +32,8 @@ import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.entities.AsistenciaAlumno;
 import com.taemoi.project.entities.ClaseAsistencia;
 import com.taemoi.project.entities.Convocatoria;
+import com.taemoi.project.entities.MotivoFalta;
+import com.taemoi.project.entities.TipoFestivo;
 import com.taemoi.project.pdf.ContenidoPdf.Presentacion;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -42,6 +44,7 @@ import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.ProductoRepository;
 import com.taemoi.project.repositories.TurnoRepository;
 import com.taemoi.project.services.ConvocatoriaService;
+import com.taemoi.project.services.FestivoService;
 import com.taemoi.project.services.MarcaEscuelaPruebas;
 import com.taemoi.project.services.ResolutorCuantiaMensualidad;
 import com.taemoi.project.services.TarifaSedeService;
@@ -70,6 +73,7 @@ class PdfServiceContenidoTest {
 	private final TarifaSedeService tarifaSede = mock(TarifaSedeService.class);
 	private final ClaseAsistenciaRepository claseAsistenciaRepository = mock(ClaseAsistenciaRepository.class);
 	private final AsistenciaAlumnoRepository asistenciaAlumnoRepository = mock(AsistenciaAlumnoRepository.class);
+	private final FestivoService festivoService = mock(FestivoService.class);
 	private final PDFServiceImpl servicio = new PDFServiceImpl();
 
 	@BeforeEach
@@ -80,6 +84,7 @@ class PdfServiceContenidoTest {
 		ReflectionTestUtils.setField(servicio, "turnoRepository", turnoRepository);
 		ReflectionTestUtils.setField(servicio, "claseAsistenciaRepository", claseAsistenciaRepository);
 		ReflectionTestUtils.setField(servicio, "asistenciaAlumnoRepository", asistenciaAlumnoRepository);
+		ReflectionTestUtils.setField(servicio, "festivoService", festivoService);
 		ReflectionTestUtils.setField(servicio, "productoRepository", productoRepository);
 		ReflectionTestUtils.setField(servicio, "productoAlumnoRepository", productoAlumnoRepository);
 		ReflectionTestUtils.setField(servicio, "convocatoriaRepository", convocatoriaRepository);
@@ -230,7 +235,8 @@ class PdfServiceContenidoTest {
 
 	// ------------------------------------------------------------------ asistencia marcada
 
-	private static final String LEYENDA = "X: asistió · –: faltó · Vacía: sin lista";
+	private static final String LEYENDA = "X: asistió · –: faltó · I: injustificada · M: médica · F: familiar"
+			+ " · J: otra justificada · Gris: festivo · Vacía: sin lista";
 
 	@Test
 	void asistenciaSinMarcarNoConsultaListasNiPintaLeyenda() throws Exception {
@@ -241,7 +247,7 @@ class PdfServiceContenidoTest {
 		assertEquals(ContenidoPdf.lineas(sin), ContenidoPdf.lineas(enFalse));
 		assertFalse(String.join("\n", ContenidoPdf.lineas(enFalse)).contains("asistió"));
 		assertFalse(String.join("\n", ContenidoPdf.lineas(gestion)).contains("asistió"));
-		verifyNoInteractions(claseAsistenciaRepository, asistenciaAlumnoRepository);
+		verifyNoInteractions(claseAsistenciaRepository, asistenciaAlumnoRepository, festivoService);
 	}
 
 	@Test
@@ -305,6 +311,90 @@ class PdfServiceContenidoTest {
 		assertTrue(lineas.stream().anyMatch(l -> l.contains(LEYENDA)), String.join("\n", lineas));
 		// Sin clases guardadas no hay nada que leer en las filas.
 		verifyNoInteractions(asistenciaAlumnoRepository);
+	}
+
+	/** Decisiones 455-463: una falta con motivo sale con su letra; sin motivo, «–». */
+	@Test
+	void asistenciaMarcadaPintaLaLetraDelMotivo() throws Exception {
+		ClaseAsistencia infantil5 = clase(100L, 3L, 9L, LocalDate.of(2026, 10, 5));
+		ClaseAsistencia infantil12 = clase(101L, 3L, 9L, LocalDate.of(2026, 10, 12));
+		ClaseAsistencia infantil19 = clase(102L, 3L, 9L, LocalDate.of(2026, 10, 19));
+		ClaseAsistencia infantil26 = clase(103L, 3L, 9L, LocalDate.of(2026, 10, 26));
+		when(claseAsistenciaRepository.findByTurnoIdInAndFechaBetween(any(), any(), any()))
+				.thenReturn(List.of(infantil5, infantil12, infantil19, infantil26));
+		when(asistenciaAlumnoRepository.findByClaseIdIn(any())).thenReturn(List.of(
+				new AsistenciaAlumno(100L, 1L, false, MotivoFalta.INJUSTIFICADA),
+				new AsistenciaAlumno(101L, 1L, false, MotivoFalta.MEDICA),
+				new AsistenciaAlumno(102L, 1L, false, MotivoFalta.FAMILIAR),
+				new AsistenciaAlumno(103L, 1L, false, MotivoFalta.OTRA_JUSTIFICADA),
+				new AsistenciaAlumno(100L, 3L, false), new AsistenciaAlumno(101L, 3L, true),
+				// Un presente nunca lleva motivo, aunque se le pase.
+				new AsistenciaAlumno(102L, 3L, true, MotivoFalta.MEDICA)));
+
+		List<String> lineas = ContenidoPdf.lineas(
+				conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(9L), true)));
+
+		assertTrue(lineas.contains("7m 5001 11 Ana Prueba Uno 101 I M F J"), String.join("\n", lineas));
+		assertTrue(lineas.contains("10m NO 13 Carla Prueba Tres 103 – X X"), String.join("\n", lineas));
+		assertTrue(lineas.stream().anyMatch(l -> l.contains(LEYENDA)), String.join("\n", lineas));
+	}
+
+	/**
+	 * Lunes 12 festivo en la sede del grupo y sin lista: columna gris con «Festivo». Lunes 19 festivo pero con lista
+	 * guardada: manda la lista y salen sus marcas. Una consulta de festivos para todas las páginas.
+	 */
+	@Test
+	void asistenciaMarcadaPintaLaColumnaFestiva_yConListaMandaLaLista() throws Exception {
+		datos.lunesInfantil.getGrupo().setSedeId(7L);
+		ClaseAsistencia infantil19 = clase(100L, 3L, 9L, LocalDate.of(2026, 10, 19));
+		when(claseAsistenciaRepository.findByTurnoIdInAndFechaBetween(any(), any(), any()))
+				.thenReturn(List.of(infantil19));
+		when(asistenciaAlumnoRepository.findByClaseIdIn(any())).thenReturn(List.of(
+				new AsistenciaAlumno(100L, 1L, true), new AsistenciaAlumno(100L, 3L, false, MotivoFalta.MEDICA)));
+		FestivoService.DiaFestivo puente = new FestivoService.DiaFestivo(1L, "Puente", TipoFestivo.RANGO,
+				LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 19), 1, false);
+		when(festivoService.festivosEn(any(), eq(LocalDate.of(2026, 10, 1)), eq(LocalDate.of(2026, 10, 31)))).thenReturn(
+				java.util.Map.of(new FestivoService.SedeYFecha(7L, LocalDate.of(2026, 10, 12)), puente,
+						new FestivoService.SedeYFecha(7L, LocalDate.of(2026, 10, 19)), puente,
+						// Otra sede: no afecta a este grupo.
+						new FestivoService.SedeYFecha(8L, LocalDate.of(2026, 10, 26)), puente));
+
+		List<String> lineas = ContenidoPdf.lineas(
+				conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(9L), true)));
+		String texto = String.join("\n", lineas);
+
+		assertEquals(1, texto.split("Festivo", -1).length - 1, texto);
+		assertTrue(lineas.stream().anyMatch(l -> l.startsWith("7m 5001 11 Ana Prueba Uno 101") && l.endsWith(" X")), texto);
+		assertTrue(lineas.stream().anyMatch(l -> l.startsWith("10m NO 13 Carla Prueba Tres 103") && l.endsWith(" M")),
+				texto);
+		verify(festivoService, times(1)).festivosEn(any(), any(), any());
+	}
+
+	/** Gestión por día y deporte: letra de la falta con motivo, columna festiva sin lista y leyenda. */
+	@Test
+	void asistenciaMarcadaDeGestionPintaLetras_yLaColumnaFestiva() throws Exception {
+		datos.lunesInfantil.getGrupo().setSedeId(7L);
+		ClaseAsistencia infantil5 = clase(100L, 3L, 9L, LocalDate.of(2026, 10, 5));
+		ClaseAsistencia infantil19 = clase(102L, 3L, 9L, LocalDate.of(2026, 10, 19));
+		when(claseAsistenciaRepository.findByTurnoIdInAndFechaBetween(any(), any(), any()))
+				.thenReturn(List.of(infantil5, infantil19));
+		when(asistenciaAlumnoRepository.findByClaseIdIn(any())).thenReturn(List.of(
+				new AsistenciaAlumno(100L, 1L, false, MotivoFalta.MEDICA), new AsistenciaAlumno(102L, 1L, true),
+				new AsistenciaAlumno(100L, 3L, false), new AsistenciaAlumno(102L, 3L, false, MotivoFalta.FAMILIAR)));
+		FestivoService.DiaFestivo fiesta = new FestivoService.DiaFestivo(1L, "Fiesta", TipoFestivo.DIA,
+				LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 12), 1, true);
+		when(festivoService.festivosEn(any(), eq(LocalDate.of(2026, 10, 1)), eq(LocalDate.of(2026, 10, 31)))).thenReturn(
+				java.util.Map.of(new FestivoService.SedeYFecha(7L, LocalDate.of(2026, 10, 12)), fiesta));
+
+		List<String> lineas = ContenidoPdf.lineas(
+				conHoy(() -> servicio.generarListadoAsistencia(2026, 10, List.of("Lunes"), null, null, true)));
+		String texto = String.join("\n", lineas);
+
+		assertTrue(lineas.stream().anyMatch(l -> l.startsWith("7m 5001 11 Ana Prueba Uno 101") && l.endsWith(" M X")), texto);
+		assertTrue(lineas.stream().anyMatch(l -> l.startsWith("10m NO 13 Carla Prueba Tres 103") && l.endsWith(" – F")),
+				texto);
+		assertEquals(1, texto.split("Festivo", -1).length - 1, texto);
+		assertTrue(lineas.stream().anyMatch(l -> l.contains(LEYENDA)), texto);
 	}
 
 	private static ClaseAsistencia clase(long id, long grupoId, long turnoId, LocalDate fecha) {

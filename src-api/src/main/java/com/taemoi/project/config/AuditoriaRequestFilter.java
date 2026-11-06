@@ -233,8 +233,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			// registro propio).
 			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes", "importesTapados"),
 			// Decisión 324: los alumnos presentes, por los dos prefijos (los 4xx; el 2xx tiene registro propio). Esta fila
-			// sobrevive a la anonimización del alumno.
-			Pattern.compile("^/api(/profesor)?/grupos/[^/]+/clases/[^/]+/[^/]+/?$"), Set.of("presentes"));
+			// sobrevive a la anonimización del alumno. Decisiones 455-463: también los motivos de falta (ids de alumnos y,
+			// con «médica», un dato de salud).
+			Pattern.compile("^/api(/profesor)?/grupos/[^/]+/clases/[^/]+/[^/]+/?$"), Set.of("presentes", "motivos"));
 
 	/**
 	 * Parámetros de la URL que no se guardan en la auditoría para una ruta. Pieza E8-3: la búsqueda de miembros

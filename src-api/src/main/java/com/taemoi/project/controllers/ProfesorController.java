@@ -132,13 +132,17 @@ public class ProfesorController {
 		return ResponseEntity.ok(asistencia.lista(Via.PROFESOR, grupoId, turnoId, fecha));
 	}
 
-	/** Guarda la lista de una clase. 400: fecha o alumnos no válidos; 404: turno de otro grupo. */
+	/**
+	 * Guarda la lista de una clase. 400: fecha, alumnos o motivos no válidos; 404: turno de otro grupo; 409: festivo sin
+	 * lista guardada.
+	 */
 	@PutMapping("/grupos/{grupoId}/clases/{turnoId}/{fecha}")
 	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
 	public ResponseEntity<AsistenciaDTOs.Clase> guardarLista(@PathVariable Long grupoId, @PathVariable Long turnoId,
 			@PathVariable String fecha, @RequestBody GuardarAsistenciaRequest cuerpo) {
 		return ResponseEntity
-				.ok(asistencia.guardar(Via.PROFESOR, grupoId, turnoId, fecha, cuerpo == null ? null : cuerpo.presentes()));
+				.ok(asistencia.guardar(Via.PROFESOR, grupoId, turnoId, fecha, cuerpo == null ? null : cuerpo.presentes(),
+						cuerpo == null ? null : cuerpo.motivos()));
 	}
 
 	/** Presentes y clases del mes por alumno. Año o mes no válidos: 400. */

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
@@ -73,8 +74,9 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 
 	private static final String LUNES = "2026-10-26";
 	private static final Set<String> CLAVES_CLASE = Set.of("turnoId", "fecha", "horaInicio", "horaFin", "pasada",
-			"presentes", "total", "alumnos");
-	private static final Set<String> CLAVES_ALUMNO = Set.of("id", "nombre", "apellidos", "presente", "deportes");
+			"presentes", "total", "alumnos", "festivo");
+	private static final Set<String> CLAVES_ALUMNO = Set.of("id", "nombre", "apellidos", "presente", "deportes",
+			"motivo");
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -545,8 +547,13 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 	void lista_formaJson_sinSaludNiContacto_yDeportesComoElListado() throws Exception {
 		Fijo f = grupoConDosAlumnos(e.sA, profA);
 		JsonNode lista = leer(get("/api/profesor/grupos/" + f.grupo + "/clases/" + f.turno + "/" + LUNES), tProfA, 200);
-		assertEquals(Set.of("clase", "alumnos"), campos(lista));
+		assertEquals(Set.of("clase", "sede", "alumnos"), campos(lista));
+		assertEquals(Set.of("id", "nombre"), campos(lista.get("sede")));
+		assertEquals(e.sA, lista.get("sede").get("id").asLong(), "la sede del grupo");
+		assertEquals(jdbc.queryForObject("SELECT nombre FROM sede WHERE id = ?", String.class, e.sA),
+				lista.get("sede").get("nombre").asText());
 		assertEquals(CLAVES_CLASE, campos(lista.get("clase")));
+		assertNull(jsonNulo(lista.get("clase").get("festivo")), "sin festivo, null");
 		assertNull(jsonNulo(lista.get("clase").get("presentes")), "sin lista, presentes null");
 		assertNull(jsonNulo(lista.get("clase").get("total")), "sin lista, total null");
 		assertEquals(2, lista.get("clase").get("alumnos").asInt());
@@ -555,6 +562,7 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		JsonNode alumno = lista.get("alumnos").get(0);
 		assertEquals(CLAVES_ALUMNO, campos(alumno));
 		assertFalse(alumno.get("presente").asBoolean(), "sin fila, false");
+		assertNull(jsonNulo(alumno.get("motivo")), "sin fila, sin motivo");
 		JsonNode listado = leer(get("/api/profesor/grupos/" + f.grupo + "/alumnos"), tProfA, 200);
 		for (JsonNode delListado : listado) {
 			JsonNode enLista = buscar(lista.get("alumnos"), delListado.get("id").asLong());
@@ -1002,6 +1010,236 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(0, leer(get(base + "/asistencia/resumen?year=2026&month=10"), tProfA, 200).size());
 	}
 
+	// ------------------------------------------------------------------ motivos y festivos (decisiones 455-463)
+
+	@Test
+	void motivos_seGuardanSeLeenYSeCorrigen_porLosDosPrefijos() throws Exception {
+		Fijo f = grupoConDosAlumnos(e.sA, profA);
+		String base = "/api/profesor/grupos/" + f.grupo;
+		String gestion = "/api/grupos/" + f.grupo;
+		JsonNode clase = leer(conMotivos(base, f.turno, LUNES, "{\"" + f.b + "\":\"MEDICA\"}", f.a), tProfA, 200);
+		assertEquals(CLAVES_CLASE, campos(clase));
+		assertNull(jsonNulo(clase.get("festivo")));
+		assertEquals("MEDICA", motivoEnBase(f.grupo, f.b));
+		assertNull(motivoEnBase(f.grupo, f.a));
+
+		for (String ruta : List.of(base, gestion)) {
+			String token = ruta.contains("profesor") ? tProfA : tGestor;
+			JsonNode lista = leer(get(ruta + "/clases/" + f.turno + "/" + LUNES), token, 200);
+			assertEquals("MEDICA", buscar(lista.get("alumnos"), f.b).get("motivo").asText());
+			assertNull(jsonNulo(buscar(lista.get("alumnos"), f.a).get("motivo")), "presente, sin motivo");
+			JsonNode detalle = leer(get(ruta + "/alumnos/" + f.b + "/asistencia?year=2026&month=10"), token, 200);
+			JsonNode lunes = diaDe(detalle, LUNES);
+			assertEquals(Set.of("fecha", "horaInicio", "estado", "motivo"), campos(lunes));
+			assertEquals("FALTA", lunes.get("estado").asText());
+			assertEquals("MEDICA", lunes.get("motivo").asText());
+			assertNull(jsonNulo(diaDe(detalle, "2026-10-19").get("motivo")), "sin lista, sin motivo");
+		}
+
+		// Presente: el motivo se borra.
+		leer(guardar(base, f.turno, LUNES, f.a, f.b), tProfA, 200);
+		assertNull(motivoEnBase(f.grupo, f.b));
+		// Gestión corrige: falta familiar de a; b falta sin motivo (null explícito).
+		leer(conMotivos(gestion, f.turno, LUNES, "{\"" + f.a + "\":\"FAMILIAR\",\"" + f.b + "\":null}"), tGestor, 200);
+		assertEquals("FAMILIAR", motivoEnBase(f.grupo, f.a));
+		assertNull(motivoEnBase(f.grupo, f.b));
+		leer(conMotivos(base, f.turno, LUNES, "{\"" + f.a + "\":\"OTRA_JUSTIFICADA\",\"" + f.b + "\":\"INJUSTIFICADA\"}"),
+				tProfA, 200);
+		assertEquals("OTRA_JUSTIFICADA", motivoEnBase(f.grupo, f.a));
+		assertEquals("INJUSTIFICADA", motivoEnBase(f.grupo, f.b));
+		// Sin motivos: el PUT reemplaza la lista y las faltas quedan sin motivo, como antes.
+		leer(guardar(base, f.turno, LUNES), tProfA, 200);
+		assertEquals(0L, jdbc.queryForObject("""
+				SELECT COUNT(*) FROM asistencia_alumno f JOIN clase_asistencia c ON c.id = f.clase_id
+				WHERE c.grupo_id = ? AND f.motivo_falta IS NOT NULL""", Long.class, f.grupo));
+		assertEquals(2, filas(f.grupo));
+		// La auditoría del 2xx sigue sin ids de alumnos ni motivos.
+		String ruta = base + "/clases/" + f.turno + "/" + LUNES;
+		for (String cuerpo : jdbc.queryForList("SELECT COALESCE(payload_json, '') FROM auditoria_evento WHERE endpoint = ?",
+				String.class, ruta)) {
+			assertFalse(cuerpo.contains(String.valueOf(f.a)) || cuerpo.contains(String.valueOf(f.b))
+					|| cuerpo.contains("MEDICA"), cuerpo);
+		}
+	}
+
+	@Test
+	void motivos_400_conSuMensaje_sinEscribirNada_yLaAuditoriaLosRedacta() throws Exception {
+		Fijo f = grupoConDosAlumnos(e.sA, profA);
+		String base = "/api/profesor/grupos/" + f.grupo;
+		Map<String, String> casos = new java.util.LinkedHashMap<>();
+		casos.put("{\"" + f.b + "\":\"GRIPE\"}", "El motivo de la falta no es válido.");
+		casos.put("{\"" + f.b + "\":\"medica\"}", "El motivo de la falta no es válido.");
+		casos.put("{\"" + f.b + "\":\"\"}", "El motivo de la falta no es válido.");
+		casos.put("{\"" + f.a + "\":\"MEDICA\"}", "Un alumno presente no lleva motivo de falta.");
+		casos.put("{\"" + e.aB + "\":\"MEDICA\"}", "Hay alumnos que no están en esta lista.");
+		casos.put("{\"" + e.aB + "\":null}", "Hay alumnos que no están en esta lista.");
+		for (Map.Entry<String, String> caso : casos.entrySet()) {
+			for (String ruta : List.of(base, "/api/grupos/" + f.grupo)) {
+				String token = ruta.contains("profesor") ? tProfA : tGestor;
+				MvcResult r = peticion(conMotivos(ruta, f.turno, LUNES, caso.getKey(), f.a), token);
+				assertEquals(400, r.getResponse().getStatus(), caso.getKey());
+				assertEquals(caso.getValue(), mensaje(r), caso.getKey());
+			}
+		}
+		assertEquals(0, clasesDe(f.grupo));
+
+		String domingo = "2026-10-25";
+		assertEquals(400, estado(conMotivos(base, f.turno, domingo, "{\"" + f.b + "\":\"MEDICA\"}", f.a), tProfA));
+		assertEquals("{\"presentes\":\"[redactado]\",\"motivos\":\"[redactado]\"}",
+				cuerpoAuditado(base + "/clases/" + f.turno + "/" + domingo));
+	}
+
+	/** Precedencia en una misma sede: DIA, luego RANGO, luego ANUAL y, a igualdad, el de id menor. */
+	@Test
+	void variosFestivosElMismoDia_ganaElMasConcreto_yAIgualdadElDeIdMenor() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		String ruta = "/api/profesor/grupos/" + f.grupo + "/clases";
+		String sedes = "\"sedeIds\":[" + sede + "]";
+		long rango = crearFestivo("{\"tipo\":\"RANGO\",\"fechaDesde\":\"2026-10-19\",\"fechaHasta\":\"2026-10-26\","
+				+ "\"nombre\":\"Semana\"," + sedes + "}");
+		crearFestivo("{\"tipo\":\"ANUAL\",\"mes\":10,\"dia\":26,\"nombre\":\"Anual\"," + sedes + "}");
+		assertEquals(rango, festivoDeLaClase(ruta, f.turno), "RANGO gana al ANUAL");
+		long dia = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Dia\"," + sedes + "}");
+		assertEquals(dia, festivoDeLaClase(ruta, f.turno), "DIA gana al RANGO y al ANUAL");
+		assertEquals(204, estado(delete("/api/festivos/" + dia), tGestor));
+		assertEquals(rango, festivoDeLaClase(ruta, f.turno), "sin el DIA, el RANGO");
+		long primero = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Uno\"," + sedes + "}");
+		long segundo = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Dos\"," + sedes + "}");
+		assertTrue(primero < segundo);
+		assertEquals(primero, festivoDeLaClase(ruta, f.turno), "dos DIA: el de id menor");
+	}
+
+	private long festivoDeLaClase(String ruta, long turno) throws Exception {
+		JsonNode clases = leer(get(ruta), tProfA, 200);
+		return claseDe(clases.get("hoy"), turno, LUNES).get("festivo").get("id").asLong();
+	}
+
+	/**
+	 * Festivo de un día en la sede del grupo, el lunes 26 sin lista: sale en hoy y recientes con {@code festivo}, la lista
+	 * se lee, el PUT da 409 (después de las validaciones de fecha y de motivos) y en el detalle del alumno es FESTIVO.
+	 */
+	@Test
+	void claseFestivaSinLista_saleConFestivo_elPutDa409_yElDetalleDiceFestivo() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		String base = "/api/profesor/grupos/" + f.grupo;
+		String nombreSede = jdbc.queryForObject("SELECT nombre FROM sede WHERE id = ?", String.class, sede);
+		long festivo = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Fiesta local\","
+				+ "\"sedeIds\":[" + sede + "]}");
+
+		for (String ruta : List.of(base, "/api/grupos/" + f.grupo)) {
+			String token = ruta.contains("profesor") ? tProfA : tGestor;
+			JsonNode clases = leer(get(ruta + "/clases"), token, 200);
+			JsonNode hoy = claseDe(clases.get("hoy"), f.turno, LUNES);
+			JsonNode deFestivo = hoy.get("festivo");
+			assertEquals(Set.of("id", "nombre", "tipo", "fechaDesde", "fechaHasta", "sedes", "deUnDiaYUnaSede"),
+					campos(deFestivo));
+			assertEquals(festivo, deFestivo.get("id").asLong());
+			assertEquals("Fiesta local", deFestivo.get("nombre").asText());
+			assertEquals("DIA", deFestivo.get("tipo").asText());
+			assertEquals(LUNES, deFestivo.get("fechaDesde").asText());
+			assertEquals(LUNES, deFestivo.get("fechaHasta").asText());
+			assertEquals(1, deFestivo.get("sedes").asInt());
+			assertTrue(deFestivo.get("deUnDiaYUnaSede").asBoolean());
+			assertNull(jsonNulo(hoy.get("presentes")));
+			assertEquals(hoy, claseDe(clases.get("recientes"), f.turno, LUNES), "también en recientes");
+			assertNull(jsonNulo(claseDe(clases.get("recientes"), f.turno, "2026-10-19").get("festivo")));
+
+			JsonNode lista = leer(get(ruta + "/clases/" + f.turno + "/" + LUNES), token, 200);
+			assertEquals(festivo, lista.get("clase").get("festivo").get("id").asLong());
+			assertEquals(sede, lista.get("sede").get("id").asLong());
+			assertEquals(2, lista.get("alumnos").size(), "la lista se lee igual");
+
+			MvcResult r = peticion(guardar(ruta, f.turno, LUNES, f.a), token);
+			assertEquals(409, r.getResponse().getStatus());
+			assertEquals("Ese día es festivo en " + nombreSede + ".", mensaje(r));
+			// Antes, las validaciones de siempre: otro día de la semana y motivos.
+			assertEquals(400, estado(guardar(ruta, f.turno, "2026-10-25", f.a), token));
+			assertEquals(400, estado(conMotivos(ruta, f.turno, LUNES, "{\"" + f.a + "\":\"MEDICA\"}", f.a), token));
+		}
+		assertEquals(0, clasesDe(f.grupo), "nada escrito");
+
+		JsonNode detalle = leer(get(base + "/alumnos/" + f.a + "/asistencia?year=2026&month=10"), tProfA, 200);
+		assertEquals(List.of("2026-10-05 18:00 SIN_LISTA", "2026-10-12 18:00 SIN_LISTA", "2026-10-19 18:00 SIN_LISTA",
+				LUNES + " 18:00 FESTIVO"), dias(detalle));
+		assertEquals(0, detalle.get("clases").asInt(), "FESTIVO no cuenta");
+
+		// Un festivo de varias sedes no es «de un día y una sede».
+		long otraSede = nuevaSede();
+		assertEquals(200, estado(put("/api/festivos/" + festivo).contentType(MediaType.APPLICATION_JSON).content(
+				"{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"sedeIds\":[" + sede + "," + otraSede + "]}"), tGestor));
+		JsonNode deDosSedes = claseDe(leer(get(base + "/clases"), tProfA, 200).get("hoy"), f.turno, LUNES).get("festivo");
+		assertFalse(deDosSedes.get("deUnDiaYUnaSede").asBoolean());
+		assertEquals(2, deDosSedes.get("sedes").asInt());
+		// Quitado el festivo, se pasa lista como siempre.
+		assertEquals(204, estado(delete("/api/festivos/" + festivo), tGestor));
+		assertEquals(200, estado(guardar(base, f.turno, LUNES, f.a), tProfA));
+	}
+
+	/** Con lista guardada, manda la lista: la clase sigue normal, se corrige y sale con sus marcas en el PDF. */
+	@Test
+	void claseFestivaConListaGuardada_mandaLaLista_tambienEnElPdf() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		String base = "/api/profesor/grupos/" + f.grupo;
+		leer(guardar(base, f.turno, LUNES, f.a), tProfA, 200);
+		crearFestivo("{\"tipo\":\"RANGO\",\"fechaDesde\":\"2026-10-19\",\"fechaHasta\":\"" + LUNES + "\",\"sedeIds\":["
+				+ sede + "]}");
+
+		JsonNode clases = leer(get(base + "/clases"), tProfA, 200);
+		JsonNode conLista = claseDe(clases.get("hoy"), f.turno, LUNES);
+		assertNull(jsonNulo(conLista.get("festivo")), "con lista, sin festivo");
+		assertEquals(1, conLista.get("presentes").asInt());
+		JsonNode sinLista = claseDe(clases.get("recientes"), f.turno, "2026-10-19");
+		assertEquals("RANGO", sinLista.get("festivo").get("tipo").asText());
+		assertEquals("2026-10-19", sinLista.get("festivo").get("fechaDesde").asText());
+		assertEquals(LUNES, sinLista.get("festivo").get("fechaHasta").asText());
+		assertFalse(sinLista.get("festivo").get("deUnDiaYUnaSede").asBoolean());
+
+		assertEquals(1, leer(conMotivos(base, f.turno, LUNES, "{\"" + f.b + "\":\"FAMILIAR\"}", f.a), tProfA, 200)
+				.get("presentes").asInt(), "la corrección se permite");
+		assertEquals(409, estado(guardar(base, f.turno, "2026-10-19", f.a), tProfA), "la del 19, sin lista, no");
+
+		JsonNode detalle = leer(get(base + "/alumnos/" + f.b + "/asistencia?year=2026&month=10"), tProfA, 200);
+		assertEquals(List.of("2026-10-05 18:00 SIN_LISTA", "2026-10-12 18:00 SIN_LISTA", "2026-10-19 18:00 FESTIVO",
+				LUNES + " 18:00 FALTA"), dias(detalle));
+		assertEquals(1, detalle.get("clases").asInt());
+
+		MvcResult pdf = peticion(get(base + "/asistencia?year=2026&month=10&marcada=true"), tProfA);
+		assertEquals(200, pdf.getResponse().getStatus());
+		String texto = texto(pdf.getResponse().getContentAsByteArray());
+		assertTrue(texto.contains("Festivo"), "la columna del 19, gris con «Festivo»");
+		assertTrue(texto.contains("Gris:festivo"), "leyenda");
+	}
+
+	/** ANUAL: en la clase, fechaDesde y fechaHasta son la fecha de esa clase. */
+	@Test
+	void festivoAnual_enLaClaseLlevaLaFechaDeEsaClase() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		crearFestivo("{\"tipo\":\"ANUAL\",\"mes\":10,\"dia\":19,\"sedeIds\":[" + sede + "]}");
+		JsonNode festivo = claseDe(leer(get("/api/profesor/grupos/" + f.grupo + "/clases"), tProfA, 200).get("recientes"),
+				f.turno, "2026-10-19").get("festivo");
+		assertEquals("ANUAL", festivo.get("tipo").asText());
+		assertEquals("2026-10-19", festivo.get("fechaDesde").asText());
+		assertEquals("2026-10-19", festivo.get("fechaHasta").asText());
+		assertEquals(1, festivo.get("sedes").asInt());
+		assertFalse(festivo.get("deUnDiaYUnaSede").asBoolean(), "no es de un día");
+	}
+
+	/** Un festivo de otra sede no toca al grupo. */
+	@Test
+	void festivoDeOtraSede_noAfectaAlGrupo() throws Exception {
+		long sede = nuevaSede();
+		long ajena = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"sedeIds\":[" + ajena + "]}");
+		assertNull(jsonNulo(claseDe(leer(get("/api/profesor/grupos/" + f.grupo + "/clases"), tProfA, 200).get("hoy"),
+				f.turno, LUNES).get("festivo")));
+		assertEquals(200, estado(guardar("/api/profesor/grupos/" + f.grupo, f.turno, LUNES, f.a), tProfA));
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	/** Un grupo del profesor con un turno de lunes (18:00-19:00) y dos alumnos en él. */
@@ -1078,6 +1316,42 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		String ids = java.util.Arrays.stream(presentes).mapToObj(String::valueOf).collect(Collectors.joining(","));
 		return put(base + "/clases/" + turno + "/" + fecha).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"presentes\":[" + ids + "]}");
+	}
+
+	private static MockHttpServletRequestBuilder conMotivos(String base, long turno, String fecha, String motivos,
+			long... presentes) {
+		String ids = java.util.Arrays.stream(presentes).mapToObj(String::valueOf).collect(Collectors.joining(","));
+		return put(base + "/clases/" + turno + "/" + fecha).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"presentes\":[" + ids + "],\"motivos\":" + motivos + "}");
+	}
+
+	/** Motivo guardado del alumno en la única clase del grupo. */
+	private String motivoEnBase(long grupo, long alumno) {
+		return jdbc.queryForObject("""
+				SELECT f.motivo_falta FROM asistencia_alumno f JOIN clase_asistencia c ON c.id = f.clase_id
+				WHERE c.grupo_id = ? AND f.alumno_id = ?""", String.class, grupo, alumno);
+	}
+
+	/** Una sede nueva y activa de la escuela, para que sus festivos no toquen a los demás tests. */
+	private long nuevaSede() {
+		String nombre = "IT lista sede " + System.nanoTime();
+		jdbc.update("INSERT INTO sede (organizacion_id, nombre, activa) VALUES (?, ?, TRUE)", e.org, nombre);
+		return jdbc.queryForObject("SELECT id FROM sede WHERE organizacion_id = ? AND nombre = ?", Long.class, e.org,
+				nombre);
+	}
+
+	private long crearFestivo(String cuerpo) throws Exception {
+		return leer(post("/api/festivos").contentType(MediaType.APPLICATION_JSON).content(cuerpo), tGestor, 201).get("id")
+				.asLong();
+	}
+
+	private static JsonNode diaDe(JsonNode detalle, String fecha) {
+		for (JsonNode dia : detalle.get("dias")) {
+			if (fecha.equals(dia.get("fecha").asText())) {
+				return dia;
+			}
+		}
+		throw new AssertionError("Sin el día " + fecha + " en " + detalle);
 	}
 
 	private void guardarOk(String base, long turno, String fecha, String token, long... presentes) throws Exception {

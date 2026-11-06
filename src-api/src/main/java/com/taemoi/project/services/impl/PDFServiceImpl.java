@@ -78,6 +78,10 @@ public class PDFServiceImpl implements PDFService {
 	@Autowired
 	private com.taemoi.project.repositories.AsistenciaAlumnoRepository asistenciaAlumnoRepository;
 
+	/** Decisiones 455-463: los festivos de las sedes, para el listado de asistencia marcado (la regla única). */
+	@Autowired
+	private com.taemoi.project.services.FestivoService festivoService;
+
 	@Autowired
 	private ProductoRepository productoRepository;
 
@@ -1288,13 +1292,29 @@ public class PDFServiceImpl implements PDFService {
 	private record CasillaAsistencia(Long turnoId, LocalDate fecha, Long alumnoId) {
 	}
 
+	/** Columna de la rejilla: un turno y una fecha. */
+	private record ColumnaAsistencia(Long turnoId, LocalDate fecha) {
+	}
+
+	/**
+	 * Lo que pinta la rejilla marcada: el símbolo de cada casilla con fila guardada ({@code X}, {@code –} o la letra del
+	 * motivo) y las columnas festivas (festivo en la sede del grupo y sin lista guardada).
+	 */
+	private record MarcasAsistencia(Map<CasillaAsistencia, String> celdas, java.util.Set<ColumnaAsistencia> festivas) {
+	}
+
+	/** Leyenda del listado marcado (decisiones 455-463), en una línea bajo la cabecera. */
+	private static final String LEYENDA_ASISTENCIA_MARCADA = "X: asistió &#183; &#8211;: faltó &#183; I: injustificada"
+			+ " &#183; M: médica &#183; F: familiar &#183; J: otra justificada &#183; Gris: festivo &#183; Vacía: sin lista";
+
 	/**
 	 * Pinta las páginas del listado, una detrás de otra. Con {@code marcada}, la rejilla sale con lo pasado en «pasar
-	 * lista» (ver {@link #marcasDeAsistencia}); sin ella, vacía como siempre y sin ninguna consulta de listas.
+	 * lista» y los festivos (ver {@link #marcasDeAsistencia}); sin ella, vacía como siempre y sin ninguna consulta de
+	 * listas ni de festivos.
 	 */
 	private void renderizarPaginasAsistencia(StringBuilder html, MarcaEscuela marca, int year, int month,
 			List<PaginaAsistencia> paginas, boolean marcada) {
-		Map<CasillaAsistencia, Boolean> marcas = marcada ? marcasDeAsistencia(year, month, paginas) : null;
+		MarcasAsistencia marcas = marcada ? marcasDeAsistencia(year, month, paginas) : null;
 		boolean primera = true;
 		for (PaginaAsistencia pagina : paginas) {
 			if (!primera) {
@@ -1307,44 +1327,75 @@ public class PDFServiceImpl implements PDFService {
 	}
 
 	/**
-	 * Lo guardado en «pasar lista» para esas páginas, con dos consultas en total (clases de todos los turnos en el mes y
-	 * filas de todas esas clases) y un mapa en memoria; {@code true} presente, {@code false} falta, sin entrada sin lista.
-	 * Solo cuenta la clase guardada cuyo grupo es el del turno (como {@code AsistenciaService#lista}). Las dos entidades
-	 * son de la escuela activa ({@code @TenantId}): lo de otra escuela no llega a salir.
+	 * Lo guardado en «pasar lista» para esas páginas, con dos consultas (clases de todos los turnos en el mes y filas de
+	 * todas esas clases), más la de los festivos de las sedes de sus grupos ({@code FestivoService#festivosEn}, la regla
+	 * única), y mapas en memoria. Casilla: {@code X} presente, {@code –} falta sin motivo, la letra del motivo (I, M, F,
+	 * J) o, sin entrada, sin lista. Columna festiva: festivo en la sede del grupo del turno y SIN lista guardada (con
+	 * lista, manda la lista y salen sus marcas). Solo cuenta la clase guardada cuyo grupo es el del turno (como
+	 * {@code AsistenciaService#lista}). Todo es de la escuela activa ({@code @TenantId}): lo de otra escuela no sale.
 	 */
-	private Map<CasillaAsistencia, Boolean> marcasDeAsistencia(int year, int month, List<PaginaAsistencia> paginas) {
+	private MarcasAsistencia marcasDeAsistencia(int year, int month, List<PaginaAsistencia> paginas) {
 		Map<Long, Long> grupoDelTurno = new java.util.HashMap<>();
+		Map<Long, Long> sedeDelTurno = new java.util.HashMap<>();
 		for (PaginaAsistencia pagina : paginas) {
 			if (pagina.turno().getId() != null && pagina.turno().getGrupo() != null) {
 				grupoDelTurno.put(pagina.turno().getId(), pagina.turno().getGrupo().getId());
+				if (pagina.turno().getGrupo().getSedeId() != null) {
+					sedeDelTurno.put(pagina.turno().getId(), pagina.turno().getGrupo().getSedeId());
+				}
 			}
 		}
-		Map<CasillaAsistencia, Boolean> marcas = new java.util.HashMap<>();
+		Map<CasillaAsistencia, String> celdas = new java.util.HashMap<>();
+		java.util.Set<ColumnaAsistencia> festivas = new java.util.HashSet<>();
 		if (grupoDelTurno.isEmpty()) {
-			return marcas;
+			return new MarcasAsistencia(celdas, festivas);
 		}
 		LocalDate inicio = LocalDate.of(year, month, 1);
+		LocalDate fin = inicio.with(TemporalAdjusters.lastDayOfMonth());
 		Map<Long, com.taemoi.project.entities.ClaseAsistencia> clases = new java.util.HashMap<>();
+		java.util.Set<ColumnaAsistencia> conLista = new java.util.HashSet<>();
 		for (com.taemoi.project.entities.ClaseAsistencia clase : claseAsistenciaRepository
-				.findByTurnoIdInAndFechaBetween(grupoDelTurno.keySet(), inicio,
-						inicio.with(TemporalAdjusters.lastDayOfMonth()))) {
+				.findByTurnoIdInAndFechaBetween(grupoDelTurno.keySet(), inicio, fin)) {
 			if (clase.getTurnoId() != null && clase.getGrupoId() != null
 					&& clase.getGrupoId().equals(grupoDelTurno.get(clase.getTurnoId()))) {
 				clases.put(clase.getId(), clase);
+				conLista.add(new ColumnaAsistencia(clase.getTurnoId(), clase.getFecha()));
 			}
 		}
-		if (clases.isEmpty()) {
-			return marcas;
-		}
-		for (com.taemoi.project.entities.AsistenciaAlumno fila : asistenciaAlumnoRepository
-				.findByClaseIdIn(clases.keySet())) {
-			com.taemoi.project.entities.ClaseAsistencia clase = clases.get(fila.getClaseId());
-			if (clase != null) {
-				marcas.put(new CasillaAsistencia(clase.getTurnoId(), clase.getFecha(), fila.getAlumnoId()),
-						fila.isPresente());
+		if (!clases.isEmpty()) {
+			for (com.taemoi.project.entities.AsistenciaAlumno fila : asistenciaAlumnoRepository
+					.findByClaseIdIn(clases.keySet())) {
+				com.taemoi.project.entities.ClaseAsistencia clase = clases.get(fila.getClaseId());
+				if (clase != null) {
+					celdas.put(new CasillaAsistencia(clase.getTurnoId(), clase.getFecha(), fila.getAlumnoId()),
+							simboloAsistencia(fila));
+				}
 			}
 		}
-		return marcas;
+		if (!sedeDelTurno.isEmpty()) {
+			var festivos = festivoService.festivosEn(new java.util.HashSet<>(sedeDelTurno.values()), inicio, fin);
+			if (!festivos.isEmpty()) {
+				for (PaginaAsistencia pagina : paginas) {
+					Long sede = sedeDelTurno.get(pagina.turno().getId());
+					for (LocalDate fecha : pagina.fechas()) {
+						ColumnaAsistencia columna = new ColumnaAsistencia(pagina.turno().getId(), fecha);
+						if (sede != null && !conLista.contains(columna) && festivos
+								.containsKey(new com.taemoi.project.services.FestivoService.SedeYFecha(sede, fecha))) {
+							festivas.add(columna);
+						}
+					}
+				}
+			}
+		}
+		return new MarcasAsistencia(celdas, festivas);
+	}
+
+	/** X asistió; falta con motivo, su letra; falta sin motivo, «–» (como entidad HTML). */
+	private static String simboloAsistencia(com.taemoi.project.entities.AsistenciaAlumno fila) {
+		if (fila.isPresente()) {
+			return "X";
+		}
+		return fila.getMotivoFalta() == null ? "&#8211;" : fila.getMotivoFalta().letra();
 	}
 
 	private static DayOfWeek diaDeLaSemana(com.taemoi.project.entities.Turno turno) {
@@ -1420,6 +1471,12 @@ public class PDFServiceImpl implements PDFService {
 		html.append(
 				".side-table tfoot td { background: #fafaf8; color: #5d6573; font-weight: 600; text-align: center; font-size: 6.5pt; }");
 		html.append(".main-table tbody tr, .side-table tbody tr { page-break-inside: avoid; }");
+		// Decisiones 455-463: columna festiva (festivo y sin lista) del listado marcado, en gris con «Festivo» en vertical.
+		html.append(".side-table th.festivo, .side-table td.festivo { background-color: #eceef1; color: #5d6573; }");
+		html.append(
+				".side-table tbody td.festivo { overflow: visible; max-height: none; height: auto; line-height: normal; }");
+		html.append(
+				".festivo-texto { width: 20mm; position: relative; left: -7mm; text-align: center; white-space: nowrap; font-size: 6.5pt; line-height: 6.5pt; transform-origin: 50% 50%; transform: rotate(-90deg); }");
 		html.append(".main-table thead, .side-table thead { display: table-header-group; }");
 		html.append("</style>");
 		html.append("</head><body>");
@@ -1441,7 +1498,7 @@ public class PDFServiceImpl implements PDFService {
 	/** Una página del listado de asistencia: un turno y una disciplina (el de gestión y el del profesor, E7-2). */
 	private void paginaAsistencia(StringBuilder html, MarcaEscuela marca, int year, int month, String deporte, String dia,
 			com.taemoi.project.entities.Turno turno, List<AlumnoDeporte> alumnos, List<LocalDate> fechas,
-			Map<CasillaAsistencia, Boolean> marcas) {
+			MarcasAsistencia marcas) {
 		// Sort alumnos by nombre
 		alumnos.sort(Comparator.comparing(ad -> ad.getAlumno().getNombre()));
 
@@ -1455,9 +1512,9 @@ public class PDFServiceImpl implements PDFService {
 		String diaYTurno = EstiloPdf.esc(conMayuscula(dia)) + " - Turno de " + EstiloPdf.esc(turnoStr);
 		String disciplina = EstiloPdf.esc(deporte.replace("_", " "));
 		String total = "Total: " + totalAlumnos + " alumnos";
-		// Con marcas, la leyenda va aquí: bajo la rejilla, una hoja justa la mandaría sola a otra página.
+		// Con marcas, la leyenda va aquí, en su propia línea: bajo la rejilla, una hoja justa la mandaría sola a otra página.
 		String contexto = marcas == null ? contexto(disciplina, total, diaYTurno)
-				: contexto(disciplina, total, diaYTurno, "X: asistió &#183; &#8211;: faltó &#183; Vacía: sin lista");
+				: contexto(disciplina, total, diaYTurno) + "<br/>" + LEYENDA_ASISTENCIA_MARCADA;
 		html.append(EstiloPdf.cabecera(marca.colorPrimario(), marca.logoInformes(), marca.asistenciaPrincipalHtml(),
 				marca.asistenciaSubtituloHtml(), titulo, contexto, EstiloPdf.esc(EstiloPdf.fechaGeneracion())));
 
@@ -1535,27 +1592,54 @@ public class PDFServiceImpl implements PDFService {
 		html.append("<div class='table-cell'>");
 		html.append("<table class='side-table'><thead><tr>");
 		for (LocalDate f : fechas) {
-			html.append("<th>").append(f.getDayOfMonth()).append("</th>");
+			html.append(festiva(marcas, turno, f) ? "<th class='festivo'>" : "<th>").append(f.getDayOfMonth())
+					.append("</th>");
 		}
 		html.append("</tr></thead><tbody>");
+		boolean primeraFila = true;
 		for (AlumnoDeporte ad : alumnos) {
 			html.append("<tr>");
 			for (LocalDate f : fechas) {
-				// Sin marcas, la casilla vacía de siempre; con ellas, X asistió, – faltó y vacía sin lista.
-				Boolean presente = marcas == null ? null
-						: marcas.get(new CasillaAsistencia(turno.getId(), f, ad.getAlumno().getId()));
-				html.append(presente == null ? "<td></td>" : presente ? "<td>X</td>" : "<td>&#8211;</td>");
+				if (festiva(marcas, turno, f)) {
+					// Columna festiva: una sola celda gris que ocupa todas las filas, con «Festivo» en vertical («Fest.»
+					// con un solo alumno, para que quepa). Con más de FILAS_CON_TEXTO_FESTIVO alumnos la rejilla puede
+					// pasar de página y una celda así se saldría por abajo: celdas grises sueltas, sin texto (la
+					// leyenda dice «Gris: festivo»).
+					if (alumnos.size() > FILAS_CON_TEXTO_FESTIVO) {
+						html.append("<td class='festivo'></td>");
+					} else if (primeraFila) {
+						html.append("<td class='festivo' rowspan='").append(alumnos.size())
+								.append("'><div class='festivo-texto'>").append(alumnos.size() == 1 ? "Fest." : "Festivo")
+								.append("</div></td>");
+					}
+					continue;
+				}
+				// Sin marcas, la casilla vacía de siempre; con ellas, X asistió, – faltó, la letra del motivo o vacía
+				// sin lista.
+				String simbolo = marcas == null ? null
+						: marcas.celdas().get(new CasillaAsistencia(turno.getId(), f, ad.getAlumno().getId()));
+				html.append(simbolo == null ? "<td></td>" : "<td>" + simbolo + "</td>");
 			}
 			html.append("</tr>");
+			primeraFila = false;
 		}
 		html.append("</tbody><tfoot><tr>");
 		for (LocalDate f : fechas) {
-			html.append("<td>").append(f.getDayOfMonth()).append("</td>");
+			html.append(festiva(marcas, turno, f) ? "<td class='festivo'>" : "<td>").append(f.getDayOfMonth())
+					.append("</td>");
 		}
 		html.append("</tr></tfoot></table>");
 		html.append("</div>");
 		html.append("</div>");
 		html.append("</div>");
+	}
+
+	/** Hasta cuántos alumnos la columna festiva es una sola celda con texto: más filas pueden pasar de página. */
+	private static final int FILAS_CON_TEXTO_FESTIVO = 40;
+
+	/** Columna festiva del listado marcado; sin marcas, nunca. */
+	private static boolean festiva(MarcasAsistencia marcas, com.taemoi.project.entities.Turno turno, LocalDate fecha) {
+		return marcas != null && marcas.festivas().contains(new ColumnaAsistencia(turno.getId(), fecha));
 	}
 
 	/** Primera letra en mayúscula («lunes» → «Lunes», «septiembre» → «Septiembre»); el resto, igual. */
