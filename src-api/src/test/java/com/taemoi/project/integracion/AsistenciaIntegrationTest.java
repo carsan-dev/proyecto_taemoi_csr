@@ -1089,6 +1089,32 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 				cuerpoAuditado(base + "/clases/" + f.turno + "/" + domingo));
 	}
 
+	/** Precedencia en una misma sede: DIA, luego RANGO, luego ANUAL y, a igualdad, el de id menor. */
+	@Test
+	void variosFestivosElMismoDia_ganaElMasConcreto_yAIgualdadElDeIdMenor() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		String ruta = "/api/profesor/grupos/" + f.grupo + "/clases";
+		String sedes = "\"sedeIds\":[" + sede + "]";
+		long rango = crearFestivo("{\"tipo\":\"RANGO\",\"fechaDesde\":\"2026-10-19\",\"fechaHasta\":\"2026-10-26\","
+				+ "\"nombre\":\"Semana\"," + sedes + "}");
+		crearFestivo("{\"tipo\":\"ANUAL\",\"mes\":10,\"dia\":26,\"nombre\":\"Anual\"," + sedes + "}");
+		assertEquals(rango, festivoDeLaClase(ruta, f.turno), "RANGO gana al ANUAL");
+		long dia = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Dia\"," + sedes + "}");
+		assertEquals(dia, festivoDeLaClase(ruta, f.turno), "DIA gana al RANGO y al ANUAL");
+		assertEquals(204, estado(delete("/api/festivos/" + dia), tGestor));
+		assertEquals(rango, festivoDeLaClase(ruta, f.turno), "sin el DIA, el RANGO");
+		long primero = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Uno\"," + sedes + "}");
+		long segundo = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Dos\"," + sedes + "}");
+		assertTrue(primero < segundo);
+		assertEquals(primero, festivoDeLaClase(ruta, f.turno), "dos DIA: el de id menor");
+	}
+
+	private long festivoDeLaClase(String ruta, long turno) throws Exception {
+		JsonNode clases = leer(get(ruta), tProfA, 200);
+		return claseDe(clases.get("hoy"), turno, LUNES).get("festivo").get("id").asLong();
+	}
+
 	/**
 	 * Festivo de un día en la sede del grupo, el lunes 26 sin lista: sale en hoy y recientes con {@code festivo}, la lista
 	 * se lee, el PUT da 409 (después de las validaciones de fecha y de motivos) y en el detalle del alumno es FESTIVO.

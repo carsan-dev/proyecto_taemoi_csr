@@ -72,6 +72,7 @@ class FestivoIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
+	@Autowired com.taemoi.project.services.FestivoService festivoService;
 
 	@MockitoBean JavaMailSender mailSender;
 	@MockitoBean Clock reloj;
@@ -282,12 +283,28 @@ class FestivoIntegrationTest extends MySqlIntegrationTest {
 		for (String cuerpo : casos.keySet()) {
 			assertEquals(400, estado(editar(id, cuerpo), tGestor), "PUT " + cuerpo);
 		}
-		assertEquals(400, estado(post("/api/festivos").contentType(MediaType.APPLICATION_JSON).content("{\"tipo\":"),
-				tGestor), "JSON roto");
+		for (MockHttpServletRequestBuilder roto : List.of(
+				post("/api/festivos").contentType(MediaType.APPLICATION_JSON).content("{\"tipo\":"),
+				put("/api/festivos/" + id).contentType(MediaType.APPLICATION_JSON).content("{\"tipo\":"))) {
+			MvcResult r = peticion(roto, tGestor);
+			assertEquals(400, r.getResponse().getStatus(), "JSON roto");
+			assertEquals("La petición no es válida.", mensaje(r), "JSON roto");
+		}
 		assertEquals(antes + 1, festivosDeLaEscuela(), "solo el del PUT");
 		// 60 caracteres justos y sedes repetidas: vale, una fila por sede.
 		JsonNode largo = leer(crear(cuerpo("DIA", "2026-12-08", null, null, null, "x".repeat(60), e.sA, e.sA)), tGestor, 201);
 		assertEquals(List.of(e.sA), idsDeSedes(largo));
+	}
+
+	@Test
+	void festivosEn_sinSedes_oConNulos_devuelveVacio() {
+		java.time.LocalDate d = java.time.LocalDate.of(2026, 12, 8);
+		TenantContext.calcularCon(e.org, () -> {
+			assertTrue(festivoService.festivosEn(null, d, d).isEmpty());
+			assertTrue(festivoService.festivosEn(List.of(), d, d).isEmpty());
+			assertTrue(festivoService.festivosEn(java.util.Collections.singletonList(null), d, d).isEmpty());
+			return null;
+		});
 	}
 
 	// ------------------------------------------------------------------ permisos

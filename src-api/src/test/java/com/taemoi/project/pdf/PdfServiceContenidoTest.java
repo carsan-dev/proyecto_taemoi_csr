@@ -370,6 +370,33 @@ class PdfServiceContenidoTest {
 		verify(festivoService, times(1)).festivosEn(any(), any(), any());
 	}
 
+	/** Gestión por día y deporte: letra de la falta con motivo, columna festiva sin lista y leyenda. */
+	@Test
+	void asistenciaMarcadaDeGestionPintaLetras_yLaColumnaFestiva() throws Exception {
+		datos.lunesInfantil.getGrupo().setSedeId(7L);
+		ClaseAsistencia infantil5 = clase(100L, 3L, 9L, LocalDate.of(2026, 10, 5));
+		ClaseAsistencia infantil19 = clase(102L, 3L, 9L, LocalDate.of(2026, 10, 19));
+		when(claseAsistenciaRepository.findByTurnoIdInAndFechaBetween(any(), any(), any()))
+				.thenReturn(List.of(infantil5, infantil19));
+		when(asistenciaAlumnoRepository.findByClaseIdIn(any())).thenReturn(List.of(
+				new AsistenciaAlumno(100L, 1L, false, MotivoFalta.MEDICA), new AsistenciaAlumno(102L, 1L, true),
+				new AsistenciaAlumno(100L, 3L, false), new AsistenciaAlumno(102L, 3L, false, MotivoFalta.FAMILIAR)));
+		FestivoService.DiaFestivo fiesta = new FestivoService.DiaFestivo(1L, "Fiesta", TipoFestivo.DIA,
+				LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 12), 1, true);
+		when(festivoService.festivosEn(any(), eq(LocalDate.of(2026, 10, 1)), eq(LocalDate.of(2026, 10, 31)))).thenReturn(
+				java.util.Map.of(new FestivoService.SedeYFecha(7L, LocalDate.of(2026, 10, 12)), fiesta));
+
+		List<String> lineas = ContenidoPdf.lineas(
+				conHoy(() -> servicio.generarListadoAsistencia(2026, 10, List.of("Lunes"), null, null, true)));
+		String texto = String.join("\n", lineas);
+
+		assertTrue(lineas.stream().anyMatch(l -> l.startsWith("7m 5001 11 Ana Prueba Uno 101") && l.endsWith(" M X")), texto);
+		assertTrue(lineas.stream().anyMatch(l -> l.startsWith("10m NO 13 Carla Prueba Tres 103") && l.endsWith(" – F")),
+				texto);
+		assertEquals(1, texto.split("Festivo", -1).length - 1, texto);
+		assertTrue(lineas.stream().anyMatch(l -> l.contains(LEYENDA)), texto);
+	}
+
 	private static ClaseAsistencia clase(long id, long grupoId, long turnoId, LocalDate fecha) {
 		ClaseAsistencia clase = new ClaseAsistencia(grupoId, turnoId, fecha, "17:00", "18:00", null,
 				fecha.atStartOfDay());
