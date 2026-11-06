@@ -333,6 +333,16 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/solicitudes/contador",
 					solicitudes + "responsable_veYCuentaSoloLoSuyoYLosEncargosDeSusSedes");
 		}
+		// Decisiones 455-463: festivos. Ve los que tocan sus sedes; crea, calcula el impacto, cambia y quita solo con
+		// TODAS las sedes suyas (403 si no). FestivoService con GestionPorSede.restriccion().
+		String festivos = "integracion.FestivoIntegrationTest#";
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/festivos", festivos + "responsable_veLosQueTocanSusSedes_yCambiaSoloLosSuyos");
+		}
+		m.put("POST /api/festivos", festivos + "responsable_creaSoloEnSusSedes");
+		m.put("POST /api/festivos/impacto", festivos + "responsable_creaSoloEnSusSedes");
+		m.put("PUT /api/festivos/{id}", festivos + "responsable_veLosQueTocanSusSedes_yCambiaSoloLosSuyos");
+		m.put("DELETE /api/festivos/{id}", festivos + "responsable_veLosQueTocanSusSedes_yCambiaSoloLosSuyos");
 		m.put("POST /api/solicitudes", solicitudes + "responsable_soloPideSobreRecursosDeSusSedes");
 		m.put("POST /api/solicitudes/{id}/retirar", solicitudes + "retirar_soloLaSuya_403ParaOtros");
 		m.put("POST /api/alumnos/crear", alumnos + "alta_sedePrincipalObligatoriaYSuya");
