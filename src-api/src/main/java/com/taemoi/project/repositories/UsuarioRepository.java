@@ -158,6 +158,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 			  OR EXISTS (SELECT 1 FROM solicitud x WHERE x.recibido_por_usuario_id = :usuarioId)
 			  OR EXISTS (SELECT 1 FROM clase_asistencia x WHERE x.registrado_por_usuario_id = :usuarioId)
 			  OR EXISTS (SELECT 1 FROM clase_asistencia x WHERE x.modificado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM festivo x WHERE x.creado_por_usuario_id = :usuarioId)
+			  OR EXISTS (SELECT 1 FROM festivo x WHERE x.modificado_por_usuario_id = :usuarioId)
 			THEN 1 ELSE 0 END""", nativeQuery = true)
 	int tieneDatosFueraDeLaInvitacion(@Param("usuarioId") Long usuarioId, @Param("organizacionId") Long organizacionId);
 
