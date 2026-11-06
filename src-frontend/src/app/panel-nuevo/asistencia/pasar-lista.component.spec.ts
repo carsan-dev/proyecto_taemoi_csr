@@ -439,6 +439,52 @@ describe('PasarListaComponent', () => {
       expect(document.activeElement).toBe(motivos()[0]);
     });
 
+    describe('menú sobre la barra fija', () => {
+      const original = Element.prototype.getBoundingClientRect;
+      /** La fila empieza en `fila` y la barra en `barra`; el menú, de 240 px, baja desde el pie de la fila o sube desde su cabeza. */
+      function medidas(fila: number, barra: number): void {
+        spyOn(Element.prototype, 'getBoundingClientRect').and.callFake(function (this: Element) {
+          if (this.classList.contains('pasar-lista__menu')) {
+            return this.classList.contains('pasar-lista__menu--arriba') ? new DOMRect(0, fila + 6 - 240, 240, 240) : new DOMRect(0, fila + 50, 240, 240);
+          }
+          if (this.classList.contains('pasar-lista__item')) return new DOMRect(0, fila, 600, 56);
+          if (this.classList.contains('pasar-lista__barra')) return new DOMRect(0, barra, 600, 64);
+          return original.call(this);
+        });
+      }
+
+      it('se abre hacia arriba si hacia abajo lo tapa la barra', () => {
+        crear();
+        arrancar({ hoy: [clase()] }, { clase: clase(), alumnos: ALUMNOS });
+        medidas(600, 700);
+        motivos()[2].click();
+        fixture.detectChanges();
+        expect(el().querySelector('[role="menu"]')!.classList).toContain('pasar-lista__menu--arriba');
+        expect(document.activeElement).toBe(opcion('Sin motivo'));
+      });
+
+      it('si cabe hacia abajo, abajo', () => {
+        crear();
+        arrancar({ hoy: [clase()] }, { clase: clase(), alumnos: ALUMNOS });
+        medidas(300, 700);
+        motivos()[0].click();
+        fixture.detectChanges();
+        expect(el().querySelector('[role="menu"]')!.classList).not.toContain('pasar-lista__menu--arriba');
+      });
+
+      it('sin sitio arriba ni abajo, desplaza la página hasta verlo entero', () => {
+        crear();
+        arrancar({ hoy: [clase()] }, { clase: clase(), alumnos: ALUMNOS });
+        medidas(120, 300);
+        const desplazar = spyOn(window, 'scrollBy');
+        motivos()[0].click();
+        fixture.detectChanges();
+        expect(el().querySelector('[role="menu"]')!.classList).not.toContain('pasar-lista__menu--arriba');
+        // El menú acaba en 120 + 50 + 240 = 410; la barra empieza en 300 y se dejan 8 de aire.
+        expect(desplazar.calls.mostRecent().args as unknown[]).toEqual([{ top: 118 }]);
+      });
+    });
+
     it('un clic fuera cierra el menú sin elegir', () => {
       crear();
       arrancar({ hoy: [clase()] }, { clase: clase(), alumnos: ALUMNOS });

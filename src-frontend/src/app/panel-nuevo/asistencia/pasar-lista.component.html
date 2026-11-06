@@ -90,7 +90,7 @@
                 </span>
               </button>
               @if (menuAbierto === alumno.id) {
-                <div class="pasar-lista__menu" role="menu" [attr.aria-label]="'Motivo de la falta de ' + nombreCompleto(alumno.nombre, alumno.apellidos)"
+                <div class="pasar-lista__menu" [class.pasar-lista__menu--arriba]="menuArriba" role="menu" [attr.aria-label]="'Motivo de la falta de ' + nombreCompleto(alumno.nombre, alumno.apellidos)"
                   (keydown)="teclaMenu($event)">
                   <p class="pasar-lista__menu-titulo" aria-hidden="true">Motivo de la falta</p>
                   <ul role="none">

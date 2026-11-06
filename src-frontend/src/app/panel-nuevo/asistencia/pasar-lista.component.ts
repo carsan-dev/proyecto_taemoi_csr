@@ -30,6 +30,10 @@ import {
 import { DialogoFestivoComponent } from './dialogo-festivo.component';
 
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+/** Menú de motivo: aire sobre la barra fija, solape con su fila (el `6px` del CSS) y lo que tapa la cabecera fija. */
+const MARGEN_MENU = 8;
+const SOLAPE_MENU = 6;
+const TECHO_MENU = 64 + MARGEN_MENU;
 
 export const TEXTOS_PASAR_LISTA = {
   errorCarga: 'No se ha podido cargar la lista.',
@@ -102,6 +106,8 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   private baseMotivos = new Map<number, MotivoFalta>();
   /** Alumno con el menú de motivo abierto. */
   menuAbierto: number | null = null;
+  /** El menú se abre hacia arriba cuando hacia abajo lo taparía la barra fija. */
+  menuArriba = false;
   sede: SedeDeClase | null = null;
   /** La sede se nombra en la línea de la clase solo con dos o más sedes (regla 9-1). */
   variasSedes = false;
@@ -279,9 +285,31 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
       return;
     }
     this.menuAbierto = alumno.id;
+    this.menuArriba = false;
     this.cdr.detectChanges();
-    const menu = this.host.nativeElement.querySelector('.pasar-lista__menu');
-    (menu?.querySelector<HTMLElement>('[aria-checked="true"]') ?? menu?.querySelector<HTMLElement>('[role="menuitemradio"]'))?.focus();
+    const menu = this.host.nativeElement.querySelector<HTMLElement>('.pasar-lista__menu');
+    if (menu) this.colocarMenu(menu);
+    (menu?.querySelector<HTMLElement>('[aria-checked="true"]') ?? menu?.querySelector<HTMLElement>('[role="menuitemradio"]'))?.focus({ preventScroll: true });
+  }
+
+  /**
+   * El menú baja desde su fila; si la barra fija de guardar lo taparía (la última fila), sube. Si tampoco cabe arriba
+   * (pantalla baja), se queda abajo y la página se desplaza lo que falte para verlo entero.
+   */
+  private colocarMenu(menu: HTMLElement): void {
+    const fila = menu.closest('.pasar-lista__item');
+    if (!fila) return;
+    const vista = this.host.nativeElement.ownerDocument.defaultView;
+    const barra = this.host.nativeElement.querySelector('.pasar-lista__barra');
+    const limite = (barra ? barra.getBoundingClientRect().top : (vista?.innerHeight ?? Infinity)) - MARGEN_MENU;
+    const caja = menu.getBoundingClientRect();
+    if (caja.bottom <= limite) return;
+    if (fila.getBoundingClientRect().top + SOLAPE_MENU - caja.height >= TECHO_MENU) {
+      this.menuArriba = true;
+      this.cdr.detectChanges();
+      return;
+    }
+    vista?.scrollBy({ top: Math.ceil(caja.bottom - limite) });
   }
 
   elegirMotivo(alumno: AlumnoDeLista, motivo: MotivoFalta | null): void {
