@@ -216,6 +216,8 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(200, temario.statusCode());
 		assertTrue(temario.headers().firstValue("Content-Disposition").orElse("").startsWith("attachment"));
 
+		// The filter writes the audit row after the body has been sent, so wait for the real write.
+		esperar(() -> filas(video) == 3 && filas(raiz + "/temario") == 1, "cada lectura deja su fila");
 		assertEquals(List.of(200, 206, 416), jdbc.queryForList(
 				"SELECT estado_http FROM auditoria_evento WHERE endpoint = ? ORDER BY id", Integer.class, video));
 		assertEquals(List.of(200), jdbc.queryForList(
@@ -322,6 +324,11 @@ class MaterialExamenTomcatIntegrationTest extends MySqlIntegrationTest {
 		} catch (IOException e) {
 			throw new AssertionError(e);
 		}
+	}
+
+	private int filas(String endpoint) {
+		Integer total = jdbc.queryForObject("SELECT COUNT(*) FROM auditoria_evento WHERE endpoint = ?", Integer.class, endpoint);
+		return total == null ? 0 : total;
 	}
 
 	private static void esperar(BooleanSupplier condicion, String descripcion) throws InterruptedException {
