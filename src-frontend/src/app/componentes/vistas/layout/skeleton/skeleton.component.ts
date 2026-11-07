@@ -81,7 +81,7 @@ type ModoCabecera = 'hoy' | 'hueco' | 'nuevo' | 'plantilla';
   styleUrl: './skeleton.component.scss',
 })
 export class SkeletonComponent implements OnInit {
-  showCookieBanner = false;
+  private avisoCookies = false;
   private readonly storageKey = 'cookieConsent';
   private readonly measurementId = 'G-R3H7GC1T4X';
   private readonly router = inject(Router);
@@ -92,17 +92,28 @@ export class SkeletonComponent implements OnInit {
   private readonly injector = inject(Injector);
   private readonly rutaInicial = inject(Location).path();
   private readonly rutaPanel = signal(esRutaDelPanel(this.rutaInicial));
-  /** ¿Se sirvió `index-plantilla.html`? Sin la meta (Moiskimdo) nada de la web por plantilla se mira ni cambia. */
+  /**
+   * ¿Se sirvió `index-plantilla.html`? Con la meta no hay nada de la analítica de Moiskimdo en ninguna ruta (ni aviso
+   * de cookies, ni GA4, ni la decisión guardada). Sin ella (Moiskimdo) nada de la web por plantilla se mira ni cambia.
+   */
   private readonly conMetaPlantilla = hayMetaWebPlantilla(this.document);
   /**
    * ¿Ruta de la web por plantilla (`data.webPlantilla`)? Con la meta, hasta que acaba la primera navegación se da por
-   * hecho que sí: así no asoma la cabecera de Moiskimdo ni se aplica la decisión de cookies antes de saber la ruta.
+   * hecho que sí: así no asoma la cabecera de Moiskimdo antes de saber la ruta.
    */
   private readonly rutaPlantilla = signal(
     this.conMetaPlantilla && (!this.router.navigated || this.rutaMarcadaComoPlantilla())
   );
-  /** Con la meta, la decisión de cookies guardada espera a la primera ruta fuera de la plantilla (sin GA4 en ella). */
-  private consentimientoPendiente = false;
+
+  /** Aviso de cookies de Moiskimdo. Con la meta nunca se abre (tampoco desde «Configurar cookies»). */
+  get showCookieBanner(): boolean {
+    return this.avisoCookies;
+  }
+
+  set showCookieBanner(visible: boolean) {
+    this.avisoCookies = visible && !this.conMetaPlantilla;
+  }
+
   /**
    * Carga directa (F5 o URL pegada) de una URL que solo casa con el comodín: puede acabar en el 404 del panel
    * (`data.panelNuevo`), pero eso no se sabe hasta el primer NavigationEnd. Se apaga al acabar (o fallar) esa navegación.
@@ -144,12 +155,8 @@ export class SkeletonComponent implements OnInit {
       )
       .subscribe((e) => {
         this.alCambiarDeRuta(e.urlAfterRedirects);
-        if (this.rutaPlantilla()) {
-          return; // web por plantilla: sin GA4, ni `set` ni page_view
-        }
-        if (this.consentimientoPendiente) {
-          this.consentimientoPendiente = false;
-          this.aplicarConsentimientoGuardado();
+        if (this.conMetaPlantilla) {
+          return; // host de la web por plantilla: sin GA4 en ninguna ruta, ni `set` ni page_view
         }
         const pagina = urlSinToken(`${globalThis.location?.origin ?? ''}${e.urlAfterRedirects}`);
         this.fijarPagina(pagina);
@@ -169,16 +176,10 @@ export class SkeletonComponent implements OnInit {
     if (this.rutaPanel()) {
       this.evaluarSesionPanel();
     }
-    if (this.rutaPlantilla()) {
-      // Web por plantilla: ni aviso ni GA4; la decisión guardada espera a una ruta fuera de ella (login, panel…).
-      this.consentimientoPendiente = true;
-      return;
+    if (this.conMetaPlantilla) {
+      return; // host de la web por plantilla: ni aviso ni GA4, y la decisión guardada no se aplica en ninguna ruta
     }
-    this.aplicarConsentimientoGuardado();
-  }
-
-  /** La decisión guardada se vuelve a aplicar igual que al pulsar el botón (volver a guardarla no cambia nada). */
-  private aplicarConsentimientoGuardado(): void {
+    // La decisión guardada se vuelve a aplicar igual que al pulsar el botón (volver a guardarla no cambia nada).
     const stored = this.getStored();
     if (stored === 'accepted') {
       this.acceptCookies();
@@ -285,6 +286,9 @@ export class SkeletonComponent implements OnInit {
   }
 
   acceptCookies(): void {
+    if (this.conMetaPlantilla) {
+      return; // sin aviso nadie lo llama; por si acaso, nada de GA4 de Moiskimdo en el host de una plantilla
+    }
     this.setStored('accepted');
     this.desactivarGa(false);
     this.applyConsent(true);
@@ -298,6 +302,9 @@ export class SkeletonComponent implements OnInit {
    * cookies _ga* que hubiera escrito.
    */
   rejectCookies(): void {
+    if (this.conMetaPlantilla) {
+      return;
+    }
     this.setStored('rejected');
     this.applyConsent(false);
     this.desactivarGa(true);

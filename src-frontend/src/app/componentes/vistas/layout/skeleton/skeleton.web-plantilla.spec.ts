@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, RouterOutlet, provideRouter } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { BotonscrollComponent } from '../../../generales/botonscroll/botonscroll.component';
 import { AuthenticationService } from '../../../../servicios/authentication/authentication.service';
+import { PermisosSesionService } from '../../../../servicios/authentication/permisos-sesion.service';
+import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
 import { ponerMetaWebPlantilla, quedaMetaWebPlantilla } from '../../../../testing/meta-web-plantilla';
 import { HeaderComponent } from '../header/header.component';
 import { SkeletonComponent } from './skeleton.component';
@@ -31,7 +33,9 @@ class RaizComponent {}
 
 /**
  * Cáscara en modo «plantilla» (fase4-web-plan.md §3.2, punto 6): en una ruta con `data.webPlantilla` solo el contenido,
- * sin cabecera, pie, botón de subir ni aviso de cookies, y sin GA4. Sin la meta (Moiskimdo), todo como hoy.
+ * sin cabecera, pie, botón de subir ni aviso de cookies, y sin GA4. Con la meta, en ninguna ruta (login, panel…) hay
+ * aviso de cookies ni GA4 de Moiskimdo (W4, parte C); la cabecera y el pie siguen como hoy fuera de la plantilla. Sin
+ * la meta (Moiskimdo), todo como hoy.
  */
 describe('SkeletonComponent · web por plantilla', () => {
   const global = globalThis as any;
@@ -50,6 +54,7 @@ describe('SkeletonComponent · web por plantilla', () => {
         provideRouter([
           { path: '', component: PaginaPlantillaComponent, data: { webPlantilla: true } },
           { path: 'login', component: PaginaHoyComponent },
+          { path: 'mi-caja', component: PaginaHoyComponent },
           { path: '**', component: PaginaHoyComponent },
         ]),
         {
@@ -61,6 +66,9 @@ describe('SkeletonComponent · web por plantilla', () => {
             esSoloProfesor: () => false,
           },
         },
+        // Ruta del panel con una sesión sin panel nuevo: cabecera de hoy, sin pedir nada al servidor.
+        { provide: PermisosSesionService, useValue: { obtener: () => of({ roles: [], capacidades: [] }) } },
+        { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
       ],
     });
     TestBed.overrideComponent(SkeletonComponent, {
@@ -89,6 +97,26 @@ describe('SkeletonComponent · web por plantilla', () => {
   }
 
   const raiz = (f: ComponentFixture<RaizComponent>) => f.nativeElement as HTMLElement;
+  const avisoCookies = (f: ComponentFixture<RaizComponent>) => raiz(f).querySelector('#cookie-consent');
+
+  /** «Configurar cookies» del pie de hoy. */
+  function configurarCookiesDelPie(f: ComponentFixture<RaizComponent>): void {
+    const boton = Array.from(raiz(f).querySelectorAll<HTMLButtonElement>('app-footer button')).find((b) =>
+      b.textContent?.includes('Configurar cookies')
+    );
+    expect(boton).withContext('botón «Configurar cookies» del pie').toBeDefined();
+    boton!.click();
+    f.detectChanges();
+  }
+
+  /** Nada de la analítica ni del consentimiento de Moiskimdo. */
+  function esperarSinAnalitica(): void {
+    expect(aceptar).withContext('acceptCookies').not.toHaveBeenCalled();
+    expect(rechazar).withContext('rejectCookies').not.toHaveBeenCalled();
+    expect(cargarScript).withContext('gtag.js').not.toHaveBeenCalled();
+    expect(gtag).withContext('gtag (consent, js, config, set, page_view)').not.toHaveBeenCalled();
+    expect(global['ga-disable-G-R3H7GC1T4X']).withContext('ga-disable').toBeUndefined();
+  }
   const cascara = (f: ComponentFixture<RaizComponent>) =>
     f.debugElement.children[0].componentInstance as SkeletonComponent;
 
@@ -158,6 +186,25 @@ describe('SkeletonComponent · web por plantilla', () => {
       esperarHoy(fixture, '.pagina-hoy');
       expect(raiz(fixture).querySelector('#cookie-consent')).not.toBeNull();
     });
+
+    it('ruta del panel con las cookies aceptadas: acceptCookies, set y page_view, como hoy', async () => {
+      localStorage.setItem('cookieConsent', 'accepted');
+      const fixture = await arrancar('/mi-caja');
+      esperarHoy(fixture, '.pagina-hoy');
+      expect(aceptar).toHaveBeenCalledTimes(1);
+      expect(cargarScript).toHaveBeenCalledTimes(1);
+      await navegar(fixture, '/login');
+      expect(gtag).toHaveBeenCalledWith('set', jasmine.objectContaining({ page_location: jasmine.any(String) }));
+      expect(gtag).toHaveBeenCalledWith('event', 'page_view', jasmine.objectContaining({ page_path: '/login' }));
+    });
+
+    it('«Configurar cookies» del pie en el login abre el aviso, como hoy', async () => {
+      localStorage.setItem('cookieConsent', 'rejected');
+      const fixture = await arrancar('/login');
+      expect(avisoCookies(fixture)).toBeNull();
+      configurarCookiesDelPie(fixture);
+      expect(avisoCookies(fixture)).not.toBeNull();
+    });
   });
 
   describe('con la meta (index-plantilla.html)', () => {
@@ -195,26 +242,89 @@ describe('SkeletonComponent · web por plantilla', () => {
       expect(gtag).not.toHaveBeenCalled();
     });
 
-    it('de la plantilla al login: el login con lo de hoy (y su decisión de cookies); al volver, la plantilla otra vez', async () => {
+    it('de la plantilla al login y al panel: lo de hoy, pero sin aviso ni GA4 aunque estén aceptadas; al volver, la plantilla', async () => {
       localStorage.setItem('cookieConsent', 'accepted');
       const fixture = await arrancar('/');
       esperarPlantilla(fixture);
-      expect(aceptar).not.toHaveBeenCalled();
 
       await navegar(fixture, '/login');
       esperarHoy(fixture, '.pagina-hoy');
-      expect(aceptar).toHaveBeenCalledTimes(1);
+      expect(avisoCookies(fixture)).toBeNull();
+
+      await navegar(fixture, '/mi-caja');
+      esperarHoy(fixture, '.pagina-hoy');
+      expect(avisoCookies(fixture)).toBeNull();
 
       await navegar(fixture, '/');
       esperarPlantilla(fixture);
-      expect(aceptar).toHaveBeenCalledTimes(1);
+      esperarSinAnalitica();
+      expect(localStorage.getItem('cookieConsent')).withContext('la decisión guardada no se toca').toBe('accepted');
     });
 
-    it('fuera de la plantilla desde el arranque (login): lo de hoy, con el aviso si no hay decisión', async () => {
+    for (const guardado of ['accepted', 'rejected', null]) {
+      it(`login desde el arranque (decisión guardada: ${guardado}): lo de hoy, sin aviso ni GA4`, async () => {
+        if (guardado === null) {
+          localStorage.removeItem('cookieConsent');
+        } else {
+          localStorage.setItem('cookieConsent', guardado);
+        }
+        const fixture = await arrancar('/login');
+        esperarHoy(fixture, '.pagina-hoy');
+        expect(avisoCookies(fixture)).toBeNull();
+        await navegar(fixture, '/otra-de-hoy');
+        esperarSinAnalitica();
+        expect(localStorage.getItem('cookieConsent')).toBe(guardado);
+      });
+
+      it(`ruta del panel desde el arranque (decisión guardada: ${guardado}): sin aviso ni GA4`, async () => {
+        if (guardado === null) {
+          localStorage.removeItem('cookieConsent');
+        } else {
+          localStorage.setItem('cookieConsent', guardado);
+        }
+        const fixture = await arrancar('/mi-caja');
+        esperarHoy(fixture, '.pagina-hoy');
+        expect(avisoCookies(fixture)).toBeNull();
+        await navegar(fixture, '/login');
+        esperarSinAnalitica();
+        expect(localStorage.getItem('cookieConsent')).toBe(guardado);
+      });
+    }
+
+    it('«Configurar cookies» del pie en el login no abre el aviso', async () => {
+      localStorage.setItem('cookieConsent', 'accepted');
+      const fixture = await arrancar('/login');
+      configurarCookiesDelPie(fixture);
+      expect(cascara(fixture).showCookieBanner).toBeFalse();
+      expect(avisoCookies(fixture)).toBeNull();
+      esperarSinAnalitica();
+    });
+
+    it('acceptCookies y rejectCookies llamados a mano no hacen nada (ni GA4, ni la decisión guardada)', async () => {
       localStorage.removeItem('cookieConsent');
       const fixture = await arrancar('/login');
-      esperarHoy(fixture, '.pagina-hoy');
-      expect(raiz(fixture).querySelector('#cookie-consent')).not.toBeNull();
+      cascara(fixture).acceptCookies();
+      cascara(fixture).rejectCookies();
+      expect(cargarScript).not.toHaveBeenCalled();
+      expect(gtag).not.toHaveBeenCalled();
+      expect(global['ga-disable-G-R3H7GC1T4X']).toBeUndefined();
+      expect(localStorage.getItem('cookieConsent')).toBeNull();
+    });
+
+    it('sin gtag definido (index-plantilla.html no lo trae): nada entra en dataLayer al navegar', async () => {
+      delete global.gtag;
+      const dataLayerAnterior = global.dataLayer;
+      const cola: unknown[] = [];
+      global.dataLayer = cola;
+      try {
+        localStorage.setItem('cookieConsent', 'accepted');
+        const fixture = await arrancar('/login');
+        await navegar(fixture, '/mi-caja');
+        await navegar(fixture, '/');
+        expect(cola).toEqual([]);
+      } finally {
+        global.dataLayer = dataLayerAnterior;
+      }
     });
   });
 });

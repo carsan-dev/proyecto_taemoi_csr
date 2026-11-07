@@ -4,6 +4,7 @@ import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { SEO_DEFAULTS, SEO_ROUTES, SeoMeta } from '../../core/constants/seo.constants';
+import { hayMetaWebPlantilla } from '../../guards/web-plantilla.guard';
 
 export interface BreadcrumbItem {
   name: string;
@@ -91,7 +92,18 @@ export class SeoService {
       });
   }
 
+  /**
+   * ¿Host de una web por plantilla (`index-plantilla.html`)? Entonces no se escribe nada del SEO de Moiskimdo en ninguna
+   * ruta (título, meta, canonical, hreflang ni JSON-LD); la plantilla pone el suyo en sus rutas.
+   */
+  private enHostDePlantilla(): boolean {
+    return hayMetaWebPlantilla(this.document);
+  }
+
   private applyRouteSeo(): void {
+    if (this.enHostDePlantilla()) {
+      return;
+    }
     const route = this.getDeepestRoute(this.router.routerState.snapshot.root);
     // Web por plantilla (fase4-web-plan.md §3.2, punto 7): no se toca nada; la plantilla pone su propio SEO.
     if (route.data?.['webPlantilla'] === true) {
@@ -137,6 +149,9 @@ export class SeoService {
     noIndex?: boolean;
     ogType?: 'article' | 'website';
   }): void {
+    if (this.enHostDePlantilla()) {
+      return;
+    }
     const canonical = config.canonical ?? this.buildCanonical(this.router.url);
     const ogImage = config.ogImage ?? SEO_DEFAULTS.ogImage;
     const robots = config.noIndex ? 'noindex, nofollow' : this.defaultRobots;
@@ -661,7 +676,7 @@ export class SeoService {
     startDate?: string;
     endDate?: string;
   }): void {
-    if (!isPlatformBrowser(this.platformId)) {
+    if (this.enHostDePlantilla() || !isPlatformBrowser(this.platformId)) {
       return;
     }
 
@@ -713,6 +728,9 @@ export class SeoService {
   }
 
   removeEventSchema(): void {
+    if (this.enHostDePlantilla()) {
+      return;
+    }
     this.removeSchemaBySelector('script[data-event-schema]');
   }
 
@@ -724,7 +742,7 @@ export class SeoService {
       date?: string;
     }>,
   ): void {
-    if (!isPlatformBrowser(this.platformId)) {
+    if (this.enHostDePlantilla() || !isPlatformBrowser(this.platformId)) {
       return;
     }
 
