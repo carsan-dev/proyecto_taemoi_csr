@@ -14,7 +14,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.imageio.IIOException;
@@ -58,6 +60,11 @@ public class ImagenServiceImpl implements ImagenService {
 			"La foto es demasiado grande. Usa una de menos de 60 megapíxeles.";
 	/** Decodificada ocupa 3 o 4 bytes por píxel: la galería sube varias a la vez, y una cabecera no pesa nada. */
 	private static final long MAX_PIXELES_FOTO_EVENTO = 60_000_000L;
+	private static final String NOMBRE_BASE_FOTO_SEDE = "sede";
+	private static final String MENSAJE_FOTO_SEDE_ILEGIBLE = "No se pudo leer la foto de la sede.";
+	private static final String MENSAJE_FOTO_SEDE_FORMATO = "La foto de la sede tiene que ser JPG, PNG o WebP.";
+	/** Formatos de la foto de una sede, por el lector de ImageIO que reconoce el contenido (en minúsculas). */
+	private static final Set<String> FORMATOS_FOTO_SEDE = Set.of("jpeg", "jpg", "png", "webp");
 
 	@Value("${app.imagenes.directorio.linux}")
 	private String directorioImagenesLinux;
@@ -138,6 +145,21 @@ public class ImagenServiceImpl implements ImagenService {
 		}
 	}
 
+	@Override
+	public Imagen guardarFotoSede(MultipartFile archivo) throws IOException {
+		DocumentoSecurityUtils.rechazarHeic(archivo.getOriginalFilename(), archivo.getContentType());
+		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_WEB_SEDES);
+		Path directorio = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
+
+		comprobarCabecera(archivo, FORMATOS_FOTO_SEDE, MENSAJE_FOTO_SEDE_ILEGIBLE, MENSAJE_FOTO_SEDE_FORMATO);
+		Files.createDirectories(directorio);
+
+		BufferedImage original = leerImagen(archivo, MENSAJE_FOTO_SEDE_ILEGIBLE);
+		BufferedImage reducida = redimensionarParaEvento(OrientacionExif.aplicar(original, leerOrientacion(archivo)));
+		return guardarImagenProcesadaConFallback(reducida, directorio, NOMBRE_BASE_FOTO_SEDE, carpetaRelativa,
+				EVENTO_WEBP_QUALITY);
+	}
+
 	/** Separado para poder simular su fallo en los tests. */
 	protected Imagen guardarMiniaturaFotoEvento(BufferedImage foto, Path directorio, String carpetaRelativa)
 			throws IOException {
@@ -174,15 +196,27 @@ public class ImagenServiceImpl implements ImagenService {
 	 * cabecera no se entiende se rechaza aquí, porque de lo que no se conoce el tamaño no se decodifica nada.
 	 */
 	private static void rechazarFotoDemasiadoGrande(MultipartFile archivo) throws IOException {
+		comprobarCabecera(archivo, null, MENSAJE_FOTO_ILEGIBLE, null);
+	}
+
+	/**
+	 * Lo de {@link #rechazarFotoDemasiadoGrande} y, si {@code formatos} no es {@code null}, que el formato que reconoce
+	 * ImageIO por el contenido esté entre ellos (si no, {@code mensajeFormato}).
+	 */
+	private static void comprobarCabecera(MultipartFile archivo, Set<String> formatos, String mensajeIlegible,
+			String mensajeFormato) throws IOException {
 		long pixeles;
 		try (InputStream entrada = archivo.getInputStream();
 				ImageInputStream cabecera = ImageIO.createImageInputStream(entrada)) {
 			Iterator<ImageReader> lectores = ImageIO.getImageReaders(cabecera);
 			if (!lectores.hasNext()) {
-				throw new ArchivoNoValidoException(MENSAJE_FOTO_ILEGIBLE);
+				throw new ArchivoNoValidoException(mensajeIlegible);
 			}
 			ImageReader lector = lectores.next();
 			try {
+				if (formatos != null && !formatos.contains(formato(lector))) {
+					throw new ArchivoNoValidoException(mensajeFormato);
+				}
 				lector.setInput(cabecera, true, true);
 				pixeles = (long) lector.getWidth(0) * lector.getHeight(0);
 			} finally {
@@ -190,15 +224,25 @@ public class ImagenServiceImpl implements ImagenService {
 			}
 		} catch (EOFException | IndexOutOfBoundsException e) {
 			// IndexOutOfBounds: cabecera válida sin ningún fotograma, como un GIF vacío.
-			throw new ArchivoNoValidoException(MENSAJE_FOTO_ILEGIBLE);
+			throw new ArchivoNoValidoException(mensajeIlegible);
 		} catch (IIOException e) {
 			if (esErrorDeEntradaSalidaDelServidor(e)) {
 				throw e;
 			}
-			throw new ArchivoNoValidoException(MENSAJE_FOTO_ILEGIBLE);
+			throw new ArchivoNoValidoException(mensajeIlegible);
 		}
 		if (pixeles > MAX_PIXELES_FOTO_EVENTO) {
 			throw new ArchivoNoValidoException(MENSAJE_FOTO_DEMASIADO_GRANDE);
+		}
+	}
+
+	/** Nombre del formato del lector en minúsculas, o vacío si no lo dice. */
+	private static String formato(ImageReader lector) {
+		try {
+			String nombre = lector.getFormatName();
+			return nombre == null ? "" : nombre.toLowerCase(Locale.ROOT);
+		} catch (IOException e) {
+			return "";
 		}
 	}
 

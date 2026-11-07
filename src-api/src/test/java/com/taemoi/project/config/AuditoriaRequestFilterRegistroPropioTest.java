@@ -82,6 +82,8 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.SEDE_CREAR, new Ejemplo("POST", "/api/sedes")),
 			Map.entry(EscrituraConRegistroPropio.SEDE_EDITAR, new Ejemplo("PUT", "/api/sedes/5")),
 			Map.entry(EscrituraConRegistroPropio.SEDE_ACTIVA, new Ejemplo("PUT", "/api/sedes/5/activa")),
+			Map.entry(EscrituraConRegistroPropio.SEDE_FOTO_CAMBIAR, new Ejemplo("PUT", "/api/sedes/5/fotos/2")),
+			Map.entry(EscrituraConRegistroPropio.SEDE_FOTO_QUITAR, new Ejemplo("DELETE", "/api/sedes/5/fotos/1")),
 			Map.entry(EscrituraConRegistroPropio.ALUMNO_CAMBIAR_SEDE, new Ejemplo("PUT", "/api/alumnos/12/sede")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_ALTA, new Ejemplo("POST", "/api/miembros")),
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_ROL_DAR,
@@ -157,6 +159,12 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("PUT", "/api/sedes"),
 			new Ejemplo("PUT", "/api/sedes/5/activa/otra"),
 			new Ejemplo("DELETE", "/api/sedes/5"),
+			// Web por plantilla: solo PUT y DELETE de la ruta exacta de una foto.
+			new Ejemplo("POST", "/api/sedes/5/fotos/1"),
+			new Ejemplo("GET", "/api/sedes/5/fotos/1"),
+			new Ejemplo("PUT", "/api/sedes/5/fotos"),
+			new Ejemplo("DELETE", "/api/sedes/5/fotos"),
+			new Ejemplo("PUT", "/api/sedes/5/fotos/1/otra"),
 			// Pieza E8-3: las lecturas de miembros y las rutas vecinas sin manejador.
 			new Ejemplo("GET", "/api/miembros"),
 			new Ejemplo("GET", "/api/miembros/21"),

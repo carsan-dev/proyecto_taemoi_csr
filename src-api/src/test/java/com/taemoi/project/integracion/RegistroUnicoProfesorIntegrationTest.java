@@ -81,7 +81,8 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 	 * MarcaEscuelaPanelIntegrationTest#registroEnLaEscuelaDestino_sinElValor (superadmin y escuela destino). El material de
 	 * examen, en MaterialExamenIntegrationTest#cadaEscritura_soloSuRegistro_yLaFallida_soloElGenerico (sobre disco). El
 	 * alta de una escuela (F4-2), en AltaEscuelaIntegrationTest. Publicar la web (W3, propietario y superadmin), en
-	 * WebPublicacionIntegrationTest.
+	 * WebPublicacionIntegrationTest. Las fotos de una sede (web por plantilla), en
+	 * SedeFotosIntegrationTest#elFiltroNoDuplica_yLosFallosQuedanEnElGenerico (sobre disco).
 	 */
 	private static final Set<EscrituraConRegistroPropio> CON_CASO_EN_OTRO_TEST = EnumSet.of(
 			EscrituraConRegistroPropio.LOGO_ESCUELA_CAMBIAR, EscrituraConRegistroPropio.LOGO_ESCUELA_QUITAR,
@@ -92,7 +93,8 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_ORDEN, EscrituraConRegistroPropio.MATERIAL_VIDEO_ELIMINAR,
 			EscrituraConRegistroPropio.MATERIAL_TEMARIO, EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_SUBIR,
 			EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_SUSTITUIR,
-			EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_ELIMINAR);
+			EscrituraConRegistroPropio.MATERIAL_DOCUMENTO_ELIMINAR, EscrituraConRegistroPropio.SEDE_FOTO_CAMBIAR,
+			EscrituraConRegistroPropio.SEDE_FOTO_QUITAR);
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;

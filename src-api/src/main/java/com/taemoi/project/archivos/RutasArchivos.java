@@ -34,6 +34,10 @@ public final class RutasArchivos {
 	public static final String CARPETA_MATERIALES = "materiales";
 	/** Pieza E7-7a: logo de la escuela (PNG que sube el superadmin). */
 	public static final String CARPETA_LOGO = "logo";
+	/** Web por plantilla: carpeta de lo que publica la web de la escuela. */
+	public static final String CARPETA_WEB = "web";
+	/** Web por plantilla: fotos de las sedes ({@code org-<id>/web/sedes/…}), PÚBLICAS (ver {@link #esImagenPublica}). */
+	public static final String CARPETA_WEB_SEDES = CARPETA_WEB + "/sedes";
 	/** Carpetas heredadas (sin prefijo de escuela). */
 	public static final String CARPETA_DOCUMENTOS_ALUMNOS_LEGADO = "Documentos_Alumnos_Moiskimdo";
 	public static final String CARPETA_DOCUMENTOS_EVENTOS_LEGADO = "Documentos_Eventos";
@@ -172,11 +176,38 @@ public final class RutasArchivos {
 
 	/**
 	 * LISTA BLANCA: una imagen solo es PÚBLICA si es de un evento, {@code eventos/…} (heredada, sin prefijo)
-	 * u {@code org-<id>/eventos/…}, y no tiene ningún segmento {@code alumnos}. Todo lo demás (fotos de
-	 * alumnos, ficheros sueltos en la raíz, carpetas desconocidas) es privado.
+	 * u {@code org-<id>/eventos/…}, o una foto de sede de la web, {@code org-<id>/web/sedes/…} (solo con prefijo), y no
+	 * tiene ningún segmento {@code alumnos}. Todo lo demás (fotos de alumnos, ficheros sueltos en la raíz, carpetas
+	 * desconocidas, el resto de {@code web/}) es privado.
 	 */
 	public static boolean esImagenPublica(String rutaRelativa) {
-		return esDeEventos(rutaRelativa, CARPETA_EVENTOS);
+		return esDeEventos(rutaRelativa, CARPETA_EVENTOS) || esFotoDeSede(rutaRelativa);
+	}
+
+	/**
+	 * Web por plantilla: {@code org-<id>/web/sedes/…}, con al menos un nivel por debajo y sin ningún segmento de alumnos.
+	 * Sin prefijo de escuela no vale: ninguna versión anterior guardó ahí nada.
+	 */
+	private static boolean esFotoDeSede(String rutaRelativa) {
+		if (organizacionDeRuta(rutaRelativa) == null) {
+			return false;
+		}
+		List<String> segmentos = segmentos(rutaRelativa);
+		if (segmentos.size() < 4 || tieneSegmentoDeAlumnos(segmentos)) {
+			return false;
+		}
+		String[] carpeta = CARPETA_WEB_SEDES.split("/");
+		return segmentos.get(1).equalsIgnoreCase(carpeta[0]) && segmentos.get(2).equalsIgnoreCase(carpeta[1]);
+	}
+
+	private static boolean tieneSegmentoDeAlumnos(List<String> segmentos) {
+		for (String segmento : segmentos) {
+			if (segmento.equalsIgnoreCase(CARPETA_ALUMNOS)
+					|| segmento.equalsIgnoreCase(CARPETA_DOCUMENTOS_ALUMNOS_LEGADO)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -193,11 +224,8 @@ public final class RutasArchivos {
 	 */
 	private static boolean esDeEventos(String rutaRelativa, String carpetaLegado) {
 		List<String> segmentos = segmentos(rutaRelativa);
-		for (String segmento : segmentos) {
-			if (segmento.equalsIgnoreCase(CARPETA_ALUMNOS)
-					|| segmento.equalsIgnoreCase(CARPETA_DOCUMENTOS_ALUMNOS_LEGADO)) {
-				return false;
-			}
+		if (tieneSegmentoDeAlumnos(segmentos)) {
+			return false;
 		}
 		boolean conPrefijo = organizacionDeRuta(rutaRelativa) != null;
 		int indiceCategoria = conPrefijo ? 1 : 0;

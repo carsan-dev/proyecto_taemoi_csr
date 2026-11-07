@@ -30,6 +30,18 @@ public interface SedeRepository extends JpaRepository<Sede, Long> {
 	@Query("SELECT s FROM Sede s WHERE s.id = :id")
 	Optional<Sede> buscarEnEscuelaActiva(@Param("id") Long id);
 
+	/** Web por plantilla: la sede existe en la escuela activa, sin cargarla en la sesión. */
+	@Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM Sede s WHERE s.id = :id")
+	boolean existeEnEscuelaActiva(@Param("id") Long id);
+
+	/**
+	 * Web por plantilla: una sede de la escuela activa, bloqueada ({@code SELECT ... FOR UPDATE}) para cambiar sus fotos
+	 * sin que dos subidas a la vez dejen una imagen sin sede. Llamarla antes de leer esa sede en la transacción.
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT s FROM Sede s WHERE s.id = :id")
+	Optional<Sede> bloquearEnEscuelaActiva(@Param("id") Long id);
+
 	/**
 	 * Pieza E8-2: TODAS las sedes de la escuela activa, bloqueadas ({@code SELECT ... FOR UPDATE}, por id) para activar
 	 * o desactivar sin que dos peticiones a la vez dejen la escuela sin sedes activas. Llamarla antes de leer ninguna
