@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, lastValueFrom, of } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../../core/http-context';
@@ -166,12 +166,21 @@ describe('MarcaEscuelaLoginService', () => {
   afterEach(() => http.verify());
 
   it('pide una vez y comparte la respuesta', async () => {
-    const primera = firstValueFrom(servicio.escuela());
+    const primera = lastValueFrom(servicio.escuela());
     http.expectOne(URL_ESCUELA).flush(MOISKIMDO);
     expect(await primera).toEqual(MOISKIMDO);
 
     expect(await firstValueFrom(servicio.escuela())).toEqual(MOISKIMDO);
     http.expectNone(URL_ESCUELA);
+  });
+
+  it('desuscribirse antes de la respuesta cancela la petición en vuelo', () => {
+    const suscripcion = servicio.escuela().subscribe();
+    const peticion = http.expectOne(URL_ESCUELA);
+
+    suscripcion.unsubscribe();
+
+    expect(peticion.cancelled).toBeTrue();
   });
 
   it('un error no se guarda: la siguiente llamada vuelve a pedir', async () => {

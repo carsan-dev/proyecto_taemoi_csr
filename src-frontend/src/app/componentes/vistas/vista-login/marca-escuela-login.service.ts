@@ -51,7 +51,7 @@ export class MarcaEscuelaLoginService {
             }
             return throwError(() => error);
           }),
-          shareReplay(1)
+          shareReplay({ bufferSize: 1, refCount: true })
         );
       this.peticion$ = peticion$;
     }
