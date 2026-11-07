@@ -47,6 +47,7 @@ import { PermisosSesionService } from './servicios/authentication/permisos-sesio
 import { resolverPortalContexto, routes } from './app.routes';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
 import { Routes } from '@angular/router';
+import { SEO_ROUTES } from './core/constants/seo.constants';
 
 /** Pantalla de gestión rediseñada: su ruta, el componente nuevo, los guards de `canActivate` y la data propia. */
 type Rediseno = [ruta: string, componente: Type<unknown>, canActivate: unknown[], extra?: Record<string, unknown>];
@@ -296,6 +297,16 @@ describe('app routes', () => {
       expect(route.canActivate).toEqual([roleGuard, adminOnlyGuard]);
       expect(route.data?.['requiredRoles']).toEqual(['ROLE_ADMIN']);
     }
+  });
+
+  it('login: perezoso, sin guards, noindex, y resuelve VistaLoginComponent', async () => {
+    const ruta = routes.find((route) => route.path === 'login');
+
+    expect(ruta?.component).toBeUndefined();
+    expect(ruta?.canActivate).toBeUndefined();
+    expect(ruta?.data?.['seo']).toBe(SEO_ROUTES.noIndex);
+    const { VistaLoginComponent } = await import('./componentes/vistas/vista-login/vista-login.component');
+    expect(await ruta!.loadComponent!()).toBe(VistaLoginComponent);
   });
 
   it('login/google (decisión 384): solo su guard, sin pantalla, roles ni catálogo, antes de los comodines', () => {

@@ -10,7 +10,6 @@ import { estilosGestionGuard } from './panel-nuevo/estilos-gestion.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { salirSinGuardarGuard } from './panel-nuevo/productos-alumno/salir-sin-guardar.guard';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
-import { VistaLoginComponent } from './componentes/vistas/vista-login/vista-login.component';
 import { SEO_ROUTES } from './core/constants/seo.constants';
 import { RouteScrollPolicy } from './servicios/generales/page-scroll.service';
 import { catalogoResolver } from './features/catalogo/catalogo.resolver';
@@ -183,7 +182,7 @@ export const routes: Routes = [
   {
     path: 'login',
     data: { seo: SEO_ROUTES.noIndex },
-    component: VistaLoginComponent // Eager-load login page for better UX
+    loadComponent: () => import('./componentes/vistas/vista-login/vista-login.component').then(m => m.VistaLoginComponent)
   },
   {
     // Entrada tras Google (decisión 384): sin pantalla; el guard redirige al destino del login con contraseña.
@@ -529,6 +528,16 @@ export const routes: Routes = [
     data: privateRouteData(ROUTE_ROLE_SETS.management),
     loadComponent: () => import('./panel-nuevo/material-examen/material-bloque.component').then(m => m.MaterialBloqueComponent),
     canActivate: [roleGuard],
+    canDeactivate: [salirSinGuardarGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    // Escuela → Datos de la escuela (pieza 394): fiscales, contacto, firmante y día límite; solo el propietario.
+    path: 'datos-escuela',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
+    loadComponent: () => import('./panel-nuevo/escuela/datos/datos-escuela.component').then(m => m.DatosEscuelaComponent),
+    canActivate: [roleGuard, adminOnlyGuard],
     canDeactivate: [salirSinGuardarGuard],
     resolve: CATALOGO_RESOLVE,
   },
