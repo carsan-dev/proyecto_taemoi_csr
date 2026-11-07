@@ -237,7 +237,8 @@ class MarcaEscuelaCorreosTest {
 				inv -> com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria.disciplinaTaemoi(inv.getArgument(0)));
 		PreinscripcionService alta = new PreinscripcionService(repo, null, null, null, null, null, null, null, null,
 				email, null, new ObjectMapper(), aforo, null, null, null, null, catalogo,
-				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), null, null, marca, null, null);
+				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), null, null, marca, null, null,
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://frontend.example.test/"));
 		correos.put("alta-pendiente.html", ReflectionTestUtils.invokeMethod(alta, "asuntoCliente", p) + "\n"
 				+ ReflectionTestUtils.invokeMethod(alta, "htmlConfirmacion", p));
 		p.setEstado(EstadoPreinscripcion.EN_LISTA_ESPERA);
@@ -250,8 +251,8 @@ class MarcaEscuelaCorreosTest {
 		correos.put("cancelacion.html", new PreinscripcionCancelacionEmailService(repo, email, marca).html(p));
 
 		PreinscripcionFinalizacionEmailService fin = new PreinscripcionFinalizacionEmailService(repo,
-				mock(UsuarioRepository.class), email, marca);
-		ReflectionTestUtils.setField(fin, "frontendBaseUrl", "https://frontend.example.test/");
+				mock(UsuarioRepository.class), email, marca,
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://frontend.example.test/"));
 		Usuario google = new Usuario();
 		google.setAuthProvider(AuthProvider.GOOGLE);
 		correos.put("finalizacion-sin-cuenta.html", fin.html(p, "familia@example.test", null));
@@ -259,14 +260,16 @@ class MarcaEscuelaCorreosTest {
 		correos.put("finalizacion-google.html", fin.html(p, "familia@example.test", google));
 
 		MarcaEscuela deLaEscuela = marca.de(escuela);
-		RegistroServiceImpl registro = new RegistroServiceImpl(null, null, null, null, email, null, null, marca);
+		RegistroServiceImpl registro = new RegistroServiceImpl(null, null, null, null, email, null, null, marca,
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://frontend.example.test"));
 		correos.put("registro.html", ReflectionTestUtils.invokeMethod(registro, "buildRegistroEmailHtml", "María",
 				"https://frontend.example.test/confirmar?token=abc", 1L, deLaEscuela));
-		PasswordResetServiceImpl reset = new PasswordResetServiceImpl(null, null, email, marca, null, null);
+		PasswordResetServiceImpl reset = new PasswordResetServiceImpl(null, null, email, marca, null, null,
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://frontend.example.test"));
 		correos.put("restablecer.html", ReflectionTestUtils.invokeMethod(reset, "buildResetEmailHtml", "María",
 				"https://frontend.example.test/reset-password?token=abc", 1L, deLaEscuela));
-		RecordatorioRachaServiceImpl racha = new RecordatorioRachaServiceImpl(null, null, email, marca);
-		ReflectionTestUtils.setField(racha, "frontendBaseUrl", "https://frontend.example.test");
+		RecordatorioRachaServiceImpl racha = new RecordatorioRachaServiceImpl(null, null, email, marca,
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://frontend.example.test"));
 		Usuario usuario = new Usuario();
 		usuario.setNombre("María");
 		Class<?> clase = Class.forName(RecordatorioRachaServiceImpl.class.getName() + "$AlumnoRachaEnRiesgo");

@@ -88,7 +88,8 @@ class PreinscripcionServiceTest {
 		service = new PreinscripcionService(preinscripciones, plantillas, grupos, turnos, alumnos,
 				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos,
-				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud, vinculos);
+				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud, vinculos,
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("http://localhost:4200"));
 		lenient().when(catalogo.obtenerPorCodigo(anyString())).thenAnswer(inv -> {
 			com.taemoi.project.entities.Disciplina disciplina = new com.taemoi.project.entities.Disciplina();
 			disciplina.setCodigo(inv.getArgument(0));
@@ -385,7 +386,6 @@ class PreinscripcionServiceTest {
 		preinscripcion.setPlantilla(plantilla);
 		preinscripcion.setGrupoSnapshot("Taekwondo · Lunes 18:00-19:00");
 		preinscripcion.setObservaciones("<b>Es grande & fuerte</b>");
-		ReflectionTestUtils.setField(service, "frontendBaseUrl", "http://localhost:4200");
 
 		String cliente = ReflectionTestUtils.invokeMethod(service, "htmlConfirmacion", preinscripcion);
 		String admin = ReflectionTestUtils.invokeMethod(service, "htmlAdmin", preinscripcion);
@@ -859,7 +859,8 @@ class PreinscripcionServiceTest {
 				turnos, alumnos, alumnoDeportes, grados, temporadas, pdf, email, configuracion,
 				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos,
-				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud, vinculos);
+				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud, vinculos,
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("http://localhost:4200"));
 
 		servicioPromocion.promocionarTodas();
 

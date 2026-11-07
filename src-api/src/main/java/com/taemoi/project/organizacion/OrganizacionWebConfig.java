@@ -41,13 +41,19 @@ public class OrganizacionWebConfig {
 	ResolutorEscuelaPorHost resolutorEscuelaPorHost(OrganizacionDominioRepository dominios,
 			ResolutorOrganizacion resolutor) {
 		Long porDefecto = resolutor.getOrganizacionPorDefecto();
-		return new ResolutorEscuelaPorHost(() -> TenantContext.calcularCon(porDefecto, () -> {
+		return new ResolutorEscuelaPorHost(porDefecto, () -> TenantContext.calcularCon(porDefecto, () -> {
 			Map<String, Long> tabla = new HashMap<>();
+			Map<Long, String> principales = new HashMap<>();
 			for (OrganizacionDominio dominio : dominios.findAll()) {
 				tabla.put(dominio.getHost(), dominio.getOrganizacionId());
+				if (Boolean.TRUE.equals(dominio.getPrincipal())) {
+					// Varios principales de una escuela: el menor por orden alfabético, para que sea estable.
+					principales.merge(dominio.getOrganizacionId(), dominio.getHost(),
+							(a, b) -> a.compareTo(b) <= 0 ? a : b);
+				}
 			}
-			return tabla;
-		}), porDefecto);
+			return new ResolutorEscuelaPorHost.Dominios(tabla, principales);
+		}));
 	}
 
 	@Bean
