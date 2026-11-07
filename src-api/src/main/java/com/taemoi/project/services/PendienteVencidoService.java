@@ -42,8 +42,8 @@ import com.taemoi.project.repositories.PendienteVencidoRepository.CargoCandidato
  * <li>Solo cargos no pagados ni cancelados de alumnos activos, como la tesorería de hoy, y solo de las categorías
  * {@code MENSUALIDAD} y {@code EXAMEN} de la tesorería ({@link #categoria}).</li>
  * <li>Mensualidad: su mes es el del concepto (como lo lee la tesorería) o, si no lo trae, el de la asignación. Vencida
- * si su mes es anterior al mes en curso, o si es el mes en curso y hoy es posterior al día
- * {@link #DIA_LIMITE_MENSUALIDAD}.</li>
+ * si su mes es anterior al mes en curso, o si es el mes en curso y hoy es posterior al día límite de la escuela
+ * ({@link DiaLimiteMensualidadService}; pieza 394, 5 por defecto).</li>
  * <li>Derecho de examen: vencido si la fecha de su convocatoria es hoy o anterior; sin convocatoria enlazada, la fecha de
  * asignación.</li>
  * </ul>
@@ -52,12 +52,6 @@ import com.taemoi.project.repositories.PendienteVencidoRepository.CargoCandidato
  */
 @Service
 public class PendienteVencidoService {
-
-	/**
-	 * Último día para pagar la mensualidad del mes: el 5, según las normas de Moiskimdo («del día 1 al 5 del mes
-	 * corriente», V3 y V17). Pasará a ser un ajuste por escuela en la E9.
-	 */
-	public static final int DIA_LIMITE_MENSUALIDAD = 5;
 
 	static final String MENSUALIDAD = "MENSUALIDAD";
 	static final String EXAMEN = "EXAMEN";
@@ -74,13 +68,15 @@ public class PendienteVencidoService {
 	private final PendienteVencidoRepository repositorio;
 	private final GestionPorSede gestionPorSede;
 	private final ComportamientoLegadoService comportamientoLegado;
+	private final DiaLimiteMensualidadService diaLimite;
 	private final Clock reloj;
 
 	public PendienteVencidoService(PendienteVencidoRepository repositorio, GestionPorSede gestionPorSede,
-			ComportamientoLegadoService comportamientoLegado, Clock reloj) {
+			ComportamientoLegadoService comportamientoLegado, DiaLimiteMensualidadService diaLimite, Clock reloj) {
 		this.repositorio = repositorio;
 		this.gestionPorSede = gestionPorSede;
 		this.comportamientoLegado = comportamientoLegado;
+		this.diaLimite = diaLimite;
 		this.reloj = reloj;
 	}
 
@@ -89,7 +85,8 @@ public class PendienteVencidoService {
 		Long organizacion = organizacionActiva();
 		// La gestión ve toda la escuela y el responsable, sus sedes: como /resumen sin sede.
 		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(null);
-		return resumir(vencidos(repositorio.candidatos(organizacion, sedes.todas(), sedes.parametro())));
+		List<CargoCandidato> candidatos = repositorio.candidatos(organizacion, sedes.todas(), sedes.parametro());
+		return resumir(vencidos(candidatos), diaLimite.diaLimiteMensualidad());
 	}
 
 	/**
@@ -156,13 +153,17 @@ public class PendienteVencidoService {
 		return organizacion;
 	}
 
-	/** La regla común de {@link #obtener()}, {@link #porAlumno} y {@link #cargosVencidosDeAlumnos}: los candidatos vencidos hoy. */
+	/**
+	 * La regla común de {@link #obtener()}, {@link #porAlumno} y {@link #cargosVencidosDeAlumnos}: los candidatos vencidos
+	 * hoy. El día límite sale de la misma lectura en memoria que el comportamiento heredado: ninguna consulta más.
+	 */
 	private List<Vencido> vencidos(List<CargoCandidato> candidatos) {
 		LocalDate hoy = LocalDate.now(reloj);
 		boolean legado = comportamientoLegado.activo();
+		int dia = diaLimite.diaLimiteMensualidad();
 		List<Vencido> vencidos = new ArrayList<>();
 		for (CargoCandidato c : candidatos) {
-			Vencido v = vencido(c, hoy, legado);
+			Vencido v = vencido(c, hoy, legado, dia);
 			if (v != null) {
 				vencidos.add(v);
 			}
@@ -175,7 +176,8 @@ public class PendienteVencidoService {
 	private record Vencido(CargoCandidato cargo, String tipo, YearMonth mes, LocalDate desde) {
 	}
 
-	private static Vencido vencido(CargoCandidato c, LocalDate hoy, boolean legado) {
+	/** {@code diaLimite}: la mensualidad del mes vence el día siguiente. */
+	private static Vencido vencido(CargoCandidato c, LocalDate hoy, boolean legado, int diaLimite) {
 		String tipo = categoria(c.getConcepto(), tipoDeCatalogo(c, legado));
 		LocalDate fechaCargo = c.getFechaAsignacion() != null ? c.getFechaAsignacion() : c.getFechaPago();
 		if (MENSUALIDAD.equals(tipo)) {
@@ -183,7 +185,7 @@ public class PendienteVencidoService {
 			if (mes == null) {
 				return null;
 			}
-			LocalDate desde = mes.atDay(DIA_LIMITE_MENSUALIDAD + 1);
+			LocalDate desde = mes.atDay(diaLimite + 1);
 			return hoy.isBefore(desde) ? null : new Vencido(c, tipo, mes, desde);
 		}
 		if (EXAMEN.equals(tipo)) {
@@ -266,7 +268,7 @@ public class PendienteVencidoService {
 
 	// ------------------------------------------------------------------ resumen
 
-	private static PendienteVencidoDTO resumir(List<Vencido> vencidos) {
+	private static PendienteVencidoDTO resumir(List<Vencido> vencidos, int diaLimite) {
 		BigDecimal total = BigDecimal.ZERO;
 		Set<Long> alumnos = new HashSet<>();
 		Map<String, Acumulado> porTipo = new LinkedHashMap<>();
@@ -304,7 +306,7 @@ public class PendienteVencidoService {
 				.limit(MAS_ANTIGUOS)
 				.map(PendienteVencidoService::cargo)
 				.toList();
-		return new PendienteVencidoDTO(total, vencidos.size(), alumnos.size(), DIA_LIMITE_MENSUALIDAD, tipos, meses,
+		return new PendienteVencidoDTO(total, vencidos.size(), alumnos.size(), diaLimite, tipos, meses,
 				sedes, masAntiguos);
 	}
 
