@@ -75,9 +75,12 @@ export const ESPERA_CAMBIO_ESCUELA = new InjectionToken<number>('ESPERA_CAMBIO_E
   factory: () => ESPERA_MAXIMA_CAMBIO_ESCUELA_MS,
 });
 
-/** Rechazo confirmado: la API respondió con un error (la sesión sigue en la escuela de antes). */
+/**
+ * Rechazo confirmado: solo un 4xx (la API respondió que no y la sesión sigue en la escuela de antes). Un 5xx, status 0,
+ * timeout u otro error es incierto: la API pudo hacerlo.
+ */
 function esRechazoConfirmado(error: unknown): boolean {
-  return error instanceof HttpErrorResponse && error.status >= 400;
+  return error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500;
 }
 
 /** Orden del texto de los roles (boceto): de más a menos poder sobre la escuela. */
@@ -179,11 +182,12 @@ export function coloresIniciales(colorPrimario: string | null): { fondo: string;
  *      el `sessionStorage` y lo de la escuela del `localStorage` (`limpieza-escuela.ts`) y se recarga la app entera en
  *      {@link RUTA_ENTRADA_SESION}. Así ningún servicio, `shareReplay`, signal ni tema de la escuela anterior sobrevive.
  *      Los componentes de la pantalla anterior ya no existen: ningún `beforeunload` frena la recarga;
- *   5. si la API lo rechaza (respuesta 4xx/5xx), nada cambia: se cancela el anuncio (todas las pestañas se
+ *   5. si la API lo rechaza (solo respuesta 4xx), nada cambia: se cancela el anuncio (todas las pestañas se
  *      desbloquean), vuelve a la pantalla de antes, guarda la escuela para {@link tomarFallo} («Tras entrar» se ha
  *      vuelto a crear) y el error llega a quien llamó;
- *   6. si no se sabe (red caída, tiempo agotado), NO se vuelve a la escuela de antes: bloqueo definitivo, limpieza y
- *      recarga completa (la sesión dirá en qué escuela está); la ruta neutra deja salir.
+ *   6. si no se sabe (5xx, status 0, tiempo agotado u otro error), NO se vuelve a la escuela de antes: bloqueo
+ *      definitivo, aviso a las demás pestañas (capa sin nombre, ya), limpieza y recarga completa (la sesión dirá en qué
+ *      escuela está); la ruta neutra deja salir.
  *   Una segunda llamada mientras hay un cambio en vuelo no hace nada.
  */
 @Injectable({ providedIn: 'root' })
@@ -314,7 +318,7 @@ export class SelectorEscuelaService {
           catchError((error) => {
             if (!esRechazoConfirmado(error)) {
               // Incierto: la API pudo cambiarla. Volver a la pantalla de antes sería seguir con la escuela anterior.
-              this.pestanas.bloquear();
+              this.pestanas.bloquear(idCambio);
               this.salidaLibre = true;
               this.recargarLimpia();
               return of(true);

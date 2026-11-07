@@ -67,8 +67,8 @@ interface CambioAjeno {
  *   publica `cambiando` con la escuela nueva;
  * - si el `POST` va bien, {@link confirmarCambio} (bloqueo definitivo y `confirmado`) y recarga;
  * - si la API lo rechaza, {@link cancelarCambio} (`cancelado` y desbloqueo);
- * - si no se sabe (red caída, tiempo agotado), {@link bloquear} y recarga: las demás muestran la capa a los
- *   {@link ESPERA_CIERRE_OTRA_PESTANA_MS}.
+ * - si no se sabe (5xx, red caída, tiempo agotado), {@link bloquear} y recarga: las demás muestran la capa (sin nombre)
+ *   ya; si el aviso se perdiera, a los {@link ESPERA_CIERRE_OTRA_PESTANA_MS}.
  *
  * Demás pestañas: con `cambiando` bloquean sus peticiones al momento (quedan en espera, sin capa); con `confirmado`, o
  * sin cierre en {@link ESPERA_CIERRE_OTRA_PESTANA_MS}, se tapan con la capa del boceto aprobado
@@ -175,11 +175,16 @@ export class CambioEscuelaPestanasService implements OnDestroy {
     this.actualizarBloqueo();
   }
 
-  /** Bloqueo hasta recargar (cambio hecho o de resultado incierto): ninguna petición más sale de esta pestaña. */
-  bloquear(): void {
+  /**
+   * Resultado incierto (no se sabe si la API lo hizo): bloqueo hasta recargar y las demás pestañas se tapan YA con la
+   * capa sin nombre (sin esperar a {@link ESPERA_CIERRE_OTRA_PESTANA_MS}). Va como `confirmado` sin escuela: el receptor
+   * lo trata igual, solo que sin nombre.
+   */
+  bloquear(idCambio: string): void {
     this.definitivo = true;
     this.propio = null;
     this.actualizarBloqueo();
+    this.publicar({ tipo: MENSAJE_CAMBIO_ESCUELA, idCambio, estado: 'confirmado', escuelaNueva: null });
   }
 
   ngOnDestroy(): void {

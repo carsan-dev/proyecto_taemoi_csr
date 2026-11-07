@@ -336,6 +336,41 @@ describe('SelectorEscuelaService', () => {
     http.expectOne(URL_CAMBIO).flush({});
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
   });
+  it('un 409 también es rechazo confirmado: cancela, vuelve a la pantalla, no bloquea ni recarga', async () => {
+    const fallo = firstValueFrom(servicio.cambiar(SUR)).catch((e) => e);
+    await esperar();
+    http.expectOne(URL_CAMBIO).flush({ mensaje: 'Conflicto.' }, { status: 409, statusText: 'Conflict' });
+    expect((await fallo).status).toBe(409);
+    expect(pestanas.cancelarCambio).toHaveBeenCalledOnceWith('id-1');
+    expect(pestanas.bloquear).not.toHaveBeenCalled();
+    expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
+    expect(irA).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('alumnoId')).toBe('41');
+    expect(servicio.ocupado).toBeFalse();
+    expect(TestBed.inject(Router).url).toBe('/ficha');
+    expect(servicio.tomarFallo()).toBe(2);
+  });
+
+  [502, 504].forEach((status) => {
+    it(`un ${status} es incierto (no rechazo): bloquea avisando ya a las demás, limpia y recarga entera`, async () => {
+      let error: unknown = null;
+      let resultado: boolean | null = null;
+      servicio.cambiar(SUR).subscribe({ next: (r) => (resultado = r), error: (e) => (error = e) });
+      await esperar();
+      http.expectOne(URL_CAMBIO).flush({}, { status, statusText: 'Error' });
+      await esperar();
+
+      expect(error).toBeNull();
+      expect(resultado).toBeTrue();
+      expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
+      expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
+      expect(pestanas.bloquear).toHaveBeenCalledOnceWith('id-1');
+      expect(sessionStorage.getItem('alumnoId')).toBeNull();
+      expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+      expect(servicio.tomarFallo()).toBeNull();
+    });
+  });
+
   it('con la red caída el resultado es incierto: no vuelve a la escuela de antes, limpia y recarga entera', async () => {
     let error: unknown = null;
     let resultado: boolean | null = null;
@@ -348,7 +383,7 @@ describe('SelectorEscuelaService', () => {
     expect(resultado).toBeTrue();
     expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
     expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
-    expect(pestanas.bloquear).toHaveBeenCalledTimes(1);
+    expect(pestanas.bloquear).toHaveBeenCalledOnceWith('id-1');
     expect(sessionStorage.getItem('alumnoId')).toBeNull();
     expect(localStorage.getItem('dashboard-user-estado-deportes-41')).toBeNull();
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);

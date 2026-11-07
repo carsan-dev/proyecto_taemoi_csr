@@ -131,9 +131,37 @@ describe('CambioEscuelaPestanasService (aviso entre pestañas)', () => {
       expect(servicio.bloqueada).toBeFalse();
       expect(capa()).toBeNull();
     });
+
+    it('incierto (bloquear): avisa ya a las demás con «confirmado» sin nombre, y esta pestaña queda bloqueada sin capa', async () => {
+      servicio.iniciar();
+      const recibidos: MensajeCambioEscuela[] = [];
+      otraPestana.onmessage = (evento) => recibidos.push(evento.data);
+      const id = servicio.anunciarCambio(SUR);
+      servicio.bloquear(id);
+      await esperarA(() => recibidos.length > 1);
+      expect(recibidos[1]).toEqual(mensaje(id, 'confirmado', null));
+      expect(servicio.bloqueada).toBeTrue();
+      expect(capa()).toBeNull();
+    });
   });
 
   describe('las demás pestañas', () => {
+    it('incierto: el aviso sin nombre muestra la capa al momento, sin esperar a la espera de 30 s', async () => {
+      servicio.iniciar();
+      const t0 = Date.now();
+      porAlmacen(mensaje('a10', 'confirmado', null));
+      await esperarA(() => !!capa());
+      expect(capa()).not.toBeNull();
+      expect(Date.now() - t0).toBeLessThan(ESPERA_CIERRE_OTRA_PESTANA_MS);
+      expect(capa()!.querySelector('strong')).toBeNull();
+      expect(capa()!.querySelector('#taemoi-cambio-escuela-texto')!.textContent).toBe(
+        'Lo hiciste en otra pestaña. Recarga esta para seguir con los datos de la escuela nueva.'
+      );
+      expect(servicio.bloqueada).toBeTrue();
+      capa()!.querySelector('button')!.click();
+      expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+    });
+
     it('con «cambiando» bloquean ya sus peticiones, sin capa; con «cancelado» se desbloquean y salen', async () => {
       servicio.iniciar();
       otraPestana.postMessage(mensaje('a1', 'cambiando'));
