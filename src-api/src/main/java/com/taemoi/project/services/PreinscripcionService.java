@@ -331,6 +331,7 @@ public Page<Preinscripcion> listar(String temporada,String deporteParametro,Esta
  /** Decisión 393: lectura perezosa de las sedes de la escuela, una sola vez y solo si algún grupo tiene sede. */
  private SedesDeTurnos sedesDeTurnos(){
   /* Un listado pide los turnos de muchas solicitudes: las sedes se leen una sola vez por petición web. */
+  /* Supone una organización por petición web: si un endpoint recorriera varias organizaciones, la caché debe llevar la organización (TenantContext) en la clave. */
   org.springframework.web.context.request.RequestAttributes req=org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
   if(req==null)return new SedesDeTurnos(sedes);
   Object previo=req.getAttribute(ATRIBUTO_SEDES,org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);

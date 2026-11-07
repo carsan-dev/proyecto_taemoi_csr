@@ -126,7 +126,8 @@ class SedeEnTurnosPreinscripcionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(nombreB, detalleB.get("turnosSolicitados").get(0).get("sede").asText());
 		assertNotEquals(snapshotA, snapshotB);
 
-		JsonNode listado = leer(get("/api/preinscripciones?q=Sede%20Turno&size=25"), token, 200);
+		JsonNode listado = leer(get("/api/preinscripciones?q=Turno&size=25"), token, 200);
+		assertFalse(listado.get("content").isEmpty());
 		for (JsonNode fila : listado.get("content")) {
 			assertTrue(fila.get("grupo").asText().contains(" · " + fila.get("turnosSolicitados").get(0).get("sede").asText()));
 		}
@@ -165,6 +166,23 @@ class SedeEnTurnosPreinscripcionIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("Taekwondo IT · Lunes 18:00-19:00 (IT E6 gA " + e.marca + ")", snapshot);
 		JsonNode detalle = leer(get("/api/preinscripciones/" + ref), token, 200);
 		assertFalse(detalle.get("turnosSolicitados").get(0).has("sede"));
+	}
+
+	@Test
+	void turnoDeSedeInactiva_conVariasSedesActivas_muestraSuSede() throws Exception {
+		long t = turnoDe(e.gC);
+		String nombreC = jdbc.queryForObject("SELECT nombre FROM sede WHERE id = ?", String.class, e.sC);
+		JsonNode turnos = leer(get("/api/preinscripciones/public/turnos/TAEKWONDO"), token, 200);
+		assertEquals(nombreC, turno(turnos, t).get("sede").asText());
+		assertEquals(e.sC, turno(turnos, t).get("sedeId").asLong());
+		assertTrue(snapshot(alta(t)).endsWith(" · " + nombreC));
+	}
+
+	private long turnoDe(long grupo) {
+		jdbc.update("""
+				INSERT INTO turno (dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id)
+				VALUES ('Martes', '18:00', '19:00', NULL, ?, ?)""", grupo, e.org);
+		return jdbc.queryForObject("SELECT MAX(id) FROM turno WHERE organizacion_id = ?", Long.class, e.org);
 	}
 
 	// ------------------------------------------------------------------ utilidades

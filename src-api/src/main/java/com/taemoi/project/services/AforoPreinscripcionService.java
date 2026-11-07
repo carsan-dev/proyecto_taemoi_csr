@@ -140,8 +140,6 @@ public class AforoPreinscripcionService {
  public record Aforos(int limite,Map<Long,Integer> porSede,Map<Long,String> nombresSede,boolean variasSedes){
   /** Sin nombres de sede (solo aforos). */
   public Aforos(int limite,Map<Long,Integer> porSede){this(limite,porSede,Map.of(),false);}
-  /** Nombre de la sede del turno solo si la escuela tiene varias sedes activas; si no, o si el grupo no tiene sede, {@code null}. */
-  public String sede(Turno t){Long sede=t.getGrupo()==null?null:t.getGrupo().getSedeId();return variasSedes&&sede!=null?nombresSede.get(sede):null;}
   /** El aforo de la sede del grupo del turno o, si no lo hay, el límite común. */
   public int de(Turno t){Long sede=t.getGrupo()==null?null:t.getGrupo().getSedeId();return sede==null?limite:porSede.getOrDefault(sede,limite);}
  }
