@@ -9,7 +9,8 @@
   motivo de falta y festivo por sede y día (decisiones 455-457), más la página del PDF de asistencia.
   Estados con ?estado=: normal · motivo · profesor · festivo-confirmar · festivo-aviso · festivo · festivo-rango ·
   festivo-profesor · hoja · pdf · festivos · festivos-vacio · festivos-alta · festivos-anual · festivos-responsable ·
-  festivos-quitar (ronda 2, decisiones 458-460)
+  festivos-quitar (ronda 2, decisiones 458-460) · festivo-borrar · festivo-con-lista · festivo-con-lista-confirmar
+  (ronda 3, decisiones 495-496: marcar festivo sobre una clase con lista guardada)
   Tokens del tema por defecto de panel-nuevo.scss (escuela sin color guardado), medidas de pasar-lista.component.scss,
   de capas/_capas.scss, del diálogo y del panel lateral. Fuentes del propio repo (assets/fonts) incrustadas.
 -->
@@ -204,6 +205,16 @@ h1{margin:0;font:var(--pn-titulo-pantalla);letter-spacing:-.01em}
 .nota{display:flex;align-items:flex-start;gap:10px;margin:0;padding:12px 14px;border:1px solid var(--pn-linea-fuerte);border-radius:var(--pn-radio-m);background:var(--pn-superficie-2);color:var(--pn-tinta);font:var(--pn-secundario)}
 .nota svg{width:18px;height:18px;flex:none;margin-top:1px;color:var(--pn-acento)}
 .nota strong{font-weight:600}
+/* Ronda 3: aviso en peligro (se borra la lista de esta clase). Filete y fondo tintados de peligro, icono de aviso. */
+.nota--peligro{border-color:color-mix(in srgb,var(--pn-peligro) 45%,var(--pn-linea-fuerte));background:color-mix(in srgb,var(--pn-peligro) 5%,var(--pn-superficie))}
+.nota--peligro svg{color:var(--pn-peligro)}
+/* Ronda 3: festivo sobre una clase con lista; nota encima de la lista con «Borrar lista» (solo gestión). */
+.festivo-lista{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px 12px;margin:0 0 12px;padding:12px 12px 12px 14px;border:1px solid var(--pn-linea-fuerte);border-radius:var(--pn-radio-m);background:var(--pn-superficie-2)}
+.festivo-lista__icono{display:grid;place-items:center;width:36px;height:36px;border-radius:var(--pn-radio-m);background:var(--pn-serie-pista);color:var(--pn-tinta-2)}
+.festivo-lista__icono svg{width:20px;height:20px}
+.festivo-lista p{margin:0;font:var(--pn-secundario);color:var(--pn-tinta);max-width:60ch}
+.festivo-lista .btn{min-height:40px}
+@media (max-width:767.98px){.festivo-lista{grid-template-columns:auto 1fr;align-items:start}.festivo-lista .btn{grid-column:2;justify-self:start;min-height:44px}}
 .festivo__enlace{color:var(--pn-acento);font:var(--pn-etiqueta);font-size:.875rem;text-decoration:underline;text-underline-offset:3px}
 .festivo .festivo__enlace{justify-self:start;display:inline-flex;align-items:center;min-height:44px;margin-top:4px}
 
@@ -364,7 +375,8 @@ div.fv-fila{cursor:default}
 (() => {
   const P = new URLSearchParams(location.search);
   const ESTADOS = ['normal', 'motivo', 'profesor', 'festivo-confirmar', 'festivo-aviso', 'festivo', 'festivo-rango', 'festivo-profesor', 'hoja', 'pdf',
-    'festivos', 'festivos-vacio', 'festivos-alta', 'festivos-anual', 'festivos-responsable', 'festivos-quitar'];
+    'festivos', 'festivos-vacio', 'festivos-alta', 'festivos-anual', 'festivos-responsable', 'festivos-quitar',
+    'festivo-borrar', 'festivo-con-lista', 'festivo-con-lista-confirmar'];
   const estado = ESTADOS.includes(P.get('estado')) ? P.get('estado') : 'normal';
   const rol = estado === 'profesor' || estado === 'festivo-profesor' ? 'profesor' : estado === 'festivos-responsable' ? 'responsable' : 'gestion';
   const app = document.getElementById('app');
@@ -449,7 +461,7 @@ div.fv-fila{cursor:default}
     </div>`;
   }
 
-  function cabeceraPagina({ conLista, fecha = null }) {
+  function cabeceraPagina({ conLista, fecha = null, marcarFestivo = true }) {
     const listado = rol === 'gestion' ? 'Grupos' : 'Mis grupos';
     const todos = alumnos.every((a) => a.presente);
     return `<nav class="migas" aria-label="Ruta"><a href="#">${listado}</a><span aria-hidden="true">/</span><a href="#">${CLASE.grupo}</a><span aria-hidden="true">/</span></nav>
@@ -458,13 +470,23 @@ div.fv-fila{cursor:default}
         ${conLista ? '<p class="secundario">Toca a quien ha venido. Sin marcar cuenta como falta.</p>' : ''}
       </header>
       <div class="acciones">
-        <div class="acciones__izq"><button type="button" class="enlace-boton" data-hoja>Cambiar clase</button>${conLista && rol === 'gestion' ? `<button type="button" class="enlace-boton" data-festivo>Marcar festivo</button>` : ''}</div>
+        <div class="acciones__izq"><button type="button" class="enlace-boton" data-hoja>Cambiar clase</button>${conLista && marcarFestivo && rol === 'gestion' ? `<button type="button" class="enlace-boton" data-festivo>Marcar festivo</button>` : ''}</div>
         ${conLista ? `<button type="button" class="btn btn--sec" data-todos>${todos ? 'Desmarcar todos' : 'Marcar todos'}</button>` : ''}
       </div>`;
   }
 
+  // Ronda 3 (festivo-con-lista): el festivo llegó con la lista ya guardada. Sin «Marcar festivo»; nota y «Borrar lista».
+  const conListaFestiva = estado === 'festivo-con-lista' || estado === 'festivo-con-lista-confirmar';
+
+  function notaFestivoConLista() {
+    return `<div class="festivo-lista" role="note"><span class="festivo-lista__icono" aria-hidden="true">${ico('festivo', '')}</span>
+      <p>Ese día es festivo en ${CLASE.sede} (Feria de Estepa), pero esta clase tiene lista guardada.</p>
+      <button type="button" class="btn btn--sec">Borrar lista</button></div>`;
+  }
+
   function pantallaLista() {
-    return `${cabecera()}<section class="pagina">${cabeceraPagina({ conLista: true })}
+    return `${cabecera()}<section class="pagina">${cabeceraPagina({ conLista: true, marcarFestivo: !conListaFestiva })}
+      ${conListaFestiva ? notaFestivoConLista() : ''}
       <ul class="lista" aria-label="Alumnos de la clase">${alumnos.map(fila).join('')}</ul>
     </section>${barra()}`;
   }
@@ -502,24 +524,43 @@ div.fv-fila{cursor:default}
   }
 
   function dialogoConfirmar() {
-    const aviso = estado === 'festivo-aviso';
+    const aviso = estado === 'festivo-aviso' || estado === 'festivo-borrar';
+    // festivo-borrar (ronda 3): esta clase tiene lista; se borra al marcar el festivo. Las otras con lista se quedan.
+    const borrar = estado === 'festivo-borrar';
+    const presentes = alumnos.filter((a) => a.presente).length;
     // [hora, grupo, es esta clase, lista guardada]
-    const clases = [['17:00–18:00', 'Iniciación', 0, aviso && '11 de 14'], ['18:00–19:00', 'Infantiles Estepa', 1], ['19:00–20:00', 'Avanzados', 0, aviso && '9 de 12'], ['20:30–21:30', 'Adultos']];
+    const clases = [['17:00–18:00', 'Iniciación', 0, aviso && '11 de 14'], ['18:00–19:00', 'Infantiles Estepa', 1, borrar && `${presentes} de ${alumnos.length}`], ['19:00–20:00', 'Avanzados', 0, aviso && '9 de 12'], ['20:30–21:30', 'Adultos']];
     const nombre = 'Feria de Estepa';
     const mensaje = aviso
       ? `Ese día no habrá lista en las clases de <strong>${CLASE.sede}</strong> que aún no la tienen. Afecta a <strong>2 de sus 4 clases</strong>:`
       : `Ese día no habrá lista en ninguna clase de <strong>${CLASE.sede}</strong>. Afecta a <strong>4 clases</strong>:`;
-    return dialogo({
+    const html = dialogo({
       etiqueta: 1,
       titulo: `¿Marcar festivo ${CLASE.fechaFrase} en ${CLASE.sede}?`,
       cuerpo: `<p class="dialogo__mensaje" id="d-mensaje">${mensaje}</p>
         <ul class="clases-afectadas">${clases.map(([h, g, esta, lista]) => `<li><span class="hora">${h}</span><span class="grupo">${g}${esta ? ' <span class="esta">(esta)</span>' : ''}</span>${lista ? `<span class="lista-guardada">Con lista · ${lista}</span>` : ''}</li>`).join('')}</ul>
-        ${aviso ? `<p class="nota" role="note">${ico('info', '')}<span><strong>2 clases ya tienen lista y se quedan como están.</strong> Conservan sus marcas en la ficha y en el PDF.</span></p>` : ''}
+        ${borrar ? `<p class="nota nota--peligro" role="note">${ico('aviso', '')}<span><strong>Se borrará la lista de esta clase</strong> (${presentes} de ${alumnos.length} presentes). Nadie tendrá falta ese día. No se puede deshacer.</span></p>
+        <p class="dialogo__mensaje">Las otras 2 clases con lista se quedan como están.</p>`
+          : aviso ? `<p class="nota" role="note">${ico('info', '')}<span><strong>2 clases ya tienen lista y se quedan como están.</strong> Conservan sus marcas en la ficha y en el PDF.</span></p>` : ''}
         <div class="campo"><label for="f-nombre">Nombre del festivo <span>(opcional)</span></label>
           <input id="f-nombre" maxlength="60" value="${nombre}" placeholder="Por ejemplo, Feria de Estepa" aria-describedby="f-ayuda">
           <span class="campo__ayuda" id="f-ayuda"><span>Sale en la lista y en el PDF.</span><span>${nombre.length} / 60</span></span></div>`,
-      pie: `<button type="button" class="btn btn--sec">Cancelar</button><button type="button" class="btn btn--pri">Marcar festivo</button>`,
+      pie: borrar
+        ? `<button type="button" class="btn btn--sec">Cancelar</button><button type="button" class="btn btn--peligro">Marcar festivo y borrar lista</button>`
+        : `<button type="button" class="btn btn--sec">Cancelar</button><button type="button" class="btn btn--pri">Marcar festivo</button>`,
     });
+    return borrar ? html.replace('class="dialogo"', 'class="dialogo dialogo--peligro"') : html;
+  }
+
+  // Ronda 3 (festivo-con-lista-confirmar): borrar la lista de una clase festiva. Destructivo, sin vuelta atrás.
+  function dialogoBorrarLista() {
+    const n = alumnos.length;
+    return dialogo({
+      etiqueta: 1,
+      titulo: `¿Borrar la lista del ${CLASE.fechaFrase.replace(/^el /, '')}?`,
+      cuerpo: `<p class="dialogo__mensaje" id="d-mensaje">La clase quedará como festivo y nadie tendrá falta. Se borran las marcas de ${n} ${n === 1 ? 'alumno' : 'alumnos'}. No se puede deshacer.</p>`,
+      pie: `<button type="button" class="btn btn--sec">Cancelar</button><button type="button" class="btn btn--peligro">Borrar lista</button>`,
+    }).replace('class="dialogo"', 'class="dialogo dialogo--peligro"');
   }
 
   // ------------------------------------------------------------ pantalla Festivos (/festivos, entrada en Grupos)
@@ -728,9 +769,10 @@ div.fv-fila{cursor:default}
       app.innerHTML = f;
       return;
     }
-    const conLista = ['normal', 'motivo', 'profesor', 'festivo-confirmar', 'festivo-aviso', 'hoja'].includes(estado);
+    const conLista = ['normal', 'motivo', 'profesor', 'festivo-confirmar', 'festivo-aviso', 'festivo-borrar', 'festivo-con-lista', 'festivo-con-lista-confirmar', 'hoja'].includes(estado);
     let html = conLista ? pantallaLista() : pantallaFestivo();
-    if (estado === 'festivo-confirmar' || estado === 'festivo-aviso') html += dialogoConfirmar();
+    if (estado === 'festivo-confirmar' || estado === 'festivo-aviso' || estado === 'festivo-borrar') html += dialogoConfirmar();
+    if (estado === 'festivo-con-lista-confirmar') html += dialogoBorrarLista();
     if (estado === 'hoja') html += hoja();
     app.innerHTML = html;
   }
