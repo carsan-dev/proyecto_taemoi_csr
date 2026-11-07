@@ -4,19 +4,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -26,7 +27,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.Usuario;
-import com.taemoi.project.organizacion.ResolutorOrganizacion;
+import com.taemoi.project.organizacion.ResolutorEscuelaPorHost;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.JwtService;
@@ -46,9 +46,9 @@ import jakarta.servlet.http.Cookie;
 /**
  * Pieza W1 de la web por plantilla (fase4-web-plan.md §5): {@code GET /api/publico/web} y {@code /legal}.
  *
- * <p>Lo anónimo sale de la escuela por defecto hasta la pieza 1 del plan de dominio (escuela por Host); aquí se simula
- * esa resolución espiando {@link ResolutorOrganizacion#getOrganizacionPorDefecto()} SOLO durante cada petición anónima
- * a otra escuela. Datos inventados en escuelas sintéticas; la 1 (Moiskimdo) no se toca.
+ * <p>Lo anónimo sale de la escuela del Host (pieza 1 del plan de dominio): cada escuela sintética tiene su fila en
+ * {@code organizacion_dominio} y sus peticiones llevan ese Host; sin Host conocido, la por defecto (la 1). Datos
+ * inventados en escuelas sintéticas; la 1 (Moiskimdo) no se toca (las filas de dominio se borran al acabar).
  *
  * <pre>
  * X  publicada (tema chandal), 2 sedes activas + 1 inactiva, grupos visibles, de competición, de disciplina inactiva y
@@ -56,7 +56,8 @@ import jakarta.servlet.http.Cookie;
  *    pasada, vigente y futura; licencia y exámenes; eventos pasados, ocultos y 4 próximos; bloques (uno con una imagen
  *    de Y); datos legales y de firmante.
  * Y  publicada, una de cada (para el aislamiento y el recuento de sentencias).
- * Z  con fila sin publicar.  W  sin fila.
+ *    También una tarifa y un examen (más barato) de la disciplina inactiva, que no salen.
+ * Z  con fila sin publicar; cuentas de propietario, familia, profesor y responsable de sede.  W  sin fila.
  * </pre>
  */
 @SpringBootTest(properties = "spring.jpa.properties.hibernate.session_factory.statement_inspector="
@@ -86,7 +87,7 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 	@Autowired UsuarioRepository usuarios;
 
 	@MockitoBean JavaMailSender mailSender;
-	@MockitoSpyBean ResolutorOrganizacion resolutor;
+	@Autowired ResolutorEscuelaPorHost porHost;
 
 	final String marca = UUID.randomUUID().toString().substring(0, 8);
 	LocalDate hoy;
@@ -100,7 +101,9 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 	long tarifaGeneral, tarifaFamiliar, tarifaInterna, tarifaY;
 	long eventoMas1, eventoMas2, eventoMas3, eventoMas4, eventoY;
 	long imagenX, imagenY;
-	long propietarioZ, gestorW;
+	long propietarioZ, familiaZ, profesorZ, responsableZ, gestorW;
+	/** Host de cada escuela sintética ({@code organizacion_dominio}). */
+	final Map<Long, String> hosts = new HashMap<>();
 	int preinscripciones;
 
 	@BeforeAll
@@ -155,17 +158,20 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		tarifaGeneral = tarifa(x, disciplinaX, "GENERAL", "Taekwondo X", "25.00", null, null, true, 1);
 		tarifaFamiliar = tarifa(x, null, "FAMILIAR", "Familiar X", "0.00", "22.00", "18.00", true, 2);
 		tarifaInterna = tarifa(x, null, "INTERNA", "Tarifa interna X", "1.00", null, null, false, 3);
+		long tarifaKick = tarifa(x, disciplinaInactivaX, "KICK", "Kick X", "30.00", null, null, true, 4);
 		tarifaSede(x, tarifaGeneral, sedeA, "26.00", hoy.minusYears(2).withDayOfMonth(1));
 		tarifaSede(x, tarifaGeneral, sedeA, "27.00", hoy.minusYears(1).withDayOfMonth(1));
 		tarifaSede(x, tarifaGeneral, sedeA, "28.00", hoy.plusYears(1).withDayOfMonth(1));
 		tarifaSede(x, tarifaGeneral, sedeInactiva, "30.00", hoy.minusYears(1).withDayOfMonth(1));
 		tarifaSede(x, tarifaInterna, sedeA, "5.00", hoy.minusYears(1).withDayOfMonth(1));
+		tarifaSede(x, tarifaKick, sedeA, "31.00", hoy.minusYears(1).withDayOfMonth(1));
 
 		long licencia = producto(x, "Licencia federativa X", 45.0, "LICENCIA", disciplinaX);
 		jdbc.update("UPDATE disciplina SET producto_licencia_id = ? WHERE id = ?", licencia, disciplinaX);
 		producto(x, "Examen amarillo X", 20.0, "EXAMEN", null);
 		producto(x, "Examen negro X", 35.0, "EXAMEN", null);
 		producto(x, "Examen gratis X", 0.0, "EXAMEN", null);
+		producto(x, "Examen kick X", 10.0, "EXAMEN", disciplinaInactivaX);
 
 		imagenX = imagen(x, "galeria-x");
 		evento(x, "Pasado X", hoy.minusDays(10), true, null);
@@ -206,8 +212,26 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		disciplina(z, "TAEKWONDO", "Taekwondo Z", true);
 		web(z, "linea-comarcal", false, null);
 		propietarioZ = cuenta("propietario-z", z, "PROPIETARIO");
+		familiaZ = cuenta("familia-z", z, "FAMILIA");
+		alumnoDe(z, familiaZ);
+		profesorZ = cuenta("profesor-z", z, "PROFESOR");
+		responsableZ = cuenta("responsable-z", z, "RESPONSABLE_SEDE");
 		w = organizacion("w", "Escuela Web W " + marca);
 		gestorW = cuenta("gestor-w", w, "ADMINISTRADOR");
+
+		for (long org : List.of(x, y, z, w)) {
+			String host = "w1-" + org + "-" + marca + ".test";
+			jdbc.update("INSERT INTO organizacion_dominio (organizacion_id, host, principal) VALUES (?, ?, TRUE)", org,
+					host);
+			hosts.put(org, host);
+		}
+		porHost.recargar();
+	}
+
+	@AfterAll
+	void retirarDominios() {
+		hosts.values().forEach(host -> jdbc.update("DELETE FROM organizacion_dominio WHERE host = ?", host));
+		porHost.recargar();
 	}
 
 	// ------------------------------------------------------------------ Moiskimdo
@@ -254,6 +278,7 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		String etag = r.getResponse().getHeader("ETag");
 		assertNotNull(etag);
 		String cache = r.getResponse().getHeader("Cache-Control");
+		assertVaria(r);
 		assertTrue(cache.contains("max-age=60") && cache.contains("public"), cache);
 		assertEquals(304, anonimo(x, get(WEB).header("If-None-Match", etag)).getResponse().getStatus());
 		assertEquals(304, anonimo(x, get(LEGAL).header("If-None-Match",
@@ -457,10 +482,39 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(web.get("publicada").asBoolean());
 		assertTrue(web.get("vistaPrevia").asBoolean());
 		assertTrue(r.getResponse().getHeader("Cache-Control").contains("no-store"));
+		assertVaria(r);
 		MvcResult legal = mvc.perform(get(LEGAL).param("vistaPrevia", "true").cookie(sesion)).andReturn();
 		assertEquals(200, legal.getResponse().getStatus());
+		assertTrue(legal.getResponse().getHeader("Cache-Control").contains("no-store"));
+		assertVaria(legal);
 		assertTrue(cuerpo(legal).get("actualizadaEn").isNull());
 		assertEquals(404, mvc.perform(get(WEB).cookie(sesion)).andReturn().getResponse().getStatus());
+	}
+
+	/** Con vistaPrevia en la URL nunca se guarda en caché, aunque sea anónima y salga lo publicado. */
+	@Test
+	void vistaPreviaAnonima_publicada_200_sinCache() throws Exception {
+		for (String url : List.of(WEB, LEGAL)) {
+			MvcResult r = anonimo(x, get(url).param("vistaPrevia", "true"));
+			assertEquals(200, r.getResponse().getStatus(), url);
+			assertTrue(r.getResponse().getHeader("Cache-Control").contains("no-store"), url);
+			assertVaria(r);
+		}
+		assertFalse(cuerpo(anonimo(x, get(WEB).param("vistaPrevia", "true"))).get("vistaPrevia").asBoolean());
+	}
+
+	/** Familia, profesor y responsable de sede no son gestión: su vista previa se ignora y sin publicar es 404. */
+	@Test
+	void sinPublicar_vistaPreviaSinRolDeGestion_404() throws Exception {
+		for (long cuenta : List.of(familiaZ, profesorZ, responsableZ)) {
+			Cookie sesion = sesion(cuenta, z);
+			assertEquals(200, mvc.perform(get("/api/auth/permisos").cookie(sesion)).andReturn().getResponse().getStatus(),
+					"la sesión vale (cuenta " + cuenta + ")");
+			assertEquals(404, mvc.perform(get(WEB).param("vistaPrevia", "true").cookie(sesion)).andReturn().getResponse()
+					.getStatus(), "cuenta " + cuenta);
+			assertEquals(404, mvc.perform(get(LEGAL).param("vistaPrevia", "true").cookie(sesion)).andReturn()
+					.getResponse().getStatus(), "cuenta " + cuenta);
+		}
 	}
 
 	/** El gestor de una escuela sin fila también la previsualiza (primera publicación): sin tema. */
@@ -504,18 +558,19 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 
 	// ------------------------------------------------------------------ utilidades
 
-	/** Petición anónima resuelta en {@code org}, como hará la pieza 1 del plan de dominio con el Host. */
+	/** Petición anónima con el Host de {@code org} (su fila de {@code organizacion_dominio}). */
 	private MvcResult anonimo(long org, String url) throws Exception {
 		return anonimo(org, get(url));
 	}
 
 	private MvcResult anonimo(long org, MockHttpServletRequestBuilder peticion) throws Exception {
-		doReturn(org).when(resolutor).getOrganizacionPorDefecto();
-		try {
-			return mvc.perform(peticion).andReturn();
-		} finally {
-			doCallRealMethod().when(resolutor).getOrganizacionPorDefecto();
-		}
+		return mvc.perform(peticion.header("Host", hosts.get(org))).andReturn();
+	}
+
+	/** La respuesta cambia con la sesión: una caché no debe reutilizar la anónima para una vista previa. */
+	private static void assertVaria(MvcResult r) {
+		String vary = String.join(",", r.getResponse().getHeaders("Vary"));
+		assertTrue(vary.contains("Cookie") && vary.contains("Authorization"), "Vary: " + vary);
 	}
 
 	private JsonNode cuerpo(MvcResult r) throws Exception {
@@ -674,6 +729,22 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 	private void web(long org, String tema, boolean publicada, String publicadaEn) {
 		jdbc.update("INSERT INTO web_escuela (organizacion_id, tema, publicada, publicada_en) VALUES (?, ?, ?, ?)", org,
 				tema, publicada, publicadaEn);
+	}
+
+	/** Alumno activo vinculado a mano a una cuenta de familia (le abre la sesión en {@code org}). */
+	private void alumnoDe(long org, long usuario) {
+		long expediente = jdbc.queryForObject("SELECT COALESCE(MAX(numero_expediente), 60000) + 1 FROM alumno",
+				Long.class);
+		jdbc.update("""
+				INSERT INTO alumno (activo, apellidos, autorizacion_web, direccion, fecha_nacimiento, nombre,
+				  numero_expediente, telefono, tiene_derecho_examen, organizacion_id)
+				VALUES (TRUE, 'PRUEBA', 1, 'Calle 1', '2010-01-01', 'Familia W1', ?, '600000000', 0, ?)""",
+				expediente, org);
+		long alumno = jdbc.queryForObject("SELECT id FROM alumno WHERE numero_expediente = ? AND organizacion_id = ?",
+				Long.class, expediente, org);
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", usuario, alumno, org);
 	}
 
 	private long cuenta(String nombre, long org, String rol) {

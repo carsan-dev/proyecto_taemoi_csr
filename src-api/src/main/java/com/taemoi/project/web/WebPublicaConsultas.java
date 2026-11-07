@@ -51,11 +51,12 @@ public class WebPublicaConsultas {
 				.setParameter("sedes", sedes).getResultList();
 	}
 
-	/** Tarifas activas con su disciplina, en el orden del catálogo. */
+	/** Tarifas activas con su disciplina, en el orden del catálogo; las de una disciplina inactiva no salen. */
 	public List<Tarifa> tarifasActivas() {
 		return em.createQuery("""
-				SELECT t FROM Tarifa t LEFT JOIN FETCH t.disciplina
-				WHERE t.activa = true ORDER BY t.orden, t.id""", Tarifa.class).getResultList();
+				SELECT t FROM Tarifa t LEFT JOIN FETCH t.disciplina d
+				WHERE t.activa = true AND (d IS NULL OR d.activa = true) ORDER BY t.orden, t.id""", Tarifa.class)
+				.getResultList();
 	}
 
 	/** Filas {@code [codigo de la disciplina, concepto, precio]}: la licencia de cada disciplina activa que la tiene. */
@@ -65,9 +66,14 @@ public class WebPublicaConsultas {
 				WHERE d.activa = true ORDER BY d.orden, d.id""", Object[].class).getResultList();
 	}
 
-	/** Menor precio (mayor que 0) de los productos de examen; {@code null} si no hay. */
+	/**
+	 * Menor precio (mayor que 0) de los productos de examen generales o de una disciplina activa; {@code null} si no
+	 * hay.
+	 */
 	public Double examenDesde() {
-		return em.createQuery("SELECT MIN(p.precio) FROM Producto p WHERE p.tipo = :tipo AND p.precio > 0", Double.class)
+		return em.createQuery("""
+				SELECT MIN(p.precio) FROM Producto p LEFT JOIN p.disciplina d
+				WHERE p.tipo = :tipo AND p.precio > 0 AND (d IS NULL OR d.activa = true)""", Double.class)
 				.setParameter("tipo", TipoProducto.EXAMEN).getSingleResult();
 	}
 

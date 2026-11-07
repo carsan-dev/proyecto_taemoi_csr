@@ -31,7 +31,9 @@ import com.taemoi.project.web.WebPublicaService;
  * escuela aunque no esté publicada. Sin esa sesión se ignora y se ve lo publicado.
  *
  * <p>Caché: {@code ETag} del cuerpo (304 si coincide) y, solo en lo anónimo, {@code Cache-Control: public,
- * max-age=60}. Con sesión (también la vista previa) {@code no-store}: la escuela sale de la sesión, no de la URL.
+ * max-age=60}. Con sesión o con {@code vistaPrevia} en la URL, {@code no-store}: la escuela sale de la sesión, no de
+ * la URL. Siempre {@code Vary: Cookie, Authorization}, para que ninguna caché reutilice la respuesta anónima para una
+ * sesión (la vista previa de un gestor).
  */
 @RestController
 @RequestMapping("/api/publico/web")
@@ -39,6 +41,8 @@ public class WebPublicaController {
 
 	static final CacheControl CACHE_PUBLICA = CacheControl.maxAge(Duration.ofSeconds(60)).cachePublic();
 	static final CacheControl CACHE_CON_SESION = CacheControl.noStore();
+	/** Cabeceras de la petición que cambian la respuesta (la sesión). */
+	static final String[] VARIA_CON = { "Cookie", "Authorization" };
 	private static final Set<String> GESTION = Set.of(Roles.ROLE_ADMIN.name(), Roles.ROLE_MANAGER.name());
 
 	private final WebPublicaService web;
@@ -53,22 +57,22 @@ public class WebPublicaController {
 	@GetMapping
 	public ResponseEntity<WebPublicaDTO> web(
 			@RequestParam(name = "vistaPrevia", defaultValue = "false") boolean vistaPrevia) {
-		return responder(web.web(vistaPrevia && esGestion()));
+		return responder(web.web(vistaPrevia && esGestion()), vistaPrevia);
 	}
 
 	/** Titular (con CIF y domicilio), normas por disciplina y fecha de la última publicación. */
 	@GetMapping("/legal")
 	public ResponseEntity<LegalWebDTO> legal(
 			@RequestParam(name = "vistaPrevia", defaultValue = "false") boolean vistaPrevia) {
-		return responder(web.legal(vistaPrevia && esGestion()));
+		return responder(web.legal(vistaPrevia && esGestion()), vistaPrevia);
 	}
 
-	private <T> ResponseEntity<T> responder(Optional<T> cuerpo) {
+	private <T> ResponseEntity<T> responder(Optional<T> cuerpo, boolean vistaPrevia) {
 		if (cuerpo.isEmpty()) {
-			return ResponseEntity.notFound().build();
+			return ResponseEntity.notFound().varyBy(VARIA_CON).build();
 		}
-		return ResponseEntity.ok().eTag(etiqueta(cuerpo.get()))
-				.cacheControl(esAnonimo() ? CACHE_PUBLICA : CACHE_CON_SESION).body(cuerpo.get());
+		return ResponseEntity.ok().eTag(etiqueta(cuerpo.get())).varyBy(VARIA_CON)
+				.cacheControl(esAnonimo() && !vistaPrevia ? CACHE_PUBLICA : CACHE_CON_SESION).body(cuerpo.get());
 	}
 
 	/** Huella del JSON: Spring responde 304 si {@code If-None-Match} coincide. */

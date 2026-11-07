@@ -28,7 +28,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 
 /**
  * V32_5 (web por plantilla, pieza W1 de fase4-web-plan.md): las tablas {@code web_escuela} y {@code web_bloque}, sobre
- * una base en V32_2 (la última de develop al escribirla) con datos de dos escuelas. Solo amplía: ninguna columna,
+ * una base en V32_4 (la anterior en su pila: escuela por dominio) con datos de dos escuelas. Solo amplía: ninguna columna,
  * índice, restricción ni fila existente cambia, y no crea filas (Moiskimdo, la 1, queda sin web de plantilla). Reglas
  * de borrado de cada clave ajena, clave única por escuela, repetirla, también tras un fallo a medias, y
  * {@code docs/multi-escuela/postcheck-web-escuela.sql}. Datos inventados.
@@ -74,7 +74,7 @@ class WebEscuelaV32_5MigracionIntegrationTest extends MySqlIntegrationTest {
 	void migrar() {
 		dataSource = recrear(ESQUEMA);
 		jdbc = new JdbcTemplate(dataSource);
-		flyway(dataSource, "32.2").migrate();
+		flyway(dataSource, "32.4").migrate();
 
 		jdbc.update("INSERT INTO organizacion (slug, nombre) VALUES ('otra-v32-5', 'Otra escuela V32_5')");
 		otra = jdbc.queryForObject("SELECT id FROM organizacion WHERE slug = 'otra-v32-5'", Long.class);
