@@ -35,7 +35,8 @@ public abstract class MySqlIntegrationTest {
 			.withPassword("taemoi_it")
 			// Datos en memoria y sin durabilidad: el contenedor es desechable, solo importa la velocidad.
 			.withTmpFs(Map.of("/var/lib/mysql", "rw"))
-			.withCommand("--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci",
+			// Cada contexto de Spring cacheado en la batería mantiene su propio pool; con el valor por defecto (151) la CI se quedaba sin conexiones («Too many connections»).
+			.withCommand("--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--max_connections=500",
 					"--innodb_flush_log_at_trx_commit=0", "--sync_binlog=0", "--skip-log-bin",
 					"--innodb_doublewrite=0", "--innodb_flush_method=nosync");
 
