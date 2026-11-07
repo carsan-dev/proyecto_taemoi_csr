@@ -74,7 +74,7 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 
 	private static final String LUNES = "2026-10-26";
 	private static final Set<String> CLAVES_CLASE = Set.of("turnoId", "fecha", "horaInicio", "horaFin", "pasada",
-			"presentes", "total", "alumnos", "festivo");
+			"presentes", "total", "alumnos", "festivo", "festivoConLista");
 	private static final Set<String> CLAVES_ALUMNO = Set.of("id", "nombre", "apellidos", "presente", "deportes",
 			"motivo");
 
@@ -1302,6 +1302,223 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		assertNull(jsonNulo(claseDe(leer(get("/api/profesor/grupos/" + f.grupo + "/clases"), tProfA, 200).get("hoy"),
 				f.turno, LUNES).get("festivo")));
 		assertEquals(200, estado(guardar("/api/profesor/grupos/" + f.grupo, f.turno, LUNES, f.a), tProfA));
+	}
+
+	// ------------------------------------------------------------------ festivo sobre una lista (decisiones 495-496)
+
+	/**
+	 * {@code festivoConLista}: el festivo que cubre una clase CON lista guardada (el más concreto, como {@code festivo});
+	 * {@code festivo} sigue a {@code null} con lista. Sin festivo, los dos a {@code null}; festivo sin lista, como antes.
+	 * Igual por los dos prefijos, en {@code /clases} y en la lista.
+	 */
+	@Test
+	void festivoConLista_soloConListaYFestivo_porLasDosVias() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		String base = "/api/profesor/grupos/" + f.grupo;
+		guardarOk(base, f.turno, LUNES, tProfA, f.a);
+		guardarOk(base, f.turno, "2026-10-19", tProfA, f.b);
+		String sedes = "\"sedeIds\":[" + sede + "]";
+		crearFestivo("{\"tipo\":\"ANUAL\",\"mes\":10,\"dia\":26,\"nombre\":\"Anual\"," + sedes + "}");
+		long dia = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Fiesta\"," + sedes + "}");
+		long sinLista = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"2026-10-12\",\"nombre\":\"Otra\"," + sedes + "}");
+
+		for (String ruta : List.of(base, "/api/grupos/" + f.grupo)) {
+			String token = ruta.contains("profesor") ? tProfA : tGestor;
+			JsonNode clases = leer(get(ruta + "/clases"), token, 200);
+			JsonNode conLista = claseDe(clases.get("hoy"), f.turno, LUNES);
+			assertNull(jsonNulo(conLista.get("festivo")), ruta);
+			JsonNode cubre = conLista.get("festivoConLista");
+			assertEquals(Set.of("id", "nombre", "tipo", "fechaDesde", "fechaHasta", "sedes", "deUnDiaYUnaSede"),
+					campos(cubre));
+			assertEquals(dia, cubre.get("id").asLong(), "el más concreto: DIA gana al ANUAL");
+			assertEquals("Fiesta", cubre.get("nombre").asText());
+			assertEquals("DIA", cubre.get("tipo").asText());
+			assertEquals(LUNES, cubre.get("fechaDesde").asText());
+			assertTrue(cubre.get("deUnDiaYUnaSede").asBoolean());
+			assertEquals(1, conLista.get("presentes").asInt());
+
+			JsonNode laborable = claseDe(clases.get("recientes"), f.turno, "2026-10-19");
+			assertNull(jsonNulo(laborable.get("festivo")));
+			assertNull(jsonNulo(laborable.get("festivoConLista")), "con lista y sin festivo, nada");
+			JsonNode festiva = claseDe(clases.get("recientes"), f.turno, "2026-10-12");
+			assertEquals(sinLista, festiva.get("festivo").get("id").asLong());
+			assertNull(jsonNulo(festiva.get("festivoConLista")), "sin lista, como antes");
+
+			JsonNode lista = leer(get(ruta + "/clases/" + f.turno + "/" + LUNES), token, 200).get("clase");
+			assertNull(jsonNulo(lista.get("festivo")));
+			assertEquals(dia, lista.get("festivoConLista").get("id").asLong());
+			JsonNode listaLaborable = leer(get(ruta + "/clases/" + f.turno + "/2026-10-19"), token, 200).get("clase");
+			assertNull(jsonNulo(listaLaborable.get("festivo")));
+			assertNull(jsonNulo(listaLaborable.get("festivoConLista")));
+			JsonNode listaFestiva = leer(get(ruta + "/clases/" + f.turno + "/2026-10-12"), token, 200).get("clase");
+			assertEquals(sinLista, listaFestiva.get("festivo").get("id").asLong());
+			assertNull(jsonNulo(listaFestiva.get("festivoConLista")));
+
+			// La respuesta del PUT (corrección de una clase festiva con lista) lo lleva igual.
+			JsonNode corregida = leer(guardar(ruta, f.turno, LUNES, f.a), token, 200);
+			assertNull(jsonNulo(corregida.get("festivo")));
+			assertEquals(dia, corregida.get("festivoConLista").get("id").asLong());
+			assertNull(jsonNulo(leer(guardar(ruta, f.turno, "2026-10-19", f.b), token, 200).get("festivoConLista")));
+		}
+	}
+
+	/**
+	 * Borrar la lista de una clase festiva: 204; la clase queda festiva (lista, detalle del alumno, resumen y PDF), solo
+	 * esa clase (la otra del mismo día conserva su lista), con su fila de auditoría y sin la genérica del filtro.
+	 */
+	@Test
+	void borrarLista_enFestivo_204_laClaseQuedaFestiva_yLaOtraDelDiaSigue() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		long otroTurno = turno(f.grupo, "Lunes", "19:00", "20:00");
+		long c = alumnoEnTurno("LISTAC", f.grupo, otroTurno);
+		String base = "/api/profesor/grupos/" + f.grupo;
+		String gestion = "/api/grupos/" + f.grupo;
+		guardarOk(gestion, f.turno, LUNES, tGestor, f.a);
+		guardarOk(gestion, otroTurno, LUNES, tGestor, c);
+		long festivo = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"nombre\":\"Fiesta\","
+				+ "\"sedeIds\":[" + sede + "]}");
+		long clase = jdbc.queryForObject("SELECT id FROM clase_asistencia WHERE turno_id = ? AND fecha = ?", Long.class,
+				f.turno, LUNES);
+		String pdfAntes = texto(peticion(get(base + "/asistencia?year=2026&month=10&marcada=true"), tProfA).getResponse()
+				.getContentAsByteArray());
+		assertFalse(pdfAntes.contains("Festivo"), "con lista, la columna no es festiva");
+
+		String ruta = gestion + "/clases/" + f.turno + "/" + LUNES + "/lista";
+		MvcResult r = peticion(delete(ruta), tGestor);
+		assertEquals(204, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertEquals("", r.getResponse().getContentAsString());
+
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM clase_asistencia WHERE id = ?", Long.class, clase));
+		assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM asistencia_alumno WHERE clase_id = ?", Long.class, clase));
+		assertEquals(1, clasesDe(f.grupo), "la otra clase del día conserva su lista");
+		assertEquals(1, filas(f.grupo));
+		assertEquals(1, filasPresentes(f.grupo));
+
+		for (String via : List.of(base, gestion)) {
+			String token = via.contains("profesor") ? tProfA : tGestor;
+			JsonNode lista = leer(get(via + "/clases/" + f.turno + "/" + LUNES), token, 200);
+			assertEquals(festivo, lista.get("clase").get("festivo").get("id").asLong(), via);
+			assertNull(jsonNulo(lista.get("clase").get("festivoConLista")));
+			assertNull(jsonNulo(lista.get("clase").get("presentes")), "sin lista");
+			assertFalse(presenteEnLista(lista, f.a));
+			JsonNode otra = claseDe(leer(get(via + "/clases"), token, 200).get("hoy"), otroTurno, LUNES);
+			assertNull(jsonNulo(otra.get("festivo")));
+			assertEquals(festivo, otra.get("festivoConLista").get("id").asLong());
+			assertEquals(1, otra.get("presentes").asInt());
+		}
+
+		JsonNode detalle = leer(get(gestion + "/alumnos/" + f.a + "/asistencia?year=2026&month=10"), tGestor, 200);
+		assertEquals(LUNES + " 18:00 FESTIVO", dias(detalle).get(dias(detalle).size() - 1));
+		assertEquals(0, detalle.get("clases").asInt());
+		JsonNode resumen = leer(get(gestion + "/asistencia/resumen?year=2026&month=10"), tGestor, 200);
+		for (JsonNode fila : resumen) {
+			assertTrue(fila.get("alumnoId").asLong() == c, "solo queda el alumno de la otra clase: " + resumen);
+		}
+		String pdf = texto(peticion(get(base + "/asistencia?year=2026&month=10&marcada=true"), tProfA).getResponse()
+				.getContentAsByteArray());
+		assertTrue(pdf.contains("Festivo"), "la columna del 26 pasa a festiva");
+
+		List<Map<String, Object>> auditoria = jdbc.queryForList(
+				"SELECT accion, modulo, resumen FROM auditoria_evento WHERE endpoint = ?", ruta);
+		assertEquals(1, auditoria.size(), "solo el registro propio, sin la fila genérica: " + auditoria);
+		assertEquals("DELETE", auditoria.get(0).get("accion"));
+		assertEquals("profesor", auditoria.get(0).get("modulo"));
+		assertEquals("PROFESOR ASISTENCIA_BORRADA clase=#" + clase + " grupo=#" + f.grupo + " turno=#" + f.turno
+				+ " marcas=#2", auditoria.get(0).get("resumen"));
+
+		assertEquals(404, estado(delete(ruta), tGestor), "ya sin lista");
+		assertEquals(409, estado(guardar(gestion, f.turno, LUNES, f.a), tGestor), "y ahora es festivo: no se guarda");
+	}
+
+	@Test
+	void borrarLista_sinFestivo_409_yLaListaSigue() throws Exception {
+		long sede = nuevaSede();
+		long ajena = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		String gestion = "/api/grupos/" + f.grupo;
+		guardarOk(gestion, f.turno, LUNES, tGestor, f.a);
+		crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"" + LUNES + "\",\"sedeIds\":[" + ajena + "]}");
+		crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"2026-10-19\",\"sedeIds\":[" + sede + "]}");
+
+		MvcResult r = peticion(delete(gestion + "/clases/" + f.turno + "/" + LUNES + "/lista"), tGestor);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals("Solo se puede borrar la lista de un día festivo.", mensaje(r));
+		assertEquals(1, clasesDe(f.grupo));
+		assertEquals(2, filas(f.grupo));
+		assertEquals(1, filasPresentes(f.grupo));
+	}
+
+	@Test
+	void borrarLista_404_sinLista_turnoDeOtroGrupo_fechaMala_yOtraEscuela() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		Fijo ajeno = grupoConDosAlumnos(sede, profA);
+		String gestion = "/api/grupos/" + f.grupo;
+		guardarOk("/api/grupos/" + ajeno.grupo, ajeno.turno, LUNES, tGestor, ajeno.a);
+		guardarOk("/api/grupos/" + ajeno.grupo, ajeno.turno, "2026-10-19", tGestor, ajeno.a);
+		crearFestivo("{\"tipo\":\"RANGO\",\"fechaDesde\":\"2026-10-19\",\"fechaHasta\":\"" + LUNES + "\",\"sedeIds\":["
+				+ sede + "]}");
+
+		assertEquals(404, estado(delete(gestion + "/clases/" + f.turno + "/" + LUNES + "/lista"), tGestor), "sin lista");
+		assertEquals(404, estado(delete(gestion + "/clases/" + ajeno.turno + "/" + LUNES + "/lista"), tGestor),
+				"turno de otro grupo");
+		assertEquals(404, estado(delete(gestion + "/clases/999999999/" + LUNES + "/lista"), tGestor));
+		assertEquals(404, estado(delete(gestion + "/clases/" + f.turno + "/2026-13-40/lista"), tGestor), "fecha mala");
+		assertEquals(404, estado(delete(gestion + "/clases/" + f.turno + "/hoy/lista"), tGestor));
+		assertEquals(2, clasesDe(ajeno.grupo), "nada borrado");
+
+		// Otra escuela: su gestor no llega a esta lista, ni este gestor a una lista de la otra.
+		assertEquals(404, estado(delete("/api/grupos/" + ajeno.grupo + "/clases/" + ajeno.turno + "/" + LUNES + "/lista"),
+				tGestorOtra));
+		jdbc.update("""
+				INSERT INTO clase_asistencia (organizacion_id, grupo_id, turno_id, fecha, hora_inicio, hora_fin, registrado_en)
+				VALUES (?, ?, ?, '2026-09-28', '18:00', '19:00', NOW())""", otra.org, otra.gA, otra.tA);
+		assertEquals(404, estado(delete("/api/grupos/" + otra.gA + "/clases/" + otra.tA + "/2026-09-28/lista"), tGestor));
+		assertEquals(1, jdbc.queryForObject(
+				"SELECT COUNT(*) FROM clase_asistencia WHERE turno_id = ? AND fecha = '2026-09-28'", Long.class, otra.tA));
+		assertEquals(2, clasesDe(ajeno.grupo));
+	}
+
+	/** Igual que el PUT de gestión: propietario, gestor y responsable de la sede del grupo; nadie más. */
+	@Test
+	void borrarLista_acceso() throws Exception {
+		long sede = nuevaSede();
+		Fijo f = grupoConDosAlumnos(sede, profA);
+		Fijo ajena = grupoConDosAlumnos(e.sB, profB);
+		String gestion = "/api/grupos/" + f.grupo;
+		guardarOk(gestion, f.turno, LUNES, tGestor, f.a);
+		guardarOk(gestion, f.turno, "2026-10-19", tGestor, f.a);
+		guardarOk(gestion, f.turno, "2026-10-12", tGestor, f.a);
+		guardarOk("/api/grupos/" + ajena.grupo, ajena.turno, "2026-09-28", tGestor, ajena.a);
+		crearFestivo("{\"tipo\":\"RANGO\",\"fechaDesde\":\"2026-10-12\",\"fechaHasta\":\"" + LUNES + "\",\"sedeIds\":["
+				+ sede + "]}");
+		crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"2026-09-28\",\"sedeIds\":[" + e.sB + "]}");
+		long responsable = e.cuenta(usuarios, "respfest" + System.nanoTime() % 100000);
+		responsableDeSede(e, responsable, sede);
+		String tResponsable = e.token(jwtService, usuarios, responsable);
+		String lunes = gestion + "/clases/" + f.turno + "/" + LUNES + "/lista";
+
+		MvcResult anonimo = mvc.perform(delete(lunes)).andReturn();
+		assertEquals(401, anonimo.getResponse().getStatus());
+		assertEquals(403, estado(delete(lunes), tProfA), "sesión solo-profesor, aunque el grupo sea suyo");
+		assertTrue(estado(delete(base(f.grupo) + "/clases/" + f.turno + "/" + LUNES + "/lista"), tProfA) >= 400,
+				"no hay ruta del profesor");
+		assertEquals(403, estado(delete(lunes), tResp), "responsable de otra sede");
+		assertEquals(403, estado(delete("/api/grupos/" + ajena.grupo + "/clases/" + ajena.turno + "/2026-09-28/lista"),
+				tResponsable), "el nuevo responsable, fuera de su sede");
+		assertEquals(3, clasesDe(f.grupo), "nada borrado");
+		assertEquals(1, clasesDe(ajena.grupo));
+
+		assertEquals(204, estado(delete(lunes), tResponsable), "responsable de la sede del grupo");
+		assertEquals(204, estado(delete(gestion + "/clases/" + f.turno + "/2026-10-19/lista"), tPropietario));
+		assertEquals(204, estado(delete(gestion + "/clases/" + f.turno + "/2026-10-12/lista"), tGestor));
+		assertEquals(0, clasesDe(f.grupo));
+	}
+
+	private static String base(long grupo) {
+		return "/api/profesor/grupos/" + grupo;
 	}
 
 	// ------------------------------------------------------------------ utilidades

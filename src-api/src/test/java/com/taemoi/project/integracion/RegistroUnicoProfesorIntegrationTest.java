@@ -450,6 +450,19 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 					200, List.of("PROFESOR ASISTENCIA_REGISTRADA"),
 					() -> conCuerpo(put(ruta + lunes.minusDays(6)), "{\"presentes\":[]}"), 400);
 		});
+		// Decisiones 495-496: borrar la lista de una clase festiva. Se guarda antes del festivo (con festivo, 409); sin
+		// lista, 404.
+		casos.put(EscrituraConRegistroPropio.ASISTENCIA_GESTION_BORRAR, () -> {
+			long a = alumnoConGrado("E79LISTABORRAR", false);
+			e.enTurno(e.tA, a);
+			LocalDate festivo = lunes.minusDays(21);
+			String ruta = "/api/grupos/" + e.gA + "/clases/" + e.tA + "/";
+			leer(conCuerpo(put(ruta + festivo), "{\"presentes\":[" + a + "]}"), tGestor, 200);
+			leer(conCuerpo(post("/api/festivos"), "{\"tipo\":\"DIA\",\"fechaDesde\":\"" + festivo
+					+ "\",\"sedeIds\":[" + e.sA + "]}"), tGestor, 201);
+			return new Caso(tGestor, e.gestor, () -> delete(ruta + festivo + "/lista"), 204,
+					List.of("PROFESOR ASISTENCIA_BORRADA"), () -> delete(ruta + festivo.minusDays(7) + "/lista"), 404);
+		});
 		return casos;
 	}
 

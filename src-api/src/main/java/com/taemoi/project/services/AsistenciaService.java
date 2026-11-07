@@ -61,7 +61,8 @@ import jakarta.persistence.EntityManager;
  * <p>Motivos y festivos (decisiones 455-463): una falta puede llevar motivo ({@link MotivoFalta}); un día festivo en la
  * sede del grupo ({@link FestivoService#festivosEn}, la regla única) deja sin clase a las que no tienen lista guardada:
  * salen con {@code festivo}, no se pueden guardar (409) y en el detalle del alumno son {@code FESTIVO}. Con lista
- * guardada, manda la lista: la clase sigue normal.
+ * guardada, manda la lista: la clase sigue normal y el festivo sale aparte, en {@code festivoConLista}. Decisiones
+ * 495-496: gestión puede borrar la lista de una clase festiva ({@link #borrarLista}) para que quede como festivo.
  */
 @Service
 public class AsistenciaService {
@@ -97,6 +98,8 @@ public class AsistenciaService {
 	public static final String ANIO_MES_NO_VALIDOS = "El año o el mes no son válidos.";
 	public static final String MOTIVO_NO_VALIDO = "El motivo de la falta no es válido.";
 	public static final String MOTIVO_DE_UN_PRESENTE = "Un alumno presente no lleva motivo de falta.";
+	/** 409 al borrar la lista de una clase que no cae en festivo de la sede del grupo (decisiones 495-496). */
+	public static final String SOLO_LISTA_DE_FESTIVO = "Solo se puede borrar la lista de un día festivo.";
 	/** 409 al guardar una clase festiva sin lista: «Ese día es festivo en &lt;sede&gt;.». */
 	public static final String FESTIVO_EN = "Ese día es festivo en %s.";
 
@@ -214,9 +217,7 @@ public class AsistenciaService {
 					Boolean.TRUE.equals(presente.get(id)), deportes.getOrDefault(id, List.of()), nombre(motivo.get(id))));
 		}
 		Map<Long, long[]> cuentas = guardada == null ? Map.of() : cuentasPorClase(List.of(guardada.getId()));
-		DiaFestivo festivo = guardada == null
-				? festivosDeLaSede(grupo.sedeId(), fecha, fecha).get(new SedeYFecha(grupo.sedeId(), fecha))
-				: null;
+		DiaFestivo festivo = festivosDeLaSede(grupo.sedeId(), fecha, fecha).get(new SedeYFecha(grupo.sedeId(), fecha));
 		AsistenciaDTOs.Clase clase = clase(turnoId, fecha, turno.horaInicio(), turno.horaFin(), guardada, cuentas,
 				Map.of(turnoId, (long) listas.getOrDefault(turnoId, List.of()).size()), LocalDateTime.now(reloj), festivo);
 		AsistenciaDTOs.SedeDeLista sede = grupo.sedeId() == null ? null
@@ -362,8 +363,12 @@ public class AsistenciaService {
 		}
 		Set<Long> marcados = new HashSet<>(presentes);
 		Map<Long, MotivoFalta> motivoDe = motivos(motivos, union, marcados);
+		// Nueva: con festivo, 409. Corrección: el festivo que la cubra sale en festivoConLista, como en la lista.
+		DiaFestivo festivo = null;
 		if (guardada == null) {
 			exigirSinFestivo(grupo.sedeId(), fecha);
+		} else {
+			festivo = festivosDeLaSede(grupo.sedeId(), fecha, fecha).get(new SedeYFecha(grupo.sedeId(), fecha));
 		}
 
 		Long usuario = CobroService.usuarioActualId();
@@ -395,7 +400,53 @@ public class AsistenciaService {
 
 		return new AsistenciaDTOs.Clase(turnoId, fecha, guardada.getHoraInicio(), guardada.getHoraFin(),
 				pasada(fecha, guardada.getHoraFin(), ahora), (long) marcados.size(), (long) union.size(),
-				listaActual.size(), null);
+				listaActual.size(), null, festivoDeClase(festivo));
+	}
+
+	/**
+	 * {@code DELETE /clases/{turnoId}/{fecha}/lista} (decisiones 495-496, solo gestión): borra la lista guardada de una
+	 * clase que cae en festivo de la sede del grupo, para que quede como festivo. Solo esa clase: las demás del día
+	 * conservan su lista. Por orden: grupo de otra escuela 404; turno que no es del grupo, fecha no válida o clase sin
+	 * lista guardada (o guardada con otro grupo) 404; grupo sin sede o día sin festivo en su sede 409
+	 * ({@value #SOLO_LISTA_DE_FESTIVO}). Borra las filas y la clase y deja una fila de auditoría con el número de filas
+	 * borradas, en la misma transacción.
+	 *
+	 * <p>Carrera: como {@link #guardar}, READ COMMITTED y la fila del turno bloqueada antes de leer la clase; un PUT de la
+	 * misma clase espera y, al seguir, ya no la ve (y, como es festivo, da 409).
+	 */
+	@Transactional(isolation = Isolation.READ_COMMITTED)
+	public void borrarLista(Via via, Long grupoId, Long turnoId, String fechaTexto) {
+		GrupoDeLaLista grupo = exigirGrupo(via, grupoId);
+		Turno turno = turnoId == null ? null : turnos.findByIdForUpdate(turnoId).orElse(null);
+		if (turno == null || turno.getGrupo() == null || !grupoId.equals(turno.getGrupo().getId())) {
+			throw new NoSuchElementException(CLASE_NO_EXISTE);
+		}
+		LocalDate fecha;
+		try {
+			fecha = fecha(fechaTexto);
+		} catch (IllegalArgumentException ex) {
+			throw new NoSuchElementException(CLASE_NO_EXISTE);
+		}
+		ClaseAsistencia guardada = clases.findByTurnoIdAndFecha(turnoId, fecha)
+				.filter(c -> grupoId.equals(c.getGrupoId())).orElse(null);
+		if (guardada == null) {
+			throw new NoSuchElementException(CLASE_NO_EXISTE);
+		}
+		if (festivosDeLaSede(grupo.sedeId(), fecha, fecha).isEmpty()) {
+			throw new IllegalStateException(SOLO_LISTA_DE_FESTIVO);
+		}
+
+		long marcas = filas.borrarDeLaClase(guardada.getId());
+		clases.delete(guardada);
+		clases.flush();
+
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("clase", guardada.getId());
+		valores.put("grupo", grupoId);
+		valores.put("turno", turnoId);
+		valores.put("marcas", marcas);
+		registro.registrar(RegistroAccionesProfesor.Accion.ASISTENCIA_BORRADA,
+				via.prefijo + grupoId + "/clases/" + turnoId + "/" + fecha + "/lista", valores);
 	}
 
 	// ------------------------------------------------------------------ apoyo
@@ -583,7 +634,10 @@ public class AsistenciaService {
 				.setParameter("ids", ids).getResultList();
 	}
 
-	/** {@code festivo}: el que cae ese día en la sede del grupo, o {@code null}; solo sale si no hay lista guardada. */
+	/**
+	 * {@code festivo}: el que cae ese día en la sede del grupo, o {@code null}; sale en {@code festivo} si no hay lista
+	 * guardada y en {@code festivoConLista} si la hay.
+	 */
 	private static AsistenciaDTOs.Clase clase(Long turnoId, LocalDate fecha, String horaInicio, String horaFin,
 			ClaseAsistencia guardada, Map<Long, long[]> cuentas, Map<Long, Long> tamano, LocalDateTime ahora,
 			DiaFestivo festivo) {
@@ -596,11 +650,16 @@ public class AsistenciaService {
 			total = cuenta[0];
 			presentes = cuenta[1];
 		}
-		AsistenciaDTOs.FestivoDeClase festivoDeClase = guardada != null || festivo == null ? null
+		AsistenciaDTOs.FestivoDeClase festivoDeClase = festivoDeClase(festivo);
+		return new AsistenciaDTOs.Clase(turnoId, fecha, inicio, fin, pasada(fecha, fin, ahora), presentes, total,
+				tamano.getOrDefault(turnoId, 0L), guardada == null ? festivoDeClase : null,
+				guardada == null ? null : festivoDeClase);
+	}
+
+	private static AsistenciaDTOs.FestivoDeClase festivoDeClase(DiaFestivo festivo) {
+		return festivo == null ? null
 				: new AsistenciaDTOs.FestivoDeClase(festivo.id(), festivo.nombre(), festivo.tipo().name(),
 						festivo.fechaDesde(), festivo.fechaHasta(), festivo.sedes(), festivo.deUnDiaYUnaSede());
-		return new AsistenciaDTOs.Clase(turnoId, fecha, inicio, fin, pasada(fecha, fin, ahora), presentes, total,
-				tamano.getOrDefault(turnoId, 0L), festivoDeClase);
 	}
 
 	/** Ya terminó: un día anterior a hoy, u hoy con la hora de fin alcanzada. */
