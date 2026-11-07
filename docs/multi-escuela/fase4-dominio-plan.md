@@ -183,7 +183,7 @@ escuela 1, `moiskimdo.es`, principal. Con migración → `desplegar_migrar` + po
 ### 4.3 Frontend
 
 - Login: lee `/api/publico/escuela`. `LEGADO` → el SVG de siempre (Moiskimdo idéntico). `SUBIDO` → el PNG público.
-  `NINGUNO` → **necesita boceto** (¿nombre en texto?).
+  `NINGUNO` → boceto aprobado el 07/11 (`fase4-web/boceto-login-404-sin-publicar.html`); implementado en la PR #237.
 - Nada de base URL en el frontend: ya es relativo (`/api`, `/oauth2/...`).
 
 ### 4.4 Despliegue
@@ -209,7 +209,7 @@ escuela 1, `moiskimdo.es`, principal. Con migración → `desplegar_migrar` + po
 | 2 | Enlaces de correo por escuela (`UrlsEscuela.baseFrontend`) | medium | no | base de la escuela 1 = `https://moiskimdo.es` = `app.frontend.base-url` | Por cada correo: escuela 1 da el texto exacto de hoy (comparación literal) y escuela 2 su host; sin dominio → la base global |
 | 3 | Sesión, Google y archivos por Host: cookies host-only, destino de Google, `redirect-uri` con plantilla, URL de imágenes, preferencia de escuela del Host en el login | careful | no | en moiskimdo.es `Domain`, destino, URI y URL de archivos salen iguales; la regla de login no cambia en el host por defecto | `Set-Cookie` literal de hoy con Host moiskimdo.es; host X sin `Domain`; redirección abierta con Host fuera de la tabla → origen por defecto; JSON de alumno y evento idéntico para moiskimdo.es; multimembresía en host X elige X |
 | 4 | Marca pública por Host (`/api/publico/escuela`, `/logo`) + correo de contacto con la marca | light/medium | no | Moiskimdo devuelve `LEGADO` (no hay PNG); el correo de contacto de la 1 sale igual | Anónimo con host X recibe su nombre y logo; nunca campos privados; 404 sin logo; `ETag`/304 |
-| 5 | Logo del login por escuela | light (necesita boceto para `NINGUNO`) | no | `LEGADO` pinta el mismo SVG | Karma: `LEGADO` → SVG; `SUBIDO` → `/api/publico/escuela/logo`; presupuesto del bundle |
+| 5 | Logo del login por escuela | light (boceto `NINGUNO` aprobado el 07/11; implementada en la PR #237, con login perezoso) | no | `LEGADO` pinta el mismo SVG | Karma: `LEGADO` → SVG; `SUBIDO` → `/api/publico/escuela/logo`; presupuesto del bundle |
 | 6 | nginx `include` + `default_server` 444 + `X-Forwarded-Host` + `proxy_set_header Forwarded "";` en cada location + bloque del primer host + certificado + Google Console | careful (despliegue) | no | `nginx -T` del bloque moiskimdo.es igual salvo el `include` | En local con `docker-compose.pruebas.yml` y hosts en `/etc/hosts`; curl con Host desconocido → 444; prueba manual de login con contraseña y Google en el host nuevo con la copia de la base |
 | 7 | Alta del dominio de una escuela | light | migración de datos por escuela | no toca la fila 1 | Postcheck de la fila. Pantalla en «Nueva escuela»: **necesita boceto** |
 | — | Dependencia: web por plantilla | — | — | — | `index.html`, cabecera, pie, legales, `canonical` y GA4 son de Moiskimdo (§2.3): para otros hosts hace falta otro `index` o servirlos por escuela. Va en la pieza de la plantilla |
@@ -235,4 +235,4 @@ y un host de pruebas en `/etc/hosts`) antes del merge.
    Pro: sin credenciales del DNS en el servidor. Contra: un paso de certbot en cada alta.
 6. **¿El dominio se da de alta por migración de datos hasta que haya pantalla?** Recomendado: sí. Pro: revisado en la
    PR, sin SQL suelto. Contra: un despliegue con migración por escuela.
-7. **Login de una escuela sin logo subido**: necesita boceto (¿nombre en texto, logo de la plataforma?).
+7. **Login de una escuela sin logo subido**: boceto `NINGUNO` aprobado el 07/11 (pieza 5, PR #237).
