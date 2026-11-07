@@ -1,4 +1,5 @@
 import {
+  CAMPOS_DATOS,
   DIA_NO_VALIDO,
   DatosEscuela,
   clavesCambiadas,
@@ -6,6 +7,7 @@ import {
   erroresDeDatos,
   errorDeDato,
   escuelaSinRellenar,
+  recortar,
   solicitudDe,
   valoresDe,
   valoresVacios,
@@ -133,6 +135,30 @@ describe('datos-escuela-vista (pieza 394)', () => {
       firmanteNif: '00000000T',
       diaLimiteMensualidad: 10,
     });
+  });
+
+  it('teléfono: + y 15 cifras son válidos (16 caracteres, como la API) y el maxlength no los trunca', () => {
+    expect(CAMPOS_DATOS.telefono.maxlength).toBe(16);
+    expect(errorDeDato('telefono', '+123456789012345')).toBe('');
+    expect(errorDeDato('telefono', '+1234567890123456')).toBe('El teléfono solo lleva números y espacios.');
+    expect(erroresDeDatos(valoresDe({ ...DATOS, telefono: '+123456789012345' }))).toEqual({});
+    expect(solicitudDe({ ...valoresDe(DATOS), telefono: '+123456789012345' }).telefono).toBe('+123456789012345');
+  });
+
+  it('email con U+00A0 dentro: válido, como en la API (\\s de Java no incluye NBSP)', () => {
+    expect(errorDeDato('emailContacto', 'a b@club.example')).toBe('');
+  });
+
+  it('se recortan los espacios de Java en los extremos, también U+001C-U+001F', () => {
+    expect(errorDeDato('nombreLegal', '\u001CClub\u001C')).toBe('');
+    expect(solicitudDe({ ...valoresDe(DATOS), nombreLegal: '\u001CClub\u001C' }).nombreLegal).toBe('Club');
+    expect(recortar(' 　Club ')).toBe('Club');
+  });
+
+  it('U+00A0, U+2007 y U+202F en los extremos no se recortan (no son espacios para la API)', () => {
+    expect(recortar(' Club ')).toBe(' Club ');
+    expect(recortar(' Club ')).toBe(' Club ');
+    expect(solicitudDe({ ...valoresDe(DATOS), nombreLegal: ' Club ' }).nombreLegal).toBe(' Club ');
   });
 
   it('erroresDeApi toma los errores por campo del 400 e ignora lo que no conoce', () => {

@@ -114,7 +114,7 @@ export const CAMPOS_DATOS: Readonly<Record<ClaveDato, CampoDato>> = {
   telefono: {
     etiqueta: 'Teléfono',
     obligatorio: false,
-    maxlength: 15,
+    maxlength: 16,
     tipo: 'tel',
     autocompletar: 'tel',
     mal: 'El teléfono solo lleva números y espacios.',
@@ -158,10 +158,18 @@ export const CAMPOS_DATOS: Readonly<Record<ClaveDato, CampoDato>> = {
 /** CIF de entidad (letra, 7 cifras y control) o NIF/NIE de persona. Solo formato, no la letra de control. */
 const CIF = /^(?:[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]|[0-9XYZ]\d{7}[A-Z])$/;
 const NIF = /^[0-9XYZ]\d{7}[A-Z]$/;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL = /^[^\x09-\x0D\x20@]+@[^\x09-\x0D\x20@]+\.[^\x09-\x0D\x20@]+$/;
 const TELEFONO = /^\+?[0-9 ]{9,15}$/;
 /** Caracteres de control, de formato o invisibles y separadores de línea y de párrafo (los de la API). */
 const CONTROL = /[\p{C}\p{Zl}\p{Zp}]/u;
+/** Lo que `Character.isWhitespace` de Java marca (el `strip()` de la API): sin U+00A0, U+2007 ni U+202F. */
+const ESPACIO_JAVA = '\\t\\n\\u000B\\f\\r\\u001C-\\u001F\\u0020\\u1680\\u2000-\\u2006\\u2008-\\u200A\\u2028\\u2029\\u205F\\u3000';
+const EXTREMOS_JAVA = new RegExp(`^[${ESPACIO_JAVA}]+|[${ESPACIO_JAVA}]+$`, 'g');
+
+/** Como `String.strip()` de Java: quita los espacios de los extremos (no `trim()`, que deja pasar otros). */
+export function recortar(texto: string): string {
+  return texto.replace(EXTREMOS_JAVA, '');
+}
 
 export function valoresVacios(): ValoresDatos {
   return {
@@ -194,13 +202,13 @@ export function valoresDe(datos: DatosEscuela): ValoresDatos {
 
 /** Escuela sin estrenar: ningún dato fiscal ni de contacto (el aviso «Rellena estos datos…» del boceto). */
 export function escuelaSinRellenar(valores: ValoresDatos): boolean {
-  return (['nombreLegal', 'cif', 'direccion', 'emailContacto'] as const).every((k) => valores[k].trim() === '');
+  return (['nombreLegal', 'cif', 'direccion', 'emailContacto'] as const).every((k) => recortar(valores[k]) === '');
 }
 
 /** El error del campo, o cadena vacía si vale. Vacío y opcional vale; vacío y obligatorio, no. */
 export function errorDeDato(clave: ClaveDato, valor: string): string {
   const campo = CAMPOS_DATOS[clave];
-  const limpio = (valor ?? '').trim();
+  const limpio = recortar(valor ?? '');
   if (limpio === '') {
     return campo.obligatorio ? (campo.falta ?? '') : '';
   }
@@ -243,23 +251,24 @@ export function clavesCambiadas(valores: ValoresDatos, guardados: ValoresDatos):
   return ORDEN_DATOS.filter((k) => valores[k] !== guardados[k]);
 }
 
-function recortar(valor: string): string | null {
-  const limpio = valor.trim();
+/** Recortado; vacío tras recortar, `null`. */
+function valorONull(valor: string): string | null {
+  const limpio = recortar(valor);
   return limpio === '' ? null : limpio;
 }
 
 /** Del formulario al cuerpo del `PUT`: espacios recortados, vacío a `null`, CIF y NIF en mayúsculas, día en número. */
 export function solicitudDe(valores: ValoresDatos): SolicitudDatosEscuela {
-  const mayusculas = (v: string) => recortar(v)?.toUpperCase() ?? null;
-  const dia = valores.diaLimiteMensualidad.trim();
+  const mayusculas = (v: string) => valorONull(v)?.toUpperCase() ?? null;
+  const dia = recortar(valores.diaLimiteMensualidad);
   return {
-    nombreLegal: recortar(valores.nombreLegal),
+    nombreLegal: valorONull(valores.nombreLegal),
     cif: mayusculas(valores.cif),
-    direccion: recortar(valores.direccion),
-    emailContacto: recortar(valores.emailContacto),
-    telefono: recortar(valores.telefono),
-    firmanteNombre: recortar(valores.firmanteNombre),
-    firmanteCargo: recortar(valores.firmanteCargo),
+    direccion: valorONull(valores.direccion),
+    emailContacto: valorONull(valores.emailContacto),
+    telefono: valorONull(valores.telefono),
+    firmanteNombre: valorONull(valores.firmanteNombre),
+    firmanteCargo: valorONull(valores.firmanteCargo),
     firmanteNif: mayusculas(valores.firmanteNif),
     diaLimiteMensualidad: /^\d{1,2}$/.test(dia) ? Number(dia) : null,
   };
