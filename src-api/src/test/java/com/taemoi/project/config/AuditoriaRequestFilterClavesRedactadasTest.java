@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 class AuditoriaRequestFilterClavesRedactadasTest {
 
 	private static final Set<String> DATOS_DE_SEDE = Set.of("nombre", "direccion", "localidad", "codigoPostal",
-			"telefono", "email", "codigoClubFederacion");
+			"telefono", "email", "codigoClubFederacion", "lugar", "indicacionesAcceso");
 
 	@Test
 	void sedes_altaYEdicion_redactanSusDatos() {

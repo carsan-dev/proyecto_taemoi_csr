@@ -218,8 +218,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			// Pieza E7-4: el email de la cuenta que se asigna como profesor a un grupo.
 			Pattern.compile("^/api/grupos/[^/]+/profesores/?$"), Set.of("email"),
 			// Pieza E8-2 (D8-16): alta y edición de una sede (los 4xx; el 2xx no guarda cuerpo, tiene registro propio).
+			// W2: también el lugar y las indicaciones de acceso (texto libre).
 			Pattern.compile("^/api/sedes(/[^/]+)?/?$"), Set.of("nombre", "direccion", "localidad", "codigoPostal",
-					"telefono", "email", "codigoClubFederacion"),
+					"telefono", "email", "codigoClubFederacion", "lugar", "indicacionesAcceso"),
 			// Pieza E8-3 (D8-16): email, cargo, nombre y apellidos del alta de un miembro (los dos últimos, de la E8-4);
 			// el cargo al dar un rol.
 			Pattern.compile("^/api/miembros/?$"), Set.of("email", "cargo", "nombre", "apellidos"),

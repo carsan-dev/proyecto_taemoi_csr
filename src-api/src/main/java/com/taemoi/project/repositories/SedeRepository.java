@@ -51,4 +51,9 @@ public interface SedeRepository extends JpaRepository<Sede, Long> {
 
 	/** Ídem, sin contar la sede {@code id} (renombrar una sede a su propio nombre vale). */
 	boolean existsByNombreAndIdNot(String nombre, Long id);
+
+	/** Web por plantilla (W2): el slug ya lo tiene una sede de la escuela activa. */
+	boolean existsBySlug(String slug);
+
+	boolean existsBySlugAndIdNot(String slug, Long id);
 }
