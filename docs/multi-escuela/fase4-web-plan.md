@@ -260,3 +260,29 @@ Contenido para el alta mientras no exista W12: ver §9, n.º 4.
 | 13 | Orden de los eventos (decisión 278, pendiente) | Próximos del más cercano al más lejano; anteriores del más reciente al más antiguo (lo que pintan los bocetos). |
 | 14 | Fecha «Última actualización» de Legales | La de la última publicación (`web_escuela.publicada_en`). Pro: sin columna. Contra: no cambia si solo cambian los datos del titular. |
 | 15 | Fuentes de cada tema | Google Fonts por `<link>` al cargar el tema. Pro: ya permitido por la CSP. Contra: petición a Google sin consentimiento; alternativa, servirlas desde `assets`. |
+
+## 10. Decisiones tomadas en W1
+
+Tomadas por el implementador de W1 (la opción más conservadora donde el plan o la d482 no lo fijan); revisables.
+
+| # | Asunto | Decisión |
+|---|---|---|
+| 1 | Versión de la migración | `V32_5__web_escuela.sql`, no V34: hay V32_3 (rama `feat/f4-394-datos-escuela`) y V32_4 (`feat/f4-dominio-p1`) abiertas. W1 debe fusionarse **después** de ellas (Flyway sin `outOfOrder`). |
+| 2 | Vista previa | `vistaPrevia=true` solo con sesión de propietario o gestor (ROLE_ADMIN o ROLE_MANAGER) de la escuela: ve los datos aunque no haya fila o no esté publicada (§5, «salvo vista previa»; la necesita la primera publicación de W7). Con otra sesión o anónimo, el parámetro se ignora. |
+| 3 | Moiskimdo y escuelas inactivas | 404 siempre, también en vista previa (marca `comportamiento_legado_taemoi` de la 1, además de no tener fila). |
+| 4 | Caché | Anónimo: `ETag` + `Cache-Control: public, max-age=60`. Con sesión (también la vista previa): `no-store`, porque la escuela sale de la sesión y no de la URL. |
+| 5 | Plazas | Con alguna libre, «Quedan N» aunque haya lista de espera. El grupo toma el peor turno: lista de espera, luego lleno, luego el que menos libres tiene. La espera se cuenta por `preinscripcion_turno` (las solicitudes antiguas por `turno_id`/`grupo_id` solo existen en Moiskimdo). |
+| 6 | Grupos que salen | De sedes activas, de disciplinas activas, visibles en la preinscripción (misma regla: sin los de competición de taekwondo) y con al menos un turno. Orden de la preinscripción. |
+| 7 | Sede | Nombre, dirección, localidad, código postal y teléfono. Ni correo, ni aforo, ni código de club. |
+| 8 | Tarifas por sede | Por tarifa activa y sede activa: la vigente hoy y las futuras. |
+| 9 | Licencia y examen | Licencia: la `productoLicencia` de cada disciplina activa (no todos los productos `LICENCIA`). Examen: el menor precio mayor que 0 de los productos `EXAMEN`. |
+| 10 | Eventos en `/api/publico/web` | Los 3 próximos visibles con fecha de hoy o posterior (zona de la escuela), del más cercano al más lejano; sin fecha, fuera. La lista completa (`/api/publico/web/eventos`, anteriores del más reciente al más antiguo) no es de W1. |
+| 11 | Bloques | Lista genérica (`clave`, `texto`, `imagenUrl`, `orden`). Los profesores van en claves `profesor.<n>.*`; su forma exacta se fija en W5/W12. La URL de la imagen solo sale si la imagen es de la misma escuela. |
+| 12 | Logo | Solo `logoVersion` (id de la imagen). La URL pública es `/api/publico/escuela/logo` de la pieza 4 del plan de dominio; W1 no la crea. |
+| 13 | Legales | Titular con CIF y domicilio (solo aquí), normas = plantilla de preinscripción activa de cada disciplina activa (ya pública), `actualizadaEn` = fecha de `publicada_en` (`null` en una vista previa sin publicar). |
+| 14 | `publicada_por` | Sin clave ajena a `usuario`, como en el §4.1: con ella habría que clasificarla en la cancelación de invitaciones (`CancelarInvitacionIntegrationTest`), fuera de W1. |
+
+Pendientes que deja W1: las imágenes de los bloques se sirven por `/imagenes/**`, que hoy solo es público para la carpeta
+de eventos (`RutasArchivos.esImagenPublica`): W12 (o el alta por migración de datos) debe guardarlas en una ruta pública
+o servirlas por un endpoint. Los 404 de estas rutas los apunta la auditoría como cualquier 404 (comportamiento de
+siempre del filtro).
