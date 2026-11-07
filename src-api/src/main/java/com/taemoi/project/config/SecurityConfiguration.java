@@ -268,6 +268,8 @@ public class SecurityConfiguration {
 						// alguno de estos tres roles; la de un administrador de plataforma sin membresía y la solo-profesor
 						// (decisión 180), no.
 						.requestMatchers(HttpMethod.GET, "/api/catalogo/publico").permitAll()
+						// Fase 4, pieza 4: marca pública (nombre, logo, tema) de la escuela del Host.
+						.requestMatchers(HttpMethod.GET, "/api/publico/escuela", "/api/publico/escuela/logo").permitAll()
 						.requestMatchers("/api/catalogo", "/api/catalogo/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
