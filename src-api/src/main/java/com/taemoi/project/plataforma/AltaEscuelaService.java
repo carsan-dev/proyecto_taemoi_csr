@@ -1,5 +1,6 @@
 package com.taemoi.project.plataforma;
 
+import java.text.Normalizer;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -114,8 +115,8 @@ public class AltaEscuelaService {
 	 * Da de alta la escuela.
 	 *
 	 * @throws IllegalArgumentException (400) datos que no valen o disciplina que no está en la plantilla
-	 * @throws IllegalStateException    (409) ya hay una escuela con ese nombre (sin distinguir mayúsculas ni espacios
-	 *                                  de los extremos)
+	 * @throws IllegalStateException    (409) ya hay una escuela con ese nombre (sin distinguir mayúsculas, tildes ni
+	 *                                  espacios de los extremos)
 	 */
 	public AltaEscuelaDTO crear(AltaEscuelaRequest solicitud) {
 		Datos datos = validar(solicitud);
@@ -273,9 +274,15 @@ public class AltaEscuelaService {
 		return valor.codePointCount(0, valor.length());
 	}
 
-	/** Nombre para comparar: sin espacios en los extremos y en minúsculas. */
+	/**
+	 * Nombre para comparar: sin espacios en los extremos, sin tildes ni diéresis ({@code ñ} cuenta como {@code n}, igual
+	 * que en el slug) y en minúsculas. Así «Ñandú» y «Nandu» son el mismo nombre. No se hace en SQL: la columna no tiene
+	 * índice único y la comparación se hace aquí, sobre los nombres ya guardados.
+	 */
 	private static String clave(String nombre) {
-		return nombre == null ? "" : nombre.strip().toLowerCase(Locale.ROOT);
+		String sinTildes = Normalizer.normalize(nombre == null ? "" : nombre, Normalizer.Form.NFD).replaceAll("\\p{M}+",
+				"");
+		return sinTildes.strip().toLowerCase(Locale.ROOT);
 	}
 
 	private static Map<String, Object> valoresRol(Long usuarioId) {

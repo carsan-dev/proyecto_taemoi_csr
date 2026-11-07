@@ -175,8 +175,8 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void dosNombresDistintosConElMismoSlugALaVez_lasDosSalen_conSufijo() throws Exception {
-		String nombreA = "Club IT Ñandú " + marca;
-		String nombreB = "Club IT Nandu " + marca;
+		String nombreA = "Club IT Nandu " + marca;
+		String nombreB = "Club-IT Nandu " + marca;
 
 		List<String> resultados = aLaVez(cuerpo(nombreA, "Eva", "Ficticia", "it-f42c-slug-a-" + marca + "@example.test"),
 				cuerpo(nombreB, "Eva", "Ficticia", "it-f42c-slug-b-" + marca + "@example.test"));
@@ -187,11 +187,26 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 		List<String> slugs = jdbc.queryForList("SELECT slug FROM organizacion WHERE nombre IN (?, ?) ORDER BY slug",
 				String.class, nombreA, nombreB);
 		assertEquals(List.of(base, base + "-2"), slugs);
-		// La intercalación de MySQL no distingue tildes («Ñandú» = «Nandu»): se comparan los nombres en Java.
 		List<String> nombres = new ArrayList<>(jdbc.queryForList("SELECT nombre FROM organizacion WHERE slug IN (?, ?)",
 				String.class, base, base + "-2"));
 		nombres.sort(null);
-		assertEquals(List.of(nombreB, nombreA), nombres);
+		assertEquals(List.of(nombreA, nombreB), nombres);
+		assertEquals(0, encuentro.getCount(), "Las dos altas llegaron a la vez a insertar la escuela");
+	}
+
+	@Test
+	void elMismoNombreConYSinTildesALaVez_unaSale_laOtra409() throws Exception {
+		String nombreA = "Club IT Ñandú Sur " + marca;
+		String nombreB = "club it nandu sur " + marca;
+
+		List<String> resultados = aLaVez(cuerpo(nombreA, "Eva", "Ficticia", "it-f42c-tilde-a-" + marca + "@example.test"),
+				cuerpo(nombreB, "Eva", "Ficticia", "it-f42c-tilde-b-" + marca + "@example.test"));
+
+		assertEquals(2, resultados.size(), resultados.toString());
+		assertTrue(resultados.get(0).startsWith("201 "), resultados.toString());
+		assertEquals("409 {\"mensaje\":\"Ya hay una escuela con ese nombre.\"}", resultados.get(1));
+		// La intercalación de MySQL no distingue tildes: una sola fila con cualquiera de los dos nombres.
+		assertEquals(1, contar("SELECT COUNT(*) FROM organizacion WHERE slug LIKE ?", "club-it-nandu-sur-" + marca + "%"));
 		assertEquals(0, encuentro.getCount(), "Las dos altas llegaron a la vez a insertar la escuela");
 	}
 

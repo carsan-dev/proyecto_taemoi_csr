@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -447,6 +448,23 @@ class AltaEscuelaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("Ya hay una escuela con ese nombre.", error.get("mensaje").asText());
 		assertEquals(antes, contar("SELECT COUNT(*) FROM organizacion"));
 		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE email = ?", "it-f42-rep2-" + marca + "@example.test"));
+	}
+
+	@Test
+	void nombreRepetido_409_sinTildesNiEnes() throws Exception {
+		String nombre = "Club IT Ñandú Pérez " + marca;
+		leer(alta(cuerpo(nombre, "t1-" + marca + "@example.test", "Sede", "Eva", "Ficticia",
+				"it-f42-tilde1-" + marca + "@example.test", "PILATES")), cookieSuperadmin, 201);
+		long antes = contar("SELECT COUNT(*) FROM organizacion");
+		for (String parecido : List.of("Club IT Nandu Perez " + marca, "CLUB IT ÑANDU PÉREZ " + marca,
+				"club it nandú perez " + marca)) {
+			JsonNode error = leer(alta(cuerpo(parecido, "t2-" + marca + "@example.test", "Sede", "Eva", "Ficticia",
+					"it-f42-tilde2-" + marca + "@example.test", "PILATES")), cookieSuperadmin, 409);
+			assertEquals("Ya hay una escuela con ese nombre.", error.get("mensaje").asText(), parecido);
+		}
+		assertEquals(antes, contar("SELECT COUNT(*) FROM organizacion"));
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE email = ?", "it-f42-tilde2-" + marca + "@example.test"));
+		verify(email, times(1)).sendEmailConImagen(any(), any(), any(), any(), any(), any(), any());
 	}
 
 	@Test
