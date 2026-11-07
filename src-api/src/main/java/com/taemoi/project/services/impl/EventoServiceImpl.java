@@ -20,6 +20,7 @@ import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.exceptions.evento.DatosEventoNoValidosException;
+import com.taemoi.project.exceptions.evento.DocumentoEventoNoEncontradoException;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.repositories.EventoFotoRepository;
 import com.taemoi.project.repositories.EventoFotoRepository.NumeroFotos;
@@ -277,7 +278,7 @@ public class EventoServiceImpl implements EventoService {
 		return evento.getDocumentos().stream()
 				.filter(doc -> doc.getId().equals(documentoId))
 				.findFirst()
-				.orElseThrow(() -> new RuntimeException(
+				.orElseThrow(() -> new DocumentoEventoNoEncontradoException(
 						"El documento con ID " + documentoId + " no pertenece al evento con ID " + eventoId));
 	}
 

@@ -40,6 +40,7 @@ import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.exceptions.evento.DatosEventoNoValidosException;
+import com.taemoi.project.exceptions.evento.DocumentoEventoNoEncontradoException;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.organizacion.HostDeLaPeticion;
@@ -288,7 +289,7 @@ public class EventoController {
 					.header(HttpHeaders.CONTENT_DISPOSITION,
 							dispositionType + "; filename=\"" + nombreDocumento + "\"")
 					.body(recurso);
-		} catch (EventoNoEncontradoException e) {
+		} catch (EventoNoEncontradoException | DocumentoEventoNoEncontradoException e) {
 			return ResponseEntity.notFound().build();
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
