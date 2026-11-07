@@ -485,6 +485,8 @@ GET      /api/sedes/{id}                                                        
 HEAD     /api/sedes/{id}                                                                          DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#ver
 PUT      /api/sedes/{id}                                                                          DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#editar
 PUT      /api/sedes/{id}/activa                                                                   DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#cambiarActiva
+PUT      /api/sedes/{id}/fotos/{numero}                                                           DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#cambiarFoto
+DELETE   /api/sedes/{id}/fotos/{numero}                                                           DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#quitarFoto
 GET      /api/solicitudes                                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#listar
 HEAD     /api/solicitudes                                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#listar
 POST     /api/solicitudes                                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         PERMITE          DENIEGA  # SolicitudController#crear

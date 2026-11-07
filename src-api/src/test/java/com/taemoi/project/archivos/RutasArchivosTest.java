@@ -116,6 +116,27 @@ class RutasArchivosTest {
 		assertEquals("fotos-eventos", RutasArchivos.CARPETA_FOTOS_EVENTOS);
 	}
 
+	/** Web por plantilla: las fotos de las sedes, públicas solo en {@code org-<id>/web/sedes/…} y nunca con alumnos. */
+	@Test
+	void clasificaFotosDeSedes() {
+		assertEquals("web/sedes", RutasArchivos.CARPETA_WEB_SEDES);
+		assertTrue(RutasArchivos.esImagenPublica("org-2/web/sedes/foto.webp"));
+		assertTrue(RutasArchivos.esImagenPublica("ORG-2/WEB/SEDES/foto.webp"));
+		// Solo la carpeta de las sedes, con prefijo de escuela y con un fichero debajo.
+		assertFalse(RutasArchivos.esImagenPublica("web/sedes/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/otra/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/sedes"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/sedes/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/x/web/sedes/foto.webp"));
+		// Nunca con un segmento de alumnos.
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/sedes/alumnos/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/sedes/ALUMNOS/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/alumnos/web/sedes/foto.webp"));
+		// Los documentos no cambian.
+		assertFalse(RutasArchivos.esDocumentoPublico("org-2/web/sedes/foto.pdf"));
+	}
+
 	@Test
 	void clasificaDocumentos() {
 		assertTrue(RutasArchivos.esDocumentoPublico("Documentos_Eventos/3_Torneo/bases.pdf"));

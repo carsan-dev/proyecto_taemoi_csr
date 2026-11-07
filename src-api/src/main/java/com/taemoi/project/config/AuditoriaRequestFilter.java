@@ -155,6 +155,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		SEDE_EDITAR("PUT", "/api/sedes/[^/]+"),
 		/** GestionSedesService#cambiarActiva (SEDES SEDE_ACTIVADA o SEDE_DESACTIVADA). */
 		SEDE_ACTIVA("PUT", "/api/sedes/[^/]+/activa"),
+		/** Web por plantilla: SedeFotoService#cambiar (SEDES SEDE_FOTO_CAMBIADA). Caso en SedeFotosIntegrationTest. */
+		SEDE_FOTO_CAMBIAR("PUT", "/api/sedes/[^/]+/fotos/[^/]+"),
+		/** Web por plantilla: SedeFotoService#quitar (SEDES SEDE_FOTO_QUITADA; sin foto, con sinCambios=SI). */
+		SEDE_FOTO_QUITAR("DELETE", "/api/sedes/[^/]+/fotos/[^/]+"),
 		/** Pieza 9-1: CambioSedeAlumnoService#cambiar (SEDES ALUMNO_SEDE_CAMBIADA). */
 		ALUMNO_CAMBIAR_SEDE("PUT", "/api/alumnos/[^/]+/sede"),
 		// Pieza E8-3 (D8-16): miembros. Todo 2xx registra, también el que no cambia nada (con sinCambios=SI).

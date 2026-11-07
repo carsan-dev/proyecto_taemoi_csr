@@ -31,7 +31,11 @@ public class RegistroAccionesSedes {
 		SEDE_DESACTIVADA(AuditoriaAccion.UPDATE),
 		SEDE_ACTIVADA(AuditoriaAccion.UPDATE),
 		/** Pieza 9-1 (decisión 369): alumno, sede anterior (NINGUNO si no tenía), sede nueva y cargos movidos. */
-		ALUMNO_SEDE_CAMBIADA(AuditoriaAccion.UPDATE);
+		ALUMNO_SEDE_CAMBIADA(AuditoriaAccion.UPDATE),
+		/** Web por plantilla: sede, hueco (FOTO o FOTO2), imagen nueva y la anterior (NINGUNO si no había). */
+		SEDE_FOTO_CAMBIADA(AuditoriaAccion.UPDATE),
+		/** Web por plantilla: sede, hueco e imagen quitada; sin foto, {@code sinCambios=SI}. */
+		SEDE_FOTO_QUITADA(AuditoriaAccion.UPDATE);
 
 		private final AuditoriaAccion auditoria;
 
