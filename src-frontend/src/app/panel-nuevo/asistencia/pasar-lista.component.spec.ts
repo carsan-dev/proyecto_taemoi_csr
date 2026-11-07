@@ -845,7 +845,7 @@ describe('PasarListaComponent', () => {
       expect(estados[1].querySelector('svg')).not.toBeNull();
     });
 
-    it('409 de festivo al guardar: avisa con el mensaje, no recarga y conserva lo marcado', () => {
+    it('409 de festivo al guardar: avisa con el mensaje y recarga para ver la clase festiva', () => {
       arrancarGestion(clase());
       filas()[0].click();
       fixture.detectChanges();
@@ -853,6 +853,23 @@ describe('PasarListaComponent', () => {
       http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ mensaje: 'Ese día es festivo en Estepa.' }, { status: 409, statusText: 'Conflict' });
       fixture.detectChanges();
       expect(avisos.error).toHaveBeenCalledWith('Ese día es festivo en Estepa.');
+      http.expectOne(`${gestion}/clases`).flush({ hoy: [clase()], recientes: [], proxima: null });
+      const festiva = clase({ festivo: festivoDia });
+      http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: festiva, alumnos: ALUMNOS, sede: ESTEPA });
+      fixture.detectChanges();
+      expect(boton('Guardar lista')).toBeUndefined();
+      expect(el().textContent).toContain('Feria de Estepa');
+    });
+
+    it('otro 409 al guardar: avisa con su mensaje, no recarga y conserva lo marcado', () => {
+      arrancarGestion(clase());
+      filas()[0].click();
+      fixture.detectChanges();
+      boton('Guardar lista')!.click();
+      http.expectOne(`${gestion}/clases/9/2026-10-28`).flush(
+        { mensaje: 'Esta lista se guardó con otro grupo y no se puede cambiar desde aquí.' }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges();
+      expect(avisos.error).toHaveBeenCalledWith('Esta lista se guardó con otro grupo y no se puede cambiar desde aquí.');
       http.expectNone(`${gestion}/clases`);
       http.expectNone(`${gestion}/clases/9/2026-10-28`);
       expect(boton('Guardar lista')).toBeDefined();
