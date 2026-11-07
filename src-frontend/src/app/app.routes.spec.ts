@@ -346,8 +346,11 @@ describe('app routes', () => {
     expect(resolverPortalContexto('/contacto')).toBe('public');
   });
 
-  it('toda ruta protegida por roleGuard resuelve el catálogo antes de activarse, salvo Mi perfil (abierta al profesor)', () => {
-    const protectedRoutes = routes.filter((route) => route.canActivate?.includes(roleGuard) && route.path !== 'panel/mi-perfil');
+  it('toda ruta protegida por roleGuard resuelve el catálogo antes de activarse, salvo Mi perfil y el selector de escuela (abiertas al profesor)', () => {
+    const sinCatalogo = ['panel/mi-perfil', 'elegir-escuela'];
+    const protectedRoutes = routes.filter(
+      (route) => route.canActivate?.includes(roleGuard) && !sinCatalogo.includes(route.path ?? '')
+    );
 
     expect(protectedRoutes.every((route) => route.resolve?.['catalogo'] === catalogoResolver)).toBeTrue();
   });

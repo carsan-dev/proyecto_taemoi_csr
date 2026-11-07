@@ -24,6 +24,8 @@ import { Capacidad, PermisosSesionService } from '../../servicios/authentication
 import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
 import { etiquetaRol } from '../formato/roles';
 import { MarcaEscuelaPanelService, MarcaPanel } from '../marca-escuela-panel.service';
+import { SelectorEscuelaCabeceraComponent } from '../selector-escuela/selector-escuela-cabecera.component';
+import { SelectorEscuelaService, inicialesEscuela } from '../selector-escuela/selector-escuela.service';
 import { BarraInferiorComponent } from './barra-inferior.component';
 import {
   CUENTA_PANEL,
@@ -111,7 +113,7 @@ function veSolicitudes(roles: readonly string[]): boolean {
 @Component({
   selector: 'app-cabecera-panel',
   standalone: true,
-  imports: [RouterLink, BarraInferiorComponent],
+  imports: [RouterLink, BarraInferiorComponent, SelectorEscuelaCabeceraComponent],
   templateUrl: './cabecera-panel.component.html',
   styleUrl: './cabecera-panel.component.scss',
 })
@@ -187,6 +189,14 @@ export class CabeceraPanelComponent implements OnInit {
   /** Pasar lista (boceto aprobado): en móvil la barra fija de guardar ocupa el sitio de la navegación inferior. */
   readonly sinBarraInferior = computed(() => ocultaBarraInferior(this.url()));
   readonly contador = computed(() => this.soloProfesor() ? 0 : this.contadorSolicitudes.total());
+
+  /** Escuelas de la cuenta (selector de escuela): con dos o más, el nombre de la escuela abre «Cambiar de escuela». */
+  readonly escuelas = toSignal(inject(SelectorEscuelaService).organizaciones().pipe(catchError(() => of([]))), {
+    initialValue: [],
+  });
+  readonly variasEscuelas = computed(() => this.escuelas().length > 1);
+  /** Sin logo y con varias escuelas, sus iniciales: con una sola, la cabecera de siempre. */
+  readonly inicialesActiva = computed(() => inicialesEscuela(this.escuelas().find((e) => e.activa)?.nombre));
 
   readonly nombreEscuela = computed(() => this.marca()?.nombre || 'Panel de gestión');
   readonly logo = computed(() => {

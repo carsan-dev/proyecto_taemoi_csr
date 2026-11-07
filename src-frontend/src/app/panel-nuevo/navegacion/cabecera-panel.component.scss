@@ -57,6 +57,42 @@
   line-clamp: 2;
 }
 
+// Selector de escuela (con dos o más): mientras su menú, su hoja o «Entrando» están a la vista, la cabecera se pone por
+// encima de la barra inferior (1000) para que la hoja y el velo la tapen.
+.pn-cab:has(.pn-selector--encima) {
+  z-index: 1002;
+}
+
+// Sin logo, las iniciales de la escuela sobre blanco, en el color de la escuela como tinta (4,5:1) y con su aro.
+.pn-cab__iniciales-escuela {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-superficie);
+  box-shadow:
+    inset 0 0 0 1.5px var(--pn-marca-primario-tinta),
+    inset 0 0 0 4px var(--pn-superficie),
+    inset 0 0 0 5.5px var(--pn-marca-primario-tinta);
+  color: var(--pn-marca-primario-tinta);
+  font: 700 0.9375rem / 1 var(--pn-fuente-titulo);
+  letter-spacing: 0.02em;
+}
+
+.pn-cab__oculto {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 // Entradas: solo desde 1024 px; por debajo, la barra inferior. No encogen: si falta sitio, encoge el nombre de la
 // escuela (la marca es lo único flexible de la fila), así nada se solapa.
 .pn-cab__nav {
@@ -375,7 +411,8 @@
     padding: 0 var(--pn-espacio-m);
   }
 
-  .pn-cab__logo {
+  .pn-cab__logo,
+  .pn-cab__iniciales-escuela {
     width: 40px;
     height: 40px;
   }
