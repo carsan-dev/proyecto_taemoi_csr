@@ -224,6 +224,7 @@
               "src/app/panel-nuevo/selector-escuela/entrando-escuela.component.spec.ts",
               "src/app/panel-nuevo/selector-escuela/limpieza-escuela.spec.ts",
               "src/app/core/cambio-escuela-pestanas.spec.ts",
+              "src/app/core/capa-cambio-escuela.spec.ts",
               "src/app/panel-nuevo/acento-escuela.spec.ts",
               "src/app/panel-nuevo/navegacion/menu-panel.spec.ts",
               "src/app/panel-nuevo/navegacion/cabecera-panel.component.spec.ts",

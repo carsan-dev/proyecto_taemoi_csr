@@ -61,7 +61,12 @@ describe('ElegirEscuelaComponent (tras entrar)', () => {
         { provide: IR_A_URL, useValue: irA },
         {
           provide: CambioEscuelaPestanasService,
-          useValue: jasmine.createSpyObj('CambioEscuelaPestanasService', ['bloquear', 'avisarOtras']),
+          useValue: jasmine.createSpyObj('CambioEscuelaPestanasService', {
+            anunciarCambio: 'id-1',
+            confirmarCambio: undefined,
+            cancelarCambio: undefined,
+            bloquear: undefined,
+          }),
         },
       ],
     }).compileComponents();

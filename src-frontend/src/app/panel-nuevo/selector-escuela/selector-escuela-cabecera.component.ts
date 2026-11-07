@@ -16,7 +16,7 @@ import { NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
 import { AvisosService } from '../avisos/avisos.service';
-import { PilaCapas, anchoDeHoja, contenerFoco } from '../capas/capa-modal';
+import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco } from '../capas/capa-modal';
 import { LogoEscuelaComponent } from './logo-escuela.component';
 import { EscuelaUsuario, SelectorEscuelaService, metaEscuela } from './selector-escuela.service';
 
@@ -35,6 +35,8 @@ const TEXTO_FALLO = 'No se ha podido cambiar de escuela. Inténtalo otra vez.';
  * - Teclado del patrón «menu button» (decisión 243): flechas con vuelta, Inicio, Fin; Esc cierra y devuelve el foco.
  *   En el menú de escritorio, Tab cierra y deja seguir. La hoja inferior es un `<dialog>` con `showModal()` (capas del
  *   panel, `capa-modal.ts`): el fondo queda inerte, Tab y Mayús+Tab dan la vuelta dentro y Esc la cierra.
+ * - Menú o hoja se deciden al abrir: si la ventana cruza los 768 px con uno abierto, se cierra y el foco vuelve al
+ *   botón (el menú no se queda debajo de otra capa ni la hoja como menú).
  */
 @Component({
   selector: 'pn-selector-escuela',
@@ -70,6 +72,7 @@ export class SelectorEscuelaCabeceraComponent implements OnInit, OnDestroy {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(() => this.ocultar());
+    this.vigilarAncho();
   }
 
   ngOnDestroy(): void {
@@ -180,6 +183,25 @@ export class SelectorEscuelaCabeceraComponent implements OnInit, OnDestroy {
   alCancelarHoja(evento: Event): void {
     evento.preventDefault();
     this.cerrar(true);
+  }
+
+  /** Al cruzar los 768 px con el menú o la hoja abiertos: se cierra y el foco vuelve al botón. */
+  private vigilarAncho(): void {
+    const ventana = this.host.nativeElement.ownerDocument.defaultView;
+    if (!ventana || typeof ventana.matchMedia !== 'function') {
+      return;
+    }
+    const consulta = ventana.matchMedia(CONSULTA_HOJA);
+    if (typeof consulta?.addEventListener !== 'function') {
+      return;
+    }
+    const alCambiar = (): void => {
+      if (this.abierto()) {
+        this.cerrar(true);
+      }
+    };
+    consulta.addEventListener('change', alCambiar);
+    this.destroyRef.onDestroy(() => consulta.removeEventListener('change', alCambiar));
   }
 
   private abrir(): void {

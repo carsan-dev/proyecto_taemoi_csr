@@ -7,13 +7,15 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { CambioEscuelaPestanasService } from '../../core/cambio-escuela-pestanas';
+import { CambioEscuelaPestanasService, PASA_BLOQUEO_CAMBIO_ESCUELA } from '../../core/cambio-escuela-pestanas';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { sesionCerrada } from '../../servicios/authentication/sesion-cerrada';
 import { contraste } from '../acento-escuela';
 import { LOGO_LEGADO } from '../marca-escuela-panel.service';
 import {
+  ESPERA_CAMBIO_ESCUELA,
+  ESPERA_MAXIMA_CAMBIO_ESCUELA_MS,
   IR_A_URL,
   RUTA_CAMBIANDO_ESCUELA,
   RUTA_ELEGIR_ESCUELA,
@@ -91,6 +93,13 @@ describe('Selector de escuela: reglas puras', () => {
     expect(coloresIniciales('#0b5cad')).toEqual({ fondo: '#0B5CAD', texto: '#FFFFFF' });
     expect(coloresIniciales(null).fondo).toBe('#1A2230');
   });
+
+  it('el POST del cambio espera como mucho 15 s', () => {
+    expect(ESPERA_MAXIMA_CAMBIO_ESCUELA_MS).toBe(15_000);
+    TestBed.configureTestingModule({});
+    expect(TestBed.inject(ESPERA_CAMBIO_ESCUELA)).toBe(15_000);
+    TestBed.resetTestingModule();
+  });
 });
 
 describe('SelectorEscuelaService', () => {
@@ -101,6 +110,8 @@ describe('SelectorEscuelaService', () => {
   let pestanas: jasmine.SpyObj<CambioEscuelaPestanasService>;
   let harness: RouterTestingHarness;
   let registro: string[];
+  /** Tiempo máximo del POST en estas pruebas (un `describe` anidado lo acorta en su `beforeAll`). */
+  let esperaPrueba = ESPERA_MAXIMA_CAMBIO_ESCUELA_MS;
 
   /** Pantalla con cambios sin guardar: su `canDeactivate` pregunta (aquí, `permitirSalida`). */
   @Component({ standalone: true, template: '<p>Ficha</p>' })
@@ -131,9 +142,16 @@ describe('SelectorEscuelaService', () => {
     registro = [];
     FichaPruebaComponent.permitirSalida = true;
     pestanas = jasmine.createSpyObj<CambioEscuelaPestanasService>('CambioEscuelaPestanasService', [
+      'anunciarCambio',
+      'confirmarCambio',
+      'cancelarCambio',
       'bloquear',
-      'avisarOtras',
     ]);
+    pestanas.anunciarCambio.and.callFake(() => {
+      // Cuántos POST había ya en vuelo al anunciar (debe ser ninguno: el anuncio va antes).
+      registro.push(`anuncio con ${http.match(URL_CAMBIO).length} peticiones`);
+      return 'id-1';
+    });
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -149,6 +167,7 @@ describe('SelectorEscuelaService', () => {
         { provide: AuthenticationService, useValue: { emailCambio: email.asObservable() } },
         { provide: IR_A_URL, useValue: irA },
         { provide: CambioEscuelaPestanasService, useValue: pestanas },
+        { provide: ESPERA_CAMBIO_ESCUELA, useFactory: () => esperaPrueba },
       ],
     });
     servicio = TestBed.inject(SelectorEscuelaService);
@@ -220,11 +239,13 @@ describe('SelectorEscuelaService', () => {
     expect(await falla).toBe('/mis-grupos');
   });
 
-  it('cambia de escuela: sale de la pantalla, POST, limpia, avisa a las demás pestañas y recarga la app', async () => {
+  it('cambia de escuela: sale de la pantalla, anuncia a las pestañas, POST, confirma, limpia y recarga la app', async () => {
     const cambio = firstValueFrom(servicio.cambiar(SUR));
     await esperar();
-    // Primero se sale de la pantalla (sus confirmaciones y sus `beforeunload` ya no existen) y luego se pide el cambio.
-    expect(registro).toEqual(['pregunta', 'ficha destruida']);
+    // Primero se sale de la pantalla (sus confirmaciones y sus `beforeunload` ya no existen), luego se anuncia el cambio
+    // (todas las pestañas bloqueadas) y solo entonces se pide.
+    expect(registro).toEqual(['pregunta', 'ficha destruida', 'anuncio con 0 peticiones']);
+    expect(pestanas.anunciarCambio).toHaveBeenCalledOnceWith({ id: 2, nombre: 'Club Ficticio Sur' });
     expect(servicio.entrando()).toEqual(SUR);
     harness.detectChanges();
     expect(harness.routeNativeElement?.querySelector('pn-entrando-escuela')?.textContent).toContain(
@@ -235,16 +256,18 @@ describe('SelectorEscuelaService', () => {
     expect(peticion.request.body).toEqual({ organizacionId: 2 });
     expect(peticion.request.withCredentials).toBeTrue();
     expect(peticion.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    // La única petición que pasa el bloqueo.
+    expect(peticion.request.context.get(PASA_BLOQUEO_CAMBIO_ESCUELA)).toBeTrue();
     expect(irA).not.toHaveBeenCalled();
-    expect(pestanas.bloquear).not.toHaveBeenCalled();
+    expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
     peticion.flush({ token: 'nuevo' });
 
     expect(await cambio).toBeTrue();
     expect(sessionStorage.getItem('alumnoId')).toBeNull();
     expect(sessionStorage.getItem('panelProductosEstado')).toBeNull();
     expect(localStorage.getItem('dashboard-user-estado-deportes-41')).toBeNull();
-    expect(pestanas.bloquear).toHaveBeenCalledTimes(1);
-    expect(pestanas.avisarOtras).toHaveBeenCalledTimes(1);
+    expect(pestanas.confirmarCambio).toHaveBeenCalledOnceWith('id-1');
+    expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
     expect(RUTA_ENTRADA_SESION).toBe('/login/google');
     // La URL del navegador no cambia (`skipLocationChange`) y, mientras recarga, no se sale de la ruta neutra.
@@ -262,8 +285,7 @@ describe('SelectorEscuelaService', () => {
     http.expectNone(URL_CAMBIO);
     expect(sessionStorage.getItem('alumnoId')).toBe('41');
     expect(localStorage.getItem('dashboard-user-estado-deportes-41')).not.toBeNull();
-    expect(pestanas.bloquear).not.toHaveBeenCalled();
-    expect(pestanas.avisarOtras).not.toHaveBeenCalled();
+    expect(pestanas.anunciarCambio).not.toHaveBeenCalled();
     expect(irA).not.toHaveBeenCalled();
     expect(servicio.ocupado).toBeFalse();
     expect(servicio.entrando()).toBeNull();
@@ -291,12 +313,14 @@ describe('SelectorEscuelaService', () => {
     expect(irA).toHaveBeenCalledTimes(1);
   });
 
-  it('si el POST falla, la escuela no cambia: vuelve a la pantalla, ni recarga ni limpia, y se puede reintentar', async () => {
+  it('si la API rechaza el cambio, la escuela no cambia: cancela el anuncio, vuelve a la pantalla, ni recarga ni limpia, y se puede reintentar', async () => {
     const fallo = firstValueFrom(servicio.cambiar(SUR)).catch((e) => e);
     await esperar();
     http.expectOne(URL_CAMBIO).flush({ mensaje: 'Acceso denegado.' }, { status: 403, statusText: 'Forbidden' });
     expect((await fallo).status).toBe(403);
     expect(irA).not.toHaveBeenCalled();
+    expect(pestanas.cancelarCambio).toHaveBeenCalledOnceWith('id-1');
+    expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
     expect(pestanas.bloquear).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('alumnoId')).toBe('41');
     expect(localStorage.getItem('dashboard-user-estado-deportes-41')).not.toBeNull();
@@ -311,5 +335,48 @@ describe('SelectorEscuelaService', () => {
     await esperar();
     http.expectOne(URL_CAMBIO).flush({});
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+  });
+  it('con la red caída el resultado es incierto: no vuelve a la escuela de antes, limpia y recarga entera', async () => {
+    let error: unknown = null;
+    let resultado: boolean | null = null;
+    servicio.cambiar(SUR).subscribe({ next: (r) => (resultado = r), error: (e) => (error = e) });
+    await esperar();
+    http.expectOne(URL_CAMBIO).error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    await esperar();
+
+    expect(error).toBeNull();
+    expect(resultado).toBeTrue();
+    expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
+    expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
+    expect(pestanas.bloquear).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem('alumnoId')).toBeNull();
+    expect(localStorage.getItem('dashboard-user-estado-deportes-41')).toBeNull();
+    expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+    expect(servicio.tomarFallo()).toBeNull();
+    // Sigue sin admitir otro cambio, pero la ruta neutra ya no retiene a nadie.
+    expect(servicio.ocupado).toBeTrue();
+    expect(await firstValueFrom(servicio.cambiar(ESTE))).toBeFalse();
+    expect(TestBed.inject(Router).url).toBe(RUTA_CAMBIANDO_ESCUELA);
+    expect(await TestBed.inject(Router).navigateByUrl('/ficha')).toBeTrue();
+  });
+
+  describe('sin respuesta del POST', () => {
+    beforeAll(() => (esperaPrueba = 40));
+    afterAll(() => (esperaPrueba = ESPERA_MAXIMA_CAMBIO_ESCUELA_MS));
+
+    it('agotado el tiempo, lo trata como incierto: corta la petición, recarga entera y libera la ruta neutra', async () => {
+      servicio.cambiar(SUR).subscribe();
+      for (let i = 0; i < 100 && !irA.calls.any(); i++) {
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      const peticion = http.expectOne(URL_CAMBIO);
+      expect(peticion.cancelled).toBeTrue();
+      expect(pestanas.bloquear).toHaveBeenCalledTimes(1);
+      expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
+      expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+      expect(sessionStorage.getItem('alumnoId')).toBeNull();
+      expect(servicio.retieneLaRuta).toBeFalse();
+      expect(await TestBed.inject(Router).navigateByUrl('/ficha')).toBeTrue();
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
-import { HttpClient, HttpContext } from '@angular/common/http';
-import { DestroyRef, Injectable, inject, signal } from '@angular/core';
+import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
+import { DestroyRef, Injectable, InjectionToken, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import {
@@ -17,10 +17,16 @@ import {
   take,
   tap,
   throwError,
+  timeout,
 } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { CambioEscuelaPestanasService, IR_A_URL, RUTA_ENTRADA_SESION } from '../../core/cambio-escuela-pestanas';
+import {
+  CambioEscuelaPestanasService,
+  IR_A_URL,
+  PASA_BLOQUEO_CAMBIO_ESCUELA,
+  RUTA_ENTRADA_SESION,
+} from '../../core/cambio-escuela-pestanas';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { sesionCerrada } from '../../servicios/authentication/sesion-cerrada';
@@ -56,6 +62,23 @@ export const RUTA_ELEGIR_ESCUELA = '/elegir-escuela';
  * `beforeunload`. Pinta «Entrando en …» hasta la recarga.
  */
 export const RUTA_CAMBIANDO_ESCUELA = '/cambiando-escuela';
+
+/**
+ * Tiempo máximo del `POST` del cambio. Sin respuesta en este tiempo, el resultado es incierto (la API pudo hacerlo):
+ * no se vuelve a la pantalla de antes, se recarga la app entera.
+ */
+export const ESPERA_MAXIMA_CAMBIO_ESCUELA_MS = 15_000;
+
+/** {@link ESPERA_MAXIMA_CAMBIO_ESCUELA_MS}; en los tests se acorta. */
+export const ESPERA_CAMBIO_ESCUELA = new InjectionToken<number>('ESPERA_CAMBIO_ESCUELA', {
+  providedIn: 'root',
+  factory: () => ESPERA_MAXIMA_CAMBIO_ESCUELA_MS,
+});
+
+/** Rechazo confirmado: la API respondió con un error (la sesión sigue en la escuela de antes). */
+function esRechazoConfirmado(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && error.status >= 400;
+}
 
 /** Orden del texto de los roles (boceto): de más a menos poder sobre la escuela. */
 const ORDEN_ROLES = ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR', 'ROLE_USER'];
@@ -149,14 +172,18 @@ export function coloresIniciales(colorPrimario: string | null): { fondo: string;
  * - `cambiar(escuela)`, en este orden y sin tocar nada hasta que la salida está confirmada:
  *   1. sale de la pantalla actual a {@link RUTA_CAMBIANDO_ESCUELA} con el router, que pregunta por los cambios sin
  *      guardar; si la persona se queda (o otra navegación la sustituye), no se pide nada y todo sigue igual;
- *   2. `POST /api/auth/organizacion`;
- *   3. si va bien, NO se intenta limpiar caché a caché: se bloquean las peticiones de la pestaña, se vacía el
- *      `sessionStorage` y lo de la escuela del `localStorage` (`limpieza-escuela.ts`), se avisa a las demás pestañas y
- *      se recarga la app entera en {@link RUTA_ENTRADA_SESION}. Así ningún servicio, `shareReplay`, signal ni tema de la
- *      escuela anterior sobrevive. Los componentes de la pantalla anterior ya no existen: ningún `beforeunload` frena
- *      la recarga;
- *   4. si falla, nada cambia: vuelve a la pantalla de antes, guarda la escuela para {@link tomarFallo} («Tras entrar»
- *      se ha vuelto a crear) y el error llega a quien llamó.
+ *   2. anuncia el cambio (`CambioEscuelaPestanasService.anunciarCambio`): bloquea las peticiones de esta pestaña y de
+ *      las demás ANTES del `POST`, para que ninguna escriba con la memoria de una escuela y la cookie de otra;
+ *   3. `POST /api/auth/organizacion` (la única petición que pasa el bloqueo), con {@link ESPERA_MAXIMA_CAMBIO_ESCUELA_MS};
+ *   4. si va bien, NO se intenta limpiar caché a caché: se confirma a las demás pestañas (bloqueo definitivo), se vacía
+ *      el `sessionStorage` y lo de la escuela del `localStorage` (`limpieza-escuela.ts`) y se recarga la app entera en
+ *      {@link RUTA_ENTRADA_SESION}. Así ningún servicio, `shareReplay`, signal ni tema de la escuela anterior sobrevive.
+ *      Los componentes de la pantalla anterior ya no existen: ningún `beforeunload` frena la recarga;
+ *   5. si la API lo rechaza (respuesta 4xx/5xx), nada cambia: se cancela el anuncio (todas las pestañas se
+ *      desbloquean), vuelve a la pantalla de antes, guarda la escuela para {@link tomarFallo} («Tras entrar» se ha
+ *      vuelto a crear) y el error llega a quien llamó;
+ *   6. si no se sabe (red caída, tiempo agotado), NO se vuelve a la escuela de antes: bloqueo definitivo, limpieza y
+ *      recarga completa (la sesión dirá en qué escuela está); la ruta neutra deja salir.
  *   Una segunda llamada mientras hay un cambio en vuelo no hace nada.
  */
 @Injectable({ providedIn: 'root' })
@@ -166,9 +193,12 @@ export class SelectorEscuelaService {
   private readonly router = inject(Router);
   private readonly pestanas = inject(CambioEscuelaPestanasService);
   private readonly irA = inject(IR_A_URL);
+  private readonly esperaMaxima = inject(ESPERA_CAMBIO_ESCUELA);
   private readonly urlBase = `${environment.apiUrl}/auth`;
   private peticion$: Observable<EscuelaUsuario[]> | null = null;
   private cambiando = false;
+  /** Resultado incierto, recargando: la ruta neutra ya no retiene (nadie se queda atrapado si la recarga no llega). */
+  private salidaLibre = false;
   private fallo: number | null = null;
   private readonly escuelaEntrando = signal<EscuelaUsuario | null>(null);
 
@@ -223,6 +253,11 @@ export class SelectorEscuelaService {
     return this.cambiando;
   }
 
+  /** La ruta neutra no deja salir mientras el cambio está en vuelo o hecho; sí tras un error o un resultado incierto. */
+  get retieneLaRuta(): boolean {
+    return this.cambiando && !this.salidaLibre;
+  }
+
   /** El id de la escuela cuyo último cambio falló; leerlo lo olvida. */
   tomarFallo(): number | null {
     const fallo = this.fallo;
@@ -256,30 +291,50 @@ export class SelectorEscuelaService {
   }
 
   private pedirCambio(escuela: EscuelaUsuario, urlAnterior: string): Observable<boolean> {
-    return this.http
-      .post(
-        `${this.urlBase}/organizacion`,
-        { organizacionId: escuela.id },
-        { withCredentials: true, context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true) }
-      )
-      .pipe(
-        map(() => true),
-        tap(() => {
-          // Sigue «ocupado» y con «Entrando en …»: la página se va a recargar y no debe salir nada más entretanto.
-          this.pestanas.bloquear();
-          limpiarAlmacenesDeEscuela(this.documento.defaultView);
-          this.pestanas.avisarOtras();
-          this.irA(RUTA_ENTRADA_SESION);
-        }),
-        catchError((error) => {
-          this.terminarSinCambio();
-          this.fallo = escuela.id;
-          return from(this.router.navigateByUrl(urlAnterior, { replaceUrl: true })).pipe(
-            catchError(() => of(false)),
-            switchMap(() => throwError(() => error))
-          );
-        })
-      );
+    return defer(() => {
+      // Antes del POST: desde aquí ninguna pestaña escribe (salvo esta petición) hasta que el cambio se cierre.
+      const idCambio = this.pestanas.anunciarCambio({ id: escuela.id, nombre: escuela.nombre });
+      return this.http
+        .post(
+          `${this.urlBase}/organizacion`,
+          { organizacionId: escuela.id },
+          {
+            withCredentials: true,
+            context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true).set(PASA_BLOQUEO_CAMBIO_ESCUELA, true),
+          }
+        )
+        .pipe(
+          timeout({ first: this.esperaMaxima }),
+          map(() => true),
+          tap(() => {
+            // Sigue «ocupado» y con «Entrando en …»: la página se va a recargar y no debe salir nada más entretanto.
+            this.pestanas.confirmarCambio(idCambio);
+            this.recargarLimpia();
+          }),
+          catchError((error) => {
+            if (!esRechazoConfirmado(error)) {
+              // Incierto: la API pudo cambiarla. Volver a la pantalla de antes sería seguir con la escuela anterior.
+              this.pestanas.bloquear();
+              this.salidaLibre = true;
+              this.recargarLimpia();
+              return of(true);
+            }
+            this.pestanas.cancelarCambio(idCambio);
+            this.terminarSinCambio();
+            this.fallo = escuela.id;
+            return from(this.router.navigateByUrl(urlAnterior, { replaceUrl: true })).pipe(
+              catchError(() => of(false)),
+              switchMap(() => throwError(() => error))
+            );
+          })
+        );
+    });
+  }
+
+  /** Vacía lo de la escuela del navegador y recarga la app entera en la entrada de la sesión. */
+  private recargarLimpia(): void {
+    limpiarAlmacenesDeEscuela(this.documento.defaultView);
+    this.irA(RUTA_ENTRADA_SESION);
   }
 
   private terminarSinCambio(): void {

@@ -78,7 +78,10 @@ describe('CambiandoEscuelaComponent (ruta neutra)', () => {
       imports: [CambiandoEscuelaComponent],
       providers: [
         provideRouter([]),
-        { provide: SelectorEscuelaService, useValue: { entrando: signal(entrando), ocupado: entrando !== null } },
+        {
+          provide: SelectorEscuelaService,
+          useValue: { entrando: signal(entrando), ocupado: entrando !== null, retieneLaRuta: entrando !== null },
+        },
       ],
     });
     const navegar = spyOn(TestBed.inject(Router), 'navigateByUrl').and.resolveTo(true);

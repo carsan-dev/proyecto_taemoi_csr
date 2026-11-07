@@ -62,9 +62,12 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
     irA = jasmine.createSpy('irA');
     avisos = jasmine.createSpyObj<AvisosService>('AvisosService', ['error']);
     pestanas = jasmine.createSpyObj<CambioEscuelaPestanasService>('CambioEscuelaPestanasService', [
+      'anunciarCambio',
+      'confirmarCambio',
+      'cancelarCambio',
       'bloquear',
-      'avisarOtras',
     ]);
+    pestanas.anunciarCambio.and.returnValue('id-1');
     await TestBed.configureTestingModule({
       imports: [AnfitrionComponent],
       providers: [
@@ -201,8 +204,8 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
     peticion.flush({ token: 'nuevo' });
     fixture.detectChanges();
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
-    expect(pestanas.bloquear).toHaveBeenCalledTimes(1);
-    expect(pestanas.avisarOtras).toHaveBeenCalledTimes(1);
+    expect(pestanas.anunciarCambio).toHaveBeenCalledOnceWith({ id: 2, nombre: 'Club Ficticio Sur' });
+    expect(pestanas.confirmarCambio).toHaveBeenCalledOnceWith('id-1');
   });
 
   it('un doble clic no lanza dos cambios', async () => {
@@ -253,6 +256,66 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
     expect(el().querySelector('dialog')).toBeNull();
     tecla(items()[1], 'Tab');
     expect(menu()).toBeNull();
+  });
+
+  describe('al cruzar los 768 px con el menú o la hoja abiertos (N3)', () => {
+    let alCambiar: (() => void) | null;
+    let quitado: jasmine.Spy;
+    let hojaAhora: boolean;
+
+    beforeEach(() => {
+      alCambiar = null;
+      quitado = jasmine.createSpy('removeEventListener');
+      hojaAhora = false;
+      const original = window.matchMedia.bind(window);
+      spyOn(window, 'matchMedia').and.callFake((consulta: string) =>
+        consulta === CONSULTA_HOJA
+          ? ({
+              get matches() {
+                return hojaAhora;
+              },
+              media: consulta,
+              addEventListener: (_tipo: string, oyente: () => void) => (alCambiar = oyente),
+              removeEventListener: quitado,
+            } as unknown as MediaQueryList)
+          : original(consulta)
+      );
+    });
+
+    it('al estrecharse con el menú de escritorio abierto, lo cierra y devuelve el foco al botón', async () => {
+      await montar();
+      abrir();
+      expect(menu()).not.toBeNull();
+      hojaAhora = true;
+      alCambiar!();
+      fixture.detectChanges();
+      expect(menu()).toBeNull();
+      expect(document.activeElement).toBe(boton());
+    });
+
+    it('al ensancharse con la hoja abierta, la cierra (sale de la pila de capas) y devuelve el foco', async () => {
+      hojaAhora = true;
+      await montar();
+      abrir();
+      expect(el().querySelector('dialog.pn-selector__hoja')).not.toBeNull();
+      hojaAhora = false;
+      alCambiar!();
+      fixture.detectChanges();
+      expect(el().querySelector('dialog.pn-selector__hoja')).toBeNull();
+      expect(TestBed.inject(PilaCapas).arriba()).toBeNull();
+      expect(document.activeElement).toBe(boton());
+    });
+
+    it('cerrado no hace nada, y deja de escuchar al destruirse', async () => {
+      await montar();
+      boton().blur();
+      alCambiar!();
+      fixture.detectChanges();
+      expect(menu()).toBeNull();
+      expect(document.activeElement).not.toBe(boton());
+      fixture.destroy();
+      expect(quitado).toHaveBeenCalledOnceWith('change', alCambiar);
+    });
   });
 
   describe('por debajo de 768 px (hoja inferior modal)', () => {

@@ -32,5 +32,8 @@ export class CambiandoEscuelaComponent implements OnInit {
   }
 }
 
-/** Mientras dura el cambio no se sale de la ruta neutra (Atrás, un 401 que lleva al login…): la app se va a recargar. */
-export const sinSalirDuranteElCambio = (): boolean => !inject(SelectorEscuelaService).ocupado;
+/**
+ * Mientras dura el cambio no se sale de la ruta neutra (Atrás, un 401 que lleva al login…): la app se va a recargar.
+ * Tras un rechazo, o con el resultado incierto (red caída, tiempo agotado), deja salir: nadie se queda atrapado.
+ */
+export const sinSalirDuranteElCambio = (): boolean => !inject(SelectorEscuelaService).retieneLaRuta;
