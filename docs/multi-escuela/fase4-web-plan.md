@@ -216,8 +216,8 @@ también a la lista `include` de Karma en `angular.json` (si el total no sube, n
 
 - Al bundle inicial solo llegan: la entrada del grupo con `canMatch` y `loadChildren`, la ruta perezosa del panel,
   la rama `'plantilla'` de la cáscara y la salida de `SeoService`. Estimado: 300-600 bytes.
-- Con 61 bytes de margen, **la primera pieza de frontend pasa el aviso**. Medir en el worktree tras `npm ci` antes y
-  después (ver §9, n.º 1).
+- (Cifra antigua de 61 bytes de margen; el 07/11 se midieron unos 188 KB y se decidió el login perezoso: ver §9, n.º 1.)
+  Medir en el worktree tras `npm ci` antes y después de cada pieza.
 - Todo lo demás, perezoso: temas, datos, formulario, fuentes, pantalla del panel. Ningún import estático desde
   `app.routes.ts` hacia `web-plantilla/`.
 
@@ -234,32 +234,47 @@ también a la lista `include` de Karma en `angular.json` (si el total no sube, n
 | W7 | Panel «Web · Tema» con vista previa en iframe | medium | no | `boceto-panel-tema-web.html` | entrada oculta para Moiskimdo | Karma: estados publicado/cambios/primera/cargando/error; diálogo; foco; revisión en navegador |
 | W8-W10 | Los otros tres temas (uno por PR, con su preinscripción) | medium | no | sus 7 bocetos | ídem W5 | ídem W5 |
 | W11 | nginx de plantilla (`index-plantilla.html`, `/robots.txt` y `/sitemap.xml` a la API) | careful (despliegue) | no | — | `nginx -T` del bloque moiskimdo.es igual | local con `docker-compose.pruebas.yml` y host de pruebas; `curl` de robots y sitemap |
-| W12 | Editor de bloques y campos nuevos de sede y evento en el panel | medium | no | **necesita boceto** | solo pantallas nuevas | — |
+| W12 | Editor visual de bloques y campos nuevos de sede y evento en el panel. Depende de W4-W7: la vista previa reutiliza los componentes de la plantilla | medium | no | `boceto-panel-contenido-web-visual.html` (aprobado el 07/11) | solo pantallas nuevas | — |
 | W13 | (opcional) Meta en servidor para vistas previas de redes | medium | no | — | solo hosts de plantilla | — |
 
 Dependencias: W1-W3 no esperan al dominio (404 para la 1). W4 en adelante se prueban en local con la configuración
 `plantilla`. Poner la web en producción para Sierra Sur exige las piezas 1, 3 y 6 del plan de dominio + W11.
 Contenido para el alta mientras no exista W12: ver §9, n.º 4.
+W12 depende de W4-W7 (la vista previa del editor reutiliza los componentes de la plantilla).
 
 ## 9. Lo que los bocetos enseñan y no está decidido
 
 | # | Asunto | Necesita decisión · recomendado |
 |---|---|---|
-| 1 | Presupuesto del bundle (61 bytes de margen) | Subir el aviso solo lo que mida W4 (unos 1-2 KB). Pro: Moiskimdo no cambia. Contra: menos margen para lo siguiente. Alternativa: login perezoso (reserva de la 260, −57.830 bytes), que sí cambia la carga del login. |
+| 1 | Presupuesto del bundle (61 bytes de margen, cifra antigua) | **Decidido el 07/11: login perezoso** (reserva de la 260). Medido ese día: `develop` tenía 1.312.275 bytes de inicial (unos 188 KB de margen; los 61 bytes eran una cifra antigua); con el login perezoso, 1.201.594 (PR #237). W4 ya no espera. |
 | 2 | ¿Se guarda el tema elegido sin publicar? | No: vive en la pantalla; «Descartar» vuelve al publicado. Pro: sin estado de borrador en la base. Contra: se pierde al salir. |
 | 3 | ¿Quién publica y edita la web? | Solo el propietario (lo dice el boceto). Pro: coherente con 467. Contra: el gestor tiene que pedírselo. |
-| 4 | Edición de bloques (textos, imágenes, profesores, galería) | Necesita boceto (el del panel solo elige tema). Para el alta de Sierra Sur, contenido por migración de datos revisada en la PR. Pro: no retrasa el alta. Contra: cada cambio de texto es un despliegue hasta W12. |
+| 4 | Edición de bloques (textos, imágenes, profesores, galería) | **Decidido el 07/11: editor visual** del boceto `fase4-web/boceto-panel-contenido-web-visual.html` (sustituye al de formulario por bloques `boceto-panel-contenido-web.html`). Se edita sobre la vista previa: textos e imágenes en el sitio; subir, bajar, ocultar, añadir y quitar bloques de los tipos del tema (no maquetación libre); portada y partes fijas en su sitio. Candado solo en el dato que es de otra pantalla (sedes, grupos, importes, eventos, contacto y nombre legal) y en lo que cambia el equipo de Taemoi (logo y color, nombres de escuela y de disciplina). Todo el texto de la web es editable. Lo guardado se publica al momento (n.º 2). Hasta W12, el contenido del alta de Sierra Sur va por migración de datos revisada en la PR. Claves nuevas de `web_bloque` y campo `oculto`: ver debajo de la tabla. |
 | 5 | Profesores en la web (nombre, grado, foto, sedes) | Bloque editable, no sacado de `asignacion_profesor`: nada personal sale solo. Pro: consentimiento explícito. Contra: duplica nombres. |
 | 6 | Qué tarifas salen en la web | Todas las activas, más licencia y examen («desde» el menor precio de examen). Pro: sin columna nueva. Contra: si una tarifa es interna, sale. Alternativa: columna `visible_web`. |
 | 7 | Firma «con mi nombre» (casilla) | Aceptar: el PDF dice «Firmado por nombre y casilla el <fecha>» en lugar de la imagen; `firmaBase64` opcional solo con `firmaPorNombre=true`. Pro: lo pide el boceto aprobado. Contra: validez a revisar por el propietario (dato legal). |
 | 8 | «Web · Tema» para Moiskimdo | Oculta (tiene web propia, nivel b). Pro: no puede despublicar su web por error. Contra: ninguna mientras no se separe. |
 | 9 | Vistas previas en WhatsApp y redes | Primero cabeza neutra con título y descripción de la escuela puestos por nginx (`sub_filter` en su bloque); W13 (meta por página en servidor) si hace falta. Pro: sin servidor de HTML al principio. Contra: el enlace de un evento se comparte sin su foto. |
-| 10 | 404 y web aún no publicada | Necesita boceto. Recomendado: 404 con la cabecera y el pie del tema; sin publicar, el host enseña solo el login. |
-| 11 | Orden de los bloques («orden» de la decisión 12) | Fijo por tema en esta versión; los bloques vacíos (sin eventos, sin galería, sin profesores) no se pintan. Pro: los bocetos ya fijan un orden por tema. Contra: no cumple aún «orden» editable. |
+| 10 | 404 y web aún no publicada | **Aprobado el 07/11** el boceto `fase4-web/boceto-login-404-sin-publicar.html`: 404 con la cabecera y el pie del tema; sin publicar, el host enseña solo el login. El login es común a todas las escuelas; solo cambia la marca. |
+| 11 | Orden de los bloques («orden» de la decisión 12) | **Sustituida el 07/11** por el editor visual (n.º 4): el orden deja de ser fijo por tema; lo cambia la escuela con Subir y Bajar y se guarda en la columna `orden`. La portada y las partes fijas (cabecera, pie) siguen en su sitio; los bloques vacíos no se pintan. |
 | 12 | ¿Hacen falta los cuatro temas para salir? | No: sale con el que elija Sierra Sur; la pantalla «Web · Tema» enseña solo los temas construidos hasta tener los cuatro. Pro: alta antes. Contra: menos opciones al principio. |
 | 13 | Orden de los eventos (decisión 278, pendiente) | Próximos del más cercano al más lejano; anteriores del más reciente al más antiguo (lo que pintan los bocetos). |
 | 14 | Fecha «Última actualización» de Legales | La de la última publicación (`web_escuela.publicada_en`). Pro: sin columna. Contra: no cambia si solo cambian los datos del titular. |
 | 15 | Fuentes de cada tema | Google Fonts por `<link>` al cargar el tema. Pro: ya permitido por la CSP. Contra: petición a Google sin consentimiento; alternativa, servirlas desde `assets`. |
+
+Claves nuevas de `web_bloque` que pide el editor visual (las fija W12; hoy llevan el texto del tema por defecto):
+`menu.<horarios|sedes|tarifas|eventos|contacto>`, `cabecera.boton`, `portada.boton_horarios`,
+`portada.boton_preinscripcion`; `horarios.titulo`, `horarios.apoyo`, `horarios.ver_sede`, `horarios.como_llegar`,
+`horarios.lleno`, `horarios.espera`, `horarios.boton`, `horarios.boton_espera`; `sedes.proxima_rotulo`, `sedes.ver_sede`;
+`disciplinas.titulo`, `disciplinas.apoyo`, `disciplina.<codigo>.descripcion`, `disciplina.<codigo>.fila<n>.rotulo`,
+`disciplina.<codigo>.fila<n>.texto`, `disciplina.<codigo>.foto`; `eventos.titulo`, `eventos.apoyo`, `eventos.enlace_todos`,
+`eventos.enlace_ver`; `tarifas.titulo`, `tarifas.punto<n>`, `tarifas.boton_preinscripcion`, `tarifas.boton_ver`;
+`contacto.titulo`, `contacto.apoyo`, `contacto.correo_rotulo`, `contacto.telefono_rotulo`, `contacto.sedes_titulo`;
+`pie.aviso_legal`, `pie.privacidad`, `pie.cookies`, `pie.creditos`.
+Además: un campo `oculto` por bloque (lo fija W12), y claves para el título y la frase de cada sección y para los
+bloques «Texto con foto» (repetibles).
+
+Pendiente del propietario: rediseño del login al acabar la fase 4 (el login común de n.º 10 queda como está hasta entonces).
 
 ## 10. Decisiones tomadas en W1
 
