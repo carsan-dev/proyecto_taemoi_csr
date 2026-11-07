@@ -609,6 +609,15 @@ export const routes: Routes = [
     loadComponent: () => import('./panel-nuevo/no-encontrada/no-encontrada.component').then(m => m.NoEncontradaPanelComponent),
   },
   {
+    // 404 de la web por plantilla (fase4-web-plan.md §9 n.º 10): solo con la meta de index-plantilla.html; el panel,
+    // el login y lo demás ya casaron antes. Perezoso y sin import estático hacia web-plantilla/ (§7).
+    path: '**',
+    canMatch: [esWebPlantilla],
+    data: { webPlantilla: true },
+    loadComponent: () =>
+      import('./web-plantilla/temas/linea-comarcal/no-encontrada/no-encontrada.component').then(m => m.NoEncontradaLineaComarcalComponent),
+  },
+  {
     path: '**',
     loadComponent: () => import('./componentes/vistas/no-encontrado/no-encontrado').then(m => m.NoEncontrado)
   }

@@ -1,0 +1,190 @@
+/*
+ * Página de sede del tema «La línea comarcal» (boceto fase4-web/boceto-linea-comarcal-sede.html), con sus reglas tal
+ * cual bajo .lc .p-sede: la portada (sin encapsulación) usa los mismos nombres de clase con otros valores y sus estilos
+ * siguen cargados al navegar. Sin «Últimas N plazas» (§4.3) ni profesores por sede (la API no los da).
+ */
+
+/* ---------- Secciones ---------- */
+.lc .p-sede .seccion { position: relative; padding: calc(var(--seccion) * 1.1) 0 var(--seccion); }
+.lc .p-sede .seccion--anden { background: var(--anden); }
+.lc .p-sede .cabeza-seccion { margin-bottom: clamp(36px, 4.5vw, 64px); }
+.lc .p-sede .cabeza-seccion .rotulo { margin-bottom: 18px; }
+/* ---------- Página de sede: cartel del pueblo ---------- */
+.lc .p-sede .sede-texto { padding: 28px 0 40px; }
+.lc .p-sede .acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.lc .p-sede .sede-titular {
+  margin: 24px 0 20px; font-family: var(--display); font-weight: 900; text-transform: uppercase;
+  letter-spacing: -0.01em; line-height: 0.86; text-wrap: balance; font-size: clamp(64px, 22vw, 88px);
+}
+.lc .p-sede .sede-titular--largo { font-size: clamp(52px, 18vw, 76px); }
+.lc .p-sede .sede-lugar { font-size: 1.125rem; line-height: 1.45; max-width: 40ch; margin-bottom: 28px; }
+.lc .p-sede .sede-lugar strong { display: block; font-weight: 600; }
+.lc .p-sede .sede-lugar span { color: var(--tinta-2); }
+.lc .p-sede .sede-foto { aspect-ratio: 4 / 3; margin-inline: calc(-1 * var(--m)); }
+@media (min-width: 900px) {
+  .lc .p-sede .sede-rejilla { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); }
+  .lc .p-sede .sede-texto { grid-column: 1 / 7; align-self: center; padding: 48px 0 64px; }
+  .lc .p-sede .sede-titular { font-size: clamp(104px, 12.5vw, 160px); margin: 48px 0 28px; }
+  .lc .p-sede .sede-titular--largo { font-size: clamp(80px, 9vw, 128px); }
+  .lc .p-sede .sede-lugar { font-size: 1.1875rem; }
+  .lc .p-sede .sede-foto {
+    grid-column: 7 / 13; margin-left: 0; aspect-ratio: auto; min-height: 480px;
+    height: min(calc((50vw - var(--hueco) / 2) * 1.25), calc(100svh - var(--cabecera)));
+    margin-right: calc((100vw - min(100vw, 1360px)) / -2 - var(--m));
+  }
+}
+
+/* El tramo: la parada actual entre sus vecinas, sobre el trazo de la línea */
+.lc .p-sede .tramo { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); --y: 18px; --sangra-izq: calc(-1 * var(--m)); --sangra-der: calc(-1 * var(--m)); }
+@media (min-width: 900px) { .lc .p-sede .tramo { --sangra-der: 0px; } }
+.lc .p-sede .tramo--una { grid-template-columns: 10rem; }
+.lc .p-sede .tramo-linea { position: absolute; top: calc(var(--y) - 6px); height: 12px; background: var(--escuela-trazo); border-radius: 6px; }
+.lc .p-sede .tramo-term { position: absolute; top: calc(var(--y) - 18px); width: 12px; height: 36px; margin-left: -6px; background: var(--escuela-trazo); border-radius: 6px; }
+.lc .p-sede .tramo-parada {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-height: 44px; padding: calc(var(--y) + 24px) 4px 4px; text-align: center; color: var(--tinta); text-decoration: none;
+}
+.lc .p-sede .tramo-circulo {
+  position: absolute; left: 50%; top: calc(var(--y) - 12px); width: 24px; height: 24px; margin-left: -12px;
+  border-radius: 50%; background: var(--blanco); border: 4px solid var(--escuela-trazo);
+  transition: transform 180ms ease-out, background-color 180ms ease-out;
+}
+.lc .p-sede .tramo-parada--actual .tramo-circulo { top: calc(var(--y) - 18px); width: 36px; height: 36px; margin-left: -18px; background: var(--escuela-trazo); }
+.lc .p-sede .tramo-parada--actual .tramo-circulo::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--blanco); }
+.lc .p-sede .tramo-sentido { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8125rem; line-height: 1.3; color: var(--tinta-2); }
+.lc .p-sede .tramo-nombre { font: 800 1.25rem/0.95 var(--display); text-transform: uppercase; text-wrap: balance; }
+.lc .p-sede a.tramo-parada:hover .tramo-nombre, .lc .p-sede a.tramo-parada:focus-visible .tramo-nombre { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.12em; text-decoration-color: var(--escuela-trazo); }
+.lc .p-sede a.tramo-parada:hover .tramo-circulo, .lc .p-sede a.tramo-parada:focus-visible .tramo-circulo { transform: scale(1.25); background: color-mix(in srgb, var(--escuela-trazo) 30%, var(--blanco)); }
+.lc .p-sede .tramo-parada--actual .tramo-nombre { font-size: 1rem; font-family: var(--texto); font-weight: 600; text-transform: none; }
+@media (min-width: 900px) { .lc .p-sede .tramo-nombre { font-size: 1.5rem; } }
+
+/* ---------- Horarios: el tablero de salidas completo ---------- */
+.lc .p-sede .tablero { padding: 8px 0 32px; }
+.lc .p-sede .salidas { counter-reset: salida; }
+.lc .p-sede .salida {
+  display: grid; gap: 10px; padding: 20px 0 24px; border-bottom: 1px solid var(--filete);
+  grid-template-areas: "hora" "grupo" "detalle" "accion";
+}
+.lc .p-sede .salida-hora { grid-area: hora; font-family: var(--texto); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.lc .p-sede .hora-ini { font-size: 2rem; letter-spacing: -0.01em; }
+.lc .p-sede .hora-fin { font-size: 1.125rem; color: var(--tinta-2); margin-left: 2px; }
+.lc .p-sede .salida-grupo { grid-area: grupo; }
+.lc .p-sede .grupo-nombre { font: 800 1.375rem/1 var(--display); text-transform: uppercase; }
+.lc .p-sede .grupo-edades { color: var(--tinta-2); margin-top: 4px; }
+.lc .p-sede .salida-detalle { grid-area: detalle; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.lc .p-sede .dias { display: flex; gap: 3px; }
+.lc .p-sede .dia {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  font: 600 0.875rem/1 var(--texto); color: var(--apagado); border: 2px solid transparent;
+}
+.lc .p-sede .dia--si { color: var(--tinta); font-weight: 700; border-color: var(--escuela-trazo); }
+.lc .p-sede .plazas { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.lc .p-sede .plazas svg { flex: none; }
+.lc .p-sede .plazas--lleno, .lc .p-sede .plazas--espera { color: var(--tinta-2); }
+.lc .p-sede .salida-accion { grid-area: accion; }
+.lc .p-sede .salida-accion .boton { width: 100%; }
+@media (min-width: 900px) {
+  .lc .p-sede .salida { grid-template-columns: 11.5rem minmax(0, 1fr) auto; grid-template-areas: "hora grupo accion" "hora detalle accion"; align-items: center; column-gap: 24px; padding: 22px 0; }
+  .lc .p-sede .salida-hora { align-self: start; padding-top: 2px; }
+  .lc .p-sede .hora-ini { font-size: 2.5rem; }
+  .lc .p-sede .hora-fin { display: block; margin: 6px 0 0; font-size: 1.125rem; }
+  .lc .p-sede .salida-accion .boton { width: auto; }
+}
+@media (min-width: 1180px) {
+  .lc .p-sede .salida { grid-template-columns: 13.5rem minmax(0, 1fr) 27.5rem 19.5rem; grid-template-areas: "hora grupo detalle accion"; }
+  .lc .p-sede .salida-hora { align-self: center; padding-top: 0; }
+  .lc .p-sede .hora-fin { display: inline; margin-left: 2px; }
+  .lc .p-sede .salida-detalle { flex-wrap: nowrap; }
+  .lc .p-sede .plazas { min-width: 11rem; }
+  .lc .p-sede .salida-accion { justify-self: end; }
+}
+.lc .p-sede .hoy {
+  display: inline-block; padding: 1px 6px; margin-right: 6px; vertical-align: 2px;
+  background: var(--aviso); color: var(--tinta);
+  font: 700 0.8125rem/1.3 var(--texto); letter-spacing: 0.08em;
+}
+.lc .p-sede .dia--hoy { background: var(--aviso); border-color: var(--tinta); }
+.lc .p-sede .salida-hora .hoy { display: table; margin: 0 0 8px; }
+@media (min-width: 1180px) {
+  .lc .p-sede .salida { grid-template-columns: 11.5rem minmax(0, 1fr) 23rem 19rem; }
+  .lc .p-sede .salida-accion { justify-self: end; }
+  .lc .p-sede .salida-hora { align-self: start; }
+}
+.lc .p-sede .proxima {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px;
+  padding: 0 0 18px; border-bottom: 1px solid var(--tinta);
+}
+.lc .p-sede .proxima-rotulo { font-weight: 600; color: var(--tinta-2); }
+.lc .p-sede .proxima-cuando { font: 700 1.5rem/1.2 var(--texto); font-variant-numeric: tabular-nums; }
+.lc .p-sede .proxima-grupo { color: var(--tinta-2); }
+.lc .p-sede .salidas-cabeza { display: none; }
+@media (min-width: 1180px) {
+  .lc .p-sede .salidas-cabeza {
+    display: grid; grid-template-columns: 11.5rem minmax(0, 1fr) 23rem 19rem; column-gap: 24px;
+    padding: 14px 0 12px; border-bottom: 1px solid var(--filete);
+    font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2);
+  }
+}
+.lc .p-sede .leyenda { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 24px; font-size: 0.9375rem; color: var(--tinta-2); }
+.lc .p-sede .leyenda li { display: inline-flex; align-items: center; gap: 8px; }
+.lc .p-sede .leyenda svg { flex: none; color: var(--tinta-2); }
+
+/* ---------- Cómo llegar ---------- */
+.lc .p-sede .llegar { display: grid; gap: 48px; }
+.lc .p-sede .llegar-foto { aspect-ratio: 3 / 4; margin-inline: calc(-1 * var(--m)); }
+.lc .p-sede .ficha { border-top: 1px solid var(--tinta); margin-bottom: 32px; }
+.lc .p-sede .ficha-fila { display: grid; gap: 2px; padding: 14px 0 16px; border-bottom: 1px solid var(--filete); }
+.lc .p-sede .ficha dt { font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); }
+.lc .p-sede .ficha dd { font-weight: 600; }
+.lc .p-sede .ficha dd a { display: inline-flex; align-items: center; min-height: 44px; font: 600 1.375rem/1.2 var(--texto); color: var(--tinta); }
+.lc .p-sede .ficha-nota { display: block; font-weight: 400; color: var(--tinta-2); font-size: 0.9375rem; }
+.lc .p-sede .llegar-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+@media (min-width: 900px) {
+  .lc .p-sede .llegar { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: start; }
+  .lc .p-sede .llegar-texto { grid-column: 1 / 7; }
+  .lc .p-sede .llegar-foto { grid-column: 8 / 13; margin: 0; }
+  .lc .p-sede .ficha-fila { grid-template-columns: 10rem minmax(0, 1fr); gap: 16px; align-items: baseline; }
+}
+
+/* ---------- Tarifa de la sede: sección a sangre del color de la escuela ---------- */
+.lc .p-sede .tarifas { position: relative; background: var(--tarifa-fondo); color: var(--tarifa-tinta); --foco: var(--tarifa-tinta); padding: calc(var(--seccion) * 1.1) 0 var(--seccion); }
+.lc .p-sede .tarifas .rotulo { color: var(--tarifa-tinta); margin-bottom: 12px; }
+.lc .p-sede .tarifas-rejilla { display: grid; gap: 32px; }
+.lc .p-sede .tarifa-cifra { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 20px; }
+.lc .p-sede .tarifa-importe { font: 900 clamp(132px, 22vw, 220px)/0.88 var(--display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.lc .p-sede .tarifa-mes { font: 800 clamp(1.75rem, 2.6vw, 2.5rem)/1 var(--display); text-transform: uppercase; }
+.lc .p-sede .tarifa-igual { font: 800 clamp(1.75rem, 2.6vw, 2.5rem)/0.95 var(--display); text-transform: uppercase; }
+.lc .p-sede .tarifa-incluye { margin: 20px 0 32px; border-top: 1px solid currentColor; }
+.lc .p-sede .tarifa-incluye li { padding: 12px 0; border-bottom: 1px solid currentColor; }
+.lc .p-sede .boton--blanco { background: var(--blanco); border-color: var(--blanco); color: var(--tarifa-boton-tinta); }
+.lc .p-sede .boton--blanco:hover { background: var(--anden); border-color: var(--anden); color: var(--tarifa-boton-tinta); }
+@media (min-width: 900px) {
+  .lc .p-sede .tarifas-rejilla { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: end; }
+  .lc .p-sede .tarifas .rotulo { grid-column: 1 / -1; }
+  .lc .p-sede .tarifa-cifra { grid-column: 1 / 8; }
+  .lc .p-sede .tarifa-lado { grid-column: 8 / 13; padding-bottom: 12px; }
+}
+
+/* ---------- Todas las sedes: la línea entera en pequeño ---------- */
+.lc .p-sede .ruta { position: relative; padding: 18px 0; max-width: 40rem; }
+.lc .p-sede .ruta::before, .lc .p-sede .ruta::after { content: ""; position: absolute; left: 0; width: 24px; height: 6px; background: var(--escuela-trazo); }
+.lc .p-sede .ruta::before { top: 0; }
+.lc .p-sede .ruta::after { bottom: 0; }
+.lc .p-sede .ruta-sede { position: relative; padding: 0 0 20px 40px; }
+.lc .p-sede .ruta-sede::before { content: ""; position: absolute; left: 9px; top: 0; bottom: 0; width: 6px; background: var(--escuela-trazo); }
+.lc .p-sede .ruta-sede:first-child::before { top: -18px; }
+.lc .p-sede .ruta-sede:last-child { padding-bottom: 0; }
+.lc .p-sede .ruta-sede:last-child::before { bottom: -18px; }
+.lc .p-sede .ruta-sede::after {
+  content: ""; position: absolute; left: 2px; top: 2px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--blanco); border: 4px solid var(--escuela-trazo);
+}
+.lc .p-sede .ruta-sede--actual::after { background: var(--escuela-trazo); box-shadow: inset 0 0 0 4px var(--escuela-trazo), inset 0 0 0 10px var(--blanco); }
+.lc .p-sede .ruta-nombre { display: inline-block; font: 800 1.5rem/1 var(--display); text-transform: uppercase; }
+.lc .p-sede a.ruta-nombre { color: var(--tinta); text-decoration: underline; text-decoration-color: var(--escuela-trazo); text-decoration-thickness: 2px; text-underline-offset: 0.15em; }
+.lc .p-sede a.ruta-nombre:hover { text-decoration-thickness: 3px; }
+.lc .p-sede .ruta-aqui { margin-left: 10px; font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); }
+.lc .p-sede .ruta-dir { display: block; margin-top: 4px; color: var(--tinta-2); font-size: 0.9375rem; }
+@media (prefers-reduced-motion: reduce) {
+  .lc .p-sede .tramo-circulo { transition: none; }
+}

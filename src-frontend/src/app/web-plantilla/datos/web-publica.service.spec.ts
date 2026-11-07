@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
-import { LEGAL_DE_PRUEBA as LEGAL, sitioDePrueba } from './datos-de-prueba';
+import { LEGAL_DE_PRUEBA as LEGAL, eventoDetalleDePrueba, eventoListaDePrueba, sitioDePrueba } from './datos-de-prueba';
 import { WebPublicaService } from './web-publica.service';
 
 describe('WebPublicaService', () => {
@@ -105,5 +105,53 @@ describe('WebPublicaService', () => {
     peticion.flush(null, { status: 404, statusText: 'Not Found' });
     expect(previa()).toEqual({ estado: 'no-publicada' });
     expect(legal()).toEqual({ estado: 'listo', datos: LEGAL });
+  });
+  it('eventos: una petición, publicada y vista previa (sin tema) por separado; 404 es no-publicada', () => {
+    const datos = { proximos: [eventoListaDePrueba()], anteriores: [] };
+    const eventos = servicio.eventos(null);
+    servicio.eventos(null);
+    http.expectOne((r) => r.url === `${url}/eventos` && !r.params.has('vistaPrevia')).flush(datos);
+    expect(eventos()).toEqual({ estado: 'listo', datos });
+
+    const previa = servicio.eventos('linea-comarcal');
+    const peticion = http.expectOne((r) => r.url === `${url}/eventos`);
+    expect(peticion.request.params.get('vistaPrevia')).toBe('true');
+    expect(peticion.request.params.has('tema')).toBeFalse();
+    expect(peticion.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    peticion.flush(null, { status: 404, statusText: 'Not Found' });
+    expect(previa()).toEqual({ estado: 'no-publicada' });
+    expect(eventos()).toEqual({ estado: 'listo', datos });
+  });
+
+  it('evento: una petición por id y por vista previa; la caché no mezcla ids', () => {
+    const siete = servicio.evento(7, null);
+    servicio.evento(7, null);
+    http.expectOne((r) => r.url === `${url}/eventos/7` && !r.params.has('vistaPrevia')).flush(eventoDetalleDePrueba());
+    expect(siete()).toEqual({ estado: 'listo', datos: eventoDetalleDePrueba() });
+
+    servicio.evento(8, null);
+    http.expectOne(`${url}/eventos/8`).flush(eventoDetalleDePrueba({ id: 8 }));
+    servicio.evento(7, '');
+    const previa = http.expectOne((r) => r.url === `${url}/eventos/7` && r.params.get('vistaPrevia') === 'true');
+    expect(previa.request.params.has('tema')).toBeFalse();
+    previa.flush(eventoDetalleDePrueba());
+    servicio.evento(7, null);
+    http.expectNone(`${url}/eventos/7`);
+  });
+
+  it('evento: 404 es no-encontrado (oculto, de otra escuela o la web sin publicar lo dice sitio) y no se vuelve a pedir', () => {
+    const estado = servicio.evento(99, null);
+    http.expectOne(`${url}/eventos/99`).flush(null, { status: 404, statusText: 'Not Found' });
+    expect(estado()).toEqual({ estado: 'no-encontrado' });
+    servicio.evento(99, null);
+    http.expectNone(`${url}/eventos/99`);
+  });
+
+  it('evento: error, y se vuelve a pedir', () => {
+    const estado = servicio.evento(5, null);
+    http.expectOne(`${url}/eventos/5`).flush(null, { status: 500, statusText: 'Server Error' });
+    expect(estado()).toEqual({ estado: 'error' });
+    servicio.evento(5, null);
+    http.expectOne(`${url}/eventos/5`).flush(eventoDetalleDePrueba({ id: 5 }));
   });
 });

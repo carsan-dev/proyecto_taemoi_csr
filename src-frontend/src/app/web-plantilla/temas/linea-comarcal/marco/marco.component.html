@@ -1,0 +1,66 @@
+@let v = vista();
+<div class="lc" [style]="v.colores">
+  <a class="salto" href="#principal" (click)="saltar($event)">{{ fijos.saltar }}</a>
+
+  <header class="cabecera">
+    <div class="envoltura">
+      <a class="marca" routerLink="/">
+        @if (v.logoUrl) {
+          <span class="logo logo--imagen"><img [src]="v.logoUrl" width="40" height="40" [alt]="'Logo de ' + v.nombre"></span>
+        } @else {
+          <span class="logo" aria-hidden="true">{{ v.iniciales }}</span>
+        }
+        <span class="marca-nombre">
+          @for (parte of v.nombrePartes; track $index) {
+            <span>{{ parte }}</span>
+          }
+        </span>
+      </a>
+      @if (v.menu.length) {
+        <nav class="nav" id="nav-principal" aria-label="Principal" [class.abierta]="menuAbierto()" (click)="alPulsarEnlaceDelMenu($event)">
+          <ul class="nav-lista">
+            @for (enlace of v.menu; track enlace.ruta + '#' + enlace.fragmento) {
+              <li><a [routerLink]="enlace.ruta" [fragment]="enlace.fragmento ?? undefined" [attr.aria-current]="enlace.actual ? 'page' : null">{{ enlace.texto }}</a></li>
+            }
+          </ul>
+        </nav>
+      }
+      @if (v.cta) {
+        <a class="boton cabecera-cta" routerLink="/preinscripcion">{{ v.cta }}</a>
+      }
+      @if (v.menu.length) {
+        <button #botonMenu class="menu-boton" type="button" [attr.aria-expanded]="menuAbierto()" aria-controls="nav-principal" (click)="alternarMenu()">
+          <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+          <span class="menu-texto">{{ menuAbierto() ? fijos.cerrar : fijos.menu }}</span>
+        </button>
+      }
+    </div>
+  </header>
+
+  <main #principal id="principal" tabindex="-1">
+    <ng-content />
+  </main>
+
+  <footer class="pie">
+    <div class="envoltura">
+      <p class="pie-marca" aria-hidden="true">
+        @for (parte of v.nombrePartes; track $index) {
+          <span>{{ parte }}</span>
+        }
+      </p>
+      <div class="pie-fila">
+        <p>© {{ v.anio }} {{ v.nombre }}</p>
+        @if (v.legales.length) {
+          <ul class="pie-legal" aria-label="Legal">
+            @for (enlace of v.legales; track enlace.fragmento) {
+              <li><a [routerLink]="enlace.ruta" [fragment]="enlace.fragmento ?? undefined">{{ enlace.texto }}</a></li>
+            }
+          </ul>
+        }
+        @if (v.creditos) {
+          <div><p class="pie-creditos">{{ v.creditos }}</p></div>
+        }
+      </div>
+    </div>
+  </footer>
+</div>

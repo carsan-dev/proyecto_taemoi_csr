@@ -82,9 +82,10 @@ describe('Capa «Has cambiado de escuela» (demás pestañas, boceto aprobado)',
         expect(document.activeElement).not.toBe(fuera);
 
         // Si el navegador la cierra igual, vuelve a abrirse.
-        const cerrada = new Promise<void>((r) => dialogo.addEventListener('close', () => r(), { once: true }));
+        // Chrome lanza el `close` real en el siguiente fotograma (en la CI headless puede no llegar a tiempo): se lanza
+        // aquí para probar el manejador; si luego llega el real, `abrir` no hace nada porque ya está abierta.
         dialogo.close();
-        await Promise.race([cerrada, new Promise((r) => setTimeout(r, 1000))]);
+        dialogo.dispatchEvent(new Event('close'));
         expect(dialogo.open).toBeTrue();
       });
 

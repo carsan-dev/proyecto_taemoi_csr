@@ -225,6 +225,54 @@ describe('SeoEscuelaService', () => {
     expect(jsonLd()).toEqual([]);
   });
 
+  it('evento con sus datos (W5): Event con la descripción y el lugar, aunque no esté entre los próximos', () => {
+    aplicar({
+      pagina: 'evento',
+      ruta: '/eventos/40',
+      eventoId: 40,
+      evento: {
+        ...evento({ id: 40, titulo: 'Exhibición de fin de curso', fecha: '2026-06-20', hora: null, conImagen: false }),
+        lugar: 'Pabellón municipal',
+        descripcion: '  Cerramos el curso con una exhibición.  ',
+      },
+    });
+
+    expect(document.title).toBe('Exhibición de fin de curso · Taekwondo Sierra Sur');
+    expect(meta('property', 'og:image')).toBe(logo);
+    const datos = jsonLd();
+    expect(datos.length).toBe(1);
+    expect(datos[0]['description']).toBe('Cerramos el curso con una exhibición.');
+    expect(datos[0]['startDate']).toBe('2026-06-20');
+    expect(datos[0]['url']).toBe(`${ORIGEN}/eventos/40`);
+    expect(datos[0]['location']).toEqual({
+      '@type': 'Place',
+      name: 'Pabellón municipal',
+      address: { '@type': 'PostalAddress', streetAddress: 'Calle Mayor 1', addressLocality: 'Estepa', postalCode: '41560' },
+    });
+  });
+
+  it('evento sin descripción: el Event no lleva description', () => {
+    aplicar({ pagina: 'evento', ruta: '/eventos/7', eventoId: 7, evento: { ...evento(), descripcion: null } });
+    expect(jsonLd()[0]['description']).toBeUndefined();
+  });
+
+  it('eventos con la lista de la página: un Event por próximo, con su descripción', () => {
+    aplicar({
+      pagina: 'eventos',
+      ruta: '/eventos',
+      eventos: [
+        { ...evento({ id: 1 }), descripcion: 'Uno' },
+        { ...evento({ id: 2 }), descripcion: null },
+        { ...evento({ id: 3 }), descripcion: 'Tres' },
+      ],
+    });
+    expect(jsonLd().map((d) => [d['url'], d['description']])).toEqual([
+      [`${ORIGEN}/eventos/1`, 'Uno'],
+      [`${ORIGEN}/eventos/2`, undefined],
+      [`${ORIGEN}/eventos/3`, 'Tres'],
+    ]);
+  });
+
   it('vista previa: robots noindex en todas las páginas', () => {
     aplicar({ pagina: 'portada', vistaPrevia: true });
     expect(meta('name', 'robots')).toBe('noindex, nofollow');

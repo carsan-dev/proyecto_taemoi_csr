@@ -1,0 +1,114 @@
+@let s = pagina.sitio();
+@let v = vista();
+@if (pagina.estado() === 'no-publicada') {
+  @defer (on immediate) {
+    <app-web-sin-publicar />
+  }
+} @else if (s && v) {
+  <app-lc-marco [sitio]="s" pagina="eventos">
+    <div class="p-eventos">
+      <div class="envoltura pagina-cabeza">
+        <h1 class="pagina-titular">{{ textos.tituloEventos }}</h1>
+        <p class="pagina-entrada">{{ textos.entradaEventos }}</p>
+      </div>
+
+      <section class="proximos" id="proximos" aria-labelledby="proximos-titulo">
+        <div class="envoltura">
+          <div class="rotulo bloque-cabeza rotulo-bloque">
+            <h2 id="proximos-titulo">{{ textos.proximos }}</h2>
+            <p class="bloque-cuenta">{{ v.proximos?.cuenta }}</p>
+          </div>
+          @if (v.proximos; as p) {
+            @let d = p.destacado;
+            <article class="destacado" [class.destacado--sin-foto]="!d.imagenUrl" [attr.aria-labelledby]="'ev-' + d.id">
+              @if (d.imagenUrl) {
+                <figure class="foto destacado-foto"><img [src]="d.imagenUrl" width="1600" height="1200" fetchpriority="high" alt=""></figure>
+              }
+              <div class="destacado-texto">
+                <ng-container *ngTemplateOutlet="fecha; context: { $implicit: d.fecha }" />
+                <div class="destacado-cuerpo">
+                  <h3 class="destacado-titulo" [id]="'ev-' + d.id">{{ d.titulo }}</h3>
+                  <ng-container *ngTemplateOutlet="donde; context: { $implicit: d }" />
+                  @if (d.descripcion) {
+                    <p class="destacado-desc">{{ d.descripcion }}</p>
+                  }
+                  <a class="boton boton--secundario" [routerLink]="['/eventos', d.id]">{{ textos.verEvento }}<span class="oculto">: {{ d.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
+                </div>
+              </div>
+            </article>
+            @if (p.resto.length) {
+              <ol class="ev-filas" [attr.aria-label]="textos.masProximos">
+                @for (e of p.resto; track e.id) {
+                  <li class="ev-fila">
+                    <ng-container *ngTemplateOutlet="fecha; context: { $implicit: e.fecha }" />
+                    @if (e.imagenUrl) {
+                      <figure class="foto ev-miniatura"><img [src]="e.imagenUrl" width="1600" height="1200" loading="lazy" alt=""></figure>
+                    }
+                    <div class="ev-texto">
+                      <h3 class="ev-titulo">{{ e.titulo }}</h3>
+                      <ng-container *ngTemplateOutlet="donde; context: { $implicit: e }" />
+                      @if (e.descripcion) {
+                        <p class="ev-desc">{{ e.descripcion }}</p>
+                      }
+                    </div>
+                    <a class="enlace-flecha" [routerLink]="['/eventos', e.id]">{{ textos.verEvento }}<span class="oculto">: {{ e.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
+                  </li>
+                }
+              </ol>
+            }
+          } @else {
+            <div class="ev-vacio">
+              <h3>{{ textos.sinProximosTitular }}</h3>
+              <p>{{ textos.sinProximosTexto }}</p>
+              @if (v.anios.length) {
+                <a class="enlace-flecha" routerLink="/eventos" fragment="anteriores">{{ textos.verAnteriores }}<ng-container *ngTemplateOutlet="flecha" /></a>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (!v.vacia) {
+        <section class="seccion seccion--anden" id="anteriores" aria-labelledby="anteriores-titulo">
+          <div class="envoltura">
+            <div class="rotulo bloque-cabeza rotulo-bloque"><h2 id="anteriores-titulo">{{ textos.anteriores }}</h2></div>
+            @for (a of v.anios; track a.anio) {
+              <section class="anio" [attr.aria-labelledby]="'anio-' + a.anio">
+                <h3 class="anio-titulo" [id]="'anio-' + a.anio">{{ a.anio }}</h3>
+                <ul class="ev-rejilla">
+                  @for (e of a.eventos; track e.id) {
+                    <li class="ev-mini">
+                      <a [routerLink]="['/eventos', e.id]">
+                        @if (e.imagenUrl) {
+                          <figure class="foto ev-mini-foto"><img [src]="e.imagenUrl" width="1600" height="1200" loading="lazy" alt=""></figure>
+                        }
+                        <time class="ev-mini-fecha" [attr.datetime]="e.fecha.iso">{{ e.fecha.corta }}</time>
+                        <h4 class="ev-mini-titulo">{{ e.titulo }}</h4>
+                      </a>
+                    </li>
+                  }
+                </ul>
+              </section>
+            } @empty {
+              <p class="ev-vacio">{{ textos.sinAnteriores }}</p>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  </app-lc-marco>
+}
+
+<ng-template #fecha let-f>
+  <time class="fecha" [attr.datetime]="f.iso"><span class="fecha-dia" aria-hidden="true">{{ f.dia }}</span><span class="fecha-mes" aria-hidden="true">{{ f.mes }}</span><span class="fecha-anio" aria-hidden="true">{{ f.anio }}</span><span class="oculto">{{ f.larga }}</span></time>
+</ng-template>
+
+<ng-template #donde let-e>
+  @if (e.lugar || e.hora) {
+    <p class="ev-donde"><span>{{ e.lugar }}@if (e.lugar && e.hora) {<ng-container> · </ng-container>}@if (e.hora) {<span class="hora">{{ e.hora }}</span>}</span></p>
+  }
+</ng-template>
+
+<ng-template #flecha>
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</ng-template>

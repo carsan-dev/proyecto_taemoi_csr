@@ -12,6 +12,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,13 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.entities.Roles;
+import com.taemoi.project.web.EventoWebDTO;
+import com.taemoi.project.web.EventosWebDTO;
 import com.taemoi.project.web.LegalWebDTO;
 import com.taemoi.project.web.TemasWeb;
 import com.taemoi.project.web.WebPublicaDTO;
 import com.taemoi.project.web.WebPublicaService;
 
 /**
- * Web por plantilla, lectura pública (fase4-web-plan.md §5, pieza W1). Anónimo ({@code permitAll} en
+ * Web por plantilla, lectura pública (fase4-web-plan.md §5, piezas W1 y W5). Anónimo ({@code permitAll} en
  * {@code SecurityConfiguration}), de la escuela activa. 404 si no tiene web publicada (Moiskimdo, la 1, no la tiene).
  *
  * <p>{@code vistaPrevia=true} solo vale con sesión de propietario o gestor (ROLE_ADMIN o ROLE_MANAGER): ve la web de su
@@ -81,6 +84,20 @@ public class WebPublicaController {
 	public ResponseEntity<LegalWebDTO> legal(
 			@RequestParam(name = "vistaPrevia", defaultValue = "false") boolean vistaPrevia) {
 		return responder(web.legal(vistaPrevia && esGestion()), vistaPrevia);
+	}
+
+	/** Pieza W5: eventos visibles con fecha, próximos y anteriores (hasta 60 de cada). */
+	@GetMapping("/eventos")
+	public ResponseEntity<EventosWebDTO> eventos(
+			@RequestParam(name = "vistaPrevia", defaultValue = "false") boolean vistaPrevia) {
+		return responder(web.eventos(vistaPrevia && esGestion()), vistaPrevia);
+	}
+
+	/** Pieza W5: un evento visible con fecha, con sus documentos y fotos; 404 si no lo es o no es de la escuela. */
+	@GetMapping("/eventos/{id}")
+	public ResponseEntity<EventoWebDTO> evento(@PathVariable("id") long id,
+			@RequestParam(name = "vistaPrevia", defaultValue = "false") boolean vistaPrevia) {
+		return responder(web.evento(vistaPrevia && esGestion(), id), vistaPrevia);
 	}
 
 	private <T> ResponseEntity<T> responder(Optional<T> cuerpo, boolean vistaPrevia) {

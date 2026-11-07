@@ -185,7 +185,7 @@ a NULL en la organización 1.
 | Endpoint | Acceso | Contenido |
 |---|---|---|
 | `GET /api/publico/web` | anónimo; `vistaPrevia=true` exige P o G | escuela (nombre, color, URL del logo), tema, bloques, sedes con grupos, días, horas y plazas, tarifas (general, por sede vigentes y futuras), licencia y examen, 3 próximos eventos, contacto. 404 si la escuela no tiene fila en `web_escuela` o no está publicada (salvo vista previa). `ETag` + `Cache-Control: public, max-age=60`. |
-| `GET /api/publico/web/eventos` | anónimo | próximos y anteriores, con hora, lugar y sede si existen. El detalle reutiliza `GET /api/eventos/{id}`, fotos y documentos. |
+| `GET /api/publico/web/eventos` | anónimo | `{proximos, anteriores}`, como mucho 60 en cada lista, con hora, lugar y sede si existen. El detalle es `GET /api/publico/web/eventos/{id}` (campos públicos e ids de documentos y fotos), no `GET /api/eventos/{id}`; los ficheros, por los endpoints anónimos de siempre, aislados por escuela. |
 | `GET /api/publico/web/legal` | anónimo | titular (`nombreLegal`, `cif`, domicilio, correo, teléfono), normas por disciplina, fecha de actualización. Solo aquí sale el CIF (lo exige el art. 10 LSSI); `/api/publico/escuela` sigue sin él. |
 | `GET /api/escuela/web`, `PUT /api/escuela/web/publicacion` | propietario (P) | tema publicado y estado; publicar con un tema. Auditado. |
 | `GET/PUT /api/escuela/web/bloques` | P (y G si §9, n.º 3) | bloques; imágenes con la subida que ya existe. Necesita boceto (§9, n.º 4). |

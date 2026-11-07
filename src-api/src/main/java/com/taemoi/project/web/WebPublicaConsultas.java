@@ -3,6 +3,7 @@ package com.taemoi.project.web;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
@@ -89,6 +90,52 @@ public class WebPublicaConsultas {
 				  LEFT JOIN Sede s ON s.id = e.sedeId AND s.organizacionId = e.organizacionId
 				WHERE e.visible = true AND e.fechaEvento >= :hoy ORDER BY e.fechaEvento, e.id""", Object[].class)
 				.setParameter("hoy", hoy).setMaxResults(maximo).getResultList();
+	}
+
+	/**
+	 * Pieza W5: columnas de {@link #proximosEventos} y la descripción. La sede, solo si es de la misma escuela que el
+	 * evento. Solo visibles y con fecha.
+	 */
+	private static final String EVENTOS_WEB = """
+			SELECT e.id, e.titulo, e.fechaEvento, f.id, e.hora, e.lugar, s.id, s.nombre, e.descripcion
+			FROM Evento e LEFT JOIN e.fotoEvento f
+			  LEFT JOIN Sede s ON s.id = e.sedeId AND s.organizacionId = e.organizacionId
+			WHERE e.visible = true AND e.fechaEvento IS NOT NULL AND\s""";
+
+	/**
+	 * Pieza W5: filas {@code [id, titulo, fecha, id de la foto o null, hora, lugar, id de la sede, nombre de la sede,
+	 * descripcion]} de los {@code maximo} eventos visibles con fecha de hoy o posterior, del más cercano al más lejano.
+	 */
+	public List<Object[]> eventosDesde(LocalDate hoy, int maximo) {
+		return em.createQuery(EVENTOS_WEB + "e.fechaEvento >= :hoy ORDER BY e.fechaEvento, e.id", Object[].class)
+				.setParameter("hoy", hoy).setMaxResults(maximo).getResultList();
+	}
+
+	/** Pieza W5: como {@link #eventosDesde}, los {@code maximo} anteriores a hoy, del más reciente al más antiguo. */
+	public List<Object[]> eventosAntesDe(LocalDate hoy, int maximo) {
+		return em.createQuery(EVENTOS_WEB + "e.fechaEvento < :hoy ORDER BY e.fechaEvento DESC, e.id DESC",
+				Object[].class).setParameter("hoy", hoy).setMaxResults(maximo).getResultList();
+	}
+
+	/**
+	 * Pieza W5: la fila de {@link #eventosDesde} de un evento visible con fecha de la escuela activa. Consulta y no
+	 * {@code find}: la de {@code @TenantId} filtra por escuela; un evento de otra, oculto o sin fecha no sale.
+	 */
+	public Optional<Object[]> eventoWeb(long id) {
+		return em.createQuery(EVENTOS_WEB + "e.id = :id", Object[].class).setParameter("id", id).getResultList()
+				.stream().findFirst();
+	}
+
+	/** Pieza W5: filas {@code [id, nombre, tipo]} de los documentos de un evento de la escuela activa, por id. */
+	public List<Object[]> documentosDeEvento(long evento) {
+		return em.createQuery("SELECT d.id, d.nombre, d.tipo FROM Documento d WHERE d.evento.id = :evento ORDER BY d.id",
+				Object[].class).setParameter("evento", evento).getResultList();
+	}
+
+	/** Pieza W5: ids de las fotos de la galería de un evento de la escuela activa, por orden. */
+	public List<Long> fotosDeEvento(long evento) {
+		return em.createQuery("SELECT f.id FROM EventoFoto f WHERE f.evento.id = :evento ORDER BY f.orden, f.id",
+				Long.class).setParameter("evento", evento).getResultList();
 	}
 
 	/** Plantillas de preinscripción activas de las disciplinas activas, por disciplina y de la versión más alta a la más baja. */

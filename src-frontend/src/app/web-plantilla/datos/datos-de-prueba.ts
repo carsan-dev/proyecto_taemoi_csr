@@ -1,4 +1,4 @@
-import { Legal, SitioWeb } from './modelos';
+import { EventoDetalleWeb, EventoListaWeb, GrupoWeb, Legal, Plazas, SedeWeb, SitioWeb, TurnoWeb } from './modelos';
 
 /** Datos de prueba de los specs de la web por plantilla (no los importa ningún código de la aplicación). */
 export function sitioDePrueba(cambios: Partial<SitioWeb> = {}): SitioWeb {
@@ -35,3 +35,93 @@ export const LEGAL_DE_PRUEBA: Legal = {
   normas: [],
   actualizadaEn: '2026-11-01',
 };
+
+/** Un evento de `GET /api/publico/web/eventos`: con hora, lugar, sede y cartel. */
+export function eventoListaDePrueba(cambios: Partial<EventoListaWeb> = {}): EventoListaWeb {
+  return {
+    id: 7,
+    titulo: 'Examen de cinturones',
+    fecha: '2026-11-14',
+    conImagen: true,
+    hora: '10:00',
+    lugar: 'Pabellón cubierto municipal',
+    sedeId: 2,
+    sedeNombre: 'Estepa',
+    descripcion: 'Examen de cambio de cinturón para los alumnos que ha propuesto su profesor.',
+    ...cambios,
+  };
+}
+
+/** Un evento de `GET /api/publico/web/eventos/{id}`: con dos documentos y tres fotos. */
+export function eventoDetalleDePrueba(cambios: Partial<EventoDetalleWeb> = {}): EventoDetalleWeb {
+  return {
+    ...eventoListaDePrueba(),
+    documentos: [
+      { id: 31, nombre: 'Circular-examen-noviembre.pdf', tipo: 'application/pdf' },
+      { id: 32, nombre: 'Autorizacion-menores.docx', tipo: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+    ],
+    fotos: [{ id: 51 }, { id: 52 }, { id: 53 }],
+    ...cambios,
+  };
+}
+
+export const PLAZAS = {
+  quedan: (n: number): Plazas => ({ estado: 'QUEDAN', quedan: n }),
+  lleno: { estado: 'LLENO', quedan: null } as Plazas,
+  espera: { estado: 'LISTA_ESPERA', quedan: null } as Plazas,
+};
+
+let siguienteId = 1000;
+
+export function turnoDePrueba(dia: string, inicio: string, fin: string, plazas: Plazas = PLAZAS.quedan(4)): TurnoWeb {
+  return { id: siguienteId++, diaSemana: dia, horaInicio: inicio, horaFin: fin, plazas };
+}
+
+export function grupoDePrueba(nombre: string, turnos: TurnoWeb[], cambios: Partial<GrupoWeb> = {}): GrupoWeb {
+  return {
+    id: siguienteId++,
+    nombre,
+    disciplina: 'TAEKWONDO',
+    disciplinaNombre: 'Taekwondo',
+    rangoEdadMin: 4,
+    rangoEdadMax: 6,
+    plazas: turnos[0]?.plazas ?? null,
+    turnos,
+    ...cambios,
+  };
+}
+
+export function sedeDePrueba(id: number, nombre: string, cambios: Partial<SedeWeb> = {}): SedeWeb {
+  return {
+    id,
+    nombre,
+    direccion: 'C/ del Deporte, 2',
+    localidad: nombre,
+    codigoPostal: '41560',
+    telefono: null,
+    slug: nombre.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, '-'),
+    lugar: 'Pabellón municipal',
+    indicacionesAcceso: null,
+    fotoUrl: null,
+    foto2Url: null,
+    grupos: [
+      grupoDePrueba('Peques', [turnoDePrueba('Lunes', '17:00', '17:45'), turnoDePrueba('Miércoles', '17:00', '17:45')]),
+      grupoDePrueba('Infantil', [turnoDePrueba('Martes', '18:00', '19:00')], { rangoEdadMin: 7, rangoEdadMax: 11 }),
+      grupoDePrueba('Jóvenes y adultos', [turnoDePrueba('Jueves', '19:30', '21:00')], { rangoEdadMin: 12, rangoEdadMax: null }),
+    ],
+    ...cambios,
+  };
+}
+
+/** Las seis sedes de Sierra Sur (datos inventados, como los bocetos). */
+export const NOMBRES_SEDES = ['Herrera', 'Estepa', 'Casariche', 'Lora de Estepa', 'Roda de Andalucía', 'Mollina'];
+
+/** Un sitio de prueba con `n` sedes (1 = Estepa sola), una tarifa de 25 € y sin eventos ni profesores. */
+export function sitioConSedes(n: number, cambios: Partial<SitioWeb> = {}): SitioWeb {
+  const nombres = n === 1 ? ['Estepa'] : NOMBRES_SEDES.slice(0, n);
+  return sitioDePrueba({
+    sedes: nombres.map((nombre, i) => sedeDePrueba(i + 1, nombre)),
+    tarifas: [{ id: 1, codigo: 'GENERAL', nombre: 'Mensualidad', disciplina: null, importe: 25, importeAdulto: null, importeMenor: null }],
+    ...cambios,
+  });
+}

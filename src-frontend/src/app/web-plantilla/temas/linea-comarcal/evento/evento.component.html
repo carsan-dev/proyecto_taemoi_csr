@@ -1,0 +1,106 @@
+@let s = pagina.sitio();
+@let estado = estadoEvento();
+@if (pagina.estado() === 'no-publicada') {
+  @defer (on immediate) {
+    <app-web-sin-publicar />
+  }
+} @else if (s && estado === 'no-encontrado') {
+  <app-lc-marco [sitio]="s" pagina="eventos">
+    <app-lc-no-encontrada-contenido [sitio]="s" />
+  </app-lc-marco>
+} @else if (s && vista(); as v) {
+  <app-lc-marco [sitio]="s" pagina="eventos">
+    <article class="p-evento" aria-labelledby="evento-titulo">
+      <div class="envoltura evento-cabeza">
+        <a class="atras" routerLink="/eventos"><ng-container *ngTemplateOutlet="flechaIzq" />{{ textos.volverEventos }}</a>
+        <div class="evento-rejilla-cabeza">
+          @if (v.fecha || v.cuando || v.lugar) {
+            <div class="evento-rotulo">
+              @if (v.fecha; as f) {
+                <time class="fecha" [attr.datetime]="f.iso"><span class="fecha-dia" aria-hidden="true">{{ f.dia }}</span><span class="fecha-mes" aria-hidden="true">{{ f.mes }}</span><span class="fecha-anio" aria-hidden="true">{{ f.anio }}</span><span class="oculto">{{ f.larga }}</span></time>
+              }
+              @if (v.cuando || v.lugar) {
+                <div class="evento-cuando">
+                  @if (v.cuando) {<p>{{ v.cuando }}</p>}
+                  @if (v.lugar) {<p class="evento-lugar">{{ v.lugar }}</p>}
+                </div>
+              }
+            </div>
+          }
+          <h1 class="evento-titular" id="evento-titulo">{{ v.titulo }}</h1>
+        </div>
+      </div>
+      @if (v.imagenUrl) {
+        <figure class="foto evento-foto"><img [src]="v.imagenUrl" width="1600" height="1200" fetchpriority="high" alt=""></figure>
+      }
+
+      @if (v.descripcion || v.documentos.length) {
+        <div class="envoltura evento-cuerpo">
+          @if (v.descripcion) {
+            <p class="evento-desc">{{ v.descripcion }}</p>
+          }
+          @if (v.documentos.length) {
+            <section class="evento-docs" aria-labelledby="docs-titulo">
+              <h2 class="rotulo docs-titulo" id="docs-titulo">{{ textos.documentos }}</h2>
+              <ul class="docs">
+                @for (d of v.documentos; track $index) {
+                  <li>
+                    <a [href]="d.url" download>
+                      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M7 3h10l6 6v16H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M17 3v6h6M11 15h8M11 19h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                      <span class="doc-nombre">{{ d.nombre }}</span>
+                      @if (d.tipo) {<span class="doc-tipo">{{ d.tipo }}</span>}
+                    </a>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        </div>
+      }
+
+      @if (v.fotos.length) {
+        <section class="seccion seccion--anden" id="galeria" aria-labelledby="galeria-titulo">
+          <div class="envoltura">
+            <div class="rotulo galeria-cabeza rotulo-bloque"><h2 id="galeria-titulo">{{ textos.galeria }}</h2><p class="galeria-cuenta">{{ v.cuentaFotos }}</p></div>
+            <ol class="rejilla-fotos">
+              @for (f of v.fotos; track $index; let i = $index) {
+                <li>
+                  <button class="ampliar" type="button" [attr.aria-label]="f.ampliar" (click)="abrir(i, $event)">
+                    <img [src]="f.miniatura" width="1600" height="1200" loading="lazy" alt="">
+                  </button>
+                  <span class="galeria-n" aria-hidden="true">{{ f.numero }}</span>
+                </li>
+              }
+            </ol>
+            <p class="volver-pie"><a class="atras" routerLink="/eventos"><ng-container *ngTemplateOutlet="flechaIzq" />{{ textos.volverEventos }}</a></p>
+          </div>
+        </section>
+      }
+    </article>
+
+    @if (v.fotos.length) {
+      @let actual = v.fotos[fotoActual()];
+      <dialog #visor class="visor" aria-labelledby="visor-titulo" (close)="alCerrar()" (click)="alPulsarVisor($event)" (keydown)="alTeclear($event)">
+        <div class="visor-barra">
+          <p class="visor-n" id="visor-titulo">{{ actual.numero }}<span>{{ deTotal() }}</span></p>
+          <button class="visor-boton" type="button" (click)="cerrar()"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>{{ fijos.cerrar }}</button>
+        </div>
+        <figure class="visor-foto">
+          @if (visorAbierto()) {
+            <img [src]="actual.grande" [alt]="actual.alt">
+          }
+        </figure>
+        <div class="visor-pie">
+          <div class="visor-pasos">
+            <button class="visor-boton" type="button" (click)="mover(-1)"><ng-container *ngTemplateOutlet="flechaIzq" />{{ textos.anterior }}</button>
+            <button class="visor-boton" type="button" (click)="mover(1)">{{ textos.siguiente }}<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </dialog>
+    }
+  </app-lc-marco>
+}
+
+<ng-template #flechaIzq>
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</ng-template>

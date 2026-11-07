@@ -143,6 +143,7 @@ describe('SkeletonComponent · web por plantilla', () => {
   }
 
   beforeEach(() => {
+    delete global['ga-disable-G-R3H7GC1T4X'];
     gtagAnterior = global.gtag;
     gtag = jasmine.createSpy('gtag');
     global.gtag = gtag;

@@ -4,18 +4,29 @@ import { ActivatedRoute } from '@angular/router';
 
 import { PaginaWeb, SeoEscuelaService } from '../comun/seo-escuela.service';
 import { WebPublicaService } from '../datos/web-publica.service';
+import { SinPublicarComponent } from './sin-publicar.component';
 
 /**
  * Pantalla técnica provisional del armazón (fase4-web-plan.md §6, «Armazón»): todas las rutas de la plantilla apuntan
  * aquí hasta que llegue el primer tema (W5). Sin estilo ni texto a propósito: el diseño es de los temas.
  *
  * Carga los datos de su página (`data.pagina` de la ruta; Legales pide también `/legal`) y pone su SEO. Con
- * `?vista-previa=<tema>`, la vista previa (§3.3). Al salir de la plantilla quita sus etiquetas.
+ * `?vista-previa=<tema>`, la vista previa (§3.3). Al salir de la plantilla quita sus etiquetas. Sin publicar, la página
+ * «Web aún no publicada» (`SinPublicarComponent`).
  */
 @Component({
   selector: 'app-plantilla-pendiente',
   standalone: true,
-  template: '<main id="contenido"></main>',
+  imports: [SinPublicarComponent],
+  template: `
+    @if (sitio()().estado === 'no-publicada') {
+      @defer (on immediate) {
+        <app-web-sin-publicar />
+      }
+    } @else {
+      <main id="contenido"></main>
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlantillaPendienteComponent {
@@ -29,7 +40,7 @@ export class PlantillaPendienteComponent {
   private readonly vistaPrevia = computed(() => this.consulta().get('vista-previa'));
 
   /** La petición se lanza (o se reutiliza de la caché) fuera del contexto reactivo: escribe en signals. */
-  private readonly sitio = computed(() => {
+  protected readonly sitio = computed(() => {
     const vistaPrevia = this.vistaPrevia();
     return untracked(() => this.web.sitio(vistaPrevia));
   });

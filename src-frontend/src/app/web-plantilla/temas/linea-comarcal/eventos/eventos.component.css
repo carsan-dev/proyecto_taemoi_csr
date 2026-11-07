@@ -1,0 +1,113 @@
+/*
+ * Lista de eventos del tema «La línea comarcal» (boceto fase4-web/boceto-linea-comarcal-eventos.html), con sus reglas
+ * tal cual bajo .lc .p-eventos (sin encapsulación: otras páginas del tema usan los mismos nombres con otros valores).
+ */
+
+/* ---------- Comunes de tarifas, eventos y legales ---------- */
+.lc .p-eventos .seccion { position: relative; padding: calc(var(--seccion) * 1.1) 0 var(--seccion); }
+.lc .p-eventos .seccion--anden { background: var(--anden); }
+
+/* Cabeza de página: rótulo y una sola pieza gigante */
+.lc .p-eventos .pagina-cabeza { padding-block: 36px clamp(40px, 6vw, 72px); }
+.lc .p-eventos .pagina-titular {
+  font-family: var(--display); font-weight: 900; text-transform: uppercase;
+  letter-spacing: -0.01em; line-height: 0.86; text-wrap: balance; font-size: clamp(64px, 22vw, 88px);
+}
+.lc .p-eventos .pagina-entrada { margin-top: 20px; font-size: 1.125rem; line-height: 1.5; max-width: 44ch; }
+@media (min-width: 900px) {
+  .lc .p-eventos .pagina-cabeza { padding-top: 56px; }
+  .lc .p-eventos .pagina-titular { font-size: clamp(104px, 12.5vw, 160px); }
+  .lc .p-eventos .pagina-entrada { font-size: 1.1875rem; }
+}
+
+/* Rótulo que hace de encabezado de bloque */
+.lc .p-eventos .rotulo-bloque { padding-bottom: 14px; border-bottom: 1px solid var(--tinta); }
+
+/* Bloque de fecha de evento: día grande, mes abreviado y año */
+.lc .p-eventos .fecha { display: grid; grid-template-columns: auto; justify-items: start; align-content: start; font-variant-numeric: tabular-nums; }
+.lc .p-eventos .fecha-dia { font: 900 3.5rem/0.82 var(--display); letter-spacing: -0.01em; }
+.lc .p-eventos .fecha-mes { margin-top: 6px; font: 800 1.375rem/1 var(--display); text-transform: uppercase; }
+.lc .p-eventos .fecha-anio { margin-top: 2px; font-size: 0.9375rem; font-weight: 600; color: var(--tinta-2); }
+
+/* ---------- Próximos: panel de salidas ---------- */
+.lc .p-eventos .proximos { padding-bottom: var(--seccion); }
+.lc .p-eventos .bloque-cabeza { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 20px; }
+.lc .p-eventos .bloque-cabeza h2 { font: inherit; letter-spacing: inherit; }
+.lc .p-eventos .bloque-cuenta { font: 500 0.9375rem/1.3 var(--texto); text-transform: none; letter-spacing: 0; color: var(--tinta-2); }
+
+/* El primero, destacado: foto grande a sangre */
+.lc .p-eventos .destacado { display: grid; gap: 28px; padding: 0 0 40px; border-bottom: 1px solid var(--tinta); }
+.lc .p-eventos .destacado-foto { aspect-ratio: 4 / 3; margin-inline: calc(-1 * var(--m)); }
+.lc .p-eventos .destacado-texto { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 20px; align-items: start; }
+.lc .p-eventos .destacado .fecha-dia { font-size: clamp(5rem, 22vw, 7.5rem); }
+.lc .p-eventos .destacado .fecha-mes { font-size: 1.75rem; }
+.lc .p-eventos .destacado-cuerpo { min-width: 0; }
+.lc .p-eventos .destacado-titulo { font: 900 clamp(40px, 12vw, 64px)/0.88 var(--display); text-transform: uppercase; letter-spacing: -0.01em; text-wrap: balance; }
+.lc .p-eventos .destacado-desc { margin-top: 16px; max-width: 52ch; font-size: 1.0625rem; }
+.lc .p-eventos .destacado .boton { margin-top: 24px; }
+/* Sin cartel: el texto ocupa la fila (el boceto siempre tiene foto) */
+.lc .p-eventos .destacado--sin-foto { padding-top: 28px; }
+@media (min-width: 900px) {
+  .lc .p-eventos .destacado { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: end; padding-bottom: 48px; }
+  .lc .p-eventos .destacado-foto {
+    grid-column: 1 / 8; aspect-ratio: 4 / 3; margin-inline: 0;
+    margin-left: calc((100vw - min(100vw, 1360px)) / -2 - var(--m));
+  }
+  .lc .p-eventos .destacado-texto { grid-column: 8 / 13; grid-template-columns: minmax(0, 1fr); }
+  .lc .p-eventos .destacado .fecha { grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 14px; align-items: end; justify-content: start; }
+  .lc .p-eventos .destacado .fecha-dia { grid-row: 1 / 3; font-size: clamp(7rem, 10vw, 10rem); }
+  .lc .p-eventos .destacado .fecha-mes { align-self: end; font-size: 2.25rem; }
+  .lc .p-eventos .destacado .fecha-anio { align-self: start; font-size: 1.0625rem; }
+  .lc .p-eventos .destacado-titulo { font-size: clamp(56px, 5.4vw, 88px); }
+  .lc .p-eventos .destacado--sin-foto { padding-top: 40px; }
+  .lc .p-eventos .destacado--sin-foto .destacado-texto { grid-column: 1 / 13; grid-template-columns: 4fr 8fr; column-gap: var(--hueco); }
+}
+
+/* Lugar, sede y hora (opcionales, decisión 466): como en la portada; el texto, en un solo bloque para que parta bien */
+.lc .p-eventos .ev-donde { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; color: var(--tinta-2); }
+.lc .p-eventos .ev-donde::before {
+  content: ""; flex: none; width: 14px; height: 14px; border-radius: 50%; margin-top: 0.3em;
+  background: var(--blanco); border: 3px solid var(--escuela-trazo);
+}
+.lc .p-eventos .ev-donde span { min-width: 0; }
+
+/* El resto, en filas con filete */
+.lc .p-eventos .ev-fila {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 9.5rem); gap: 16px 20px;
+  grid-template-areas: "fecha foto" "texto texto" "accion accion";
+  padding: 28px 0; border-bottom: 1px solid var(--filete);
+}
+.lc .p-eventos .ev-fila .fecha { grid-area: fecha; }
+.lc .p-eventos .ev-miniatura { grid-area: foto; aspect-ratio: 4 / 3; }
+.lc .p-eventos .ev-texto { grid-area: texto; min-width: 0; }
+.lc .p-eventos .ev-titulo { font: 800 1.75rem/0.95 var(--display); text-transform: uppercase; text-wrap: balance; }
+.lc .p-eventos .ev-desc {
+  margin-top: 10px; max-width: 60ch; color: var(--tinta);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+}
+.lc .p-eventos .ev-fila .enlace-flecha { grid-area: accion; justify-self: start; }
+@media (min-width: 900px) {
+  .lc .p-eventos .ev-fila { grid-template-columns: 9rem minmax(0, 1fr) 13rem 9rem; grid-template-areas: "fecha texto foto accion"; align-items: center; column-gap: var(--hueco); padding: 32px 0; }
+  .lc .p-eventos .ev-titulo { font-size: 2.25rem; }
+  .lc .p-eventos .ev-fila .enlace-flecha { justify-self: end; }
+}
+
+.lc .p-eventos .ev-vacio { padding: 32px 0 8px; }
+.lc .p-eventos .ev-vacio h3 { font: 900 clamp(48px, 13vw, 96px)/0.88 var(--display); text-transform: uppercase; letter-spacing: -0.01em; text-wrap: balance; max-width: 12ch; }
+.lc .p-eventos .ev-vacio p { margin-top: 16px; font-size: 1.125rem; max-width: 46ch; }
+.lc .p-eventos .ev-vacio .enlace-flecha { margin-top: 12px; }
+
+/* ---------- Anteriores: por año, en rejilla compacta ---------- */
+.lc .p-eventos .anio { margin-top: 40px; }
+.lc .p-eventos .anio:first-of-type { margin-top: 28px; }
+.lc .p-eventos .anio-titulo { font: 900 clamp(56px, 7vw, 96px)/0.85 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; padding-bottom: 16px; }
+.lc .p-eventos .ev-rejilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 12px; padding-top: 20px; border-top: 1px solid var(--filete); }
+.lc .p-eventos .ev-mini a { display: block; color: var(--tinta); text-decoration: none; }
+.lc .p-eventos .ev-mini .foto { aspect-ratio: 4 / 3; }
+.lc .p-eventos .ev-mini-fecha { display: block; margin-top: 10px; font-size: 0.875rem; font-weight: 600; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.lc .p-eventos .ev-mini-titulo { margin-top: 4px; font: 800 1.25rem/1 var(--display); text-transform: uppercase; text-wrap: balance; }
+.lc .p-eventos .ev-mini a:hover .ev-mini-titulo, .lc .p-eventos .ev-mini a:focus-visible .ev-mini-titulo { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.12em; text-decoration-color: var(--escuela-trazo); }
+@media (min-width: 900px) {
+  .lc .p-eventos .ev-rejilla { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px var(--hueco); }
+  .lc .p-eventos .ev-mini-titulo { font-size: 1.5rem; }
+}
