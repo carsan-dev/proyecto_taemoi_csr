@@ -42,6 +42,7 @@ import com.taemoi.project.exceptions.ArchivoNoValidoException;
 import com.taemoi.project.exceptions.evento.DatosEventoNoValidosException;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
+import com.taemoi.project.organizacion.HostDeLaPeticion;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.EventoService;
 import com.taemoi.project.services.ImagenService;
@@ -424,7 +425,9 @@ public class EventoController {
 		}
 		Imagen imagen = evento.getFotoEvento();
 		if (imagen != null) {
-			imagen.setUrl(baseUrl + "/api/eventos/" + evento.getId() + "/imagen");
+			// Base de la petición: el origen del Host de otra escuela; en moiskimdo.es, app.base.url como siempre.
+			imagen.setUrl(HostDeLaPeticion.baseArchivosPeticion(baseUrl) + "/api/eventos/" + evento.getId()
+					+ "/imagen");
 		}
 	}
 

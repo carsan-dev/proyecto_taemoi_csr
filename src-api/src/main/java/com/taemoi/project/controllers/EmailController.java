@@ -14,6 +14,8 @@ import jakarta.validation.Valid;
 
 import com.taemoi.project.dtos.request.EmailRequest;
 import com.taemoi.project.services.EmailService;
+import com.taemoi.project.services.InvitacionCorreo;
+import com.taemoi.project.services.MarcaEscuela;
 import com.taemoi.project.services.MarcaEscuelaService;
 
 @RestController
@@ -47,6 +49,15 @@ public class EmailController {
 		String asuntoHtml = html(unaLinea(emailRequest.getAsunto()));
 		String mensajeHtml = conSaltosDeLinea(html(emailRequest.getMensaje()));
 
+		// Pieza 4 (fase 4, dominio): logo y nombre de la escuela de la petición. Moiskimdo (legado), EXACTAMENTE lo de
+		// siempre: su imagen externa, su pie y el remitente por defecto.
+		MarcaEscuela marca = marcaEscuela.deActiva();
+		boolean conLogoEnLinea = !marca.legado() && marca.logoCertificado() != null && marca.logoCertificado().length > 0;
+		String logoHtml = marca.legado()
+				? "<div class='logo'><img src='https://promociones.globalum.es/wp-content/uploads/2020/06/Mois-Kim-Do-Escuela-de-Taekwondo-Umbrete.jpg' alt='Logo'></div>"
+				: conLogoEnLinea ? "<div class='logo'><img src='cid:" + InvitacionCorreo.CID_LOGO + "' alt='Logo'></div>"
+						: "";
+
 		String htmlMsg = "<!DOCTYPE html>" + "<html>" + "<head>" + "<style>"
 				+ "body {font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 20px;}"
 				+ ".container {max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 20px;}"
@@ -56,7 +67,7 @@ public class EmailController {
 				+ ".footer {margin-top: 30px; font-size: 14px; color: #777; text-align: center;}"
 				+ ".logo {text-align: center; margin-bottom: 20px;}" + ".logo img {max-width: 150px;}" + "</style>"
 				+ "</head>" + "<body>" + "<div class='container'>"
-				+ "<div class='logo'><img src='https://promociones.globalum.es/wp-content/uploads/2020/06/Mois-Kim-Do-Escuela-de-Taekwondo-Umbrete.jpg' alt='Logo'></div>"
+				+ logoHtml
 				+ "<div class='header'>Nuevo mensaje de " + nombreHtml + " " + apellidosHtml
 				+ "</div>" + "<div class='content'><label>Nombre:</label> <div>" + nombreHtml
 				+ "</div></div>" + "<div class='content'><label>Apellidos:</label> <div>" + apellidosHtml
@@ -64,10 +75,16 @@ public class EmailController {
 				+ emailHtml + "</div></div>" + "<div class='content'><label>Asunto:</label> <div>"
 				+ asuntoHtml + "</div></div>" + "<div class='content'><label>Mensaje:</label> <div>"
 				+ mensajeHtml + "</div></div>"
-				+ "<div class='footer'>Atentamente,<br>La aplicación de mensajería del Club Moiskimdo Taekwondo</div>"
+				+ "<div class='footer'>Atentamente,<br>La aplicación de mensajería del " + marca.clubCorreoCuentaHtml() + "</div>"
 				+ "</div>" + "</body>" + "</html>";
 
-		emailService.sendEmail(buzon, "Nuevo mensaje de " + nombre + " " + apellidos, htmlMsg);
+		String asunto = "Nuevo mensaje de " + nombre + " " + apellidos;
+		if (conLogoEnLinea) {
+			emailService.sendEmailConImagen(buzon, asunto, htmlMsg, InvitacionCorreo.CID_LOGO, marca.logoCertificado(),
+					"image/png", marca.remitente());
+		} else {
+			EmailService.enviar(emailService, buzon, asunto, htmlMsg, marca.remitente());
+		}
 	}
 
 	/** Sustituye cada secuencia de CR/LF por un espacio: impide inyectar cabeceras de correo. */

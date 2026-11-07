@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +34,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,9 +58,13 @@ import com.taemoi.project.dtos.response.UsuarioConAlumnoAsociadoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.HostDeLaPeticion;
 import com.taemoi.project.organizacion.SesionVerificada;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.plataforma.AutoridadPlataforma;
+import com.taemoi.project.plataforma.LogoEscuelaService;
+import com.taemoi.project.marca.MarcaPanelService;
+import com.taemoi.project.dtos.response.MarcaPanelDTO;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.AuthenticationService;
@@ -122,6 +130,9 @@ public class AuthenticationController {
 	private MembresiaService membresiaService;
 
 	@Autowired
+	private LogoEscuelaService logoEscuela;
+
+	@Autowired
 	private InvitacionService invitacionService;
 
 	/**
@@ -150,7 +161,7 @@ public class AuthenticationController {
 	 *         token JWT.
 	 */
 	@PostMapping("/signin")
-	public ResponseEntity<?> signin(@RequestBody LoginRequest request,
+	public ResponseEntity<?> signin(@RequestBody LoginRequest request, HttpServletRequest httpRequest,
 			HttpServletResponse response) {
 		JwtAuthenticationResponse jwtResponse;
 		try {
@@ -169,7 +180,7 @@ public class AuthenticationController {
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 		boolean rememberMe = Boolean.TRUE.equals(request.getRememberMe());
 
-		Optional<String> domainOpt = resolverDominioCookie();
+		Optional<String> domainOpt = resolverDominioCookie(httpRequest);
 		// Limpiar posibles cookies heredadas (host-only y domain) antes de fijar la canónica
 		response.addHeader(HttpHeaders.SET_COOKIE,
 				construirCookieJwt("", isProduction, false, true, null).toString());
@@ -221,7 +232,7 @@ public class AuthenticationController {
 	 */
 	@PostMapping("/invitacion/aceptar")
 	public ResponseEntity<?> aceptarInvitacion(@Valid @RequestBody PasswordResetUpdateRequest request,
-			HttpServletResponse response) {
+			HttpServletRequest httpRequest, HttpServletResponse response) {
 		Usuario cuenta = invitacionService.aceptar(request.getToken(), request.getNuevaContrasena());
 		JwtAuthenticationResponse sesion;
 		try {
@@ -229,7 +240,7 @@ public class AuthenticationController {
 		} catch (DisabledException e) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("mensaje", mensajeDeRechazo(e)));
 		}
-		escribirCookieSesion(response, sesion.getToken(), null);
+		escribirCookieSesion(httpRequest, response, sesion.getToken(), null);
 		return ResponseEntity.ok(sesion);
 	}
 
@@ -254,11 +265,11 @@ public class AuthenticationController {
 	}
 
 	@PostMapping("/logout")
-	public ResponseEntity<?> logout(HttpServletResponse response) {
+	public ResponseEntity<?> logout(HttpServletRequest httpRequest, HttpServletResponse response) {
 		// Determinar si usar Secure basado en el perfil activo
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 
-		Optional<String> domainOpt = resolverDominioCookie();
+		Optional<String> domainOpt = resolverDominioCookie(httpRequest);
 		response.addHeader(HttpHeaders.SET_COOKIE,
 				construirCookieJwt("", isProduction, false, true, null).toString());
 		if (domainOpt.isPresent()) {
@@ -434,6 +445,38 @@ public class AuthenticationController {
 	}
 
 	/**
+	 * PNG del logo subido de una escuela del usuario (aunque no sea la activa), para el selector de escuela. 404 (nunca
+	 * 403, para no revelar si la escuela existe) salvo que tenga membresía activa en ella que abra sesión (la misma
+	 * regla que {@link #obtenerOrganizaciones()}) y un logo SUBIDO cuya imagen sea de esa escuela; sin logo subido
+	 * (LEGADO o NINGUNO) tampoco hay PNG. {@code ETag} con el id de la imagen y 304 si coincide, sin leer el fichero.
+	 */
+	@GetMapping("/organizaciones/{id}/logo")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<byte[]> logoDeOrganizacion(@PathVariable("id") Long id,
+			@RequestHeader(value = "If-None-Match", required = false) String siNoCoincide) {
+		Usuario usuario = usuarioAutenticado();
+		Long version = membresiaService.organizacionesDe(usuario.getId(), TenantContext.get()).stream()
+				.filter(o -> o.id().equals(id) && o.logo() == MarcaPanelDTO.Logo.SUBIDO).map(o -> o.logoVersion())
+				.filter(v -> v != null).findFirst().orElse(null);
+		if (version == null) {
+			return ResponseEntity.notFound().build();
+		}
+		CacheControl cache = CacheControl.maxAge(Duration.ofSeconds(300)).cachePrivate();
+		String vigente = "\"logo-" + version + "\"";
+		if (EscuelaMarcaController.coincide(siNoCoincide, vigente)) {
+			return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(vigente).cacheControl(cache).build();
+		}
+		MarcaPanelService.LogoPanel logo;
+		try {
+			logo = logoEscuela.logoSubido(id);
+		} catch (java.util.NoSuchElementException e) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).eTag("\"logo-" + logo.imagenId() + "\"")
+				.cacheControl(cache).body(logo.png());
+	}
+
+	/**
 	 * Cambia la escuela de la sesión: valida la membresía, emite un token nuevo (misma caducidad que
 	 * el actual) en la cookie {@code jwt} y recuerda la escuela para el próximo inicio de sesión.
 	 * 403 si el usuario no puede entrar en esa escuela.
@@ -461,7 +504,7 @@ public class AuthenticationController {
 		Duration maxAge = persistente
 				? Duration.ofMillis(Math.max(0, expira.getTime() - System.currentTimeMillis()))
 				: null;
-		escribirCookieSesion(response, nuevo.get().getToken(), maxAge);
+		escribirCookieSesion(httpRequest, response, nuevo.get().getToken(), maxAge);
 		return ResponseEntity.ok(nuevo.get());
 	}
 
@@ -500,9 +543,10 @@ public class AuthenticationController {
 		return roles;
 	}
 
-	private void escribirCookieSesion(HttpServletResponse response, String token, Duration maxAge) {
+	private void escribirCookieSesion(HttpServletRequest httpRequest, HttpServletResponse response, String token,
+			Duration maxAge) {
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
-		Optional<String> domainOpt = resolverDominioCookie();
+		Optional<String> domainOpt = resolverDominioCookie(httpRequest);
 		response.addHeader(HttpHeaders.SET_COOKIE,
 				construirCookieJwt("", isProduction, false, true, null).toString());
 		if (domainOpt.isPresent()) {
@@ -521,7 +565,15 @@ public class AuthenticationController {
 		response.addHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
 	}
 
-	private Optional<String> resolverDominioCookie() {
+	/**
+	 * Dominio de la cookie {@code jwt}: el de {@code app.base.url} (sin {@code www.}), como siempre; en el Host de otra
+	 * escuela de {@code organizacion_dominio}, ninguno (cookie solo del host; fase 4, pieza 3, {@link HostDeLaPeticion}).
+	 */
+	private Optional<String> resolverDominioCookie(HttpServletRequest httpRequest) {
+		return HostDeLaPeticion.dominioCookie(httpRequest, dominioCookieConfigurado());
+	}
+
+	private Optional<String> dominioCookieConfigurado() {
 		if (appBaseUrl == null || appBaseUrl.isBlank()) {
 			return Optional.empty();
 		}

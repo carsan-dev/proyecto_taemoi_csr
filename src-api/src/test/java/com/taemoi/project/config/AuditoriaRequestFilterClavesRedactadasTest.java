@@ -66,6 +66,25 @@ class AuditoriaRequestFilterClavesRedactadasTest {
 		assertEquals(Set.of(), AuditoriaRequestFilter.clavesRedactadas("/api/panel/mi-perfil-otra"));
 	}
 
+	/** Pieza 394: ningún dato legal ni del firmante se guarda en el cuerpo de un 4xx del PUT; el día límite, sí. */
+	@Test
+	void datosEscuela_redactaLosDatosLegalesYDelFirmante() {
+		Set<String> esperadas = Set.of("nombreLegal", "cif", "direccion", "emailContacto", "telefono", "firmanteNombre",
+				"firmanteCargo", "firmanteNif");
+		for (String ruta : List.of("/api/escuela/datos", "/api/escuela/datos/", "/API/ESCUELA/DATOS",
+				"/api//escuela/datos")) {
+			assertEquals(esperadas, AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
+		}
+		for (String ruta : List.of("/api/escuela/datos-otra", "/api/escuela/marca", "/api/escuela/datos/7")) {
+			assertEquals(Set.of(), AuditoriaRequestFilter.clavesRedactadas(ruta), ruta);
+		}
+		Map<String, String[]> guardados = AuditoriaRequestFilter.parametrosAuditables("/api/escuela/datos",
+				parametros("cif", "G00000000", "firmanteNif", "00000000T", "otro", "visible"));
+		assertArrayEquals(new String[] { "[redactado]" }, guardados.get("cif"));
+		assertArrayEquals(new String[] { "[redactado]" }, guardados.get("firmanteNif"));
+		assertArrayEquals(new String[] { "visible" }, guardados.get("otro"));
+	}
+
 	/** Pieza 8b-T: el color de la escuela no se guarda en el cuerpo de un 4xx del PUT de la marca. */
 	@Test
 	void marca_redactaElColor() {

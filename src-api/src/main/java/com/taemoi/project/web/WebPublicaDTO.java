@@ -16,7 +16,8 @@ import com.taemoi.project.archivos.UrlArchivoSerializer;
  * bloques editables).
  *
  * @param escuela          nombre, color y versión del logo.
- * @param tema             tema publicado; {@code null} en una vista previa sin web publicada aún.
+ * @param tema             tema publicado; en la vista previa de la gestión, el elegido en el panel si lo pasa
+ *                         ({@code tema}, pieza W3); {@code null} en una vista previa sin web aún y sin tema.
  * @param publicada        si la web está publicada (en una respuesta anónima, siempre {@code true}).
  * @param vistaPrevia      si es la vista previa de la gestión (no se guarda en cachés compartidas).
  * @param temporada        temporada en curso («2026-2027»).

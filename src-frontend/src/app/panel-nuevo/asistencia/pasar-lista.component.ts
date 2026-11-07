@@ -20,6 +20,15 @@ import { contextoErrorLocal } from '../carga/lecturas-panel.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
 import { mensajeDelServidor, nombreCompleto } from '../mis-grupos/profesor-textos';
+
+/**
+ * Los 409 que piden recargar la clase. La API no manda un código estable (solo `{ mensaje }`), así que se reconocen por
+ * su texto; si cambia allí, cambia aquí:
+ * - concurrencia: GlobalExceptionHandler.MENSAJE_CONCURRENCIA (GlobalExceptionHandler.java:126).
+ * - clase festiva: AsistenciaService.FESTIVO_EN «Ese día es festivo en %s.» (AsistenciaService.java:101).
+ */
+const MENSAJE_CONCURRENCIA = 'Otra persona ha cambiado este dato a la vez; vuelve a intentarlo';
+const PREFIJO_FESTIVO = 'Ese día es festivo';
 import { ConCambiosSinGuardar } from '../productos-alumno/salir-sin-guardar.guard';
 import { textoSalirSinGuardar } from '../productos-alumno/productos-alumno-vista';
 import { ImpactoFestivo, textoFestivoDeClase } from '../festivos/festivos-vista';
@@ -407,9 +416,13 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
       },
       // Las marcas se conservan: solo se avisa.
       error: (e) => {
-        this.avisos.error(mensajeDelServidor(e, this.textos.errorGuardar));
-        // 409: la clase ya es festiva; se recarga para verla como tal en vez de seguir editable.
-        if (e?.status === 409) this.recargarTrasFestivo(clase);
+        const mensaje = mensajeDelServidor(e, this.textos.errorGuardar);
+        this.avisos.error(mensaje);
+        // Recargan el 409 de concurrencia y el de «ese día es festivo» (la clase se ve como festiva); cualquier otro
+        // 409 (p. ej. lista de otro grupo) conserva lo marcado y solo avisa.
+        if (e?.status === 409 && (mensaje === MENSAJE_CONCURRENCIA || mensaje.startsWith(PREFIJO_FESTIVO))) {
+          this.recargarTrasFestivo(clase);
+        }
       },
     });
   }

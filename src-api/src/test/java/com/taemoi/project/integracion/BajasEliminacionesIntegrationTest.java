@@ -1,7 +1,6 @@
 package com.taemoi.project.integracion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -198,7 +197,8 @@ class BajasEliminacionesIntegrationTest extends MySqlIntegrationTest {
 		JsonNode mezcla = leer(ids(e.aA, otra.aA, 999_999_999L), tokenPropietario);
 		assertEquals(1, mezcla.size());
 		assertEquals(e.aA, mezcla.get(0).get("alumnoId").asLong());
-		assertFalse(mezcla.toString().contains("77"), "nada de la otra escuela");
+		assertImporte("30.00", mezcla.get(0).get("importePagado"));
+		assertImporte("45.00", mezcla.get(0).get("importePendiente"));
 
 		JsonNode suyo = leer(ids(otra.aA), tokenOtraPropietario);
 		assertEquals(1, suyo.size());

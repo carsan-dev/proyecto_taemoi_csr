@@ -81,6 +81,7 @@ import com.taemoi.project.services.TutorService;
 		com.taemoi.project.services.impl.ProgresionGradosServiceImpl.class,
 		// Pieza E7-7a: la marca de la escuela de los correos (la real, con su lectura en transacción propia).
 		com.taemoi.project.services.MarcaEscuelaService.class, com.taemoi.project.organizacion.TransaccionEnEscuela.class,
+		com.taemoi.project.organizacion.UrlsEscuela.class,
 		com.taemoi.project.services.impl.ImagenServiceImpl.class,
 		OrganizacionHibernateConfig.class, PreinscripcionCancelacionMySqlIntegrationTest.Config.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -98,6 +99,8 @@ class PreinscripcionCancelacionMySqlIntegrationTest extends MySqlIntegrationTest
 	@MockitoBean ConfiguracionSistemaService configuracionMock;
 	@MockitoBean PDFService pdfMock;
 	@MockitoBean EmailService emailMock;
+	/** Fase 4 pieza 2: sin tabla de dominios; los enlaces de correo usan la base global. */
+	@MockitoBean com.taemoi.project.organizacion.ResolutorEscuelaPorHost resolutorEscuelaPorHostMock;
 	/** Entrega 6-2: sin restricción de sede (Optional vacío) y sin sede de alta, como la gestión de antes. */
 	@MockitoBean com.taemoi.project.acceso.GestionPorSede gestionPorSedeMock;
 	@MockitoBean com.taemoi.project.services.AlumnoSaludService alumnoSaludMock;

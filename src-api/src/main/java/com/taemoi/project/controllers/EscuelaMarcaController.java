@@ -69,7 +69,7 @@ public class EscuelaMarcaController {
 				.cacheControl(CACHE_LOGO).body(logo.png());
 	}
 
-	private static String etiqueta(Long imagenId) {
+	static String etiqueta(Long imagenId) {
 		return "\"logo-" + imagenId + "\"";
 	}
 

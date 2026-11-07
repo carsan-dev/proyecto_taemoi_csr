@@ -58,8 +58,8 @@ class PasswordResetServiceImplTest {
             call.getArgument(0).equals(user.getResetTokenHash()) ? Optional.of(user) : Optional.empty());
         reset = new PasswordResetServiceImpl(users, encoder, email,
             com.taemoi.project.services.MarcaEscuelaPruebas.soloMoiskimdo(), membresiaRepo,
-            new com.taemoi.project.organizacion.ResolutorOrganizacion(1L));
-        ReflectionTestUtils.setField(reset, "frontendBaseUrl", "https://example.test");
+            new com.taemoi.project.organizacion.ResolutorOrganizacion(1L),
+            com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://example.test"));
         ReflectionTestUtils.setField(reset, "resetTokenHours", 1L);
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(name -> user);
         provider.setPasswordEncoder(encoder);
