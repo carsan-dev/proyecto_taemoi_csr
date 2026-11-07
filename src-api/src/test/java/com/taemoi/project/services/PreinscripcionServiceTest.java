@@ -89,7 +89,8 @@ class PreinscripcionServiceTest {
 				alumnoDeportes, grados, temporadas, pdf, email, configuracion, new ObjectMapper(), aforo, eventos, contadores, tutores, consentimientos, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos,
 				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud, vinculos,
-				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("http://localhost:4200"));
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("http://localhost:4200"),
+				mock(com.taemoi.project.repositories.SedeRepository.class));
 		lenient().when(catalogo.obtenerPorCodigo(anyString())).thenAnswer(inv -> {
 			com.taemoi.project.entities.Disciplina disciplina = new com.taemoi.project.entities.Disciplina();
 			disciplina.setCodigo(inv.getArgument(0));
@@ -860,7 +861,8 @@ class PreinscripcionServiceTest {
 				new ObjectMapper(), aforoReal, eventos, contadores, tutores, consentimientos, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), gestionPorSede, documentos,
 				MarcaEscuelaPruebas.soloMoiskimdo(), alumnoSalud, vinculos,
-				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("http://localhost:4200"));
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("http://localhost:4200"),
+				mock(com.taemoi.project.repositories.SedeRepository.class));
 
 		servicioPromocion.promocionarTodas();
 

@@ -60,7 +60,8 @@ import jakarta.servlet.http.Cookie;
  *
  * <ul>
  * <li>Mismo propietario NUEVO en dos escuelas distintas: las dos crean la cuenta; la segunda choca con el índice único de
- * {@code usuario.email} y se repite entera, ahora por el camino de la cuenta existente: 201 y 201, un solo correo.</li>
+ * {@code usuario.email} y se repite entera, ahora por el camino de la cuenta existente, que sigue pendiente: reenvía la
+ * invitación con su escuela (token nuevo). 201 y 201, una cuenta y dos correos; solo vale el enlace del segundo.</li>
  * <li>Dos nombres distintos con el mismo slug: la segunda choca con {@code uk_organizacion_slug} y se repite con el slug
  * recalculado ({@code -2}): 201 y 201, no un 409 falso de «nombre repetido».</li>
  * </ul>
@@ -86,8 +87,12 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 	final String marca = java.util.UUID.randomUUID().toString().substring(0, 8);
 	Cookie cookieSuperadmin;
 	Usuario superadmin;
-	/** Si no es null, cada alta espera aquí (hasta 10 s) a la otra antes de insertar la escuela. */
+	/** Si no es null, cada alta espera aquí (hasta 10 s) a las otras antes de insertar la escuela. */
 	volatile CountDownLatch encuentro;
+	/** Si no es null, cada alta que se repite espera aquí (hasta 10 s) a las otras antes de volver a insertar. */
+	volatile CountDownLatch reencuentro;
+	/** Si el hilo ya pasó por {@link #encuentro}: su siguiente inserción es la de la repetición. */
+	final ThreadLocal<Boolean> yaSeEncontro = ThreadLocal.withInitial(() -> false);
 	/** Si no es null, la próxima alta encuentra su id reservado ya ocupado por una fila con este slug. */
 	volatile String ocupaElId;
 
@@ -113,11 +118,13 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 	@BeforeEach
 	void puntoDeEncuentro() {
 		encuentro = null;
+		reencuentro = null;
 		ocupaElId = null;
 		// El espía se reinicia tras cada test: se vuelve a poner la espera y después se llama al repositorio real.
 		doAnswer(invocacion -> {
-			CountDownLatch punto = encuentro;
+			CountDownLatch punto = yaSeEncontro.get() ? reencuentro : encuentro;
 			if (punto != null) {
+				yaSeEncontro.set(true);
 				punto.countDown();
 				punto.await(10, TimeUnit.SECONDS);
 			}
@@ -141,7 +148,7 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void mismoPropietarioNuevoEnDosAltasALaVez_lasDosSalen_unaCuentaYUnSoloCorreo() throws Exception {
+	void mismoPropietarioNuevoEnDosAltasALaVez_lasDosSalen_unaCuentaYCadaUnaSuCorreo() throws Exception {
 		String emailPropietario = "it-f42c-mismo-" + marca + "@example.test";
 		String nombreA = "Escuela IT Carrera A " + marca;
 		String nombreB = "Escuela IT Carrera B " + marca;
@@ -149,8 +156,9 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 		List<String> resultados = aLaVez(cuerpo(nombreA, "Eva", "Ficticia", emailPropietario),
 				cuerpo(nombreB, "Eva", "Ficticia", emailPropietario));
 
-		// Una alta invita (la cuenta es suya) y la otra, al repetirse, encuentra la cuenta y solo da el rol.
-		assertEquals(List.of("201 invitacion=" + emailPropietario, "201 invitacion=null"), resultados);
+		// Una alta invita (la cuenta es suya) y la otra, al repetirse, encuentra la cuenta aún pendiente y reenvía la
+		// invitación con su escuela, como el reenvío del panel de miembros.
+		assertEquals(List.of("201 invitacion=" + emailPropietario, "201 invitacion=" + emailPropietario), resultados);
 		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE email = ?", emailPropietario));
 		assertEquals(1, contar("SELECT COUNT(*) FROM organizacion WHERE nombre = ?", nombreA));
 		assertEquals(1, contar("SELECT COUNT(*) FROM organizacion WHERE nombre = ?", nombreB));
@@ -168,15 +176,16 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 					SELECT COUNT(*) FROM disciplina d JOIN organizacion o ON o.id = d.organizacion_id WHERE o.nombre = ?""",
 					nombre), nombre);
 		}
-		// El correo de la invitación sale una vez: el del intento deshecho no se envía.
-		verify(email, times(1)).sendEmailConImagen(eq(emailPropietario), any(), any(), any(), any(), any(), any());
+		// Un correo por escuela: el del intento deshecho no se envía.
+		verify(email, times(2)).sendEmailConImagen(eq(emailPropietario), any(), any(), any(), any(), any(), any());
+		assertNull(jdbc.queryForObject("SELECT contrasena FROM usuario WHERE email = ?", String.class, emailPropietario));
 		assertEquals(0, encuentro.getCount(), "Las dos altas llegaron a la vez a insertar la escuela");
 	}
 
 	@Test
 	void dosNombresDistintosConElMismoSlugALaVez_lasDosSalen_conSufijo() throws Exception {
-		String nombreA = "Club IT Ñandú " + marca;
-		String nombreB = "Club IT Nandu " + marca;
+		String nombreA = "Club IT Nandu " + marca;
+		String nombreB = "Club-IT Nandu " + marca;
 
 		List<String> resultados = aLaVez(cuerpo(nombreA, "Eva", "Ficticia", "it-f42c-slug-a-" + marca + "@example.test"),
 				cuerpo(nombreB, "Eva", "Ficticia", "it-f42c-slug-b-" + marca + "@example.test"));
@@ -187,11 +196,26 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 		List<String> slugs = jdbc.queryForList("SELECT slug FROM organizacion WHERE nombre IN (?, ?) ORDER BY slug",
 				String.class, nombreA, nombreB);
 		assertEquals(List.of(base, base + "-2"), slugs);
-		// La intercalación de MySQL no distingue tildes («Ñandú» = «Nandu»): se comparan los nombres en Java.
 		List<String> nombres = new ArrayList<>(jdbc.queryForList("SELECT nombre FROM organizacion WHERE slug IN (?, ?)",
 				String.class, base, base + "-2"));
 		nombres.sort(null);
-		assertEquals(List.of(nombreB, nombreA), nombres);
+		assertEquals(List.of(nombreA, nombreB), nombres);
+		assertEquals(0, encuentro.getCount(), "Las dos altas llegaron a la vez a insertar la escuela");
+	}
+
+	@Test
+	void elMismoNombreConYSinTildesALaVez_unaSale_laOtra409() throws Exception {
+		String nombreA = "Club IT Ñandú Sur " + marca;
+		String nombreB = "club it nandu sur " + marca;
+
+		List<String> resultados = aLaVez(cuerpo(nombreA, "Eva", "Ficticia", "it-f42c-tilde-a-" + marca + "@example.test"),
+				cuerpo(nombreB, "Eva", "Ficticia", "it-f42c-tilde-b-" + marca + "@example.test"));
+
+		assertEquals(2, resultados.size(), resultados.toString());
+		assertTrue(resultados.get(0).startsWith("201 "), resultados.toString());
+		assertEquals("409 {\"mensaje\":\"Ya hay una escuela con ese nombre.\"}", resultados.get(1));
+		// La intercalación de MySQL no distingue tildes: una sola fila con cualquiera de los dos nombres.
+		assertEquals(1, contar("SELECT COUNT(*) FROM organizacion WHERE slug LIKE ?", "club-it-nandu-sur-" + marca + "%"));
 		assertEquals(0, encuentro.getCount(), "Las dos altas llegaron a la vez a insertar la escuela");
 	}
 
@@ -239,15 +263,42 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 		verify(email, never()).sendEmailConImagen(any(), any(), any(), any(), any(), any(), any());
 	}
 
+	@Test
+	void tresNombresConElMismoSlugALaVez_laQueVuelveAChocar_409() throws Exception {
+		// Nombres distintos con el mismo slug. Una sale a la primera; las otras dos chocan, se repiten a la vez con el
+		// mismo slug con sufijo y vuelven a chocar: una sale y la otra ya no se repite más (409, no 500).
+		String nombreA = "Club IT Tres " + marca;
+		String nombreB = "Club-IT Tres " + marca;
+		String nombreC = "Club IT Tres! " + marca;
+		reencuentro = new CountDownLatch(2);
+
+		List<String> resultados = aLaVez(cuerpo(nombreA, "Eva", "Ficticia", "it-f42c-tres-a-" + marca + "@example.test"),
+				cuerpo(nombreB, "Eva", "Ficticia", "it-f42c-tres-b-" + marca + "@example.test"),
+				cuerpo(nombreC, "Eva", "Ficticia", "it-f42c-tres-c-" + marca + "@example.test"));
+
+		assertEquals(3, resultados.size(), resultados.toString());
+		assertTrue(resultados.get(0).startsWith("201 ") && resultados.get(1).startsWith("201 "), resultados.toString());
+		assertEquals("409 {\"mensaje\":\"Otra alta de escuela ha coincidido con esta. Vuelve a intentarlo.\"}",
+				resultados.get(2));
+		String base = "club-it-tres-" + marca;
+		assertEquals(List.of(base, base + "-2"), jdbc.queryForList(
+				"SELECT slug FROM organizacion WHERE slug LIKE ? ORDER BY slug", String.class, base + "%"));
+		// La que no sale no deja nada: ni escuela, ni cuenta, ni correo.
+		assertEquals(2, contar("SELECT COUNT(*) FROM usuario WHERE email LIKE ?", "it-f42c-tres-%-" + marca + "%"));
+		verify(email, times(2)).sendEmailConImagen(any(), any(), any(), any(), any(), any(), any());
+		assertEquals(0, encuentro.getCount(), "Las tres altas llegaron a la vez a insertar la escuela");
+		assertEquals(0, reencuentro.getCount(), "Las dos repeticiones llegaron a la vez a insertar la escuela");
+	}
+
 	// ------------------------------------------------------------------ apoyo
 
-	/** Las dos altas a la vez; cada resultado como texto («201 invitacion=…», «409 …» o la excepción), ordenados. */
-	private List<String> aLaVez(String primera, String segunda) throws Exception {
-		encuentro = new CountDownLatch(2);
-		ExecutorService hilos = Executors.newFixedThreadPool(2);
+	/** Las altas a la vez; cada resultado como texto («201 invitacion=…», «409 …» o la excepción), ordenados. */
+	private List<String> aLaVez(String... cuerpos) throws Exception {
+		encuentro = new CountDownLatch(cuerpos.length);
+		ExecutorService hilos = Executors.newFixedThreadPool(cuerpos.length);
 		try {
 			List<Future<String>> futuros = new ArrayList<>();
-			for (String cuerpo : List.of(primera, segunda)) {
+			for (String cuerpo : cuerpos) {
 				Callable<String> peticion = () -> {
 					MvcResult r = mvc.perform(alta(cuerpo).cookie(cookieSuperadmin)).andReturn();
 					String contenido = r.getResponse().getContentAsString();

@@ -41,12 +41,12 @@ class AforoPreinscripcionServiceTest {
  @Test void cadaTurnoUsaElAforoDeSuSedeEnUnaConsultaYElLimiteComunSiNoLoTiene(){
   Grupo deOtraSede=new Grupo();deOtraSede.setId(8L);deOtraSede.setSedeId(2L);grupo.setSedeId(1L);Grupo sinAforo=new Grupo();sinAforo.setId(9L);sinAforo.setSedeId(3L);Grupo sinSede=new Grupo();sinSede.setId(10L);
   Turno deDos=new Turno();deDos.setId(21L);deDos.setGrupo(deOtraSede);Turno deTres=new Turno();deTres.setId(22L);deTres.setGrupo(sinAforo);Turno deNinguna=new Turno();deNinguna.setId(23L);deNinguna.setGrupo(sinSede);
-  when(sedes.aforosPorSede(anyCollection())).thenReturn(List.of(new Object[]{1L,1},new Object[]{2L,9}));ocupar(Map.of(),Map.of());
+  when(sedes.datosSedes(anyCollection())).thenReturn(List.of(new Object[]{1L,1,"A",true},new Object[]{2L,9,"B",true}));ocupar(Map.of(),Map.of());
   AforoPreinscripcionService.Ocupacion o=service.ocupacion(List.of(lunes,miercoles,deDos,deTres,deNinguna),TEMPORADA);
   assertEquals(1,o.aforo(lunes));assertEquals(1,o.plazas(miercoles));assertEquals(9,o.plazas(deDos));assertEquals(3,o.aforo(deTres));assertEquals(3,o.plazas(deNinguna));
-  verify(sedes,times(1)).aforosPorSede(anyCollection());verify(configuracion,times(1)).obtenerLimiteTurno();
+  verify(sedes,times(1)).datosSedes(anyCollection());verify(configuracion,times(1)).obtenerLimiteTurno();
  }
- @Test void sinSedesNoSeConsultanLosAforos(){ocupar(Map.of(),Map.of());assertEquals(3,service.ocupacion(List.of(lunes),TEMPORADA).plazas(lunes));verify(sedes,never()).aforosPorSede(anyCollection());}
+ @Test void sinSedesNoSeConsultanLosAforos(){ocupar(Map.of(),Map.of());assertEquals(3,service.ocupacion(List.of(lunes),TEMPORADA).plazas(lunes));verify(sedes,never()).datosSedes(anyCollection());}
  @Test void bloquearConAdicionalesFallaSoloSiFaltaUnExigido(){when(turnos.findAllByIdForUpdate(List.of(11L,12L,99L))).thenReturn(List.of(miercoles,lunes));Map<Long,Turno> bloqueados=service.bloquearTurnos(Set.of(11L),Set.of(12L,99L));assertEquals(List.of(11L,12L),List.copyOf(bloqueados.keySet()));when(turnos.findAllByIdForUpdate(List.of(12L,99L))).thenReturn(List.of(miercoles));IllegalArgumentException e=assertThrows(IllegalArgumentException.class,()->service.bloquearTurnos(Set.of(99L),Set.of(12L)));assertEquals("Alguno de los turnos seleccionados no existe.",e.getMessage());}
  @Test void posicionCuentaSolicitudesAnterioresConTurnosSolapados(){Preinscripcion p=new Preinscripcion();p.setTurnos(new java.util.LinkedHashSet<>(List.of(lunes,miercoles)));p.setTemporada(TEMPORADA);Instant fecha=Instant.parse("2026-07-02T10:00:00Z");setCreadaEn(p,fecha);when(preinscripciones.countAnterioresSolapadas(TEMPORADA,EstadoPreinscripcion.EN_LISTA_ESPERA,p.getTurnos(),fecha,null)).thenReturn(3L);assertEquals(4,service.posicion(p));}
  /** Simula las dos consultas agregadas: solo devuelven filas de los turnos pedidos con algún recuento. */

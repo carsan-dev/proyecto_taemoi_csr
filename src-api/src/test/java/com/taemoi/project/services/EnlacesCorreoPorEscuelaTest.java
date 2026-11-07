@@ -174,7 +174,7 @@ class EnlacesCorreoPorEscuelaTest {
 			PreinscripcionService alta = new PreinscripcionService(mock(PreinscripcionRepository.class), null, null,
 					null, null, null, null, null, null, mock(EmailService.class), null, new ObjectMapper(), aforo,
 					null, null, null, null, null, null, null, null, MarcaEscuelaPruebas.soloMoiskimdo(), null, null,
-					URLS);
+					URLS, mock(com.taemoi.project.repositories.SedeRepository.class));
 
 			String html = ReflectionTestUtils.invokeMethod(alta, "htmlAdmin", solicitud(escuela));
 

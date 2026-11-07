@@ -17,7 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +34,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,6 +61,9 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.organizacion.SesionVerificada;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.plataforma.AutoridadPlataforma;
+import com.taemoi.project.plataforma.LogoEscuelaService;
+import com.taemoi.project.marca.MarcaPanelService;
+import com.taemoi.project.dtos.response.MarcaPanelDTO;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AccesoFamiliaService;
 import com.taemoi.project.services.AuthenticationService;
@@ -120,6 +127,9 @@ public class AuthenticationController {
 
 	@Autowired
 	private MembresiaService membresiaService;
+
+	@Autowired
+	private LogoEscuelaService logoEscuela;
 
 	@Autowired
 	private InvitacionService invitacionService;
@@ -431,6 +441,38 @@ public class AuthenticationController {
 	public ResponseEntity<List<OrganizacionUsuarioDTO>> obtenerOrganizaciones() {
 		Usuario usuario = usuarioAutenticado();
 		return ResponseEntity.ok(membresiaService.organizacionesDe(usuario.getId(), TenantContext.get()));
+	}
+
+	/**
+	 * PNG del logo subido de una escuela del usuario (aunque no sea la activa), para el selector de escuela. 404 (nunca
+	 * 403, para no revelar si la escuela existe) salvo que tenga membresía activa en ella que abra sesión (la misma
+	 * regla que {@link #obtenerOrganizaciones()}) y un logo SUBIDO cuya imagen sea de esa escuela; sin logo subido
+	 * (LEGADO o NINGUNO) tampoco hay PNG. {@code ETag} con el id de la imagen y 304 si coincide, sin leer el fichero.
+	 */
+	@GetMapping("/organizaciones/{id}/logo")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<byte[]> logoDeOrganizacion(@PathVariable("id") Long id,
+			@RequestHeader(value = "If-None-Match", required = false) String siNoCoincide) {
+		Usuario usuario = usuarioAutenticado();
+		Long version = membresiaService.organizacionesDe(usuario.getId(), TenantContext.get()).stream()
+				.filter(o -> o.id().equals(id) && o.logo() == MarcaPanelDTO.Logo.SUBIDO).map(o -> o.logoVersion())
+				.filter(v -> v != null).findFirst().orElse(null);
+		if (version == null) {
+			return ResponseEntity.notFound().build();
+		}
+		CacheControl cache = CacheControl.maxAge(Duration.ofSeconds(300)).cachePrivate();
+		String vigente = "\"logo-" + version + "\"";
+		if (EscuelaMarcaController.coincide(siNoCoincide, vigente)) {
+			return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(vigente).cacheControl(cache).build();
+		}
+		MarcaPanelService.LogoPanel logo;
+		try {
+			logo = logoEscuela.logoSubido(id);
+		} catch (java.util.NoSuchElementException e) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).eTag("\"logo-" + logo.imagenId() + "\"")
+				.cacheControl(cache).body(logo.png());
 	}
 
 	/**

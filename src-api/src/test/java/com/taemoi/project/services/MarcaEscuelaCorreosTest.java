@@ -238,7 +238,7 @@ class MarcaEscuelaCorreosTest {
 		PreinscripcionService alta = new PreinscripcionService(repo, null, null, null, null, null, null, null, null,
 				email, null, new ObjectMapper(), aforo, null, null, null, null, catalogo,
 				new com.taemoi.project.catalogo.CatalogoTaemoiEnMemoria().tarifas(), null, null, marca, null, null,
-				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://frontend.example.test/"));
+				com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://frontend.example.test/"), null);
 		correos.put("alta-pendiente.html", ReflectionTestUtils.invokeMethod(alta, "asuntoCliente", p) + "\n"
 				+ ReflectionTestUtils.invokeMethod(alta, "htmlConfirmacion", p));
 		p.setEstado(EstadoPreinscripcion.EN_LISTA_ESPERA);

@@ -1,5 +1,6 @@
 package com.taemoi.project.services.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,7 +23,9 @@ import com.taemoi.project.repositories.OrganizacionRepository;
 
 /**
  * Caché por organización de {@code organizacion.comportamiento_legado_taemoi}: lee el valor de cada escuela,
- * lo conserva {@code VIGENCIA_MS} y lo vuelve a leer después. El reloj es controlable (sin esperas reales).
+ * lo conserva {@code VIGENCIA_MS} y lo vuelve a leer después. El reloj es controlable (sin esperas reales). Pieza 394:
+ * la misma lectura guarda {@code dia_limite_mensualidad} ({@link com.taemoi.project.services.DiaLimiteMensualidadService}),
+ * sin consulta propia, y {@code olvidar} la descarta tras guardar los datos de la escuela.
  */
 class ComportamientoLegadoServiceImplTest {
 
@@ -129,6 +132,71 @@ class ComportamientoLegadoServiceImplTest {
 		IllegalStateException e = assertThrows(IllegalStateException.class, servicio::activo);
 
 		assertTrue(e.getMessage().contains("No hay organización activa"));
+		verify(repositorio, never()).findById(org.mockito.ArgumentMatchers.anyLong());
+	}
+
+	// ------------------------------------------------------------------ pieza 394: día límite de la mensualidad
+
+	private static Organizacion organizacion(Boolean legado, Integer diaLimite) {
+		Organizacion o = organizacion(legado);
+		o.setDiaLimiteMensualidad(diaLimite);
+		return o;
+	}
+
+	private int diaEn(long organizacion) {
+		return TenantContext.calcularCon(organizacion, servicio::diaLimiteMensualidad);
+	}
+
+	@Test
+	void diaLimite_leeElDeCadaEscuela() {
+		when(repositorio.findById(ORG_A)).thenReturn(Optional.of(organizacion(true, 5)));
+		when(repositorio.findById(ORG_B)).thenReturn(Optional.of(organizacion(false, 10)));
+
+		assertEquals(5, diaEn(ORG_A));
+		assertEquals(10, diaEn(ORG_B));
+	}
+
+	/** Lo que mide MiCajaProfesorIntegrationTest: el pendiente vencido pide los dos valores con una sola consulta. */
+	@Test
+	void diaLimite_compartelaLecturaDelComportamientoLegado_sinConsultaPropia() {
+		when(repositorio.findById(ORG_A)).thenReturn(Optional.of(organizacion(true, 12)));
+
+		assertTrue(activoEn(ORG_A));
+		assertEquals(12, diaEn(ORG_A));
+		assertEquals(12, diaEn(ORG_A));
+		assertTrue(activoEn(ORG_A));
+		verify(repositorio, times(1)).findById(ORG_A);
+	}
+
+	@Test
+	void diaLimite_sinValorOSinEscuela_es5() {
+		when(repositorio.findById(ORG_A)).thenReturn(Optional.empty());
+		when(repositorio.findById(ORG_B)).thenReturn(Optional.of(organizacion(false, null)));
+
+		assertEquals(5, diaEn(ORG_A));
+		assertEquals(5, diaEn(ORG_B));
+	}
+
+	@Test
+	void olvidar_descartaLaLecturaDeEsaEscuela_yNoLaDeOtras() {
+		when(repositorio.findById(ORG_A)).thenReturn(Optional.of(organizacion(true, 5)));
+		when(repositorio.findById(ORG_B)).thenReturn(Optional.of(organizacion(false, 7)));
+		assertEquals(5, diaEn(ORG_A));
+		assertEquals(7, diaEn(ORG_B));
+
+		when(repositorio.findById(ORG_A)).thenReturn(Optional.of(organizacion(true, 20)));
+		servicio.olvidar(ORG_A);
+
+		assertEquals(20, diaEn(ORG_A), "dentro de la vigencia, pero olvidada: vuelve a leer");
+		assertEquals(7, diaEn(ORG_B));
+		verify(repositorio, times(2)).findById(ORG_A);
+		verify(repositorio, times(1)).findById(ORG_B);
+		servicio.olvidar(null);
+	}
+
+	@Test
+	void diaLimite_sinOrganizacionActiva_lanzaIllegalStateException() {
+		assertThrows(IllegalStateException.class, servicio::diaLimiteMensualidad);
 		verify(repositorio, never()).findById(org.mockito.ArgumentMatchers.anyLong());
 	}
 }

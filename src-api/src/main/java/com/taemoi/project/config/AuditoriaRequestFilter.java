@@ -179,6 +179,11 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		 * guardaría el nombre y la fecha del cuerpo; el registro explícito solo lleva el id de la cuenta.
 		 */
 		PANEL_MI_PERFIL("PUT", "/api/panel/mi-perfil"),
+		/**
+		 * Pieza 394: DatosEscuelaService#guardar (PANEL DATOS_ESCUELA_CAMBIADOS; sin cambios, con sinCambios=SI). Aquí, el
+		 * 2xx guardaría los datos legales y del firmante del cuerpo; el registro explícito solo lleva el id de la escuela.
+		 */
+		ESCUELA_DATOS("PUT", "/api/escuela/datos"),
 		// Decisión 324: pasar lista. Todo 2xx registra, también el que no cambia nada; aquí, el 2xx guardaría los ids del cuerpo.
 		/** AsistenciaService#guardar (PROFESOR ASISTENCIA_REGISTRADA o ASISTENCIA_CORREGIDA). */
 		ASISTENCIA_PROFESOR("PUT", "/api/profesor/grupos/[^/]+/clases/[^/]+/[^/]+"),
@@ -213,6 +218,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		}
 	}
 
+	/** Pieza 394: los datos de la escuela que no se guardan en la auditoría (todos menos el día límite). */
+	private static final Set<String> CLAVES_DATOS_ESCUELA = Set.of("nombreLegal", "cif", "direccion", "emailContacto",
+			"telefono", "firmanteNombre", "firmanteCargo", "firmanteNif");
+
 	private static final Map<Pattern, Set<String>> CLAVES_REDACTADAS_POR_RUTA = Map.of(
 			Pattern.compile("^/api/admin/dni-compartidos/aplicar/?$"), Set.of("grupo"),
 			// Pieza E7-4: el email de la cuenta que se asigna como profesor a un grupo.
@@ -232,6 +241,9 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			// Decisiones 322 y 419: el nombre, el cumpleaños y la preferencia del perfil de la cuenta (los 4xx; el 2xx tiene
 			// registro propio).
 			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes", "importesTapados"),
+			// Pieza 394: los datos legales, de contacto y del firmante de la escuela (los 4xx; el 2xx tiene registro propio).
+			// El día límite de la mensualidad no es personal: se guarda.
+			Pattern.compile("^/api/escuela/datos/?$"), CLAVES_DATOS_ESCUELA,
 			// Decisión 324: los alumnos presentes, por los dos prefijos (los 4xx; el 2xx tiene registro propio). Esta fila
 			// sobrevive a la anonimización del alumno. Decisiones 455-463: también los motivos de falta (ids de alumnos y,
 			// con «médica», un dato de salud).
@@ -245,6 +257,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 			Pattern.compile("^/api/miembros/?$"), Set.of("q"),
 			// Decisión 322: el perfil de la cuenta no lee parámetros, pero un GET con ?nombrePreferido=… no debe guardarlos.
 			Pattern.compile("^/api/panel/mi-perfil/?$"), Set.of("nombrePreferido", "cumpleDia", "cumpleMes", "importesTapados"),
+			// Pieza 394: la ruta no lee parámetros, pero un GET con ?cif=… no debe guardarlos.
+			Pattern.compile("^/api/escuela/datos/?$"), CLAVES_DATOS_ESCUELA,
 			// Pieza R1: el nombre del fichero de una subida fallida, tal como lo escribió quien la hizo.
 			Pattern.compile("^/api/material-examen/[^/]+/[^/]+/(videos|documentacion)/?$"), Set.of("nombre"));
 	static final String VALOR_REDACTADO = "[redactado]";
