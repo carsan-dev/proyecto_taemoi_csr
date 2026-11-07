@@ -1401,3 +1401,132 @@ $transition-speed: 0.3s;
     padding: calc(84px + 0.05rem) 0.85rem 0.6rem;
   }
 }
+
+// ========================================
+// MARCA DE LA ESCUELA (fase 4, pieza 5)
+// LEGADO (Moiskimdo) queda como siempre. SUBIDO y NINGUNO pintan la zona de marca con el color de la escuela
+// (--marca-fondo y --marca-sobre: el primario y su texto del tema de la API, siempre >= 4,5:1).
+// ========================================
+.login-page[data-logo='pendiente'] .login-left .brand-logo {
+  // Mientras llega la escuela del Host: el hueco del logo de siempre, sin pintar ninguno.
+  visibility: hidden;
+}
+
+.login-page[data-logo='subido'],
+.login-page[data-logo='ninguno'] {
+  .login-left {
+    background: var(--marca-fondo, #{$dark-bg});
+    color: var(--marca-sobre, #{$text-light});
+
+    .brand-title {
+      text-shadow: none;
+    }
+
+    .brand-subtitle {
+      opacity: 1;
+      font-weight: 400;
+    }
+
+    .brand-logo--subido {
+      width: 148px;
+      max-height: 148px;
+      object-fit: contain;
+    }
+
+    .brand-features .feature-item {
+      background: color-mix(in srgb, currentColor 8%, transparent);
+      border-color: color-mix(in srgb, currentColor 22%, transparent);
+
+      // El verde de siempre no llega a 3:1 sobre cualquier color: el icono toma el color del texto.
+      i {
+        color: currentColor;
+      }
+
+      &:hover {
+        background: color-mix(in srgb, currentColor 12%, transparent);
+      }
+    }
+  }
+}
+
+// NINGUNO: las iniciales y el nombre de la escuela en texto.
+.marca-texto {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  margin: 1.2rem 0;
+}
+
+.monograma {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  font-size: 1.625rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.marca-texto-nombre {
+  margin: 0;
+  max-width: 13ch;
+  font-size: 1.625rem;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+// Donde el panel de marca se oculta (como siempre: por debajo de 993 px de ancho o de 861 px de alto), SUBIDO y
+// NINGUNO añaden una fila compacta encima del formulario.
+.marca-movil {
+  display: none;
+}
+
+@media (max-width: 992px), (max-height: 860px) {
+  .marca-movil {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 0 1rem;
+    color: $text-dark;
+  }
+
+  .marca-movil-logo {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--marca-fondo, #{$dark-bg});
+    color: var(--marca-sobre, #{$text-light});
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.03em;
+  }
+
+  .marca-movil-logo--subido {
+    border-radius: 0;
+    background: none;
+    object-fit: contain;
+  }
+
+  .marca-movil-nombre {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 768px) {
+  .marca-movil {
+    justify-content: flex-start;
+    margin: 0.5rem 0 0.9rem;
+  }
+}

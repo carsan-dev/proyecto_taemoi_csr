@@ -395,7 +395,8 @@
               "src/app/panel-nuevo/festivos/festivos-vista.spec.ts",
               "src/app/panel-nuevo/festivos/festivos.service.spec.ts",
               "src/app/panel-nuevo/festivos/festivos.component.spec.ts",
-              "src/app/componentes/vistas/vista-login/vista-login.component.spec.ts"
+              "src/app/componentes/vistas/vista-login/vista-login.component.spec.ts",
+              "src/app/componentes/vistas/vista-login/marca-escuela-login.spec.ts"
             ]
           }
         }

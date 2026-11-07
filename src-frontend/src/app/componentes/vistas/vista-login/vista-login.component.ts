@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +7,11 @@ import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../../environments/environment';
 import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
+import { Subscription } from 'rxjs';
+import { MARCA_LEGADO, MarcaEscuelaLoginService, MarcaLogin } from './marca-escuela-login.service';
+
+/** Si la marca de la escuela no llega en este tiempo, el login pinta la de siempre (SVG legado). */
+export const ESPERA_MARCA_MS = 3000;
 
 @Component({
   selector: 'app-vista-login',
@@ -15,7 +20,11 @@ import { showErrorToast, showSuccessToast } from '../../../utils/toast.util';
   templateUrl: './vista-login.component.html',
   styleUrls: ['./vista-login.component.scss'],
 })
-export class VistaLoginComponent implements OnInit {
+export class VistaLoginComponent implements OnInit, OnDestroy {
+  /** Zona de marca (fase 4, pieza 5): mientras llega la escuela del Host, el hueco del logo de siempre, invisible. */
+  readonly marca = signal<MarcaLogin>({ tipo: 'pendiente' });
+  private marcaSuscripcion: Subscription | null = null;
+  private marcaEspera: ReturnType<typeof setTimeout> | null = null;
   credenciales: LoginInterface = { email: '', contrasena: '', rememberMe: false };
   passwordFieldType: string = 'password';
   passwordToggleIcon: string = 'bi bi-eye-fill';
@@ -33,10 +42,13 @@ export class VistaLoginComponent implements OnInit {
   constructor(
     private readonly authService: AuthenticationService,
     private readonly router: Router,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly marcaEscuela: MarcaEscuelaLoginService
   ) {}
 
   ngOnInit(): void {
+    this.cargarMarca();
+
     // Check for OAuth2 error parameters
     this.route.queryParams.subscribe(params => {
       if (params['modo'] === 'registro') {
@@ -97,6 +109,71 @@ export class VistaLoginComponent implements OnInit {
           });
         });
       }
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.terminarEsperaMarca();
+    this.marcaSuscripcion?.unsubscribe();
+  }
+
+  /** Color de la escuela para su zona de marca (solo `SUBIDO` y `NINGUNO`); null deja el degradado de siempre. */
+  colorMarca(campo: 'primario' | 'sobrePrimario'): string | null {
+    const marca = this.marca();
+    const color = marca.tipo === 'subido' || marca.tipo === 'ninguno' ? marca.tema?.[campo] : null;
+    return color && /^#[0-9A-Fa-f]{6}$/.test(color) ? color : null;
+  }
+
+  nombreEscuela(): string {
+    const marca = this.marca();
+    return marca.tipo === 'subido' || marca.tipo === 'ninguno' ? marca.nombre : '';
+  }
+
+  inicialesEscuela(): string {
+    const marca = this.marca();
+    return marca.tipo === 'ninguno' ? marca.iniciales : '';
+  }
+
+  urlLogoSubido(): string | null {
+    const marca = this.marca();
+    return marca.tipo === 'subido' ? marca.url : null;
+  }
+
+  /** El logo subido no se pudo cargar: el nombre de la escuela en texto, nunca el logo de Moiskimdo. */
+  logoSubidoFallo(): void {
+    const marca = this.marca();
+    if (marca.tipo === 'subido') {
+      this.marca.set(this.marcaEscuela.marcaDe({ nombre: marca.nombre, logo: 'NINGUNO', logoVersion: null, tema: marca.tema }));
+    }
+  }
+
+  /**
+   * Pide la escuela del Host. Si falla o tarda más de {@link ESPERA_MARCA_MS}, la marca de siempre; una respuesta
+   * tardía todavía se aplica.
+   */
+  private cargarMarca(): void {
+    this.marcaEspera = setTimeout(() => {
+      this.marcaEspera = null;
+      if (this.marca().tipo === 'pendiente') {
+        this.marca.set(MARCA_LEGADO);
+      }
+    }, ESPERA_MARCA_MS);
+    this.marcaSuscripcion = this.marcaEscuela.escuela().subscribe({
+      next: (escuela) => {
+        this.terminarEsperaMarca();
+        this.marca.set(this.marcaEscuela.marcaDe(escuela));
+      },
+      error: () => {
+        this.terminarEsperaMarca();
+        this.marca.set(MARCA_LEGADO);
+      },
+    });
+  }
+
+  private terminarEsperaMarca(): void {
+    if (this.marcaEspera !== null) {
+      clearTimeout(this.marcaEspera);
+      this.marcaEspera = null;
     }
   }
 

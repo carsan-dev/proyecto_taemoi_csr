@@ -132,6 +132,7 @@
     "src/app/servicios/endpoints/endpoints.service.spec.ts",
     "src/app/panel-nuevo/ficha/ficha-alumno-base.spec.ts",
     "src/app/componentes/vistas/vista-login/vista-login.component.spec.ts",
+    "src/app/componentes/vistas/vista-login/marca-escuela-login.spec.ts",
     "src/app/componentes/vistas/horarios/horarios.component.spec.ts",
     "src/app/componentes/vistas/vista-principal-user/turnos-usuario/turnos-usuario.component.spec.ts",
     "src/app/componentes/endpoints/listado-alumnos/herramientas-alumnos/herramientas-alumnos.dias.spec.ts",
