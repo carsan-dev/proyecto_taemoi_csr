@@ -11,7 +11,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.web.filter.ForwardedHeaderFilter;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Fase 4, escuela por dominio (pieza 1): el Host de la petición, normalizado, da la escuela; un host que no está en
@@ -118,5 +123,33 @@ class ResolutorEscuelaPorHostTest {
 		assertEquals(9L, sin.escuelaDelHost("x.test"));
 		assertEquals(9L, sin.getOrganizacionPorDefecto());
 		assertTrue(sin.escuelaRegistrada("x.test").isEmpty());
+	}
+
+	/**
+	 * Documenta el riesgo: con {@code server.forward-headers-strategy=framework} ({@code ForwardedHeaderFilter}), un
+	 * cliente que envíe {@code Forwarded: host=...} o {@code X-Forwarded-Host} cambia el host visto por la API, y con
+	 * él la escuela. Solo lo evita que nginx borre esas cabeceras del cliente y ponga la suya.
+	 */
+	@Test
+	void sinNginx_cabeceraForwardedEligeEscuela_porEsoNginxDebeBorrarla() throws Exception {
+		MockHttpServletRequest forwarded = new MockHttpServletRequest();
+		forwarded.setServerName("moiskimdo.es");
+		forwarded.addHeader("Forwarded", "host=x.test");
+		assertEquals(5L, resolutor.escuelaDe(trasForwardedHeaderFilter(forwarded)));
+
+		MockHttpServletRequest xForwarded = new MockHttpServletRequest();
+		xForwarded.setServerName("moiskimdo.es");
+		xForwarded.addHeader("X-Forwarded-Host", "x.test");
+		assertEquals(5L, resolutor.escuelaDe(trasForwardedHeaderFilter(xForwarded)));
+
+		MockHttpServletRequest limpia = new MockHttpServletRequest();
+		limpia.setServerName("moiskimdo.es");
+		assertEquals(1L, resolutor.escuelaDe(trasForwardedHeaderFilter(limpia)));
+	}
+
+	private static HttpServletRequest trasForwardedHeaderFilter(MockHttpServletRequest entrada) throws Exception {
+		MockFilterChain cadena = new MockFilterChain();
+		new ForwardedHeaderFilter().doFilter(entrada, new MockHttpServletResponse(), cadena);
+		return (HttpServletRequest) cadena.getRequest();
 	}
 }

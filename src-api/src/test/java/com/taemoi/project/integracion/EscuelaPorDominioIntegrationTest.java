@@ -206,6 +206,20 @@ class EscuelaPorDominioIntegrationTest extends MySqlIntegrationTest {
 				ids(turnos(get(TURNOS).header("Host", "moiskimdo.es").cookie(new Cookie("jwt", tokenY)))));
 	}
 
+	/** JWT inválido (firma ajena): se trata como anónima y cae en la escuela de su Host (fallback documentado). */
+	@Test
+	void sesionInvalida_resuelveLaEscuelaDelHost_yEnMoiskimdoLaUno() throws Exception {
+		String invalido = tokenY.substring(0, tokenY.length() - 4) + "AAAA";
+
+		assertEquals(List.of(turnoX), ids(turnos(get(TURNOS).header("Host", hostX).cookie(new Cookie("jwt", invalido)))));
+
+		String sinHost = turnos(get(TURNOS));
+		assertEquals(sinHost,
+				turnos(get(TURNOS).header("Host", "moiskimdo.es").cookie(new Cookie("jwt", invalido))));
+		assertFalse(ids(sinHost).contains(turnoX));
+		assertFalse(ids(sinHost).contains(turnoY));
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	private long escuela(String slug) {
