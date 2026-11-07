@@ -420,6 +420,16 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"nombrePreferido\":\"Luci\"}"), 200,
 				List.of("PANEL PERFIL_CAMBIADO"),
 				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"cumpleDia\":31,\"cumpleMes\":4}"), 400));
+		// Pieza 394: datos de la escuela, solo el propietario. Un CIF mal escrito: 400.
+		casos.put(EscrituraConRegistroPropio.ESCUELA_DATOS, () -> {
+			String datos = """
+					{"nombreLegal":"Club Deportivo IT","cif":"%s","direccion":"Calle Ejemplo 1","emailContacto":"it@example.test",
+					 "telefono":"600 000 000","firmanteNombre":"Firmante IT","firmanteCargo":"Presidenta",
+					 "firmanteNif":"00000000T","diaLimiteMensualidad":5}""";
+			return new Caso(tPropietario, propietario, () -> conCuerpo(put("/api/escuela/datos"), datos.formatted("G00000000")),
+					200, List.of("PANEL DATOS_ESCUELA_CAMBIADOS"),
+					() -> conCuerpo(put("/api/escuela/datos"), datos.formatted("G-0000000")), 400);
+		});
 		// Decisión 324: pasar lista. El turno tA es de los lunes: cada caso usa su lunes, y un martes da 400.
 		LocalDate lunes = LocalDate.now(ValidacionRelojConfig.ZONA).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 		casos.put(EscrituraConRegistroPropio.ASISTENCIA_PROFESOR, () -> {

@@ -97,6 +97,7 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.MIEMBRO_CONTRASENA,
 					new Ejemplo("PUT", "/api/miembros/21/contrasena")),
 			Map.entry(EscrituraConRegistroPropio.PANEL_MI_PERFIL, new Ejemplo("PUT", "/api/panel/mi-perfil")),
+			Map.entry(EscrituraConRegistroPropio.ESCUELA_DATOS, new Ejemplo("PUT", "/api/escuela/datos")),
 			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_PROFESOR,
 					new Ejemplo("PUT", "/api/profesor/grupos/3/clases/9/2026-10-26")),
 			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_GESTION,
@@ -187,6 +188,10 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("GET", "/api/escuela/marca"),
 			new Ejemplo("GET", "/api/escuela/logo"),
 			new Ejemplo("PUT", "/api/escuela/marca"),
+			// Pieza 394: la lectura de los datos de la escuela y las rutas vecinas sin manejador.
+			new Ejemplo("GET", "/api/escuela/datos"),
+			new Ejemplo("POST", "/api/escuela/datos"),
+			new Ejemplo("PUT", "/api/escuela/datos/7"),
 			new Ejemplo("GET", "/api/plataforma/escuelas/7/marca"),
 			new Ejemplo("DELETE", "/api/plataforma/escuelas/7/marca"),
 			new Ejemplo("POST", "/api/plataforma/escuelas/7/marca"),

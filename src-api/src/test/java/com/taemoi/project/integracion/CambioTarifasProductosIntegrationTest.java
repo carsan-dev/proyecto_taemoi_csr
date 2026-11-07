@@ -46,6 +46,7 @@ import com.taemoi.project.dtos.response.TesoreriaResumenDTO;
 import com.taemoi.project.entities.Producto;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoRepository;
+import com.taemoi.project.services.ContadorService;
 import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.services.ProductoService;
 import com.taemoi.project.services.ProductosCatalogoService;
@@ -88,6 +89,7 @@ class CambioTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 	@Autowired ProductosCatalogoService catalogo;
 	@Autowired ProductoService productoService;
 	@Autowired TesoreriaService tesoreria;
+	@Autowired ContadorService contadores;
 	@Autowired com.taemoi.project.controllers.ProductoController productoController;
 	@Autowired com.taemoi.project.repositories.ProductoRepository productoRepository;
 	@Autowired TransactionTemplate tx;
@@ -650,9 +652,13 @@ class CambioTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 		return id;
 	}
 
-	/** Alumno de Taemoi con una inscripción con licencia (fecha de licencia dada). */
+	/**
+	 * Alumno de Taemoi con una inscripción con licencia (fecha de licencia dada). El número de expediente lo da el
+	 * contador de la organización, como en un alta: uno al azar chocaba (uk_alumno_organizacion_expediente) con los
+	 * que reparten el contador y el «máximo + 1» de otras clases desde el máximo de la organización.
+	 */
 	private long alumnoConLicencia(String deporte, String nacimiento, boolean discapacidad, String fechaLicencia) {
-		int expediente = 800000 + (int) (Math.abs(UUID.randomUUID().getMostSignificantBits()) % 190000);
+		int expediente = TenantContext.calcularCon(ORG_TAEMOI, () -> contadores.siguienteNumeroExpediente());
 		jdbc.update("""
 				INSERT INTO alumno (activo, apellidos, autorizacion_web, direccion, fecha_nacimiento, nombre,
 				  numero_expediente, telefono, tiene_derecho_examen, tiene_discapacidad, organizacion_id)
