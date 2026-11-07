@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,12 +32,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.exceptions.ArchivoNoValidoException;
+import com.taemoi.project.exceptions.evento.DatosEventoNoValidosException;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.turno.TurnoNoEncontradoException;
 import com.taemoi.project.services.DocumentoService;
@@ -111,6 +115,9 @@ public class EventoController {
 			// Imagen no válida (HEIC, no es una imagen): 400 con el motivo.
 			avisarArchivoRechazado("Imagen de evento rechazada (alta)", null, file, e);
 			return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
+		} catch (DatosEventoNoValidosException e) {
+			// W2: hora, lugar o sede no válidos (antes de guardar nada).
+			return ResponseEntity.badRequest().body(Map.of("mensaje", String.valueOf(e.getMessage())));
 		} catch (Exception e) {
 			logger.error("Error al crear evento: ext={} contentType={} causa={}", extensionParaLog(file),
 					contentTypeParaLog(file), causa(e));
@@ -125,6 +132,11 @@ public class EventoController {
 			@RequestParam("eventoEditado") String eventoJson) {
 		try {
 			Evento eventoActualizado = objectMapper.readValue(eventoJson, Evento.class);
+			// W2: los campos de la web que no llegan se conservan (el panel de hoy no los envía).
+			JsonNode cuerpo = objectMapper.readTree(eventoJson);
+			Set<String> camposWeb = EventoService.CAMPOS_WEB.stream().filter(cuerpo::has).collect(Collectors.toSet());
+			// Antes de guardar la imagen: si no son válidos, no queda un fichero huérfano.
+			eventoService.normalizarDatosWeb(eventoActualizado);
 
 			Imagen nuevaImagen = null;
 
@@ -134,7 +146,7 @@ public class EventoController {
 			}
 
 			// Actualizar el evento en la base de datos, incluyendo la nueva imagen
-			Evento evento = eventoService.actualizarEvento(id, eventoActualizado, nuevaImagen);
+			Evento evento = eventoService.actualizarEvento(id, eventoActualizado, nuevaImagen, camposWeb);
 			aplicarUrlImagenPublica(evento);
 			return new ResponseEntity<>(evento, HttpStatus.OK);
 
@@ -144,6 +156,9 @@ public class EventoController {
 			// Imagen no válida (HEIC, no es una imagen): 400 con el motivo.
 			avisarArchivoRechazado("Imagen de evento rechazada (edición)", id, file, e);
 			return ResponseEntity.badRequest().body(Map.of("mensaje", motivo(e)));
+		} catch (DatosEventoNoValidosException e) {
+			// W2: hora, lugar o sede no válidos.
+			return ResponseEntity.badRequest().body(Map.of("mensaje", String.valueOf(e.getMessage())));
 		} catch (Exception e) {
 			logger.error("Error al actualizar evento: eventoId={} ext={} contentType={} causa={}", id,
 					extensionParaLog(file), contentTypeParaLog(file), causa(e));

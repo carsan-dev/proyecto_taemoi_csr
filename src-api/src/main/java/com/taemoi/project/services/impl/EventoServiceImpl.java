@@ -19,11 +19,13 @@ import org.springframework.web.multipart.MultipartFile;
 import com.taemoi.project.entities.Documento;
 import com.taemoi.project.entities.Evento;
 import com.taemoi.project.entities.Imagen;
+import com.taemoi.project.exceptions.evento.DatosEventoNoValidosException;
 import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.repositories.EventoFotoRepository;
 import com.taemoi.project.repositories.EventoFotoRepository.NumeroFotos;
 import com.taemoi.project.repositories.EventoRepository;
 import com.taemoi.project.repositories.ImagenRepository;
+import com.taemoi.project.repositories.SedeRepository;
 import com.taemoi.project.services.DocumentoService;
 import com.taemoi.project.services.EventoFotoService;
 import com.taemoi.project.services.EventoService;
@@ -50,6 +52,12 @@ public class EventoServiceImpl implements EventoService {
 	@Autowired
 	private EventoFotoService eventoFotoService;
 
+	@Autowired
+	private SedeRepository sedeRepository;
+
+	static final String SEDE_NO_EXISTE = "La sede del evento no existe.";
+	static final int LUGAR_MAXIMO = 160;
+
 	@Override
 	public List<Evento> obtenerTodosLosEventos() {
 		ensureOrdenesGlobal();
@@ -71,6 +79,7 @@ public class EventoServiceImpl implements EventoService {
 	@Override
 	@Transactional
 	public Evento guardarEvento(@NonNull Evento evento, MultipartFile archivoImagen) throws IOException {
+		normalizarDatosWeb(evento);
 		ensureOrdenesGlobal();
 		if (archivoImagen != null && !archivoImagen.isEmpty()) {
 			Imagen imagenGuardada = imagenService.guardarImagenEvento(archivoImagen);
@@ -90,13 +99,24 @@ public class EventoServiceImpl implements EventoService {
 	}
 
 	@Override
-	public Evento actualizarEvento(@NonNull Long id, Evento eventoActualizado, Imagen nuevaImagen) {
+	public Evento actualizarEvento(@NonNull Long id, Evento eventoActualizado, Imagen nuevaImagen,
+			Set<String> camposWebRecibidos) {
+		normalizarDatosWeb(eventoActualizado);
 		Optional<Evento> optionalEvento = eventoRepository.findById(id);
 		if (optionalEvento.isPresent()) {
 			Evento eventoExistente = optionalEvento.get();
 			eventoExistente.setTitulo(eventoActualizado.getTitulo());
 			eventoExistente.setDescripcion(eventoActualizado.getDescripcion());
 			eventoExistente.setFechaEvento(eventoActualizado.getFechaEvento());
+			if (camposWebRecibidos.contains("hora")) {
+				eventoExistente.setHora(eventoActualizado.getHora());
+			}
+			if (camposWebRecibidos.contains("lugar")) {
+				eventoExistente.setLugar(eventoActualizado.getLugar());
+			}
+			if (camposWebRecibidos.contains("sedeId")) {
+				eventoExistente.setSedeId(eventoActualizado.getSedeId());
+			}
 
 			// Si hay una nueva imagen, primero debemos guardarla en la base de datos antes
 			// de asignarla
@@ -307,6 +327,23 @@ public class EventoServiceImpl implements EventoService {
 		}
 
 		eventoRepository.saveAll(eventosSinOrden);
+	}
+
+	@Override
+	public void normalizarDatosWeb(Evento evento) {
+		String lugar = evento.getLugar() == null ? null : evento.getLugar().strip();
+		if (lugar != null && lugar.isEmpty()) {
+			lugar = null;
+		}
+		if (lugar != null && lugar.codePointCount(0, lugar.length()) > LUGAR_MAXIMO) {
+			throw new DatosEventoNoValidosException(
+					"El lugar del evento no puede pasar de " + LUGAR_MAXIMO + " caracteres.");
+		}
+		evento.setLugar(lugar);
+		// Sede de la escuela activa: la consulta va filtrada por @TenantId; la de otra escuela no existe.
+		if (evento.getSedeId() != null && sedeRepository.buscarEnEscuelaActiva(evento.getSedeId()).isEmpty()) {
+			throw new DatosEventoNoValidosException(SEDE_NO_EXISTE);
+		}
 	}
 
 	private Evento guardarEventoAlInicio(Evento evento) {
