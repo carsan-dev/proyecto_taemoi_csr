@@ -271,8 +271,11 @@ public class SecurityConfiguration {
 						// Fase 4, pieza 4: marca pública (nombre, logo, tema) de la escuela del Host.
 						.requestMatchers(HttpMethod.GET, "/api/publico/escuela", "/api/publico/escuela/logo").permitAll()
 						// Web por plantilla (fase4-web-plan.md §5, pieza W1): solo lectura, de la escuela activa; 404 sin
-						// web publicada. Solo estas dos rutas y solo GET (y HEAD, que se autoriza como GET).
-						.requestMatchers(HttpMethod.GET, "/api/publico/web", "/api/publico/web/legal").permitAll()
+						// web publicada. Solo estas rutas y solo GET (y HEAD, que se autoriza como GET). Pieza W5: la lista
+						// de eventos y un evento ({id}: un solo tramo; lo de debajo sigue cerrado).
+						.requestMatchers(HttpMethod.GET, "/api/publico/web", "/api/publico/web/legal",
+								"/api/publico/web/eventos", "/api/publico/web/eventos/{id}")
+						.permitAll()
 						.requestMatchers("/api/catalogo", "/api/catalogo/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())

@@ -60,6 +60,8 @@ import com.taemoi.project.services.TemporadaService;
 public class WebPublicaService {
 
 	static final int PROXIMOS_EVENTOS = 3;
+	/** Pieza W5: tope de cada lista de {@code GET /api/publico/web/eventos} (la página no pagina). */
+	static final int EVENTOS_MAXIMO = 60;
 	private static final ZoneId ZONA_POR_DEFECTO = ZoneId.of("Europe/Madrid");
 
 	private final WebEscuelaRepository webs;
@@ -103,6 +105,32 @@ public class WebPublicaService {
 	@Transactional(readOnly = true)
 	public Optional<LegalWebDTO> legal(boolean vistaPrevia) {
 		return escuelaConWeb(vistaPrevia).map(this::legal);
+	}
+
+	/**
+	 * {@code GET /api/publico/web/eventos} (pieza W5); vacío si la escuela activa no tiene web visible. Solo eventos
+	 * visibles con fecha, también en la vista previa (enseña lo que vería el público).
+	 */
+	@Transactional(readOnly = true)
+	public Optional<EventosWebDTO> eventos(boolean vistaPrevia) {
+		return escuelaConWeb(vistaPrevia).map(e -> {
+			LocalDate hoy = LocalDate.now(zona(e.organizacion()));
+			return new EventosWebDTO(eventosDeLista(consultas.eventosDesde(hoy, EVENTOS_MAXIMO)),
+					eventosDeLista(consultas.eventosAntesDe(hoy, EVENTOS_MAXIMO)));
+		});
+	}
+
+	/**
+	 * {@code GET /api/publico/web/eventos/{id}} (pieza W5); vacío si la escuela activa no tiene web visible o el evento
+	 * no es suyo, está oculto o no tiene fecha.
+	 */
+	@Transactional(readOnly = true)
+	public Optional<EventoWebDTO> evento(boolean vistaPrevia, long id) {
+		return escuelaConWeb(vistaPrevia).flatMap(e -> consultas.eventoWeb(id)).map(f -> new EventoWebDTO(
+				eventoDeFila(f), (String) f[8],
+				consultas.documentosDeEvento(id).stream()
+						.map(d -> new EventoWebDTO.Documento((Long) d[0], (String) d[1], (String) d[2])).toList(),
+				consultas.fotosDeEvento(id).stream().map(EventoWebDTO.Foto::new).toList()));
 	}
 
 	// ------------------------------------------------------------------ escuela
@@ -154,10 +182,7 @@ public class WebPublicaService {
 				consultas.licencias().stream()
 						.map(f -> new WebPublicaDTO.Licencia((String) f[0], (String) f[1], (Double) f[2])).toList(),
 				consultas.examenDesde(),
-				consultas.proximosEventos(hoy, PROXIMOS_EVENTOS).stream()
-						.map(f -> new WebPublicaDTO.Evento((Long) f[0], (String) f[1], (LocalDate) f[2], f[3] != null,
-								(LocalTime) f[4], (String) f[5], (Long) f[6], (String) f[7]))
-						.toList(),
+				consultas.proximosEventos(hoy, PROXIMOS_EVENTOS).stream().map(WebPublicaService::eventoDeFila).toList(),
 				new WebPublicaDTO.Contacto(o.getEmailContacto(), o.getTelefono()));
 	}
 
@@ -279,6 +304,18 @@ public class WebPublicaService {
 		} catch (Exception e) {
 			return TextNode.valueOf(contenido);
 		}
+	}
+
+	// ------------------------------------------------------------------ eventos
+
+	/** Fila {@code [id, titulo, fecha, id de la foto o null, hora, lugar, id de la sede, nombre de la sede, …]}. */
+	private static WebPublicaDTO.Evento eventoDeFila(Object[] f) {
+		return new WebPublicaDTO.Evento((Long) f[0], (String) f[1], (LocalDate) f[2], f[3] != null, (LocalTime) f[4],
+				(String) f[5], (Long) f[6], (String) f[7]);
+	}
+
+	private static List<EventosWebDTO.Evento> eventosDeLista(List<Object[]> filas) {
+		return filas.stream().map(f -> new EventosWebDTO.Evento(eventoDeFila(f), (String) f[8])).toList();
 	}
 
 	// ------------------------------------------------------------------ utilidades
