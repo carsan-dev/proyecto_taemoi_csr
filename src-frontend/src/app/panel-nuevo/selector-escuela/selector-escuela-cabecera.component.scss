@@ -264,3 +264,24 @@
     --pn-logo-escuela: 40px;
   }
 }
+
+// Hoja inferior modal: el <dialog> solo la saca a la capa superior (fondo inerte); no pinta nada propio. El velo y la
+// hoja de arriba siguen dibujándose como antes, en posición fija sobre la ventana.
+.pn-selector__hoja {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: inherit;
+
+  &::backdrop {
+    background: transparent;
+  }
+}

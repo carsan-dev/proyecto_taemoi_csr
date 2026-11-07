@@ -193,12 +193,21 @@ export const routes: Routes = [
     children: [],
   },
   {
-    // Selector de escuela «Tras entrar» (fase 4): tras el login con contraseña, solo con dos escuelas o más.
+    // Selector de escuela «Tras entrar» (fase 4): tras el login con contraseña, solo con dos escuelas o más (lo mira el
+    // guard de la ruta hija antes de activar la pantalla).
     path: 'elegir-escuela',
     canMatch: [estilosPanelGuard],
     data: { seo: SEO_ROUTES.noIndex, requiredRoles: ROUTE_ROLE_SETS.sesion },
-    loadComponent: () => import('./panel-nuevo/selector-escuela/elegir-escuela.component').then(m => m.ElegirEscuelaComponent),
+    loadChildren: () => import('./panel-nuevo/selector-escuela/selector-escuela.routes').then(m => m.RUTAS_ELEGIR_ESCUELA),
     canActivate: [roleGuard],
+  },
+  {
+    // Ruta neutra del cambio de escuela (fase 4): se sale aquí, sin cambiar la URL, antes de pedir el cambio. `panelNuevo`
+    // mantiene la cabecera del panel debajo de «Entrando en …».
+    path: 'cambiando-escuela',
+    canMatch: [estilosPanelGuard],
+    data: { seo: SEO_ROUTES.noIndex, panelNuevo: true },
+    loadChildren: () => import('./panel-nuevo/selector-escuela/selector-escuela.routes').then(m => m.RUTAS_CAMBIANDO_ESCUELA),
   },
   {
     path: 'recuperar-contrasena',

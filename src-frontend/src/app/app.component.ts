@@ -1,10 +1,11 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SkeletonComponent } from './componentes/vistas/layout/skeleton/skeleton.component';
 import { NgxSpinnerModule } from 'ngx-spinner';
 import { SeoService } from './servicios/generales/seo.service';
 import { RouteScrollCoordinator } from './servicios/generales/route-scroll-coordinator.service';
 import { ScrollLockService } from './servicios/generales/scroll-lock.service';
+import { CambioEscuelaPestanasService } from './core/cambio-escuela-pestanas';
 
 @Component({
   selector: 'app-root',
@@ -28,6 +29,8 @@ export class AppComponent {
   ) {
     routeScrollCoordinator.start();
     scrollLock.observeOverlays();
+    // Tras cambiar de escuela en otra pestaña, esta se bloquea hasta recargar (selector de escuela, fase 4).
+    inject(CambioEscuelaPestanasService).iniciar();
   }
 
   @HostListener('document:keydown', ['$event'])

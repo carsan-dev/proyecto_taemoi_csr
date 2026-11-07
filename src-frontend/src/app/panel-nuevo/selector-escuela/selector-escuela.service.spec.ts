@@ -1,9 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component, OnDestroy } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { CambioEscuelaPestanasService } from '../../core/cambio-escuela-pestanas';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { sesionCerrada } from '../../servicios/authentication/sesion-cerrada';
@@ -11,6 +15,7 @@ import { contraste } from '../acento-escuela';
 import { LOGO_LEGADO } from '../marca-escuela-panel.service';
 import {
   IR_A_URL,
+  RUTA_CAMBIANDO_ESCUELA,
   RUTA_ELEGIR_ESCUELA,
   RUTA_ENTRADA_SESION,
   SelectorEscuelaService,
@@ -23,6 +28,7 @@ import {
   urlLogoEscuela,
 } from './selector-escuela.service';
 import { escuela } from './escuelas-prueba';
+import { RUTAS_CAMBIANDO_ESCUELA } from './selector-escuela.routes';
 
 const URL_LISTA = `${environment.apiUrl}/auth/organizaciones`;
 const URL_CAMBIO = `${environment.apiUrl}/auth/organizacion`;
@@ -92,29 +98,75 @@ describe('SelectorEscuelaService', () => {
   let http: HttpTestingController;
   let email: BehaviorSubject<string | null>;
   let irA: jasmine.Spy;
+  let pestanas: jasmine.SpyObj<CambioEscuelaPestanasService>;
+  let harness: RouterTestingHarness;
+  let registro: string[];
 
-  beforeEach(() => {
+  /** Pantalla con cambios sin guardar: su `canDeactivate` pregunta (aquí, `permitirSalida`). */
+  @Component({ standalone: true, template: '<p>Ficha</p>' })
+  class FichaPruebaComponent implements OnDestroy {
+    static permitirSalida = true;
+    puedeSalir(): boolean {
+      registro.push('pregunta');
+      return FichaPruebaComponent.permitirSalida;
+    }
+    ngOnDestroy(): void {
+      registro.push('ficha destruida');
+    }
+  }
+
+  const SUR = escuela({ id: 2, nombre: 'Club Ficticio Sur' });
+  const ESTE = escuela({ id: 3, nombre: 'Escuela del Este' });
+
+  /** Deja correr la navegación del router (promesas y temporizadores). */
+  async function esperar(): Promise<void> {
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r));
+    }
+  }
+
+  beforeEach(async () => {
     email = new BehaviorSubject<string | null>('gestor@example.test');
     irA = jasmine.createSpy('irA');
+    registro = [];
+    FichaPruebaComponent.permitirSalida = true;
+    pestanas = jasmine.createSpyObj<CambioEscuelaPestanasService>('CambioEscuelaPestanasService', [
+      'bloquear',
+      'avisarOtras',
+    ]);
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([
+          {
+            path: 'ficha',
+            component: FichaPruebaComponent,
+            canDeactivate: [(pantalla: FichaPruebaComponent) => pantalla.puedeSalir()],
+          },
+          { path: 'cambiando-escuela', children: RUTAS_CAMBIANDO_ESCUELA },
+        ]),
         { provide: AuthenticationService, useValue: { emailCambio: email.asObservable() } },
         { provide: IR_A_URL, useValue: irA },
+        { provide: CambioEscuelaPestanasService, useValue: pestanas },
       ],
     });
     servicio = TestBed.inject(SelectorEscuelaService);
     http = TestBed.inject(HttpTestingController);
+    harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/ficha', FichaPruebaComponent);
     sessionStorage.setItem('alumnoId', '41');
     sessionStorage.setItem('panelProductosEstado', '{"filtros":{}}');
+    localStorage.setItem('dashboard-user-estado-deportes-41', '[{"deporte":"TAEKWONDO"}]');
   });
 
   afterEach(() => {
     http.verify();
     sessionStorage.removeItem('alumnoId');
     sessionStorage.removeItem('panelProductosEstado');
+    localStorage.removeItem('dashboard-user-estado-deportes-41');
   });
+
 
   it('pide las escuelas una vez y comparte la respuesta, sin el aviso global de error', async () => {
     const a = firstValueFrom(servicio.organizaciones());
@@ -168,44 +220,95 @@ describe('SelectorEscuelaService', () => {
     expect(await falla).toBe('/mis-grupos');
   });
 
-  it('cambia de escuela: POST, vacía el sessionStorage y recarga la app en la entrada de la sesión', async () => {
-    const cambio = firstValueFrom(servicio.cambiar(2));
+  it('cambia de escuela: sale de la pantalla, POST, limpia, avisa a las demás pestañas y recarga la app', async () => {
+    const cambio = firstValueFrom(servicio.cambiar(SUR));
+    await esperar();
+    // Primero se sale de la pantalla (sus confirmaciones y sus `beforeunload` ya no existen) y luego se pide el cambio.
+    expect(registro).toEqual(['pregunta', 'ficha destruida']);
+    expect(servicio.entrando()).toEqual(SUR);
+    harness.detectChanges();
+    expect(harness.routeNativeElement?.querySelector('pn-entrando-escuela')?.textContent).toContain(
+      'Entrando en Club Ficticio Sur…'
+    );
     const peticion = http.expectOne(URL_CAMBIO);
     expect(peticion.request.method).toBe('POST');
     expect(peticion.request.body).toEqual({ organizacionId: 2 });
     expect(peticion.request.withCredentials).toBeTrue();
     expect(peticion.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
     expect(irA).not.toHaveBeenCalled();
+    expect(pestanas.bloquear).not.toHaveBeenCalled();
     peticion.flush({ token: 'nuevo' });
 
     expect(await cambio).toBeTrue();
     expect(sessionStorage.getItem('alumnoId')).toBeNull();
     expect(sessionStorage.getItem('panelProductosEstado')).toBeNull();
+    expect(localStorage.getItem('dashboard-user-estado-deportes-41')).toBeNull();
+    expect(pestanas.bloquear).toHaveBeenCalledTimes(1);
+    expect(pestanas.avisarOtras).toHaveBeenCalledTimes(1);
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
     expect(RUTA_ENTRADA_SESION).toBe('/login/google');
+    // La URL del navegador no cambia (`skipLocationChange`) y, mientras recarga, no se sale de la ruta neutra.
+    expect(TestBed.inject(Router).url).toBe(RUTA_CAMBIANDO_ESCUELA);
+    expect(await TestBed.inject(Router).navigateByUrl('/ficha')).toBeFalse();
+  });
+
+  it('si la pantalla no deja salir (cambios sin guardar), no pide nada ni toca nada', async () => {
+    FichaPruebaComponent.permitirSalida = false;
+    const cambio = firstValueFrom(servicio.cambiar(SUR));
+    await esperar();
+
+    expect(await cambio).toBeFalse();
+    expect(registro).toEqual(['pregunta']);
+    http.expectNone(URL_CAMBIO);
+    expect(sessionStorage.getItem('alumnoId')).toBe('41');
+    expect(localStorage.getItem('dashboard-user-estado-deportes-41')).not.toBeNull();
+    expect(pestanas.bloquear).not.toHaveBeenCalled();
+    expect(pestanas.avisarOtras).not.toHaveBeenCalled();
+    expect(irA).not.toHaveBeenCalled();
+    expect(servicio.ocupado).toBeFalse();
+    expect(servicio.entrando()).toBeNull();
+    expect(TestBed.inject(Router).url).toBe('/ficha');
+
+    // Tras guardar, el mismo cambio ya sale.
+    FichaPruebaComponent.permitirSalida = true;
+    servicio.cambiar(SUR).subscribe();
+    await esperar();
+    http.expectOne(URL_CAMBIO).flush({});
+    expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
   });
 
   it('un segundo cambio con otro en vuelo no lanza otra petición', async () => {
-    servicio.cambiar(2).subscribe();
-    const segundo = await firstValueFrom(servicio.cambiar(3));
+    servicio.cambiar(SUR).subscribe();
+    const segundo = await firstValueFrom(servicio.cambiar(ESTE));
     expect(segundo).toBeFalse();
     expect(servicio.ocupado).toBeTrue();
+    await esperar();
     http.expectOne(URL_CAMBIO).flush({});
     // Ya recargando: sigue sin admitir otro cambio.
-    expect(await firstValueFrom(servicio.cambiar(3))).toBeFalse();
+    expect(await firstValueFrom(servicio.cambiar(ESTE))).toBeFalse();
+    await esperar();
     http.expectNone(URL_CAMBIO);
     expect(irA).toHaveBeenCalledTimes(1);
   });
 
-  it('si el POST falla, la escuela no cambia: ni recarga ni vacía nada, y se puede reintentar', async () => {
-    const fallo = firstValueFrom(servicio.cambiar(2)).catch((e) => e);
+  it('si el POST falla, la escuela no cambia: vuelve a la pantalla, ni recarga ni limpia, y se puede reintentar', async () => {
+    const fallo = firstValueFrom(servicio.cambiar(SUR)).catch((e) => e);
+    await esperar();
     http.expectOne(URL_CAMBIO).flush({ mensaje: 'Acceso denegado.' }, { status: 403, statusText: 'Forbidden' });
     expect((await fallo).status).toBe(403);
     expect(irA).not.toHaveBeenCalled();
+    expect(pestanas.bloquear).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('alumnoId')).toBe('41');
+    expect(localStorage.getItem('dashboard-user-estado-deportes-41')).not.toBeNull();
     expect(servicio.ocupado).toBeFalse();
+    expect(servicio.entrando()).toBeNull();
+    expect(TestBed.inject(Router).url).toBe('/ficha');
+    expect(harness.routeNativeElement?.querySelector('pn-entrando-escuela')).toBeNull();
+    expect(servicio.tomarFallo()).toBe(2);
+    expect(servicio.tomarFallo()).toBeNull();
 
-    servicio.cambiar(2).subscribe();
+    servicio.cambiar(SUR).subscribe();
+    await esperar();
     http.expectOne(URL_CAMBIO).flush({});
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
   });

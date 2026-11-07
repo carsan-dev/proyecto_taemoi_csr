@@ -5,11 +5,19 @@ import { Router, provideRouter } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { CambioEscuelaPestanasService } from '../../core/cambio-escuela-pestanas';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { ElegirEscuelaComponent } from './elegir-escuela.component';
 import { escuela } from './escuelas-prueba';
-import { EscuelaUsuario, IR_A_URL, RUTA_ENTRADA_SESION } from './selector-escuela.service';
+import {
+  EscuelaUsuario,
+  IR_A_URL,
+  RUTA_CAMBIANDO_ESCUELA,
+  RUTA_ENTRADA_SESION,
+  SelectorEscuelaService,
+} from './selector-escuela.service';
+import { RUTAS_CAMBIANDO_ESCUELA } from './selector-escuela.routes';
 
 const URL_LISTA = `${environment.apiUrl}/auth/organizaciones`;
 const URL_CAMBIO = `${environment.apiUrl}/auth/organizacion`;
@@ -35,7 +43,7 @@ describe('ElegirEscuelaComponent (tras entrar)', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([]),
+        provideRouter([{ path: 'cambiando-escuela', children: RUTAS_CAMBIANDO_ESCUELA }]),
         {
           provide: AuthenticationService,
           useValue: {
@@ -51,6 +59,10 @@ describe('ElegirEscuelaComponent (tras entrar)', () => {
           useValue: { obtener: () => of({ nombreVisible: 'Ana López', roles: [], capacidades: [] }) },
         },
         { provide: IR_A_URL, useValue: irA },
+        {
+          provide: CambioEscuelaPestanasService,
+          useValue: jasmine.createSpyObj('CambioEscuelaPestanasService', ['bloquear', 'avisarOtras']),
+        },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
@@ -66,6 +78,13 @@ describe('ElegirEscuelaComponent (tras entrar)', () => {
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const opciones = (): HTMLButtonElement[] => Array.from(el().querySelectorAll<HTMLButtonElement>('.pn-paso__opcion'));
+
+  /** Deja correr la navegación del router (promesas y temporizadores). */
+  async function esperar(): Promise<void> {
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r));
+    }
+  }
 
   afterEach(() => http.verify());
 
@@ -122,12 +141,14 @@ describe('ElegirEscuelaComponent (tras entrar)', () => {
     expect(irA).not.toHaveBeenCalled();
   });
 
-  it('elegir otra cambia la escuela con «Entrando en…» y recarga la app', async () => {
+  it('elegir otra sale a la ruta neutra («Entrando en…»), cambia la escuela y recarga la app', async () => {
     await montar();
     responder();
     opciones()[1].click();
     fixture.detectChanges();
-    expect(el().querySelector('pn-entrando-escuela')?.textContent).toContain('Entrando en Escuela Ficticia Norte…');
+    await esperar();
+    expect(TestBed.inject(SelectorEscuelaService).entrando()?.nombre).toBe('Escuela Ficticia Norte');
+    expect(TestBed.inject(Router).url).toBe(RUTA_CAMBIANDO_ESCUELA);
     const peticion = http.expectOne(URL_CAMBIO);
     expect(peticion.request.body).toEqual({ organizacionId: 1 });
     peticion.flush({});
@@ -142,6 +163,7 @@ describe('ElegirEscuelaComponent (tras entrar)', () => {
     opciones()[1]?.click();
     opciones()[2]?.click();
     fixture.detectChanges();
+    await esperar();
     http.expectOne(URL_CAMBIO).flush({});
     expect(irA).toHaveBeenCalledTimes(1);
   });
@@ -151,10 +173,12 @@ describe('ElegirEscuelaComponent (tras entrar)', () => {
     responder();
     opciones()[2].click();
     fixture.detectChanges();
+    await esperar();
     http.expectOne(URL_CAMBIO).flush({ mensaje: 'Acceso denegado.' }, { status: 403, statusText: 'Forbidden' });
+    await esperar();
     fixture.detectChanges();
+    await fixture.whenStable();
 
-    expect(el().querySelector('pn-entrando-escuela')).toBeNull();
     expect(irA).not.toHaveBeenCalled();
     const fallo = el().querySelector<HTMLElement>('.pn-paso__fallo')!;
     expect(fallo.getAttribute('role')).toBe('alert');
@@ -166,13 +190,36 @@ describe('ElegirEscuelaComponent (tras entrar)', () => {
     expect(reintentar.textContent?.trim()).toBe('Reintentar');
     expect(document.activeElement).toBe(reintentar);
     expect(opciones().length).toBe(3);
+    // El fallo ya se ha pintado aquí: otra pantalla no lo repetiría.
+    expect(TestBed.inject(SelectorEscuelaService).tomarFallo()).toBeNull();
 
     reintentar.click();
     fixture.detectChanges();
+    await esperar();
     const otra = http.expectOne(URL_CAMBIO);
     expect(otra.request.body).toEqual({ organizacionId: 3 });
     otra.flush({});
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+  });
+
+  it('la pantalla que se vuelve a crear tras un cambio fallido pinta su error y «Reintentar»', async () => {
+    await montar();
+    responder();
+    opciones()[2].click();
+    await esperar();
+    // Al salir a la ruta neutra, la pantalla deja de existir; el POST falla y el servicio vuelve a crearla.
+    fixture.destroy();
+    http.expectOne(URL_CAMBIO).flush({ mensaje: 'Acceso denegado.' }, { status: 403, statusText: 'Forbidden' });
+    await esperar();
+    const selector = TestBed.inject(SelectorEscuelaService);
+    const nueva = TestBed.createComponent(ElegirEscuelaComponent);
+    nueva.detectChanges();
+    await nueva.whenStable();
+    nueva.detectChanges();
+    const fallo = (nueva.nativeElement as HTMLElement).querySelector<HTMLElement>('.pn-paso__fallo');
+    expect(fallo?.textContent).toContain('No se ha podido cambiar de escuela. Inténtalo otra vez.');
+    expect(document.activeElement).toBe(fallo!.querySelector('button'));
+    expect(selector.tomarFallo()).toBeNull();
   });
 
   it('las flechas mueven el foco entre las escuelas', async () => {

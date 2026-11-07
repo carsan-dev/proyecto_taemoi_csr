@@ -1,16 +1,35 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { DestroyRef, Injectable, InjectionToken, inject } from '@angular/core';
+import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, catchError, distinctUntilChanged, map, of, shareReplay, skip, take, tap, throwError } from 'rxjs';
+import { Router } from '@angular/router';
+import {
+  Observable,
+  catchError,
+  defer,
+  distinctUntilChanged,
+  from,
+  map,
+  of,
+  shareReplay,
+  skip,
+  switchMap,
+  take,
+  tap,
+  throwError,
+} from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { CambioEscuelaPestanasService, IR_A_URL, RUTA_ENTRADA_SESION } from '../../core/cambio-escuela-pestanas';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { sesionCerrada } from '../../servicios/authentication/sesion-cerrada';
 import { acentoDe, contraste } from '../acento-escuela';
 import { etiquetaRol } from '../formato/roles';
 import { LOGO_LEGADO } from '../marca-escuela-panel.service';
+import { limpiarAlmacenesDeEscuela } from './limpieza-escuela';
+
+export { IR_A_URL, RUTA_ENTRADA_SESION } from '../../core/cambio-escuela-pestanas';
 
 /** Una escuela de la cuenta (`GET /api/auth/organizaciones`, `OrganizacionUsuarioDTO`). */
 export interface EscuelaUsuario {
@@ -32,20 +51,11 @@ export interface EscuelaUsuario {
 export const RUTA_ELEGIR_ESCUELA = '/elegir-escuela';
 
 /**
- * Entrada sin pantalla que resuelve el destino de la sesión con la regla del login con contraseña (decisión 384,
- * `entradaGoogleGuard`). Tras cambiar de escuela, la recarga completa va aquí: los roles de la escuela nueva deciden si
- * el destino es el panel, «Mis grupos», «Mi caja» o el área de familias.
+ * Ruta neutra a la que se sale ANTES de pedir el cambio (sin cambiar la URL del navegador): salir de la pantalla
+ * actual pide las confirmaciones de cambios sin guardar (`canDeactivate`) y destruye sus componentes, y con ellos sus
+ * `beforeunload`. Pinta «Entrando en …» hasta la recarga.
  */
-export const RUTA_ENTRADA_SESION = '/login/google';
-
-/** Carga completa de una URL de la app (tras cambiar de escuela); en los tests se sustituye. */
-export const IR_A_URL = new InjectionToken<(url: string) => void>('IR_A_URL', {
-  providedIn: 'root',
-  factory: () => {
-    const documento = inject(DOCUMENT);
-    return (url: string) => documento.defaultView?.location.assign(url);
-  },
-});
+export const RUTA_CAMBIANDO_ESCUELA = '/cambiando-escuela';
 
 /** Orden del texto de los roles (boceto): de más a menos poder sobre la escuela. */
 const ORDEN_ROLES = ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR', 'ROLE_USER'];
@@ -136,20 +146,34 @@ export function coloresIniciales(colorPrimario: string | null): { fondo: string;
  *
  * - `organizaciones()`: una petición por carga de la app, compartida por el login, «Tras entrar» y la cabecera. Un error
  *   no se guarda; cerrar sesión o entrar con otra cuenta la descarta.
- * - `cambiar(id)`: `POST /api/auth/organizacion`. Si va bien, NO se intenta limpiar caché a caché: se vacía el
- *   `sessionStorage` (filtros, páginas, alumno de familia y saludo de la escuela anterior, como al cerrar sesión) y se
- *   recarga la app entera en {@link RUTA_ENTRADA_SESION}. Así ningún servicio, `shareReplay`, signal ni tema de la
- *   escuela anterior sobrevive. Si falla, nada cambia y el error llega a quien llamó. Una segunda llamada mientras hay
- *   un cambio en vuelo no hace nada.
+ * - `cambiar(escuela)`, en este orden y sin tocar nada hasta que la salida está confirmada:
+ *   1. sale de la pantalla actual a {@link RUTA_CAMBIANDO_ESCUELA} con el router, que pregunta por los cambios sin
+ *      guardar; si la persona se queda (o otra navegación la sustituye), no se pide nada y todo sigue igual;
+ *   2. `POST /api/auth/organizacion`;
+ *   3. si va bien, NO se intenta limpiar caché a caché: se bloquean las peticiones de la pestaña, se vacía el
+ *      `sessionStorage` y lo de la escuela del `localStorage` (`limpieza-escuela.ts`), se avisa a las demás pestañas y
+ *      se recarga la app entera en {@link RUTA_ENTRADA_SESION}. Así ningún servicio, `shareReplay`, signal ni tema de la
+ *      escuela anterior sobrevive. Los componentes de la pantalla anterior ya no existen: ningún `beforeunload` frena
+ *      la recarga;
+ *   4. si falla, nada cambia: vuelve a la pantalla de antes, guarda la escuela para {@link tomarFallo} («Tras entrar»
+ *      se ha vuelto a crear) y el error llega a quien llamó.
+ *   Una segunda llamada mientras hay un cambio en vuelo no hace nada.
  */
 @Injectable({ providedIn: 'root' })
 export class SelectorEscuelaService {
   private readonly http = inject(HttpClient);
   private readonly documento = inject(DOCUMENT);
+  private readonly router = inject(Router);
+  private readonly pestanas = inject(CambioEscuelaPestanasService);
   private readonly irA = inject(IR_A_URL);
   private readonly urlBase = `${environment.apiUrl}/auth`;
   private peticion$: Observable<EscuelaUsuario[]> | null = null;
   private cambiando = false;
+  private fallo: number | null = null;
+  private readonly escuelaEntrando = signal<EscuelaUsuario | null>(null);
+
+  /** La escuela en la que se está entrando (la pinta «Entrando en …» en la ruta neutra); null sin cambio en vuelo. */
+  readonly entrando = this.escuelaEntrando.asReadonly();
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -199,40 +223,67 @@ export class SelectorEscuelaService {
     return this.cambiando;
   }
 
+  /** El id de la escuela cuyo último cambio falló; leerlo lo olvida. */
+  tomarFallo(): number | null {
+    const fallo = this.fallo;
+    this.fallo = null;
+    return fallo;
+  }
+
   /**
-   * Cambia la escuela de la sesión y recarga la app. Con otro cambio en vuelo devuelve `false` sin pedir nada. Si el POST
-   * falla, la sesión sigue en la escuela de antes y el error se propaga.
+   * Cambia la escuela de la sesión y recarga la app. Emite `false` sin pedir nada si hay otro cambio en vuelo o si no se
+   * pudo salir de la pantalla actual (la persona se quedó para guardar). Si el POST falla, la sesión sigue en la
+   * escuela de antes, se vuelve a la pantalla anterior y el error se propaga.
    */
-  cambiar(organizacionId: number): Observable<boolean> {
+  cambiar(escuela: EscuelaUsuario): Observable<boolean> {
     if (this.cambiando) {
       return of(false);
     }
     this.cambiando = true;
+    this.fallo = null;
+    const urlAnterior = this.router.url;
+    this.escuelaEntrando.set(escuela);
+    return from(this.router.navigateByUrl(RUTA_CAMBIANDO_ESCUELA, { skipLocationChange: true })).pipe(
+      catchError(() => of(false)),
+      switchMap((salio) => {
+        if (salio !== true) {
+          this.terminarSinCambio();
+          return of(false);
+        }
+        return this.pedirCambio(escuela, urlAnterior);
+      })
+    );
+  }
+
+  private pedirCambio(escuela: EscuelaUsuario, urlAnterior: string): Observable<boolean> {
     return this.http
       .post(
         `${this.urlBase}/organizacion`,
-        { organizacionId },
+        { organizacionId: escuela.id },
         { withCredentials: true, context: new HttpContext().set(ERROR_HANDLED_LOCALLY, true) }
       )
       .pipe(
         map(() => true),
         tap(() => {
-          // Sigue «ocupado»: la página se va a recargar y no debe salir otro cambio entretanto.
-          this.vaciarSesionDelNavegador();
+          // Sigue «ocupado» y con «Entrando en …»: la página se va a recargar y no debe salir nada más entretanto.
+          this.pestanas.bloquear();
+          limpiarAlmacenesDeEscuela(this.documento.defaultView);
+          this.pestanas.avisarOtras();
           this.irA(RUTA_ENTRADA_SESION);
         }),
         catchError((error) => {
-          this.cambiando = false;
-          return throwError(() => error);
+          this.terminarSinCambio();
+          this.fallo = escuela.id;
+          return from(this.router.navigateByUrl(urlAnterior, { replaceUrl: true })).pipe(
+            catchError(() => of(false)),
+            switchMap(() => throwError(() => error))
+          );
         })
       );
   }
 
-  private vaciarSesionDelNavegador(): void {
-    try {
-      this.documento.defaultView?.sessionStorage.clear();
-    } catch {
-      // Sin sessionStorage utilizable no hay nada que vaciar.
-    }
+  private terminarSinCambio(): void {
+    this.cambiando = false;
+    this.escuelaEntrando.set(null);
   }
 }

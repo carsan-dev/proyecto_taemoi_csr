@@ -3,15 +3,24 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { CambioEscuelaPestanasService } from '../../core/cambio-escuela-pestanas';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { AvisosService } from '../avisos/avisos.service';
+import { CONSULTA_HOJA, PilaCapas, enfocables } from '../capas/capa-modal';
 import { escuela } from './escuelas-prueba';
 import { SelectorEscuelaCabeceraComponent } from './selector-escuela-cabecera.component';
-import { EscuelaUsuario, IR_A_URL, RUTA_ENTRADA_SESION } from './selector-escuela.service';
+import {
+  EscuelaUsuario,
+  IR_A_URL,
+  RUTA_CAMBIANDO_ESCUELA,
+  RUTA_ENTRADA_SESION,
+  SelectorEscuelaService,
+} from './selector-escuela.service';
+import { RUTAS_CAMBIANDO_ESCUELA } from './selector-escuela.routes';
 
 const URL_CAMBIO = `${environment.apiUrl}/auth/organizacion`;
 
@@ -20,6 +29,7 @@ const URL_CAMBIO = `${environment.apiUrl}/auth/organizacion`;
   imports: [SelectorEscuelaCabeceraComponent],
   template: `
     <div class="pn">
+      <button type="button" class="fuera">Otra cosa de la cabecera</button>
       <pn-selector-escuela [escuelas]="escuelas()">
         <span class="nombre-proyectado">Escuela Ficticia Norte</span>
       </pn-selector-escuela>
@@ -35,6 +45,7 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
   let http: HttpTestingController;
   let irA: jasmine.Spy;
   let avisos: jasmine.SpyObj<AvisosService>;
+  let pestanas: jasmine.SpyObj<CambioEscuelaPestanasService>;
 
   const NORTE = escuela({ id: 1, nombre: 'Escuela Ficticia Norte', activa: true, roles: ['ROLE_ADMIN'] });
   const SUR = escuela({
@@ -50,15 +61,20 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
   async function montar(escuelas: EscuelaUsuario[] = [SUR, NORTE, ESTE]): Promise<void> {
     irA = jasmine.createSpy('irA');
     avisos = jasmine.createSpyObj<AvisosService>('AvisosService', ['error']);
+    pestanas = jasmine.createSpyObj<CambioEscuelaPestanasService>('CambioEscuelaPestanasService', [
+      'bloquear',
+      'avisarOtras',
+    ]);
     await TestBed.configureTestingModule({
       imports: [AnfitrionComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([]),
+        provideRouter([{ path: 'cambiando-escuela', children: RUTAS_CAMBIANDO_ESCUELA }]),
         { provide: AuthenticationService, useValue: { emailCambio: new BehaviorSubject('a@example.test') } },
         { provide: IR_A_URL, useValue: irA },
         { provide: AvisosService, useValue: avisos },
+        { provide: CambioEscuelaPestanasService, useValue: pestanas },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
@@ -80,6 +96,13 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
     destino.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
     fixture.detectChanges();
   };
+
+  /** Deja correr la navegación del router (promesas y temporizadores). */
+  async function esperar(): Promise<void> {
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r));
+    }
+  }
 
   afterEach(() => http.verify());
 
@@ -163,21 +186,23 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
     expect(irA).not.toHaveBeenCalled();
   });
 
-  it('elegir otra tapa la pantalla con «Entrando en…», cambia la escuela y recarga la app', async () => {
+  it('elegir otra sale a la ruta neutra («Entrando en…»), cambia la escuela y recarga la app', async () => {
     await montar();
     abrir();
     items()[0].click();
     fixture.detectChanges();
     expect(menu()).toBeNull();
-    expect(el().querySelector('pn-entrando-escuela')?.textContent).toContain('Entrando en Club Ficticio Sur…');
+    await esperar();
+    expect(TestBed.inject(SelectorEscuelaService).entrando()?.nombre).toBe('Club Ficticio Sur');
+    expect(TestBed.inject(Router).url).toBe(RUTA_CAMBIANDO_ESCUELA);
 
     const peticion = http.expectOne(URL_CAMBIO);
     expect(peticion.request.body).toEqual({ organizacionId: 2 });
     peticion.flush({ token: 'nuevo' });
     fixture.detectChanges();
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
-    // Sigue tapada hasta que la página se recarga.
-    expect(el().querySelector('pn-entrando-escuela')).not.toBeNull();
+    expect(pestanas.bloquear).toHaveBeenCalledTimes(1);
+    expect(pestanas.avisarOtras).toHaveBeenCalledTimes(1);
   });
 
   it('un doble clic no lanza dos cambios', async () => {
@@ -187,19 +212,23 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
     componente.elegir(SUR);
     componente.elegir(SUR);
     componente.elegir(ESTE);
+    await esperar();
     http.expectOne(URL_CAMBIO).flush({});
     expect(irA).toHaveBeenCalledTimes(1);
   });
 
-  it('si el cambio falla, la escuela no cambia: quita la pantalla de espera y avisa con «Reintentar»', async () => {
+  it('si el cambio falla, la escuela no cambia: vuelve a la pantalla y avisa con «Reintentar»', async () => {
     await montar();
     abrir();
     items()[0].click();
     fixture.detectChanges();
+    await esperar();
     http.expectOne(URL_CAMBIO).flush({ mensaje: 'Acceso denegado.' }, { status: 403, statusText: 'Forbidden' });
+    await esperar();
     fixture.detectChanges();
 
-    expect(el().querySelector('pn-entrando-escuela')).toBeNull();
+    expect(TestBed.inject(SelectorEscuelaService).entrando()).toBeNull();
+    expect(TestBed.inject(Router).url).toBe('/');
     expect(irA).not.toHaveBeenCalled();
     expect(avisos.error).toHaveBeenCalledTimes(1);
     const [texto, accion] = avisos.error.calls.mostRecent().args;
@@ -209,7 +238,86 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
 
     accion!.alPulsar();
     fixture.detectChanges();
+    await esperar();
     http.expectOne(URL_CAMBIO).flush({});
     expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+  });
+
+  it('en el escritorio, Tab cierra el menú y deja seguir', async () => {
+    const original = window.matchMedia.bind(window);
+    spyOn(window, 'matchMedia').and.callFake((consulta: string) =>
+      consulta === CONSULTA_HOJA ? ({ ...original(consulta), matches: false } as MediaQueryList) : original(consulta)
+    );
+    await montar();
+    abrir();
+    expect(el().querySelector('dialog')).toBeNull();
+    tecla(items()[1], 'Tab');
+    expect(menu()).toBeNull();
+  });
+
+  describe('por debajo de 768 px (hoja inferior modal)', () => {
+    beforeEach(() => {
+      const original = window.matchMedia.bind(window);
+      spyOn(window, 'matchMedia').and.callFake((consulta: string) =>
+        consulta === CONSULTA_HOJA ? ({ ...original(consulta), matches: true } as MediaQueryList) : original(consulta)
+      );
+    });
+
+    const hoja = (): HTMLDialogElement | null => el().querySelector<HTMLDialogElement>('dialog.pn-selector__hoja');
+    const conMayus = (destino: HTMLElement): void => {
+      destino.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+    };
+
+    it('es un diálogo modal: el resto de la página queda inerte', async () => {
+      await montar();
+      abrir();
+      const dialogo = hoja()!;
+      expect(dialogo).not.toBeNull();
+      expect(dialogo.matches(':modal')).toBeTrue();
+      expect(dialogo.getAttribute('aria-labelledby')).toBe('pn-escuela-titulo');
+      expect(dialogo.querySelector('#pn-menu-escuela')).not.toBeNull();
+      expect(document.activeElement).toBe(items()[1]);
+      const fuera = el().querySelector<HTMLElement>('.fuera')!;
+      fuera.focus();
+      expect(document.activeElement).not.toBe(fuera);
+    });
+
+    it('Tab y Mayús+Tab dan la vuelta dentro de la hoja', async () => {
+      await montar();
+      abrir();
+      const lista = enfocables(hoja()!);
+      expect(lista.length).toBeGreaterThan(1);
+      const primero = lista[0];
+      const ultimo = lista[lista.length - 1];
+      ultimo.focus();
+      tecla(ultimo, 'Tab');
+      expect(document.activeElement).toBe(primero);
+      expect(hoja()).not.toBeNull();
+      conMayus(primero);
+      expect(document.activeElement).toBe(ultimo);
+      expect(hoja()).not.toBeNull();
+    });
+
+    it('Esc la cierra y devuelve el foco al botón', async () => {
+      await montar();
+      abrir();
+      tecla(items()[1], 'Escape');
+      expect(hoja()).toBeNull();
+      expect(document.activeElement).toBe(boton());
+      expect(TestBed.inject(PilaCapas).arriba()).toBeNull();
+    });
+
+    it('el Esc del navegador (cancel del diálogo) también la cierra y devuelve el foco', async () => {
+      await montar();
+      abrir();
+      expect(TestBed.inject(PilaCapas).arriba()).toBe(hoja());
+      const cancelar = new Event('cancel', { cancelable: true });
+      hoja()!.dispatchEvent(cancelar);
+      fixture.detectChanges();
+      expect(cancelar.defaultPrevented).toBeTrue();
+      expect(hoja()).toBeNull();
+      expect(document.activeElement).toBe(boton());
+    });
   });
 });
