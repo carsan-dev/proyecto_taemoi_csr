@@ -65,6 +65,10 @@ public interface SedeRepository extends JpaRepository<Sede, Long> {
 	@Query("SELECT s.id, s.aforoTurno, s.nombre, s.activa FROM Sede s WHERE s.id IN :ids OR s.activa = true")
 	List<Object[]> datosSedes(@Param("ids") Collection<Long> ids);
 
+	/** Decisión 494: ids de las sedes inactivas de la escuela activa (la preinscripción pública no las ofrece). */
+	@Query("SELECT s.id FROM Sede s WHERE s.activa = false")
+	java.util.Set<Long> findIdsInactivas();
+
 	/** Pieza E8-2: nombre ya usado en la escuela activa, con la colación de la columna (como la clave única). */
 	boolean existsByNombre(String nombre);
 

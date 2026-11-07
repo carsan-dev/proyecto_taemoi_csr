@@ -52,7 +52,9 @@ import com.taemoi.project.services.GrupoService;
  * <li>{@code POST /api/preinscripciones} con el Host de B: se guarda en B; con el aforo de la sede lleno, a la lista de
  * espera con {@code posicionListaEspera}; un turno de otra escuela (A) o turnos de dos sedes de B (D6-7) dan 400 y no se
  * escribe nada.</li>
- * <li>Moiskimdo (la 1, una sola sede activa): las listas públicas sin claves nuevas, como siempre.</li>
+ * <li>Decisión 494: los grupos y turnos de una sede inactiva no salen en las listas y su alta da 400 sin escribir nada,
+ * con varias sedes activas (B) y con una sola (U).</li>
+ * <li>Moiskimdo (la 1, una sola sede activa): las listas públicas sin claves nuevas y el alta, como siempre.</li>
  * </ul>
  * Datos inventados.
  */
@@ -64,6 +66,7 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 	private static final String GRUPOS = "/api/preinscripciones/public/grupos/TAEKWONDO";
 	private static final String TURNOS = "/api/preinscripciones/public/turnos/TAEKWONDO";
 	private static final String MISMA_SEDE = "Todos los turnos deben ser de la misma sede.";
+	private static final String SEDE_INACTIVA = "Ese horario ya no admite preinscripciones.";
 
 	/** Claves de siempre de los endpoints públicos (las de los dorados de Moiskimdo). */
 	private static final Set<String> CLAVES_GRUPO = Set.of("id", "deporte", "nombre", "rangoEdadMin", "rangoEdadMax",
@@ -84,9 +87,16 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 
 	/** B: la escuela del Host (sedes activas A, B y S; C inactiva). A: otra escuela, sin dominio. */
 	EscuelaConSedesDePrueba b, otra;
-	String hostB;
-	/** Turnos extra de B: martes en la sede B, martes en la sede A (otro grupo) y miércoles en la sede S (aforo 1). */
-	long tMartesSedeB, tMartesSedeA, tSedeLlena;
+	/** U: una sola sede activa (A); B, S y C inactivas, con sus grupos y turnos. */
+	EscuelaConSedesDePrueba una;
+	String hostB, hostUna;
+	/**
+	 * Turnos extra de B: martes en la sede B, martes en la sede A (otro grupo), miércoles en la sede S (aforo 1) y jueves
+	 * en la sede inactiva C; y un grupo de la sede B sin turnos.
+	 */
+	long tMartesSedeB, tMartesSedeA, tSedeLlena, tSedeInactiva, gSinTurnos;
+	/** Grupo y turno sintéticos de Moiskimdo, en su sede (se borran al acabar). */
+	long grupoMoi, turnoMoi;
 	int altas;
 
 	@BeforeAll
@@ -98,17 +108,40 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 		tMartesSedeB = turno(b, b.gB, "Martes");
 		tMartesSedeA = turno(b, b.gA2, "Martes");
 		tSedeLlena = turno(b, b.gSin, "Miércoles");
+		tSedeInactiva = turno(b, b.gC, "Jueves");
+		gSinTurnos = grupo(b.org, b.sB, b.disciplina, "IT W6 sin turnos " + b.marca);
 		jdbc.update("UPDATE sede SET aforo_turno = 1 WHERE id = ?", b.sSin);
 		hostB = "w6-" + b.marca + ".test";
-		jdbc.update("INSERT INTO organizacion_dominio (organizacion_id, host, principal) VALUES (?, ?, TRUE)", b.org,
-				hostB);
+		dominio(b.org, hostB);
+
+		una = EscuelaConSedesDePrueba.crear(jdbc, grupoService, usuarios, "it-w6-u");
+		plantilla(una);
+		jdbc.update("UPDATE sede SET activa = FALSE WHERE id IN (?, ?)", una.sB, una.sSin);
+		hostUna = "w6u-" + una.marca + ".test";
+		dominio(una.org, hostUna);
+
+		long sedeMoi = jdbc.queryForObject("SELECT MIN(id) FROM sede WHERE organizacion_id = 1 AND activa = TRUE",
+				Long.class);
+		long disciplinaMoi = jdbc.queryForObject(
+				"SELECT id FROM disciplina WHERE organizacion_id = 1 AND codigo = 'TAEKWONDO'", Long.class);
+		grupoMoi = grupo(1L, sedeMoi, disciplinaMoi, "IT W6 Moiskimdo " + b.marca);
+		jdbc.update("""
+				INSERT INTO turno (dia_semana, hora_inicio, hora_fin, tipo, grupo_id, organizacion_id)
+				VALUES ('Viernes', '21:00', '22:00', NULL, ?, 1)""", grupoMoi);
+		turnoMoi = jdbc.queryForObject("SELECT MAX(id) FROM turno WHERE grupo_id = ?", Long.class, grupoMoi);
 		porHost.recargar();
 	}
 
 	@AfterAll
-	void retirarDominio() {
-		jdbc.update("DELETE FROM organizacion_dominio WHERE host = ?", hostB);
+	void limpiar() {
+		jdbc.update("DELETE FROM organizacion_dominio WHERE host IN (?, ?)", hostB, hostUna);
 		porHost.recargar();
+		jdbc.update("""
+				DELETE pt FROM preinscripcion_turno pt JOIN preinscripcion p ON p.id = pt.preinscripcion_id
+				WHERE p.grupo_id = ?""", grupoMoi);
+		jdbc.update("DELETE FROM preinscripcion WHERE grupo_id = ?", grupoMoi);
+		jdbc.update("DELETE FROM turno WHERE id = ?", turnoMoi);
+		jdbc.update("DELETE FROM grupo WHERE id = ?", grupoMoi);
 	}
 
 	// ------------------------------------------------------------------ listas públicas
@@ -127,6 +160,7 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 			assertEquals(clavesCon(CLAVES_TURNO), claves(t), "solo se añaden sedeId y sede");
 		}
 		assertTrue(ids.containsAll(List.of(b.tA, b.tB, tMartesSedeB, tMartesSedeA, tSedeLlena)), ids.toString());
+		assertFalse(ids.contains(tSedeInactiva), "turno de la sede inactiva C (decisión 494)");
 		assertFalse(ids.contains(otra.tA) || ids.contains(otra.tB), "turnos de la otra escuela");
 	}
 
@@ -148,8 +182,25 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 				assertEquals(clavesCon(CLAVES_TURNO_DE_GRUPO), claves(t), "solo se añaden sedeId y sede");
 			}
 		}
-		assertTrue(ids.containsAll(List.of(b.gA, b.gA2, b.gB, b.gSin, b.gC)), "gC: sin turnos y de una sede inactiva, también con su sede " + ids);
+		assertTrue(ids.containsAll(List.of(b.gA, b.gA2, b.gB, b.gSin, gSinTurnos)), ids.toString());
+		assertFalse(ids.contains(b.gC), "gC es de una sede inactiva (decisión 494)");
 		assertFalse(ids.contains(otra.gA) || ids.contains(otra.gB), "grupos de la otra escuela");
+	}
+
+	/** Moiskimdo: su turno sale y el alta responde como siempre (en la 1, con su Host). */
+	@Test
+	void moiskimdo_suTurnoSaleYElAltaComoSiempre() throws Exception {
+		Set<Long> ids = new HashSet<>();
+		for (JsonNode t : leer(get(TURNOS).header("Host", "moiskimdo.es"), 200)) {
+			ids.add(t.get("id").asLong());
+		}
+		assertTrue(ids.contains(turnoMoi));
+		JsonNode r = alta("moiskimdo.es", 201, turnoMoi);
+		assertEquals("PENDIENTE", r.get("estado").asText());
+		assertEquals(Set.of("referencia", "temporada", "tokenDocumento", "emailEnviado", "estado", "plazaAsignada",
+				"posicionListaEspera", "mensaje"), claves(r));
+		assertEquals(1L, jdbc.queryForObject("SELECT organizacion_id FROM preinscripcion WHERE referencia = ?",
+				Long.class, r.get("referencia").asText()));
 	}
 
 	/** Moiskimdo: con su Host y sin Host, las listas de siempre, sin {@code sedeId} ni {@code sede} (una sola sede activa). */
@@ -227,7 +278,56 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(antesTurnos, preinscripcionTurnos());
 	}
 
+	// ------------------------------------------------------------------ sedes inactivas (decisión 494)
+
+	@Test
+	void altaAnonimaConHostB_turnoDeSedeInactiva_400SinEscribirNada() throws Exception {
+		long antes = preinscripciones(), antesTurnos = preinscripcionTurnos();
+		assertEquals(SEDE_INACTIVA, alta(hostB, 400, tSedeInactiva).get("mensaje").asText());
+		assertEquals(SEDE_INACTIVA, alta(hostB, 400, b.tA, tSedeInactiva).get("mensaje").asText());
+		assertEquals(antes, preinscripciones());
+		assertEquals(antesTurnos, preinscripcionTurnos());
+	}
+
+	@Test
+	void unaSolaSedeActiva_listasSinLasInactivasYSinClavesNuevas() throws Exception {
+		Set<Long> turnos = new HashSet<>();
+		for (JsonNode t : leer(get(TURNOS).header("Host", hostUna), 200)) {
+			turnos.add(t.get("id").asLong());
+			assertEquals(CLAVES_TURNO, claves(t), t.toString());
+		}
+		assertEquals(Set.of(una.tA), turnos, "solo el turno de la sede activa");
+		Set<Long> grupos = new HashSet<>();
+		for (JsonNode g : leer(get(GRUPOS).header("Host", hostUna), 200)) {
+			grupos.add(g.get("id").asLong());
+			assertEquals(CLAVES_GRUPO, claves(g), g.toString());
+		}
+		assertEquals(Set.of(una.gA, una.gA2), grupos, "solo los grupos de la sede activa");
+	}
+
+	@Test
+	void unaSolaSedeActiva_altaDeSedeInactiva400YDeLaActiva201() throws Exception {
+		long antes = preinscripciones();
+		assertEquals(SEDE_INACTIVA, alta(hostUna, 400, una.tB).get("mensaje").asText());
+		assertEquals(antes, preinscripciones());
+		String referencia = alta(hostUna, 201, una.tA).get("referencia").asText();
+		assertEquals(una.org, jdbc.queryForObject("SELECT organizacion_id FROM preinscripcion WHERE referencia = ?",
+				Long.class, referencia));
+	}
+
 	// ------------------------------------------------------------------ utilidades
+
+	private void dominio(long org, String host) {
+		jdbc.update("INSERT INTO organizacion_dominio (organizacion_id, host, principal) VALUES (?, ?, TRUE)", org, host);
+	}
+
+	private long grupo(long org, long sede, long disciplina, String nombre) {
+		jdbc.update("""
+				INSERT INTO grupo (nombre, tipo, rango_edad_min, rango_edad_max, organizacion_id, sede_id, disciplina_id)
+				VALUES (?, NULL, 0, 99, ?, ?, ?)""", nombre, org, sede, disciplina);
+		return jdbc.queryForObject("SELECT id FROM grupo WHERE organizacion_id = ? AND nombre = ?", Long.class, org,
+				nombre);
+	}
 
 	private void plantilla(EscuelaConSedesDePrueba e) {
 		jdbc.update("""
