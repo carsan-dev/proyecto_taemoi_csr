@@ -845,7 +845,7 @@ describe('PasarListaComponent', () => {
       expect(estados[1].querySelector('svg')).not.toBeNull();
     });
 
-    it('409 al guardar una clase festiva: avisa con el mensaje del servidor', () => {
+    it('409 de festivo al guardar: avisa con el mensaje, no recarga y conserva lo marcado', () => {
       arrancarGestion(clase());
       filas()[0].click();
       fixture.detectChanges();
@@ -853,13 +853,23 @@ describe('PasarListaComponent', () => {
       http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ mensaje: 'Ese día es festivo en Estepa.' }, { status: 409, statusText: 'Conflict' });
       fixture.detectChanges();
       expect(avisos.error).toHaveBeenCalledWith('Ese día es festivo en Estepa.');
-      // Se recarga la clase (y la hoja) para verla como festiva.
-      http.expectOne(`${gestion}/clases`).flush({ hoy: [clase()], recientes: [], proxima: null });
-      const festiva = clase({ festivo: festivoDia });
-      http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: festiva, alumnos: ALUMNOS, sede: ESTEPA });
+      http.expectNone(`${gestion}/clases`);
+      http.expectNone(`${gestion}/clases/9/2026-10-28`);
+      expect(boton('Guardar lista')).toBeDefined();
+      expect(filas()[0].getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('409 de concurrencia al guardar: avisa y recarga la clase y la hoja', () => {
+      arrancarGestion(clase());
+      filas()[0].click();
       fixture.detectChanges();
-      expect(boton('Guardar lista')).toBeUndefined();
-      expect(el().textContent).toContain('Feria de Estepa');
+      boton('Guardar lista')!.click();
+      http.expectOne(`${gestion}/clases/9/2026-10-28`).flush(
+        { mensaje: 'Otra persona ha cambiado este dato a la vez; vuelve a intentarlo' }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges();
+      expect(avisos.error).toHaveBeenCalledWith('Otra persona ha cambiado este dato a la vez; vuelve a intentarlo');
+      http.expectOne(`${gestion}/clases`).flush({ hoy: [clase()], recientes: [], proxima: null });
+      http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: clase(), alumnos: ALUMNOS, sede: ESTEPA });
     });
   });
 });

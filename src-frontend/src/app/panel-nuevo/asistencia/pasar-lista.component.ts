@@ -20,6 +20,9 @@ import { contextoErrorLocal } from '../carga/lecturas-panel.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
 import { mensajeDelServidor, nombreCompleto } from '../mis-grupos/profesor-textos';
+
+/** Mensaje del 409 de concurrencia de la API (GlobalExceptionHandler.MENSAJE_CONCURRENCIA). */
+const MENSAJE_CONCURRENCIA = 'Otra persona ha cambiado este dato a la vez; vuelve a intentarlo';
 import { ConCambiosSinGuardar } from '../productos-alumno/salir-sin-guardar.guard';
 import { textoSalirSinGuardar } from '../productos-alumno/productos-alumno-vista';
 import { ImpactoFestivo, textoFestivoDeClase } from '../festivos/festivos-vista';
@@ -407,9 +410,11 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
       },
       // Las marcas se conservan: solo se avisa.
       error: (e) => {
-        this.avisos.error(mensajeDelServidor(e, this.textos.errorGuardar));
-        // 409: la clase ya es festiva; se recarga para verla como tal en vez de seguir editable.
-        if (e?.status === 409) this.recargarTrasFestivo(clase);
+        const mensaje = mensajeDelServidor(e, this.textos.errorGuardar);
+        this.avisos.error(mensaje);
+        // Solo el 409 de concurrencia («otra persona lo cambió a la vez») recarga; el resto de 409 (festivo,
+        // lista de otro grupo) conserva lo marcado y solo avisa.
+        if (e?.status === 409 && mensaje === MENSAJE_CONCURRENCIA) this.recargarTrasFestivo(clase);
       },
     });
   }
