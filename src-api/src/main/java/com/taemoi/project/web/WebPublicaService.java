@@ -89,10 +89,14 @@ public class WebPublicaService {
 		this.json = json;
 	}
 
-	/** {@code GET /api/publico/web}; vacío si la escuela activa no tiene web visible. */
+	/**
+	 * {@code GET /api/publico/web}; vacío si la escuela activa no tiene web visible. Pieza W3: con {@code temaVistaPrevia} (solo en la vista previa de la gestión, ya validado por el controlador), ese
+	 * tema en lugar del guardado. No se guarda nada.
+	 */
 	@Transactional(readOnly = true)
-	public Optional<WebPublicaDTO> web(boolean vistaPrevia) {
-		return escuelaConWeb(vistaPrevia).map(e -> construir(e, vistaPrevia));
+	public Optional<WebPublicaDTO> web(boolean vistaPrevia, String temaVistaPrevia) {
+		String tema = vistaPrevia ? temaVistaPrevia : null;
+		return escuelaConWeb(vistaPrevia).map(e -> construir(e, vistaPrevia, tema));
 	}
 
 	/** {@code GET /api/publico/web/legal}; vacío si la escuela activa no tiene web visible. */
@@ -125,7 +129,7 @@ public class WebPublicaService {
 
 	// ------------------------------------------------------------------ web
 
-	private WebPublicaDTO construir(EscuelaConWeb e, boolean vistaPrevia) {
+	private WebPublicaDTO construir(EscuelaConWeb e, boolean vistaPrevia, String temaVistaPrevia) {
 		Organizacion o = e.organizacion();
 		LocalDate hoy = LocalDate.now(zona(o));
 		String temporada = temporadas.actual();
@@ -139,7 +143,7 @@ public class WebPublicaService {
 
 		return new WebPublicaDTO(
 				new WebPublicaDTO.Escuela(o.getNombre(), o.getColorPrimario(), o.getLogoImagenId()),
-				e.web() == null ? null : e.web().getTema(),
+				temaVistaPrevia != null ? temaVistaPrevia : e.web() == null ? null : e.web().getTema(),
 				e.web() != null && e.web().isPublicada(),
 				vistaPrevia,
 				temporada,

@@ -38,18 +38,39 @@ public class ResolutorEscuelaPorHost {
 
 	private static final Logger log = LoggerFactory.getLogger(ResolutorEscuelaPorHost.class);
 
-	private final Supplier<Map<String, Long>> cargador;
+	/**
+	 * Contenido de {@code organizacion_dominio}.
+	 *
+	 * @param hosts host → escuela
+	 * @param principales escuela → host principal (el de los enlaces de correo)
+	 */
+	public record Dominios(Map<String, Long> hosts, Map<Long, String> principales) {
+	}
+
+	private final Supplier<Dominios> cargador;
 	private final Long organizacionPorDefecto;
 	private final Object cerrojo = new Object();
-	private volatile Map<String, Long> tabla;
+	private volatile Dominios tabla;
 
 	/**
 	 * @param cargador devuelve la tabla {@code host → organizacion_id} (se normalizan los hosts al cargarla)
 	 * @param organizacionPorDefecto {@code app.organizacion.por-defecto}
 	 */
 	public ResolutorEscuelaPorHost(Supplier<Map<String, Long>> cargador, Long organizacionPorDefecto) {
+		this(organizacionPorDefecto, conPrincipales(Objects.requireNonNull(cargador, "cargador")));
+	}
+
+	/**
+	 * @param organizacionPorDefecto {@code app.organizacion.por-defecto}
+	 * @param cargador devuelve los hosts y el host principal de cada escuela
+	 */
+	public ResolutorEscuelaPorHost(Long organizacionPorDefecto, Supplier<Dominios> cargador) {
 		this.cargador = Objects.requireNonNull(cargador, "cargador");
 		this.organizacionPorDefecto = Objects.requireNonNull(organizacionPorDefecto, "organizacionPorDefecto");
+	}
+
+	private static Supplier<Dominios> conPrincipales(Supplier<Map<String, Long>> hosts) {
+		return () -> new Dominios(hosts.get(), Map.of());
 	}
 
 	/** Sin tabla: siempre la escuela por defecto (el comportamiento de antes de la pieza). */
@@ -74,7 +95,15 @@ public class ResolutorEscuelaPorHost {
 	/** Escuela de {@code host} solo si está en la tabla (lista blanca para construir URL en piezas posteriores). */
 	public Optional<Long> escuelaRegistrada(String host) {
 		String normalizado = normalizar(host);
-		return normalizado == null ? Optional.empty() : Optional.ofNullable(tabla().get(normalizado));
+		return normalizado == null ? Optional.empty() : Optional.ofNullable(tabla().hosts().get(normalizado));
+	}
+
+	/**
+	 * Host principal de la escuela (normalizado), de la tabla en memoria: no consulta la base. Vacío si la escuela no
+	 * tiene dominio principal.
+	 */
+	public Optional<String> hostPrincipalDe(Long organizacionId) {
+		return organizacionId == null ? Optional.empty() : Optional.ofNullable(tabla().principales().get(organizacionId));
 	}
 
 	/** Vuelve a leer la tabla. Si falla, se queda la anterior (o ninguna: todo a la por defecto). */
@@ -84,8 +113,8 @@ public class ResolutorEscuelaPorHost {
 		}
 	}
 
-	private Map<String, Long> tabla() {
-		Map<String, Long> actual = tabla;
+	private Dominios tabla() {
+		Dominios actual = tabla;
 		if (actual == null) {
 			synchronized (cerrojo) {
 				if (tabla == null) {
@@ -99,18 +128,26 @@ public class ResolutorEscuelaPorHost {
 
 	private void cargar() {
 		try {
+			Dominios leidos = cargador.get();
 			Map<String, Long> nueva = new HashMap<>();
-			cargador.get().forEach((host, organizacion) -> {
+			leidos.hosts().forEach((host, organizacion) -> {
 				String normalizado = normalizar(host);
 				if (normalizado != null && organizacion != null) {
 					nueva.put(normalizado, organizacion);
 				}
 			});
-			tabla = Map.copyOf(nueva);
+			Map<Long, String> principales = new HashMap<>();
+			leidos.principales().forEach((organizacion, host) -> {
+				String normalizado = normalizar(host);
+				if (normalizado != null && organizacion != null) {
+					principales.put(organizacion, normalizado);
+				}
+			});
+			tabla = new Dominios(Map.copyOf(nueva), Map.copyOf(principales));
 		} catch (RuntimeException e) {
 			log.warn("No se pudo leer organizacion_dominio; se mantiene la tabla anterior: {}", e.toString());
 			if (tabla == null) {
-				tabla = Map.of();
+				tabla = new Dominios(Map.of(), Map.of());
 			}
 		}
 	}

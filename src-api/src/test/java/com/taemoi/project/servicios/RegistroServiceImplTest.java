@@ -57,7 +57,8 @@ class RegistroServiceImplTest {
 	private final VinculoFamiliaService vinculos = mock(VinculoFamiliaService.class);
 	private final RegistroServiceImpl servicio = new RegistroServiceImpl(pendientes, alumnos, usuarios,
 			NoOpPasswordEncoder.getInstance(), mock(EmailService.class), membresias, vinculos,
-			com.taemoi.project.services.MarcaEscuelaPruebas.soloMoiskimdo());
+			com.taemoi.project.services.MarcaEscuelaPruebas.soloMoiskimdo(),
+			com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://moiskimdo.es"));
 
 	private Alumno alumno;
 

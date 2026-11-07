@@ -19,6 +19,7 @@ import com.taemoi.project.dtos.response.JwtAuthenticationResponse;
 import com.taemoi.project.entities.AuthProvider;
 import com.taemoi.project.entities.RolMembresia;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.HostDeLaPeticion;
 import com.taemoi.project.organizacion.ResolutorOrganizacion;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.AuthenticationService;
@@ -126,7 +127,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 			Usuario user = (Usuario) authentication.getPrincipal();
 			// Escuela de la sesión: ver MembresiaService#elegirOrganizacionParaLogin. Sin ninguna
 			// válida (sin membresía activa, solo roles sin acceso o familia sin alumnos activos) se rechaza.
-			Long organizacionId = membresiaService.elegirOrganizacionParaLogin(user).orElse(null);
+			// Fase 4 (pieza 3): en el Host de otra escuela, esa si puede entrar en ella.
+			Long organizacionId = elegirOrganizacionParaLogin(membresiaService, user,
+					HostDeLaPeticion.actual().flatMap(HostDeLaPeticion::escuelaPreferidaParaLogin)).orElse(null);
 			if (organizacionId == null) {
 				SecurityContextHolder.clearContext();
 				throw new DisabledException(motivoRechazo(user));
@@ -141,6 +144,20 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 			loginAttemptService.loginFailed(email);
 			throw new BadCredentialsException("Credenciales inválidas.");
 		}
+	}
+
+	/**
+	 * Escuela con la que se abre la sesión al entrar (contraseña y Google). Con {@code preferida} (la del Host de otra
+	 * escuela de {@code organizacion_dominio}, {@link HostDeLaPeticion#escuelaPreferidaParaLogin}) y si el usuario puede
+	 * entrar en ella, esa; si no, la regla de siempre ({@link MembresiaService#elegirOrganizacionParaLogin}). En
+	 * moiskimdo.es no hay preferida: la regla no cambia (multimembresía incluida).
+	 */
+	public static Optional<Long> elegirOrganizacionParaLogin(MembresiaService membresias, Usuario usuario,
+			Optional<Long> preferida) {
+		if (preferida.isPresent() && membresias.puedeEntrarEn(usuario, preferida.get())) {
+			return preferida;
+		}
+		return membresias.elegirOrganizacionParaLogin(usuario);
 	}
 
 	@Override

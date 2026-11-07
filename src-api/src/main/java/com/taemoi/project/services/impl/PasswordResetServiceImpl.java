@@ -23,6 +23,7 @@ import com.taemoi.project.services.MarcaEscuela;
 import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.PasswordResetService;
 import com.taemoi.project.utils.EmailUtils;
+import com.taemoi.project.organizacion.UrlsEscuela;
 
 @Service
 public class PasswordResetServiceImpl implements PasswordResetService {
@@ -37,8 +38,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 	private final ResolutorOrganizacion resolutor;
 	private final SecureRandom secureRandom = new SecureRandom();
 
-	@Value("${app.frontend.base-url:https://moiskimdo.es}")
-	private String frontendBaseUrl;
+	private final UrlsEscuela urls;
 
 	@Value("${app.auth.reset-token-hours:1}")
 	private long resetTokenHours;
@@ -48,7 +48,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 			EmailService emailService,
 			MarcaEscuelaService marcaEscuela,
 			MembresiaRepository membresias,
-			ResolutorOrganizacion resolutor) {
+			ResolutorOrganizacion resolutor,
+			UrlsEscuela urls) {
+		this.urls = urls;
 		this.marcaEscuela = marcaEscuela;
 		this.membresias = membresias;
 		this.resolutor = resolutor;
@@ -77,8 +79,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 		usuario.setResetTokenExpiresAt(LocalDateTime.now().plusHours(resetTokenHours));
 		usuarioRepository.save(usuario);
 
-		String resetUrl = frontendBaseUrl + "/reset-password?token=" + token;
-		MarcaEscuela marca = marcaEscuela.de(escuelaDeLaCuenta(usuario));
+		// Enlace en el dominio de la escuela de la cuenta (la misma del nombre y el remitente).
+		Long escuela = escuelaDeLaCuenta(usuario);
+		String resetUrl = urls.baseFrontend(escuela) + "/reset-password?token=" + token;
+		MarcaEscuela marca = marcaEscuela.de(escuela);
 		String htmlContent = buildResetEmailHtml(usuario.getNombre(), resetUrl, resetTokenHours, marca);
 		EmailService.enviar(emailService, usuario.getEmail(), "Restablecer contraseña", htmlContent, marca.remitente());
 	}

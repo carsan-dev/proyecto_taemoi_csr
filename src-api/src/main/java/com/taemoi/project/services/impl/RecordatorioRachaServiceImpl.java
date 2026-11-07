@@ -25,6 +25,7 @@ import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.MarcaEscuela;
 import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.RecordatorioRachaService;
+import com.taemoi.project.organizacion.UrlsEscuela;
 
 @Service
 public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
@@ -44,15 +45,16 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 	@Value("${streak.reminder.window-hours:3}")
 	private int streakReminderWindowHours;
 
-	@Value("${app.frontend.base-url:https://moiskimdo.es}")
-	private String frontendBaseUrl;
+	private final UrlsEscuela urls;
 
 	private Clock clock = Clock.system(RETO_DIARIO_ZONE_ID);
 
 	public RecordatorioRachaServiceImpl(UsuarioRepository usuarioRepository,
 			AccesoFamiliaService accesoFamilia,
 			EmailService emailService,
-			MarcaEscuelaService marcaEscuela) {
+			MarcaEscuelaService marcaEscuela,
+			UrlsEscuela urls) {
+		this.urls = urls;
 		this.usuarioRepository = usuarioRepository;
 		this.accesoFamilia = accesoFamilia;
 		this.emailService = emailService;
@@ -188,7 +190,7 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 		String saludo = "Hola" + saludoNombre + ",";
 
 		String horasTexto = ventanaHoras == 1 ? "1 hora" : ventanaHoras + " horas";
-		String ctaUrl = construirUrlUserPage();
+		String ctaUrl = construirUrlUserPage(marca.organizacionId());
 
 		String filasAlumnos = alumnosEnRiesgo.stream()
 				.map(item -> "<li style='margin-bottom:8px;'><strong>" + escapeHtml(item.nombreCompleto())
@@ -237,10 +239,11 @@ public class RecordatorioRachaServiceImpl implements RecordatorioRachaService {
 				""".formatted(marca.clubCorreoCuentaHtml(), saludo, horasTexto, filasAlumnos, ctaUrl);
 	}
 
-	private String construirUrlUserPage() {
-		String baseUrl = frontendBaseUrl == null || frontendBaseUrl.isBlank()
+	private String construirUrlUserPage(Long organizacionId) {
+		String base = urls.baseFrontend(organizacionId);
+		String baseUrl = base == null || base.isBlank()
 				? "https://moiskimdo.es"
-				: frontendBaseUrl.trim();
+				: base.trim();
 		if (baseUrl.endsWith("/")) {
 			baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
 		}

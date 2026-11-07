@@ -80,12 +80,14 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 	 * El logo tiene su caso en LogoEscuelaIntegrationTest y el color de la marca (8b-T) en
 	 * MarcaEscuelaPanelIntegrationTest#registroEnLaEscuelaDestino_sinElValor (superadmin y escuela destino). El material de
 	 * examen, en MaterialExamenIntegrationTest#cadaEscritura_soloSuRegistro_yLaFallida_soloElGenerico (sobre disco). El
-	 * alta de una escuela (F4-2), en AltaEscuelaIntegrationTest. Las fotos de una sede (web por plantilla), en
+	 * alta de una escuela (F4-2), en AltaEscuelaIntegrationTest. Publicar la web (W3, propietario y superadmin), en
+	 * WebPublicacionIntegrationTest. Las fotos de una sede (web por plantilla), en
 	 * SedeFotosIntegrationTest#elFiltroNoDuplica_yLosFallosQuedanEnElGenerico (sobre disco).
 	 */
 	private static final Set<EscrituraConRegistroPropio> CON_CASO_EN_OTRO_TEST = EnumSet.of(
 			EscrituraConRegistroPropio.LOGO_ESCUELA_CAMBIAR, EscrituraConRegistroPropio.LOGO_ESCUELA_QUITAR,
 			EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR, EscrituraConRegistroPropio.ESCUELA_CREAR,
+			EscrituraConRegistroPropio.WEB_PUBLICAR, EscrituraConRegistroPropio.WEB_PUBLICAR_PLATAFORMA,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_SUBIR,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_SUSTITUIR, EscrituraConRegistroPropio.MATERIAL_VIDEO_TITULO,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_ORDEN, EscrituraConRegistroPropio.MATERIAL_VIDEO_ELIMINAR,
@@ -420,6 +422,16 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"nombrePreferido\":\"Luci\"}"), 200,
 				List.of("PANEL PERFIL_CAMBIADO"),
 				() -> conCuerpo(put("/api/panel/mi-perfil"), "{\"cumpleDia\":31,\"cumpleMes\":4}"), 400));
+		// Pieza 394: datos de la escuela, solo el propietario. Un CIF mal escrito: 400.
+		casos.put(EscrituraConRegistroPropio.ESCUELA_DATOS, () -> {
+			String datos = """
+					{"nombreLegal":"Club Deportivo IT","cif":"%s","direccion":"Calle Ejemplo 1","emailContacto":"it@example.test",
+					 "telefono":"600 000 000","firmanteNombre":"Firmante IT","firmanteCargo":"Presidenta",
+					 "firmanteNif":"00000000T","diaLimiteMensualidad":5}""";
+			return new Caso(tPropietario, propietario, () -> conCuerpo(put("/api/escuela/datos"), datos.formatted("G00000000")),
+					200, List.of("PANEL DATOS_ESCUELA_CAMBIADOS"),
+					() -> conCuerpo(put("/api/escuela/datos"), datos.formatted("G-0000000")), 400);
+		});
 		// Decisión 324: pasar lista. El turno tA es de los lunes: cada caso usa su lunes, y un martes da 400.
 		LocalDate lunes = LocalDate.now(ValidacionRelojConfig.ZONA).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 		casos.put(EscrituraConRegistroPropio.ASISTENCIA_PROFESOR, () -> {

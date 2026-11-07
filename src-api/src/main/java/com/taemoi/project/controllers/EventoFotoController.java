@@ -35,6 +35,7 @@ import com.taemoi.project.exceptions.evento.EventoNoEncontradoException;
 import com.taemoi.project.exceptions.evento.FotoEventoNoEncontradaException;
 import com.taemoi.project.exceptions.evento.ServidorOcupadoException;
 import com.taemoi.project.exceptions.evento.TopeFotosEventoException;
+import com.taemoi.project.organizacion.HostDeLaPeticion;
 import com.taemoi.project.services.EventoFotoService;
 import com.taemoi.project.services.EventoService;
 import com.taemoi.project.services.ImagenService;
@@ -179,7 +180,8 @@ public class EventoFotoController {
 	}
 
 	private EventoFotoDTO dto(Long eventoId, EventoFoto foto) {
-		return new EventoFotoDTO(foto.getId(), baseUrl + "/api/eventos/" + eventoId + "/fotos/" + foto.getId(),
+		return new EventoFotoDTO(foto.getId(),
+				HostDeLaPeticion.baseArchivosPeticion(baseUrl) + "/api/eventos/" + eventoId + "/fotos/" + foto.getId(),
 				foto.getOrden());
 	}
 

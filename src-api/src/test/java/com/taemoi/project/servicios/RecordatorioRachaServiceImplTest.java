@@ -52,6 +52,10 @@ class RecordatorioRachaServiceImplTest {
 	@Mock
 	private com.taemoi.project.services.MarcaEscuelaService marcaEscuela;
 
+	@org.mockito.Spy
+	private com.taemoi.project.organizacion.UrlsEscuela urls =
+			com.taemoi.project.organizacion.UrlsEscuelaPruebas.soloGlobal("https://moiskimdo.es");
+
 	@InjectMocks
 	private RecordatorioRachaServiceImpl recordatorioRachaService;
 
@@ -73,7 +77,6 @@ class RecordatorioRachaServiceImplTest {
 		zoneId = ZoneId.of("Europe/Madrid");
 		ReflectionTestUtils.setField(recordatorioRachaService, "streakReminderEnabled", true);
 		ReflectionTestUtils.setField(recordatorioRachaService, "streakReminderWindowHours", 3);
-		ReflectionTestUtils.setField(recordatorioRachaService, "frontendBaseUrl", "https://moiskimdo.es");
 	}
 
 	@Test

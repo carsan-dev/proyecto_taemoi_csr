@@ -160,7 +160,9 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 			// Δ medido tras R2-P3 + 2 (en 9ef8e11c: grupos TKD Δ52, KB Δ11, turnos TKD Δ15, KB Δ3, /turnos/dto Δ35).
 			// R2-P6 (turnos de los grupos en una consulta): grupos TKD Δ3, KB Δ1 en local; límites 8 → 5 y KB se queda
 			// en 4 (en la CI, con los datos que dejan otras clases, KB mide Δ4). Desde V32_1 el grupo KB tiene sede, como
-			// todos en producción: en la CI mide grupos Δ5 y turnos Δ3, así que sus límites pasan a 5 y 3.
+			// todos en producción: en la CI mide grupos Δ5 y turnos Δ3, así que sus límites pasan a 5 y 3. Esas diferencias
+		// eran del orden de las clases (restos en la organización 1); con sembrarTestigo() el Δ ya no depende de él:
+		// grupos TKD Δ2, KB Δ0, turnos TKD y KB Δ0, /turnos/dto Δ1 (anónimo y con sesión). Los límites no se han tocado.
 			Map.entry("public_grupos_tkd", 5), Map.entry("public_grupos_kb", 5), Map.entry("public_turnos_tkd", 2),
 			Map.entry("public_turnos_kb", 3), Map.entry("turnos_dto", 3), Map.entry("turnos_dto_anonimo", 3),
 			// Escrituras, absolutas: medido tras R2-P3 + margen para lo que dejen otras clases en la organización 1 (en
@@ -289,10 +291,14 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void jsonDeAforoIgualAlDorado() throws Exception {
 		Map<String, Integer> antes = new HashMap<>();
+		sembrarTestigo();
 		for (Dorado d : dorados()) {
 			peticion(d.ruta(), d.anonimo());
 			antes.put(d.nombre(), ContadorSentencias.contar(() -> peticion(d.ruta(), d.anonimo())).total());
 		}
+		borrarRangos();
+		simbolos.clear();
+		ids.clear();
 		sembrar();
 		List<org.junit.jupiter.api.function.Executable> comprobaciones = new ArrayList<>();
 		for (Dorado d : dorados()) {
@@ -620,6 +626,22 @@ class AforoPreinscripcionesIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	// ------------------------------------------------------------------ siembra
+
+	/**
+	 * Base del Δ de sentencias: un grupo visible con un turno, en la sede de {@link #sembrar()}, por cada deporte medido.
+	 * Así las consultas por lotes que solo se lanzan con grupos o turnos del deporte (turnos de los grupos, alumnos que
+	 * cuentan, pendientes y aforos de sus sedes) ya están en la medida de antes, haya o no restos de otras clases en la
+	 * organización 1. Sin él, el Δ dependía del orden de las clases en la JVM: si antes corrían las {@code @DataJpaTest}
+	 * de preinscripción, sus grupos de taekwondo impedían que {@code InicializadorDatos} creara los de siempre y no había
+	 * grupo de kickboxing (Δ 5 y 3 en vez de 1 y 0).
+	 */
+	private void sembrarTestigo() {
+		long sede = jdbc.queryForObject("SELECT MIN(id) FROM sede WHERE organizacion_id = 1", Long.class);
+		long tkd = grupo(90, "TESTIGO-TKD", "Testigo Taekwondo", disciplina("TAEKWONDO"), sede, null, null);
+		long kb = grupo(91, "TESTIGO-KB", "Testigo Kickboxing", disciplina("KICKBOXING"), sede, null, null);
+		turno(90, "TESTIGO-TKD", tkd, "Viernes", "17:00", "18:00");
+		turno(91, "TESTIGO-KB", kb, "Viernes", "18:00", "19:00");
+	}
 
 	private void sembrar() {
 		long sede = jdbc.queryForObject("SELECT MIN(id) FROM sede WHERE organizacion_id = 1", Long.class);
