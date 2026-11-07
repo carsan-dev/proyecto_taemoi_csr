@@ -3,7 +3,7 @@ import { Injectable, Signal, WritableSignal, inject, signal } from '@angular/cor
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
-import { EstadoRecurso, Legal, SitioWeb, TemaWeb, esTemaWeb } from './modelos';
+import { EstadoRecurso, EventoDetalleWeb, EventosWeb, Legal, SitioWeb, TemaWeb, esTemaWeb } from './modelos';
 
 /**
  * Datos de la web por plantilla (fase4-web-plan.md §3.1 y §5): una petición por recurso, compartida por todas las
@@ -11,8 +11,9 @@ import { EstadoRecurso, Legal, SitioWeb, TemaWeb, esTemaWeb } from './modelos';
  *
  * Vista previa (§3.3): con `?vista-previa=<tema>` en la URL se pide `vistaPrevia=true` (y `tema`, si es uno de los
  * cuatro). La API solo la atiende con sesión de gestión; sin ella devuelve lo publicado. Lo publicado y cada vista
- * previa van con claves distintas: nunca se mezclan. Un 404 es «no publicada» y se guarda; un error no se guarda (la
- * siguiente página vuelve a pedir). La cookie de sesión la añade el interceptor de credenciales de la aplicación.
+ * previa van con claves distintas: nunca se mezclan. Un 404 es «no publicada» (el de un evento, «no encontrado») y se
+ * guarda; un error no se guarda (la siguiente página vuelve a pedir). La cookie de sesión la añade el interceptor de
+ * credenciales de la aplicación.
  */
 @Injectable({ providedIn: 'root' })
 export class WebPublicaService {
@@ -34,6 +35,19 @@ export class WebPublicaService {
     return this.recurso<Legal>('legal', `${this.url}/legal`, vistaPrevia, false);
   }
 
+  /** `GET /api/publico/web/eventos` (sin tema). Un 404 es la web sin publicar. */
+  eventos(vistaPrevia: string | null): Signal<EstadoRecurso<EventosWeb>> {
+    return this.recurso<EventosWeb>('eventos', `${this.url}/eventos`, vistaPrevia, false);
+  }
+
+  /**
+   * `GET /api/publico/web/eventos/{id}` (sin tema). Un 404 es `no-encontrado`: el evento no se ve (oculto, de otra
+   * escuela, sin fecha o inexistente) o la web no está publicada; lo segundo lo dice {@link sitio}.
+   */
+  evento(id: number, vistaPrevia: string | null): Signal<EstadoRecurso<EventoDetalleWeb>> {
+    return this.recurso<EventoDetalleWeb>(`evento:${id}`, `${this.url}/eventos/${id}`, vistaPrevia, false, 'no-encontrado');
+  }
+
   /** Si la URL pide la vista previa (`vista-previa` presente, aunque vacío). */
   esVistaPrevia(vistaPrevia: string | null): boolean {
     return vistaPrevia !== null;
@@ -49,6 +63,7 @@ export class WebPublicaService {
     url: string,
     vistaPrevia: string | null,
     conTema: boolean,
+    en404: 'no-publicada' | 'no-encontrado' = 'no-publicada',
   ): Signal<EstadoRecurso<T>> {
     const previa = this.esVistaPrevia(vistaPrevia);
     const tema = conTema ? this.temaVistaPrevia(vistaPrevia) : null;
@@ -79,7 +94,7 @@ export class WebPublicaService {
         next: (datos) => destino.set({ estado: 'listo', datos }),
         error: (error: unknown) =>
           destino.set(
-            error instanceof HttpErrorResponse && error.status === 404 ? { estado: 'no-publicada' } : { estado: 'error' },
+            error instanceof HttpErrorResponse && error.status === 404 ? { estado: en404 } : { estado: 'error' },
           ),
       });
     return estado.asReadonly();

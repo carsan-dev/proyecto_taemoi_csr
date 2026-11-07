@@ -1,4 +1,4 @@
-import { GrupoWeb, Legal, Plazas, SedeWeb, SitioWeb, TurnoWeb } from './modelos';
+import { EventoDetalleWeb, EventoListaWeb, GrupoWeb, Legal, Plazas, SedeWeb, SitioWeb, TurnoWeb } from './modelos';
 
 /** Datos de prueba de los specs de la web por plantilla (no los importa ningún código de la aplicación). */
 export function sitioDePrueba(cambios: Partial<SitioWeb> = {}): SitioWeb {
@@ -35,6 +35,35 @@ export const LEGAL_DE_PRUEBA: Legal = {
   normas: [],
   actualizadaEn: '2026-11-01',
 };
+
+/** Un evento de `GET /api/publico/web/eventos`: con hora, lugar, sede y cartel. */
+export function eventoListaDePrueba(cambios: Partial<EventoListaWeb> = {}): EventoListaWeb {
+  return {
+    id: 7,
+    titulo: 'Examen de cinturones',
+    fecha: '2026-11-14',
+    conImagen: true,
+    hora: '10:00',
+    lugar: 'Pabellón cubierto municipal',
+    sedeId: 2,
+    sedeNombre: 'Estepa',
+    descripcion: 'Examen de cambio de cinturón para los alumnos que ha propuesto su profesor.',
+    ...cambios,
+  };
+}
+
+/** Un evento de `GET /api/publico/web/eventos/{id}`: con dos documentos y tres fotos. */
+export function eventoDetalleDePrueba(cambios: Partial<EventoDetalleWeb> = {}): EventoDetalleWeb {
+  return {
+    ...eventoListaDePrueba(),
+    documentos: [
+      { id: 31, nombre: 'Circular-examen-noviembre.pdf', tipo: 'application/pdf' },
+      { id: 32, nombre: 'Autorizacion-menores.docx', tipo: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+    ],
+    fotos: [{ id: 51 }, { id: 52 }, { id: 53 }],
+    ...cambios,
+  };
+}
 
 export const PLAZAS = {
   quedan: (n: number): Plazas => ({ estado: 'QUEDAN', quedan: n }),

@@ -1,0 +1,126 @@
+/*
+ * Página de un evento del tema «La línea comarcal» (boceto fase4-web/boceto-linea-comarcal-evento.html), con sus
+ * reglas tal cual bajo .lc .p-evento (sin encapsulación: otras páginas del tema usan los mismos nombres con otros
+ * valores). El visor es un <dialog> fuera del artículo: .lc .visor.
+ */
+
+/* ---------- Comunes de tarifas, eventos y legales ---------- */
+.lc .p-evento .seccion { position: relative; padding: calc(var(--seccion) * 1.1) 0 var(--seccion); }
+.lc .p-evento .seccion--anden { background: var(--anden); }
+
+/* Volver */
+.lc .p-evento .atras {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  color: var(--tinta); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em;
+}
+.lc .p-evento .atras svg { transition: transform 160ms ease-out; }
+.lc .p-evento .atras:hover svg { transform: translateX(-3px); }
+
+/* Rótulo que hace de encabezado de bloque */
+.lc .p-evento .rotulo-bloque { padding-bottom: 14px; border-bottom: 1px solid var(--tinta); }
+
+/* Bloque de fecha de evento: día grande, mes abreviado y año */
+.lc .p-evento .fecha { display: grid; grid-template-columns: auto; justify-items: start; align-content: start; font-variant-numeric: tabular-nums; }
+.lc .p-evento .fecha-dia { font: 900 3.5rem/0.82 var(--display); letter-spacing: -0.01em; }
+.lc .p-evento .fecha-mes { margin-top: 6px; font: 800 1.375rem/1 var(--display); text-transform: uppercase; }
+.lc .p-evento .fecha-anio { margin-top: 2px; font-size: 0.9375rem; font-weight: 600; color: var(--tinta-2); }
+@media (prefers-reduced-motion: reduce) { .lc .p-evento .atras svg { transition: none; } }
+
+/* ---------- Cabeza del evento ---------- */
+.lc .p-evento .evento-cabeza { padding-block: 16px 32px; }
+.lc .p-evento .evento-rotulo { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 24px; align-items: end; margin-top: 24px; }
+.lc .p-evento .evento-cabeza .fecha-dia { font-size: clamp(5rem, 24vw, 8rem); }
+.lc .p-evento .evento-cabeza .fecha-mes { font-size: 1.75rem; }
+.lc .p-evento .evento-cuando { padding-bottom: 6px; color: var(--tinta-2); font-weight: 600; }
+/* Lugar y sede (opcionales, decisión 466): debajo del día, sin negrita */
+.lc .p-evento .evento-lugar { margin-top: 4px; font-weight: 400; }
+.lc .p-evento .evento-titular {
+  margin-top: 24px; font-family: var(--display); font-weight: 900; text-transform: uppercase;
+  letter-spacing: -0.01em; line-height: 0.88; text-wrap: balance; font-size: clamp(48px, 14vw, 72px);
+  overflow-wrap: break-word;
+}
+.lc .p-evento .evento-foto { aspect-ratio: 4 / 3; }
+@media (min-width: 900px) {
+  .lc .p-evento .evento-cabeza { padding-block: 24px 48px; }
+  .lc .p-evento .evento-rejilla-cabeza { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: end; }
+  .lc .p-evento .evento-rotulo { grid-column: 1 / 4; grid-template-columns: minmax(0, 1fr); margin-top: 32px; }
+  .lc .p-evento .evento-cabeza .fecha-dia { font-size: clamp(8rem, 12vw, 11rem); }
+  .lc .p-evento .evento-cabeza .fecha-mes { font-size: 2.25rem; }
+  .lc .p-evento .evento-titular { grid-column: 4 / 13; margin-top: 0; padding-bottom: 6px; font-size: clamp(72px, 7.4vw, 120px); }
+  .lc .p-evento .evento-foto { aspect-ratio: 21 / 9; }
+}
+
+/* ---------- Cuerpo: descripción y documentos ---------- */
+.lc .p-evento .evento-cuerpo { display: grid; gap: 48px; padding-block: clamp(48px, 6vw, 88px) var(--seccion); }
+.lc .p-evento .evento-desc { max-width: 62ch; font-size: 1.1875rem; line-height: 1.6; white-space: pre-line; }
+.lc .p-evento .docs-titulo { padding-bottom: 14px; border-bottom: 1px solid var(--tinta); }
+.lc .p-evento .docs li { border-bottom: 1px solid var(--filete); }
+.lc .p-evento .docs a {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 14px; align-items: center;
+  min-height: 64px; padding: 12px 0; color: var(--tinta); text-decoration: none;
+}
+.lc .p-evento .docs svg { grid-row: 1 / 3; color: var(--escuela-texto); }
+.lc .p-evento .doc-nombre { font-weight: 600; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--escuela-trazo); text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+.lc .p-evento .docs a:hover .doc-nombre { text-decoration-thickness: 3px; }
+.lc .p-evento .doc-tipo { font-size: 0.875rem; color: var(--tinta-2); font-weight: 600; }
+@media (min-width: 900px) {
+  .lc .p-evento .evento-cuerpo { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); }
+  .lc .p-evento .evento-desc { grid-column: 1 / 7; font-size: 1.25rem; }
+  .lc .p-evento .evento-docs { grid-column: 8 / 13; }
+}
+
+/* ---------- Galería numerada ---------- */
+.lc .p-evento .galeria-cabeza { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 20px; margin-bottom: 20px; }
+.lc .p-evento .galeria-cabeza h2 { font: inherit; letter-spacing: inherit; }
+.lc .p-evento .galeria-cuenta { font: 500 0.9375rem/1.3 var(--texto); text-transform: none; letter-spacing: 0; color: var(--tinta-2); }
+.lc .p-evento .rejilla-fotos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.lc .p-evento .rejilla-fotos li { position: relative; }
+.lc .p-evento .ampliar {
+  position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; margin: 0;
+  background: var(--filete); cursor: zoom-in; overflow: hidden;
+}
+.lc .p-evento .ampliar img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.85) contrast(1.05); transition: transform 320ms cubic-bezier(.16, 1, .3, 1); }
+.lc .p-evento .ampliar:hover img { transform: scale(1.03); }
+.lc .p-evento .ampliar:focus-visible { outline-offset: -3px; outline-color: var(--blanco); box-shadow: inset 0 0 0 6px var(--tinta); }
+.lc .p-evento .galeria-n {
+  position: absolute; left: 0; bottom: 0; z-index: 2; padding: 6px 10px 4px;
+  background: var(--blanco); color: var(--tinta);
+  font: 900 1.625rem/0.9 var(--display); font-variant-numeric: tabular-nums;
+}
+.lc .p-evento .rejilla-fotos li:first-child { grid-column: span 2; }
+@media (min-width: 900px) {
+  .lc .p-evento .rejilla-fotos { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: min(15vw, 210px); gap: 12px; }
+  .lc .p-evento .rejilla-fotos li:first-child { grid-row: span 2; }
+  .lc .p-evento .rejilla-fotos .ampliar { height: 100%; aspect-ratio: auto; }
+  .lc .p-evento .galeria-n { font-size: 2.25rem; padding: 8px 12px 6px; }
+  .lc .p-evento .rejilla-fotos li:first-child .galeria-n { font-size: 3.5rem; }
+}
+.lc .p-evento .volver-pie { margin-top: clamp(40px, 5vw, 64px); }
+
+/* ---------- Visor: la foto ampliada en un diálogo ---------- */
+.lc .visor {
+  width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0;
+  background: var(--tinta); color: var(--blanco); --foco: var(--blanco);
+}
+.lc .visor::backdrop { background: rgba(16, 20, 24, .9); }
+.lc .visor[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.lc .visor-barra { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px var(--m); }
+.lc .visor-n { font: 900 2rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.lc .visor-n span { font: 600 1rem/1 var(--texto); color: var(--filete); margin-left: 6px; }
+.lc .visor-boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 48px; min-height: 48px; padding: 0 14px;
+  background: transparent; color: var(--blanco); border: 2px solid var(--blanco); border-radius: 4px;
+  font: 600 1rem/1 var(--texto); cursor: pointer; transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+.lc .visor-boton:hover { background: var(--blanco); color: var(--tinta); }
+.lc .visor-foto { position: relative; display: grid; place-items: center; min-height: 0; padding: 0 var(--m); }
+.lc .visor-foto img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lc .visor-pie { display: grid; gap: 12px; padding: 14px var(--m) 20px; }
+.lc .visor-pasos { display: flex; gap: 12px; }
+@media (min-width: 900px) {
+  .lc .visor-pie { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .lc .visor-pasos { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc .p-evento .ampliar img, .lc .visor-boton { transition: none; }
+}

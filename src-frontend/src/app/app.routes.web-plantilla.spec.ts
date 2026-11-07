@@ -11,6 +11,9 @@ import { esWebPlantilla } from './guards/web-plantilla.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { ponerMetaWebPlantilla, quedaMetaWebPlantilla } from './testing/meta-web-plantilla';
 import { PlantillaPendienteComponent } from './web-plantilla/paginas/plantilla-pendiente.component';
+import { EventoLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/evento/evento.component';
+import { EventosLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/eventos/eventos.component';
+import { LegalesLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/legales/legales.component';
 import { SedeLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/sede/sede.component';
 import { TarifasLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/tarifas/tarifas.component';
 import { NoEncontradaLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/no-encontrada/no-encontrada.component';
@@ -27,6 +30,9 @@ const PAGINAS_DEL_TEMA: Record<string, Type<unknown>> = {
   '': PortadaLineaComarcalComponent,
   'sedes/:slug': SedeLineaComarcalComponent,
   tarifas: TarifasLineaComarcalComponent,
+  eventos: EventosLineaComarcalComponent,
+  'eventos/:id': EventoLineaComarcalComponent,
+  legales: LegalesLineaComarcalComponent,
 };
 
 /** Clave de prueba en `data` con el índice de la entrada original de `app.routes`. */
@@ -72,7 +78,7 @@ describe('app.routes · grupo de la web por plantilla', () => {
     expect(grupo.redirectTo).toBeUndefined();
   });
 
-  it('las hijas: las siete páginas (portada, sede y tarifas, del tema; el resto, la pantalla provisional), sin comodín', async () => {
+  it('las hijas: las siete páginas (del tema; preinscripción, la pantalla provisional), sin comodín', async () => {
     const hijas = (await (grupoPlantilla().loadChildren as () => Promise<Routes>)()) as Routes;
     const paginas = hijas.slice(0, PAGINAS_PLANTILLA.length);
     expect(paginas.map((r) => r.path)).toEqual(PAGINAS_PLANTILLA);
@@ -193,8 +199,11 @@ describe('app.routes · grupo de la web por plantilla', () => {
       const componentes: Record<string, Type<unknown>> = {
         '/sedes/casariche': SedeLineaComarcalComponent,
         '/tarifas': TarifasLineaComarcalComponent,
+        '/eventos': EventosLineaComarcalComponent,
+        '/eventos/3': EventoLineaComarcalComponent,
+        '/legales': LegalesLineaComarcalComponent,
       };
-      for (const url of ['/sedes/casariche', '/preinscripcion', '/tarifas', '/eventos', '/eventos/3', '/legales']) {
+      for (const url of ['/sedes/casariche', '/tarifas', '/eventos', '/eventos/3', '/legales', '/preinscripcion']) {
         await harness.navigateByUrl(url);
         expect(hoja().component).withContext(url).toBe(componentes[url] ?? PlantillaPendienteComponent);
         expect(hoja().data['webPlantilla']).withContext(url).toBeTrue();

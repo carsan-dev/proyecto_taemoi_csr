@@ -18,6 +18,12 @@ const portada = () =>
 const sede = () => import('./temas/linea-comarcal/sede/sede.component').then((m) => m.SedeLineaComarcalComponent);
 const tarifas = () =>
   import('./temas/linea-comarcal/tarifas/tarifas.component').then((m) => m.TarifasLineaComarcalComponent);
+const eventos = () =>
+  import('./temas/linea-comarcal/eventos/eventos.component').then((m) => m.EventosLineaComarcalComponent);
+const evento = () =>
+  import('./temas/linea-comarcal/evento/evento.component').then((m) => m.EventoLineaComarcalComponent);
+const legales = () =>
+  import('./temas/linea-comarcal/legales/legales.component').then((m) => m.LegalesLineaComarcalComponent);
 export const noEncontradaDelTema = () =>
   import('./temas/linea-comarcal/no-encontrada/no-encontrada.component').then((m) => m.NoEncontradaLineaComarcalComponent);
 
@@ -50,17 +56,17 @@ export const RUTAS_SOLO_MOISKIMDO = [
  * Rutas de la web por plantilla (fase4-web-plan.md §3.1). Se cargan perezosas desde el grupo con `canMatch` de
  * `app.routes.ts`, que solo casa con la meta de `index-plantilla.html`. Sin comodín: lo que no casa aquí (panel, login,
  * plataforma…) sigue a las rutas de siempre, y lo desconocido cae en el comodín de la plantilla del final de
- * `app.routes.ts` (la 404 del tema). Portada, sede y tarifas son las del primer tema; el resto de páginas, la pantalla
- * técnica provisional hasta que se construyan. Sin publicar, cada página pinta «Web aún no publicada».
+ * `app.routes.ts` (la 404 del tema). Portada, sede, tarifas, eventos, evento y legales son las del primer tema;
+ * preinscripción, la pantalla técnica provisional hasta que se construya. Sin publicar, cada página pinta «Web aún no publicada».
  */
 export const WEB_PLANTILLA_ROUTES: Routes = [
   { path: '', pathMatch: 'full', data: datos('portada'), loadComponent: portada },
   { path: 'sedes/:slug', data: datos('sede'), loadComponent: sede },
   { path: 'preinscripcion', data: datos('preinscripcion'), loadComponent: pendiente },
   { path: 'tarifas', data: datos('tarifas'), loadComponent: tarifas },
-  { path: 'eventos', data: datos('eventos'), loadComponent: pendiente },
-  { path: 'eventos/:id', data: datos('evento'), loadComponent: pendiente },
-  { path: 'legales', data: datos('legales'), loadComponent: pendiente },
+  { path: 'eventos', data: datos('eventos'), loadComponent: eventos },
+  { path: 'eventos/:id', data: datos('evento'), loadComponent: evento },
+  { path: 'legales', data: datos('legales'), loadComponent: legales },
   // Rutas de Moiskimdo con equivalente claro en la plantilla.
   { path: 'inicio', pathMatch: 'full', redirectTo: '' },
   { path: 'aviso-legal', pathMatch: 'full', redirectTo: conAncla('/legales', 'aviso-legal') },

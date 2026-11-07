@@ -58,9 +58,16 @@ export interface EnlaceAncla {
 
 /**
  * En qué página está el marco. En la portada, el menú lleva a sus secciones; en las demás páginas (boceto
- * `boceto-linea-comarcal-sede.html`, `-tarifas.html`…), «Tarifas» va a su página y el resto a la portada.
+ * `boceto-linea-comarcal-sede.html`, `-tarifas.html`, `-eventos.html`…), «Tarifas» y «Eventos» van a su página y el
+ * resto a la portada. En la de eventos (y en la de un evento), «Eventos» es la actual.
  */
-export type PaginaMarco = 'portada' | 'tarifas' | 'otra';
+export type PaginaMarco = 'portada' | 'tarifas' | 'eventos' | 'otra';
+
+/** Las entradas del menú que fuera de la portada van a su página (siempre visibles). */
+const PAGINAS_DEL_MENU: Partial<Record<ClaveTexto, { ruta: string; pagina: PaginaMarco }>> = {
+  'menu.tarifas': { ruta: '/tarifas', pagina: 'tarifas' },
+  'menu.eventos': { ruta: '/eventos', pagina: 'eventos' },
+};
 
 export interface VistaMarco {
   nombre: string;
@@ -110,11 +117,12 @@ export function vistaMarco(sitio: SitioWeb, ahora: Date, pagina: PaginaMarco = '
       '--tarifa-boton-tinta': c.tarifaBotonTinta,
     },
     menu: menu
-      .filter(([clave, , visible]) => visible || (pagina !== 'portada' && clave === 'menu.tarifas'))
+      .filter(([clave, , visible]) => visible || (pagina !== 'portada' && PAGINAS_DEL_MENU[clave]))
       .map(([clave, fragmento]): EnlaceAncla => {
         const texto = textos.t(clave);
-        return pagina !== 'portada' && clave === 'menu.tarifas'
-          ? { texto, ruta: '/tarifas', fragmento: null, actual: pagina === 'tarifas' }
+        const propia = pagina !== 'portada' ? PAGINAS_DEL_MENU[clave] : undefined;
+        return propia
+          ? { texto, ruta: propia.ruta, fragmento: null, actual: pagina === propia.pagina }
           : { texto, ruta: '/', fragmento };
       })
       .filter((e) => e.texto),

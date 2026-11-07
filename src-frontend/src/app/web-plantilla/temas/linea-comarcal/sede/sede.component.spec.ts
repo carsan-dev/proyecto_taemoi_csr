@@ -202,10 +202,10 @@ describe('SedeLineaComarcalComponent', () => {
       http.expectNone(url);
     });
 
-    it('cabecera de una página interior: «Tarifas» va a su página; el resto, a la portada', async () => {
+    it('cabecera de una página interior: «Tarifas» y «Eventos» van a su página; el resto, a la portada', async () => {
       const raiz = await abrir(seisSedes(), '/sedes/estepa');
       const menu = Array.from(raiz.querySelectorAll<HTMLAnchorElement>('.nav-lista a'));
-      expect(menu.map((a) => a.getAttribute('href'))).toEqual(['/#linea', '/#sedes', '/tarifas', '/#contacto']);
+      expect(menu.map((a) => a.getAttribute('href'))).toEqual(['/#linea', '/#sedes', '/tarifas', '/eventos', '/#contacto']);
       expect(menu.some((a) => a.hasAttribute('aria-current'))).toBeFalse();
     });
   });

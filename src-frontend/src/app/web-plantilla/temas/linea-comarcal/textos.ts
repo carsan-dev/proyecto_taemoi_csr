@@ -75,9 +75,9 @@ export const TEXTOS_FIJOS_LINEA_COMARCAL = {
 } as const;
 
 /**
- * Textos fijos de las páginas de sede y de tarifas (bocetos `boceto-linea-comarcal-sede.html` y
- * `boceto-linea-comarcal-tarifas.html`): aún sin clave en la lista del plan; los hará editables W12. `{n}`, `{total}`,
- * `{x}`: se sustituyen con los datos.
+ * Textos fijos de las páginas de sede, tarifas, eventos, evento y legales (bocetos `boceto-linea-comarcal-sede.html`,
+ * `-tarifas.html`, `-eventos.html`, `-evento.html` y `-legales.html`): aún sin clave en la lista del plan; los hará
+ * editables W12. `{n}`, `{total}`, `{x}`: se sustituyen con los datos. El texto legal va en la plantilla de su página.
  */
 export const TEXTOS_PAGINAS_LINEA_COMARCAL = {
   // Sede
@@ -150,6 +150,37 @@ export const TEXTOS_PAGINAS_LINEA_COMARCAL = {
   examen: 'Derecho de examen',
   examenDesde: 'Según grado, desde {x}',
   notaAparte: 'No van en la mensualidad: se pagan cuando tocan.',
+  // Eventos
+  tituloEventos: 'Eventos',
+  entradaEventos: 'Exámenes, torneos y exhibiciones del club, con sus circulares y sus fotos.',
+  proximos: 'Próximos',
+  anteriores: 'Anteriores',
+  unEvento: '1 evento',
+  nEventos: '{n} eventos',
+  verEvento: 'Ver evento',
+  masProximos: 'Más eventos próximos',
+  sinProximosTitular: 'No hay eventos próximos',
+  sinProximosTexto: 'Cuando el club anuncie uno, aparecerá aquí.',
+  verAnteriores: 'Ver los eventos anteriores',
+  sinAnteriores: 'Todavía no hay eventos anteriores.',
+  // Evento
+  volverEventos: 'Volver a eventos',
+  documentos: 'Documentos',
+  galeria: 'Galería',
+  unaFoto: '1 foto',
+  nFotos: '{n} fotos',
+  ampliarFoto: 'Ampliar la foto {n} de {total}',
+  fotoN: 'Foto {n} de {total}',
+  de: 'de {total}',
+  // Legales
+  tituloLegal: 'Información legal',
+  entradaLegal: 'Quién está detrás de esta web, qué hacemos con tus datos, qué cookies usamos y las normas del club.',
+  actualizada: 'Última actualización:',
+  enEstaPagina: 'En esta página',
+  avisoLegal: 'Aviso legal',
+  privacidad: 'Privacidad',
+  cookies: 'Cookies',
+  normas: 'Normas del club',
 } as const;
 
 /**

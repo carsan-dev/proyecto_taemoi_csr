@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 
 import { environment } from '../../../environments/environment';
-import { EventoWeb, SedeWeb, SitioWeb } from '../datos/modelos';
+import { EventoListaWeb, EventoWeb, SedeWeb, SitioWeb } from '../datos/modelos';
 
 /** Las siete páginas de la plantilla (fase4-web-plan.md §3.1). */
 export type PaginaWeb = 'portada' | 'sede' | 'preinscripcion' | 'tarifas' | 'eventos' | 'evento' | 'legales';
@@ -19,6 +19,10 @@ export interface ContextoSeo {
   slug?: string | null;
   /** Página de evento: su id. */
   eventoId?: number | null;
+  /** Página de evento: sus datos (`GET /api/publico/web/eventos/{id}`); sin ellos, se busca entre los próximos. */
+  evento?: EventoListaWeb | null;
+  /** Página de eventos: los próximos de `GET /api/publico/web/eventos`; sin ellos, los de la portada. */
+  eventos?: EventoListaWeb[] | null;
 }
 
 type JsonLd = Record<string, unknown>;
@@ -92,12 +96,12 @@ export class SeoEscuelaService {
       case 'eventos':
         titulo = `Eventos · ${escuela}`;
         descripcion = `Próximos eventos de ${escuela}.`;
-        datos.push(...sitio.proximosEventos.filter((e) => e.fecha).map((e) => this.evento(sitio, e)));
+        datos.push(...(contexto.eventos ?? sitio.proximosEventos).filter((e) => e.fecha).map((e) => this.evento(sitio, e)));
         break;
       case 'evento': {
         titulo = `Eventos · ${escuela}`;
         descripcion = `Próximos eventos de ${escuela}.`;
-        const evento = sitio.proximosEventos.find((e) => e.id === contexto.eventoId);
+        const evento = contexto.evento ?? sitio.proximosEventos.find((e) => e.id === contexto.eventoId);
         if (evento?.fecha) {
           titulo = `${evento.titulo} · ${escuela}`;
           descripcion = `${evento.titulo}: ${this.fechaLarga(evento.fecha)}${evento.hora ? `, ${evento.hora}` : ''}. ${escuela}.`;
@@ -169,7 +173,7 @@ export class SeoEscuelaService {
     });
   }
 
-  private evento(sitio: SitioWeb, evento: EventoWeb): JsonLd {
+  private evento(sitio: SitioWeb, evento: EventoWeb | EventoListaWeb): JsonLd {
     const sede = evento.sedeId != null ? sitio.sedes.find((s) => s.id === evento.sedeId) : undefined;
     const nombreLugar = evento.lugar ?? evento.sedeNombre;
     const imagen = this.imagenEvento(evento);
@@ -177,6 +181,7 @@ export class SeoEscuelaService {
       '@context': 'https://schema.org',
       '@type': 'Event',
       name: evento.titulo,
+      description: 'descripcion' in evento ? evento.descripcion?.trim() : null,
       startDate: evento.hora ? `${evento.fecha}T${evento.hora}` : evento.fecha,
       url: this.absoluta(`/eventos/${evento.id}`),
       image: imagen ? [imagen] : null,

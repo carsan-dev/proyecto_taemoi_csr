@@ -4,9 +4,8 @@
  *
  * - `GET /api/publico/web` → {@link SitioWeb} (`WebPublicaDTO`).
  * - `GET /api/publico/web/legal` → {@link Legal} (`LegalWebDTO`).
- *
- * `GET /api/publico/web/eventos` (la lista completa, §5) aún no existe en la API: los eventos salen de
- * {@link SitioWeb.proximosEventos}.
+ * - `GET /api/publico/web/eventos` → {@link EventosWeb} (`EventosWebDTO`).
+ * - `GET /api/publico/web/eventos/{id}` → {@link EventoDetalleWeb} (`EventoWebDTO`).
  */
 
 /** Los cuatro temas aprobados (`TemasWeb.TODOS`), en el orden de los bocetos. */
@@ -125,6 +124,39 @@ export interface EventoWeb {
   sedeNombre: string | null;
 }
 
+/** `EventosWebDTO.Evento`: los campos de {@link EventoWeb} y la descripción. */
+export interface EventoListaWeb extends EventoWeb {
+  descripcion: string | null;
+}
+
+/** `GET /api/publico/web/eventos` (`EventosWebDTO`): visibles con fecha, como mucho 60 de cada. */
+export interface EventosWeb {
+  /** De hoy en adelante, del más cercano al más lejano. */
+  proximos: EventoListaWeb[];
+  /** Anteriores a hoy, del más reciente al más antiguo. */
+  anteriores: EventoListaWeb[];
+}
+
+/** `EventoWebDTO.Documento`: se descarga por `GET /api/eventos/{id}/documentos/{documentoId}/descargar`. */
+export interface DocumentoEventoWeb {
+  id: number;
+  nombre: string;
+  /** Tipo MIME (`application/pdf`…). */
+  tipo: string | null;
+}
+
+/** `EventoWebDTO.Foto`: se sirve por `GET /api/eventos/{id}/fotos/{fotoId}` (`?w=640`, la miniatura). */
+export interface FotoEventoWeb {
+  id: number;
+}
+
+/** `GET /api/publico/web/eventos/{id}` (`EventoWebDTO`). */
+export interface EventoDetalleWeb extends EventoListaWeb {
+  documentos: DocumentoEventoWeb[];
+  /** Por su orden. */
+  fotos: FotoEventoWeb[];
+}
+
 /** `WebPublicaDTO.Contacto`. */
 export interface ContactoWeb {
   email: string | null;
@@ -183,9 +215,14 @@ export interface Legal {
   actualizadaEn: string | null;
 }
 
-/** Estado de un recurso de la web: la API responde 404 si la escuela no tiene web publicada. */
+/**
+ * Estado de un recurso de la web: la API responde 404 si la escuela no tiene web publicada (`no-publicada`). El 404 de
+ * un evento es `no-encontrado` (oculto, de otra escuela o inexistente): si además la web no está publicada, lo dice el
+ * estado del sitio.
+ */
 export type EstadoRecurso<T> =
   | { estado: 'cargando' }
   | { estado: 'listo'; datos: T }
   | { estado: 'no-publicada' }
+  | { estado: 'no-encontrado' }
   | { estado: 'error' };

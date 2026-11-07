@@ -38,7 +38,7 @@ import { TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS } from '../textos';
 })
 export class MarcoLineaComarcalComponent {
   readonly sitio = input.required<SitioWeb>();
-  /** En qué página está: en la portada el menú va a sus secciones; en las demás, «Tarifas» va a su página. */
+  /** En qué página está: en la portada el menú va a sus secciones; en las demás, «Tarifas» y «Eventos» van a su página. */
   readonly pagina = input<PaginaMarco>('portada');
 
   private readonly documento = inject(DOCUMENT);
