@@ -76,7 +76,9 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 	private static final String REPETIDO = "Ya hay una sede con ese nombre.";
 	private static final String SIN_ACTIVAS = "La escuela se quedaría sin sedes activas.";
 	private static final Set<String> CLAVES_DTO = Set.of("id", "nombre", "direccion", "localidad", "codigoPostal",
-			"telefono", "email", "codigoClubFederacion", "aforoTurno", "activa");
+			"telefono", "email", "codigoClubFederacion", "aforoTurno", "activa", "slug", "lugar", "indicacionesAcceso",
+			"fotoImagenId", "foto2ImagenId");
+	private static final String SLUG_REPETIDO = "Ya hay una sede con esa dirección web.";
 	/** Resumen de la fila genérica del filtro HTTP ({@code AuditoriaServiceImpl#construirResumen}). */
 	private static final String RESUMEN_GENERICO = "^(CREATE|UPDATE|DELETE|READ|OPERACION) \\S+( #\\d+)? -> \\d+$";
 
@@ -336,6 +338,143 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 		assertNull(jdbc.queryForObject("SELECT localidad FROM sede WHERE id = ?", String.class, sede));
 	}
 
+	// ------------------------------------------------------------------ datos de la web (W2, V32_6)
+
+	/**
+	 * Pieza W2: slug, lugar e indicaciones de acceso en el alta y la edición. El panel de hoy no los envía: en la edición,
+	 * lo que no llega se conserva (solo estos tres; el resto sigue siendo un reemplazo). Llegar con {@code null} o en
+	 * blanco los vacía. Las fotos solo se leen.
+	 */
+	@Test
+	void datosWeb_altaYEdicion() throws Exception {
+		Map<String, Object> datos = new LinkedHashMap<>();
+		datos.put("nombre", "IT W2 web " + e.marca);
+		datos.put("slug", "  Casariche-Centro-" + e.marca + " ");
+		datos.put("lugar", "  Pabellón cubierto municipal ");
+		datos.put("indicacionesAcceso", "Entrada por la calle lateral");
+		datos.put("fotoImagenId", 1);
+		MvcResult r = peticion(conCuerpo(post(RUTA), cuerpo(datos)), tPropietario);
+		assertEquals(201, r.getResponse().getStatus(), contenido(r));
+		JsonNode creada = json.readTree(contenido(r));
+		long id = creada.get("id").asLong();
+		assertEquals(CLAVES_DTO, campos(creada));
+		assertEquals("casariche-centro-" + e.marca, creada.get("slug").asText(), "recortado y en minúsculas");
+		assertEquals("Pabellón cubierto municipal", creada.get("lugar").asText());
+		assertEquals("Entrada por la calle lateral", creada.get("indicacionesAcceso").asText());
+		assertTrue(creada.get("fotoImagenId").isNull(), "las fotos no se escriben por esta API");
+		assertTrue(creada.get("foto2ImagenId").isNull());
+		Map<String, Object> fila = jdbc.queryForMap(
+				"SELECT slug, lugar, indicaciones_acceso, foto_imagen_id FROM sede WHERE id = ?", id);
+		assertEquals("casariche-centro-" + e.marca, fila.get("slug"));
+		assertEquals("Pabellón cubierto municipal", fila.get("lugar"));
+		assertNull(fila.get("foto_imagen_id"));
+
+		// El cuerpo del panel de hoy (sin los campos de la web): se conservan.
+		long antes = ultimoEvento();
+		JsonNode editada = leer(conCuerpo(put(RUTA + "/" + id),
+				cuerpo(Map.of("nombre", "IT W2 web editada " + e.marca, "localidad", "Casariche"))), tPropietario, 200);
+		assertEquals("casariche-centro-" + e.marca, editada.get("slug").asText());
+		assertEquals("Pabellón cubierto municipal", editada.get("lugar").asText());
+		assertEquals("Entrada por la calle lateral", editada.get("indicacionesAcceso").asText());
+		assertEquals("Casariche", editada.get("localidad").asText());
+		assertFalse(editada.get("turnosSobreAforo").asBoolean());
+		assertEquals(List.of("SEDES SEDE_EDITADA sede=#" + id), resumenes(eventosDesde(antes, e.org)));
+
+		// Igual que está (también lo conservado): sin cambios.
+		antes = ultimoEvento();
+		leer(conCuerpo(put(RUTA + "/" + id),
+				cuerpo(Map.of("nombre", "IT W2 web editada " + e.marca, "localidad", "Casariche"))), tPropietario, 200);
+		assertEquals(List.of("SEDES SEDE_EDITADA sede=#" + id + " sinCambios=SI"),
+				resumenes(eventosDesde(antes, e.org)));
+
+		// Con null o en blanco, se vacían; el que no llega sigue.
+		Map<String, Object> vaciar = new LinkedHashMap<>();
+		vaciar.put("nombre", "IT W2 web editada " + e.marca);
+		vaciar.put("lugar", null);
+		vaciar.put("indicacionesAcceso", "   ");
+		editada = leer(conCuerpo(put(RUTA + "/" + id), cuerpo(vaciar)), tPropietario, 200);
+		assertTrue(editada.get("lugar").isNull());
+		assertTrue(editada.get("indicacionesAcceso").isNull());
+		assertEquals("casariche-centro-" + e.marca, editada.get("slug").asText());
+		assertNull(jdbc.queryForObject("SELECT lugar FROM sede WHERE id = ?", String.class, id));
+
+		// Cambiar el slug.
+		editada = leer(conCuerpo(put(RUTA + "/" + id),
+				cuerpo(Map.of("nombre", "IT W2 web editada " + e.marca, "slug", "estepa-" + e.marca))), tPropietario,
+				200);
+		assertEquals("estepa-" + e.marca, editada.get("slug").asText());
+
+		// Una foto puesta por la base (alta por migración de datos) se lee y la edición no la toca.
+		long imagen = imagenDe(e.org, "w2-sede");
+		jdbc.update("UPDATE sede SET foto_imagen_id = ?, foto2_imagen_id = ? WHERE id = ?", imagen, imagen, id);
+		JsonNode vista = leer(get(RUTA + "/" + id), tPropietario, 200);
+		assertEquals(imagen, vista.get("fotoImagenId").asLong());
+		assertEquals(imagen, vista.get("foto2ImagenId").asLong());
+		leer(conCuerpo(put(RUTA + "/" + id), cuerpo(Map.of("nombre", "IT W2 web editada " + e.marca,
+				"fotoImagenId", 0, "foto2ImagenId", 0))), tPropietario, 200);
+		assertEquals(imagen, jdbc.queryForObject("SELECT foto_imagen_id FROM sede WHERE id = ?", Long.class, id));
+		assertEquals(imagen, jdbc.queryForObject("SELECT foto2_imagen_id FROM sede WHERE id = ?", Long.class, id));
+	}
+
+	@Test
+	void slugRepetidoEnLaEscuela_409_yEnOtraEscuelaVale() throws Exception {
+		String slug = "unico-" + e.marca;
+		long a = crearCon(tPropietario, Map.of("nombre", "IT W2 slug a " + e.marca, "slug", slug));
+		long b = crearCon(tPropietario, Map.of("nombre", "IT W2 slug b " + e.marca));
+		long total = sedesDe(e.org);
+
+		assertMensaje(peticion(conCuerpo(post(RUTA), cuerpo(Map.of("nombre", "IT W2 slug c " + e.marca, "slug",
+				slug.toUpperCase()))), tPropietario), 409, SLUG_REPETIDO);
+		assertEquals(total, sedesDe(e.org), "no se crea");
+		assertMensaje(peticion(conCuerpo(put(RUTA + "/" + b), cuerpo(Map.of("nombre", "IT W2 slug b " + e.marca, "slug",
+				slug))), tPropietario), 409, SLUG_REPETIDO);
+		assertNull(jdbc.queryForObject("SELECT slug FROM sede WHERE id = ?", String.class, b), "no cambia");
+
+		// El suyo: vale. Varias sin slug: valen.
+		leer(conCuerpo(put(RUTA + "/" + a), cuerpo(Map.of("nombre", "IT W2 slug a " + e.marca, "slug", slug))),
+				tPropietario, 200);
+		crearCon(tPropietario, Map.of("nombre", "IT W2 slug d " + e.marca));
+
+		long ajena = crearCon(tPropietarioOtra, Map.of("nombre", "IT W2 slug otra " + e.marca, "slug", slug));
+		assertEquals(slug, jdbc.queryForObject("SELECT slug FROM sede WHERE id = ?", String.class, ajena));
+		assertEquals(otra.org, jdbc.queryForObject("SELECT organizacion_id FROM sede WHERE id = ?", Long.class, ajena));
+	}
+
+	@Test
+	void validacionesWeb_400() throws Exception {
+		List<Map<String, Object>> invalidos = new ArrayList<>();
+		for (String slug : List.of("con espacio", "ñandu", "tildé", "-casariche", "casariche-", "casa--riche", "casa_riche",
+				"casa/riche", "a".repeat(61))) {
+			invalidos.add(con("slug", slug));
+		}
+		invalidos.add(con("lugar", "l".repeat(121)));
+		invalidos.add(con("indicacionesAcceso", "i".repeat(301)));
+
+		long editable = crearCon(tPropietario, Map.of("nombre", "IT W2 validar " + e.marca, "lugar", "Pabellón"));
+		long total = sedesDe(e.org);
+		for (Map<String, Object> datos : invalidos) {
+			MvcResult alta = peticion(conCuerpo(post(RUTA), cuerpo(datos)), tPropietario);
+			assertEquals(400, alta.getResponse().getStatus(), datos + ": " + contenido(alta));
+			assertFalse(mensaje(alta).isBlank(), datos.toString());
+			MvcResult edicion = peticion(conCuerpo(put(RUTA + "/" + editable), cuerpo(datos)), tPropietario);
+			assertEquals(400, edicion.getResponse().getStatus(), datos + ": " + contenido(edicion));
+		}
+		assertEquals(total, sedesDe(e.org), "no se crea ninguna");
+		assertEquals("Pabellón", jdbc.queryForObject("SELECT lugar FROM sede WHERE id = ?", String.class, editable),
+				"no cambia");
+		assertMensaje(peticion(conCuerpo(put(RUTA + "/" + editable), "[]"), tPropietario), 400,
+				"Indica los datos de la sede.");
+
+		// En el límite, vale (caracteres, no unidades UTF-16).
+		Map<String, Object> limite = new LinkedHashMap<>();
+		limite.put("nombre", "IT W2 límite " + e.marca);
+		limite.put("slug", e.marca + "-" + "a".repeat(60 - 9));
+		limite.put("lugar", "𝔸".repeat(120));
+		limite.put("indicacionesAcceso", "𝔸".repeat(300));
+		MvcResult r = peticion(conCuerpo(post(RUTA), cuerpo(limite)), tPropietario);
+		assertEquals(201, r.getResponse().getStatus(), contenido(r));
+	}
+
 	// ------------------------------------------------------------------ activar y desactivar
 
 	@Test
@@ -538,6 +677,8 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 		datos.put("email", "redactada-" + e.marca + "@example.test");
 		datos.put("codigoClubFederacion", "TKD REDACTADA");
 		datos.put("aforoTurno", 30);
+		datos.put("lugar", "Pabellón Redactado");
+		datos.put("indicacionesAcceso", "Puerta Redactada");
 
 		for (MockHttpServletRequestBuilder p : List.of(conCuerpo(post(RUTA), cuerpo(datos)),
 				conCuerpo(put(RUTA + "/" + sede), cuerpo(datos)))) {
@@ -550,7 +691,7 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 			assertEquals(400, numero(fila, "estado_http"));
 			String payload = (String) fila.get("payload_json");
 			for (String clave : List.of("nombre", "direccion", "localidad", "codigoPostal", "telefono", "email",
-					"codigoClubFederacion")) {
+					"codigoClubFederacion", "lugar", "indicacionesAcceso")) {
 				assertTrue(payload.contains("\"" + clave + "\":\"[redactado]\""), clave + ": " + payload);
 			}
 			assertFalse(payload.contains("Redactada"), payload);
@@ -638,6 +779,18 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 		MvcResult r = peticion(conCuerpo(post(RUTA), cuerpo(Map.of("nombre", nombre))), token);
 		assertEquals(201, r.getResponse().getStatus(), contenido(r));
 		return json.readTree(contenido(r)).get("id").asLong();
+	}
+
+	private long crearCon(String token, Map<String, Object> datos) throws Exception {
+		MvcResult r = peticion(conCuerpo(post(RUTA), cuerpo(datos)), token);
+		assertEquals(201, r.getResponse().getStatus(), contenido(r));
+		return json.readTree(contenido(r)).get("id").asLong();
+	}
+
+	private long imagenDe(long organizacion, String nombre) {
+		jdbc.update("INSERT INTO imagen (nombre, ruta, tipo, url, organizacion_id) VALUES (?, ?, 'image/jpeg', ?, ?)",
+				nombre + ".jpg", "org-x/web/" + nombre + ".jpg", "/imagenes/org-x/web/" + nombre + ".jpg", organizacion);
+		return jdbc.queryForObject("SELECT MAX(id) FROM imagen WHERE organizacion_id = ?", Long.class, organizacion);
 	}
 
 	private long altaDeGrupo(String nombre, Long sede) throws Exception {

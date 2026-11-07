@@ -47,6 +47,25 @@ public class Sede extends EntidadOrganizacion {
 	@Column(nullable = false)
 	private Boolean activa = Boolean.TRUE;
 
+	/** Web por plantilla (W2, V32_6): dirección de su página, {@code /sedes/<slug>}; única en la escuela. */
+	@Column(length = 60)
+	private String slug;
+
+	/** Web por plantilla (W2): «Pabellón cubierto municipal». */
+	@Column(length = 120)
+	private String lugar;
+
+	/** Web por plantilla (W2): «Entrada por la calle lateral…». */
+	@Column(name = "indicaciones_acceso", length = 300)
+	private String indicacionesAcceso;
+
+	/** Web por plantilla (W2): fotos de la sede, imágenes de la misma escuela. Solo lectura en la API de sedes. */
+	@Column(name = "foto_imagen_id")
+	private Long fotoImagenId;
+
+	@Column(name = "foto2_imagen_id")
+	private Long foto2ImagenId;
+
 	public Long getId() {
 		return id;
 	}
@@ -121,5 +140,45 @@ public class Sede extends EntidadOrganizacion {
 
 	public void setActiva(boolean activa) {
 		this.activa = activa;
+	}
+
+	public String getSlug() {
+		return slug;
+	}
+
+	public void setSlug(String slug) {
+		this.slug = slug;
+	}
+
+	public String getLugar() {
+		return lugar;
+	}
+
+	public void setLugar(String lugar) {
+		this.lugar = lugar;
+	}
+
+	public String getIndicacionesAcceso() {
+		return indicacionesAcceso;
+	}
+
+	public void setIndicacionesAcceso(String indicacionesAcceso) {
+		this.indicacionesAcceso = indicacionesAcceso;
+	}
+
+	public Long getFotoImagenId() {
+		return fotoImagenId;
+	}
+
+	public void setFotoImagenId(Long fotoImagenId) {
+		this.fotoImagenId = fotoImagenId;
+	}
+
+	public Long getFoto2ImagenId() {
+		return foto2ImagenId;
+	}
+
+	public void setFoto2ImagenId(Long foto2ImagenId) {
+		this.foto2ImagenId = foto2ImagenId;
 	}
 }

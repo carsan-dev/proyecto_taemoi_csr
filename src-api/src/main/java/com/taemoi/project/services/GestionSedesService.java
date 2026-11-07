@@ -2,9 +2,11 @@ package com.taemoi.project.services;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -28,6 +30,9 @@ import com.taemoi.project.repositories.SedeRepository;
  * {@code uk_sede_organizacion_nombre}; si dos altas a la vez pasan la comprobación, la clave decide y también es 409.</li>
  * <li>Longitudes de las columnas en caracteres (400); las cadenas se recortan y las opcionales vacías quedan en
  * {@code null}.</li>
+ * <li>Web por plantilla (W2): {@code slug} en minúsculas sin tildes, cifras y guiones entre ellas, hasta 60 (400), y
+ * único en la escuela (409, también por la clave única {@code uk_sede_organizacion_slug}); {@code lugar} (120) e
+ * {@code indicacionesAcceso} (300). Al editar, si no llegan, se conservan.</li>
  * <li>Nunca sin sedes activas (409): activar y desactivar bloquean antes todas las sedes de la escuela, así que dos
  * desactivaciones a la vez no la dejan a cero. Desactivar no toca {@code membresia_sede} (D5-5).</li>
  * <li>Sin borrado: grupos, tarifas, entregas y movimientos la referencian (FK RESTRICT) y el historial se conserva.</li>
@@ -44,8 +49,11 @@ public class GestionSedesService {
 	static final String SIN_SEDES_ACTIVAS = "La escuela se quedaría sin sedes activas.";
 	static final String NOMBRE_OBLIGATORIO = "Indica el nombre de la sede.";
 	static final String ACTIVA_OBLIGATORIA = "Indica si la sede queda activa.";
-	static final String SIN_DATOS = "Indica los datos de la sede.";
+	public static final String SIN_DATOS = "Indica los datos de la sede.";
 	static final String EMAIL_NO_VALIDO = "El email de la sede no es válido.";
+	static final String SLUG_REPETIDO = "Ya hay una sede con esa dirección web.";
+	static final String SLUG_NO_VALIDO = "La dirección web de la sede solo admite minúsculas sin tildes, cifras y guiones"
+			+ " entre ellas (hasta 60 caracteres).";
 	static final String AFORO_NO_VALIDO = "El aforo por turno debe estar entre 1 y 999999 (o vacío: el límite de la escuela).";
 
 	/** Tope del aforo por turno: seis cifras, como el panel. */
@@ -53,6 +61,11 @@ public class GestionSedesService {
 
 	/** Clave única de V31 (organizacion_id, nombre). */
 	private static final String CLAVE_UNICA_NOMBRE = "uk_sede_organizacion_nombre";
+	/** Clave única de V32_6 (organizacion_id, slug). */
+	private static final String CLAVE_UNICA_SLUG = "uk_sede_organizacion_slug";
+	/** Minúsculas ASCII y cifras, con guiones sueltos entre ellas: {@code casariche}, {@code roda-de-andalucia}. */
+	private static final Pattern SLUG = Pattern.compile("^[a-z0-9]+(-[a-z0-9]+)*$");
+	static final int SLUG_MAXIMO = 60;
 	/** Algo antes de la arroba, un dominio con punto y ningún espacio ni segunda arroba. */
 	private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 	private static final String RUTA = "/api/sedes";
@@ -103,6 +116,9 @@ public class GestionSedesService {
 		if (sedes.existsByNombre(datos.nombre())) {
 			throw new IllegalStateException(NOMBRE_REPETIDO);
 		}
+		if (datos.slug() != null && sedes.existsBySlug(datos.slug())) {
+			throw new IllegalStateException(SLUG_REPETIDO);
+		}
 		Sede sede = new Sede();
 		datos.aplicar(sede);
 		sede.setActiva(true);
@@ -112,18 +128,24 @@ public class GestionSedesService {
 	}
 
 	/**
-	 * Reemplaza los datos editables de la sede (no toca {@code activa}).
+	 * Reemplaza los datos editables de la sede (no toca {@code activa} ni las fotos). Los campos de la web
+	 * ({@link SedeRequest#CAMPOS_WEB}) que no estén en {@code recibidos} se conservan.
 	 *
+	 * @param recibidos campos de la web presentes en el cuerpo (aunque sea con {@code null})
 	 * @throws NoSuchElementException   (404) de otra escuela o inexistente
 	 * @throws IllegalArgumentException (400) datos no válidos
-	 * @throws IllegalStateException    (409) el nombre ya lo tiene otra sede de la escuela
+	 * @throws IllegalStateException    (409) el nombre o el slug ya los tiene otra sede de la escuela
 	 */
 	@Transactional
-	public Edicion editar(Long id, SedeRequest solicitud) {
+	public Edicion editar(Long id, SedeRequest solicitud, Set<String> recibidos) {
 		Sede sede = exigir(id);
-		Datos datos = Datos.de(solicitud);
+		Datos datos = Datos.de(solicitud == null ? null
+				: solicitud.conservandoWeb(recibidos, sede.getSlug(), sede.getLugar(), sede.getIndicacionesAcceso()));
 		if (sedes.existsByNombreAndIdNot(datos.nombre(), sede.getId())) {
 			throw new IllegalStateException(NOMBRE_REPETIDO);
+		}
+		if (datos.slug() != null && sedes.existsBySlugAndIdNot(datos.slug(), sede.getId())) {
+			throw new IllegalStateException(SLUG_REPETIDO);
 		}
 		boolean sinCambios = datos.igualQue(sede);
 		boolean aforoCambiado = !Objects.equals(datos.aforoTurno(), sede.getAforoTurno());
@@ -180,7 +202,10 @@ public class GestionSedesService {
 		return sedes.buscarEnEscuelaActiva(id).orElseThrow(() -> new NoSuchElementException(NO_EXISTE));
 	}
 
-	/** Guarda con flush: dos altas o renombrados a la vez con el mismo nombre chocan aquí con la clave única (409). */
+	/**
+	 * Guarda con flush: dos altas o renombrados a la vez con el mismo nombre (o slug) chocan aquí con la clave única
+	 * (409).
+	 */
 	private Sede guardar(Sede sede) {
 		try {
 			return sedes.saveAndFlush(sede);
@@ -188,19 +213,27 @@ public class GestionSedesService {
 			if (violaNombreUnico(error)) {
 				throw new IllegalStateException(NOMBRE_REPETIDO);
 			}
+			if (violaClave(error, CLAVE_UNICA_SLUG)) {
+				throw new IllegalStateException(SLUG_REPETIDO);
+			}
 			throw error;
 		}
 	}
 
 	/** La violación es la de la clave única del nombre: su nombre aparece en la causa. */
 	static boolean violaNombreUnico(Throwable error) {
+		return violaClave(error, CLAVE_UNICA_NOMBRE);
+	}
+
+	/** La violación es la de la clave única dada: su nombre aparece en la causa. */
+	private static boolean violaClave(Throwable error, String clave) {
 		for (Throwable causa = error; causa != null; causa = causa.getCause()) {
 			if (causa instanceof org.hibernate.exception.ConstraintViolationException violacion
 					&& violacion.getConstraintName() != null
-					&& violacion.getConstraintName().contains(CLAVE_UNICA_NOMBRE)) {
+					&& violacion.getConstraintName().contains(clave)) {
 				return true;
 			}
-			if (causa.getMessage() != null && causa.getMessage().contains(CLAVE_UNICA_NOMBRE)) {
+			if (causa.getMessage() != null && causa.getMessage().contains(clave)) {
 				return true;
 			}
 			if (causa.getCause() == causa) {
@@ -221,7 +254,7 @@ public class GestionSedesService {
 
 	/** Los datos de la petición ya validados y normalizados. */
 	record Datos(String nombre, String direccion, String localidad, String codigoPostal, String telefono, String email,
-			String codigoClubFederacion, Integer aforoTurno) {
+			String codigoClubFederacion, Integer aforoTurno, String slug, String lugar, String indicacionesAcceso) {
 
 		static Datos de(SedeRequest solicitud) {
 			if (solicitud == null) {
@@ -245,7 +278,17 @@ public class GestionSedesService {
 			if (aforo != null && (aforo < 1 || aforo > AFORO_MAXIMO)) {
 				throw new IllegalArgumentException(AFORO_NO_VALIDO);
 			}
-			return new Datos(nombre, direccion, localidad, codigoPostal, telefono, email, club, aforo);
+			String slug = recortar(solicitud.slug());
+			if (slug != null) {
+				slug = slug.toLowerCase(Locale.ROOT);
+				if (slug.length() > SLUG_MAXIMO || !SLUG.matcher(slug).matches()) {
+					throw new IllegalArgumentException(SLUG_NO_VALIDO);
+				}
+			}
+			String lugar = maximo(recortar(solicitud.lugar()), 120, "El lugar de la sede");
+			String acceso = maximo(recortar(solicitud.indicacionesAcceso()), 300, "Las indicaciones de acceso");
+			return new Datos(nombre, direccion, localidad, codigoPostal, telefono, email, club, aforo, slug, lugar,
+					acceso);
 		}
 
 		void aplicar(Sede sede) {
@@ -257,6 +300,9 @@ public class GestionSedesService {
 			sede.setEmail(email);
 			sede.setCodigoClubFederacion(codigoClubFederacion);
 			sede.setAforoTurno(aforoTurno);
+			sede.setSlug(slug);
+			sede.setLugar(lugar);
+			sede.setIndicacionesAcceso(indicacionesAcceso);
 		}
 
 		boolean igualQue(Sede sede) {
@@ -265,7 +311,9 @@ public class GestionSedesService {
 					&& Objects.equals(codigoPostal, sede.getCodigoPostal())
 					&& Objects.equals(telefono, sede.getTelefono()) && Objects.equals(email, sede.getEmail())
 					&& Objects.equals(codigoClubFederacion, sede.getCodigoClubFederacion())
-					&& Objects.equals(aforoTurno, sede.getAforoTurno());
+					&& Objects.equals(aforoTurno, sede.getAforoTurno()) && Objects.equals(slug, sede.getSlug())
+					&& Objects.equals(lugar, sede.getLugar())
+					&& Objects.equals(indicacionesAcceso, sede.getIndicacionesAcceso());
 		}
 
 		/** Recortada; vacía o en blanco, {@code null}. */

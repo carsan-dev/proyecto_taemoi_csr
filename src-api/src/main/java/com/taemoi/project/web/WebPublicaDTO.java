@@ -2,6 +2,7 @@ package com.taemoi.project.web;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -46,8 +47,14 @@ public record WebPublicaDTO(Escuela escuela, String tema, boolean publicada, boo
 			int orden) {
 	}
 
+	/**
+	 * W2: {@code slug} (su página, {@code /sedes/<slug>}), {@code lugar}, {@code indicacionesAcceso} y las URL de sus dos
+	 * fotos (absolutas con {@code app.base.url}; solo imágenes de la misma escuela); {@code null} si no están puestos.
+	 */
 	public record Sede(Long id, String nombre, String direccion, String localidad, String codigoPostal, String telefono,
-			List<Grupo> grupos) {
+			String slug, String lugar, String indicacionesAcceso,
+			@JsonSerialize(using = UrlArchivoSerializer.class) String fotoUrl,
+			@JsonSerialize(using = UrlArchivoSerializer.class) String foto2Url, List<Grupo> grupos) {
 	}
 
 	/**
@@ -73,9 +80,17 @@ public record WebPublicaDTO(Escuela escuela, String tema, boolean publicada, boo
 	public record Licencia(String disciplina, String concepto, Double precio) {
 	}
 
-	/** @param conImagen si tiene foto ({@code GET /api/eventos/{id}/imagen}). */
+	/**
+	 * @param conImagen  si tiene foto ({@code GET /api/eventos/{id}/imagen}).
+	 * @param hora       W2 (decisión 466): {@code HH:mm}; {@code null} sin hora.
+	 * @param lugar      W2: {@code null} sin lugar.
+	 * @param sedeId     W2: su sede (de la misma escuela); {@code null} sin sede.
+	 * @param sedeNombre W2: nombre de esa sede (también si está inactiva).
+	 */
 	public record Evento(Long id, String titulo,
-			@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") LocalDate fecha, boolean conImagen) {
+			@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") LocalDate fecha, boolean conImagen,
+			@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm") LocalTime hora, String lugar, Long sedeId,
+			String sedeNombre) {
 	}
 
 	public record Contacto(String email, String telefono) {

@@ -1,9 +1,11 @@
 package com.taemoi.project.entities;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -51,6 +53,24 @@ public class Evento extends EntidadOrganizacion {
 
 	private Boolean visible = true;
 	private Integer orden;
+
+	/**
+	 * Web por plantilla (W2, decisión 466): hora, lugar y sede del evento, opcionales. Sin valor no salen en el JSON
+	 * ({@code NON_NULL}): el de los eventos que no los tienen, como los de Moiskimdo, sigue siendo el de siempre.
+	 */
+	@Column(name = "hora")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
+	private LocalTime hora;
+
+	@Column(name = "lugar", length = 160)
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private String lugar;
+
+	/** Sede de la misma escuela (lo comprueba {@code EventoServiceImpl}). */
+	@Column(name = "sede_id")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private Long sedeId;
 
 	/** Decisión 342: lo rellenan las listas de eventos con una sola consulta; en el resto de respuestas no aparece. */
 	@Transient
@@ -120,6 +140,30 @@ public class Evento extends EntidadOrganizacion {
 
 	public void setDocumentos(List<Documento> documentos) {
 		this.documentos = documentos;
+	}
+
+	public LocalTime getHora() {
+		return hora;
+	}
+
+	public void setHora(LocalTime hora) {
+		this.hora = hora;
+	}
+
+	public String getLugar() {
+		return lugar;
+	}
+
+	public void setLugar(String lugar) {
+		this.lugar = lugar;
+	}
+
+	public Long getSedeId() {
+		return sedeId;
+	}
+
+	public void setSedeId(Long sedeId) {
+		this.sedeId = sedeId;
 	}
 
 	public Integer getNumeroFotos() {

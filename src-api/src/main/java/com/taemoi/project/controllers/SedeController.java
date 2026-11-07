@@ -1,6 +1,8 @@
 package com.taemoi.project.controllers;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.dtos.request.SedeActivaRequest;
 import com.taemoi.project.dtos.request.SedeRequest;
 import com.taemoi.project.dtos.response.SedeDTO;
@@ -35,10 +40,12 @@ public class SedeController {
 
 	private final GestionSedesService sedes;
 	private final PreinscripcionService preinscripciones;
+	private final ObjectMapper json;
 
-	public SedeController(GestionSedesService sedes, PreinscripcionService preinscripciones) {
+	public SedeController(GestionSedesService sedes, PreinscripcionService preinscripciones, ObjectMapper json) {
 		this.sedes = sedes;
 		this.preinscripciones = preinscripciones;
+		this.json = json;
 	}
 
 	/** Todas las sedes de la escuela, por id. */
@@ -65,11 +72,16 @@ public class SedeController {
 	 * Reemplaza los datos editables (no {@code activa}). Si cambia el aforo, promociona la lista de espera, como al
 	 * cambiar el límite común ({@code AdminController#actualizarLimiteTurno}), y la respuesta dice si queda por debajo de
 	 * la ocupación de algún turno: se guarda igual y nadie causa baja.
+	 *
+	 * <p>Web por plantilla (W2): el cuerpo se lee como árbol para saber qué campos de la web llegan; los que no llegan se
+	 * conservan (el panel de hoy no los envía).
 	 */
 	@PutMapping("/{id}")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
-	public ResponseEntity<SedeEditadaDTO> editar(@PathVariable Long id, @RequestBody SedeRequest solicitud) {
-		GestionSedesService.Edicion edicion = sedes.editar(id, solicitud);
+	public ResponseEntity<SedeEditadaDTO> editar(@PathVariable Long id, @RequestBody JsonNode cuerpo) {
+		SedeRequest solicitud = leer(cuerpo);
+		Set<String> recibidos = SedeRequest.CAMPOS_WEB.stream().filter(cuerpo::has).collect(Collectors.toSet());
+		GestionSedesService.Edicion edicion = sedes.editar(id, solicitud, recibidos);
 		if (edicion.aforoCambiado()) {
 			preinscripciones.promocionarTodas();
 		}
@@ -81,5 +93,17 @@ public class SedeController {
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER')")
 	public ResponseEntity<SedeDTO> cambiarActiva(@PathVariable Long id, @RequestBody SedeActivaRequest solicitud) {
 		return ResponseEntity.ok(sedes.cambiarActiva(id, solicitud));
+	}
+
+	/** Un objeto JSON con la forma de {@link SedeRequest}; otra cosa, 400. */
+	private SedeRequest leer(JsonNode cuerpo) {
+		if (cuerpo == null || !cuerpo.isObject()) {
+			throw new IllegalArgumentException(GestionSedesService.SIN_DATOS);
+		}
+		try {
+			return json.treeToValue(cuerpo, SedeRequest.class);
+		} catch (JsonProcessingException | IllegalArgumentException error) {
+			throw new IllegalArgumentException(GestionSedesService.SIN_DATOS);
+		}
 	}
 }
