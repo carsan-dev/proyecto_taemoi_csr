@@ -91,15 +91,15 @@ describe('PlantillaPendienteComponent · datos y SEO de cada página', () => {
     document.title = tituloAnterior;
   });
 
-  it('portada: una petición, SEO de la portada y la plantilla vacía', async () => {
-    await ir('/');
+  it('una página aún sin tema (tarifas): una petición, su SEO y la plantilla vacía', async () => {
+    await ir('/tarifas');
     expect(document.title).toBe(tituloAnterior);
     http.expectOne(url).flush(SITIO);
     harness.detectChanges();
 
-    expect(document.title).toBe('Taekwondo Sierra Sur');
-    expect(canonical()).toBe(`${location.origin}/`);
-    expect(jsonLd().map((d) => d['@type'])).toEqual(['SportsActivityLocation', 'SportsActivityLocation']);
+    expect(document.title).toBe('Tarifas · Taekwondo Sierra Sur');
+    expect(canonical()).toBe(`${location.origin}/tarifas`);
+    expect(jsonLd()).toEqual([]);
     const main = harness.routeNativeElement!.querySelector('main#contenido')!;
     expect(main).not.toBeNull();
     expect(main.innerHTML).toBe('');
@@ -158,7 +158,7 @@ describe('PlantillaPendienteComponent · datos y SEO de cada página', () => {
   });
 
   it('web no publicada (404): solo noindex', async () => {
-    await ir('/');
+    await ir('/tarifas');
     http.expectOne(url).flush(null, { status: 404, statusText: 'Not Found' });
     harness.detectChanges();
     expect(robots()).toBe('noindex, nofollow');
@@ -166,7 +166,7 @@ describe('PlantillaPendienteComponent · datos y SEO de cada página', () => {
   });
 
   it('al salir de la plantilla quita todas sus etiquetas', async () => {
-    await ir('/');
+    await ir('/tarifas');
     http.expectOne(url).flush(SITIO);
     harness.detectChanges();
     expect(propias().length).toBeGreaterThan(0);

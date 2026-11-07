@@ -8,8 +8,12 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './app.routes';
 import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-principal/escaparate-principal.component';
 import { esWebPlantilla } from './guards/web-plantilla.guard';
+import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { ponerMetaWebPlantilla, quedaMetaWebPlantilla } from './testing/meta-web-plantilla';
 import { PlantillaPendienteComponent } from './web-plantilla/paginas/plantilla-pendiente.component';
+import { NoEncontradaLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/no-encontrada/no-encontrada.component';
+import { PortadaLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/portada/portada.component';
+import { RUTAS_SOLO_MOISKIMDO } from './web-plantilla/web-plantilla.routes';
 
 @Component({ standalone: true, template: '' })
 class PantallaFalsaComponent {}
@@ -20,7 +24,17 @@ const PAGINAS_PLANTILLA = ['', 'sedes/:slug', 'preinscripcion', 'tarifas', 'even
 /** Clave de prueba en `data` con el índice de la entrada original de `app.routes`. */
 const INDICE = 'indiceEnAppRoutes';
 
-const grupoPlantilla = (): Route => routes.find((r) => r.canMatch?.includes(esWebPlantilla))!;
+const grupoPlantilla = (): Route => routes.find((r) => r.canMatch?.includes(esWebPlantilla) && r.path === '')!;
+const comodinPlantilla = (): Route => routes.find((r) => r.canMatch?.includes(esWebPlantilla) && r.path === '**')!;
+
+/** Redirecciones de rutas de Moiskimdo con equivalente claro en la plantilla (§3.2 punto 5). */
+const REDIRECCIONES: [string, string][] = [
+  ['/inicio', '/'],
+  ['/aviso-legal', '/legales#aviso-legal'],
+  ['/politica-privacidad', '/legales#privacidad'],
+  ['/politica-cookies', '/legales#cookies'],
+  ['/contacto', '/#contacto'],
+];
 
 /**
  * Armazón de la web por plantilla (fase4-web-plan.md §3.2 y §6, «Armazón»): el grupo con `canMatch` va delante de las
@@ -36,7 +50,7 @@ describe('app.routes · grupo de la web por plantilla', () => {
   });
 
   it('un único grupo, el primero de la tabla, con path vacío, canMatch esWebPlantilla y carga perezosa (sin hijas en línea)', () => {
-    const grupos = routes.filter((r) => r.canMatch?.includes(esWebPlantilla));
+    const grupos = routes.filter((r) => r.canMatch?.includes(esWebPlantilla) && r.path === '');
     expect(grupos.length).toBe(1);
     const grupo = grupos[0];
     expect(routes.indexOf(grupo)).toBe(0);
@@ -50,16 +64,57 @@ describe('app.routes · grupo de la web por plantilla', () => {
     expect(grupo.redirectTo).toBeUndefined();
   });
 
-  it('las hijas: las siete páginas, todas con data.webPlantilla, todas a la pantalla técnica provisional y sin comodín', async () => {
+  it('las hijas: las siete páginas (la portada, del tema; el resto, la pantalla provisional), sin comodín', async () => {
     const hijas = (await (grupoPlantilla().loadChildren as () => Promise<Routes>)()) as Routes;
-    expect(hijas.map((r) => r.path)).toEqual(PAGINAS_PLANTILLA);
+    const paginas = hijas.slice(0, PAGINAS_PLANTILLA.length);
+    expect(paginas.map((r) => r.path)).toEqual(PAGINAS_PLANTILLA);
     expect(hijas.some((r) => r.path === '**')).toBeFalse();
-    for (const hija of hijas) {
+    for (const hija of paginas) {
       expect(hija.data?.['webPlantilla']).withContext(hija.path!).toBeTrue();
       expect(hija.canMatch).withContext(hija.path!).toBeUndefined();
-      expect(await hija.loadComponent!()).withContext(hija.path!).toBe(PlantillaPendienteComponent);
+      expect(await hija.loadComponent!())
+        .withContext(hija.path!)
+        .toBe(hija.path === '' ? PortadaLineaComarcalComponent : PlantillaPendienteComponent);
     }
     expect(hijas[0].pathMatch).toBe('full');
+  });
+
+  it('las hijas: las rutas solo de Moiskimdo, redirigidas a su equivalente o a la 404 del tema', async () => {
+    const hijas = (await (grupoPlantilla().loadChildren as () => Promise<Routes>)()) as Routes;
+    const resto = hijas.slice(PAGINAS_PLANTILLA.length);
+    expect(resto.filter((r) => r.redirectTo !== undefined).map((r) => r.path)).toEqual([
+      'inicio',
+      'aviso-legal',
+      'politica-privacidad',
+      'politica-cookies',
+      'contacto',
+    ]);
+    const del404 = resto.filter((r) => r.redirectTo === undefined);
+    expect(del404.map((r) => r.path)).toEqual([...RUTAS_SOLO_MOISKIMDO]);
+    for (const hija of del404) {
+      expect(hija.data?.['webPlantilla']).withContext(hija.path!).toBeTrue();
+      expect(await hija.loadComponent!()).withContext(hija.path!).toBe(NoEncontradaLineaComarcalComponent);
+    }
+    // Cada ruta del bloque público de Moiskimdo (entre el grupo de la plantilla y el login) tiene su entrada aquí.
+    const publicasMoiskimdo = routes
+      .slice(1, routes.findIndex((r) => r.path === 'login'))
+      .map((r) => r.path!.split('/')[0])
+      .filter((p) => p !== '');
+    const cubiertas = new Set(hijas.map((r) => r.path!.split('/')[0]));
+    expect(publicasMoiskimdo.length).toBeGreaterThan(10);
+    expect(publicasMoiskimdo.filter((p) => !cubiertas.has(p))).toEqual([]);
+  });
+
+  it('comodín de la plantilla: el penúltimo, con canMatch esWebPlantilla, data.webPlantilla y la 404 del tema, perezoso', async () => {
+    const comodines = routes.filter((r) => r.path === '**');
+    expect(comodines.length).toBe(3);
+    const plantilla = comodinPlantilla();
+    expect(routes.indexOf(plantilla)).toBe(routes.length - 2);
+    expect(comodines[0].canMatch).toEqual([gestionPanelGuard]);
+    expect(plantilla.canMatch).toEqual([esWebPlantilla]);
+    expect(plantilla.data?.['webPlantilla']).toBeTrue();
+    expect(plantilla.component).toBeUndefined();
+    expect(await plantilla.loadComponent!()).toBe(NoEncontradaLineaComarcalComponent);
   });
 
   describe('al navegar (la tabla real, en su orden; cada pantalla ajena a la plantilla, una falsa sin guards)', () => {
@@ -77,7 +132,13 @@ describe('app.routes · grupo de la web por plantilla', () => {
         if (r.redirectTo !== undefined) {
           return { ...r };
         }
-        return { path: r.path, pathMatch: r.pathMatch, data, component: PantallaFalsaComponent };
+        // El 404 de la plantilla conserva su canMatch; el del panel, como sin sesión de gestión.
+        const canMatch = r.canMatch?.includes(esWebPlantilla)
+          ? r.canMatch
+          : r.canMatch?.includes(gestionPanelGuard)
+            ? [() => false]
+            : undefined;
+        return { path: r.path, pathMatch: r.pathMatch, data, canMatch, component: PantallaFalsaComponent };
       });
       // La pantalla de la plantilla pide sus datos (W4): HttpClient de pruebas, sin responder.
       TestBed.configureTestingModule({ providers: [provideRouter(tabla), provideHttpClient(), provideHttpClientTesting()] });
@@ -118,7 +179,10 @@ describe('app.routes · grupo de la web por plantilla', () => {
     it('con la meta: cada página de la plantilla resuelve a la ruta del grupo (pantalla provisional y data.webPlantilla)', async () => {
       quitarMeta = ponerMetaWebPlantilla();
       const harness = await montar();
-      for (const url of ['/', '/sedes/casariche', '/preinscripcion', '/tarifas', '/eventos', '/eventos/3', '/legales']) {
+      await harness.navigateByUrl('/');
+      expect(hoja().component).toBe(PortadaLineaComarcalComponent);
+      expect(hoja().data['webPlantilla']).toBeTrue();
+      for (const url of ['/sedes/casariche', '/preinscripcion', '/tarifas', '/eventos', '/eventos/3', '/legales']) {
         await harness.navigateByUrl(url);
         expect(hoja().component).withContext(url).toBe(PlantillaPendienteComponent);
         expect(hoja().data['webPlantilla']).withContext(url).toBeTrue();
@@ -139,15 +203,42 @@ describe('app.routes · grupo de la web por plantilla', () => {
       expect(entradaActiva()).toBe(entrada('alumnosEditar/:id'));
     });
 
-    it('con la meta: las públicas solo de Moiskimdo y las desconocidas caen como hoy (§9, n.º 10 sin mapa decidido)', async () => {
+    it('con la meta: las públicas solo de Moiskimdo van a su equivalente de la plantilla o a la 404 del tema', async () => {
       quitarMeta = ponerMetaWebPlantilla();
       const harness = await montar();
-      await harness.navigateByUrl('/taekwondo');
-      expect(entradaActiva()).toBe(entrada('taekwondo'));
-      await harness.navigateByUrl('/sedes/casariche/otra');
-      expect(entradaActiva()!.path).toBe('**');
+      const router = TestBed.inject(Router);
+      for (const [desde, hasta] of REDIRECCIONES) {
+        await harness.navigateByUrl(desde);
+        expect(router.url).withContext(desde).toBe(hasta);
+        expect(hoja().data['webPlantilla']).withContext(desde).toBeTrue();
+      }
+      for (const path of RUTAS_SOLO_MOISKIMDO) {
+        await harness.navigateByUrl(`/${path}`);
+        expect(hoja().component).withContext(path).toBe(NoEncontradaLineaComarcalComponent);
+        expect(hoja().data['webPlantilla']).withContext(path).toBeTrue();
+        expect(router.url).withContext(path).toBe(`/${path}`);
+      }
+    });
+
+    it('con la meta: una URL desconocida cae en el comodín de la plantilla (404 del tema), no en el de Moiskimdo', async () => {
+      quitarMeta = ponerMetaWebPlantilla();
+      const harness = await montar();
+      for (const url of ['/no-existe', '/sedes/casariche/otra', '/taekwondo/x']) {
+        await harness.navigateByUrl(url);
+        expect(entradaActiva()).withContext(url).toBe(comodinPlantilla());
+        expect(hoja().data['webPlantilla']).withContext(url).toBeTrue();
+        expect(TestBed.inject(Router).url).withContext(url).toBe(url);
+      }
+    });
+
+    it('sin la meta: las rutas de Moiskimdo y el 404 público no cambian', async () => {
+      const harness = await montar();
+      for (const path of ['taekwondo', 'horarios', 'aviso-legal', 'politica-privacidad', 'politica-cookies', 'contacto']) {
+        await harness.navigateByUrl(`/${path}`);
+        expect(entradaActiva()).withContext(path).toBe(entrada(path));
+      }
       await harness.navigateByUrl('/no-existe');
-      expect(entradaActiva()!.path).toBe('**');
+      expect(entradaActiva()).toBe(routes[routes.length - 1]);
       expect(hoja().data['webPlantilla']).toBeUndefined();
     });
   });

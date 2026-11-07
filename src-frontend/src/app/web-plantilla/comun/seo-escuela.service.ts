@@ -141,6 +141,13 @@ export class SeoEscuelaService {
     this.meta('name', 'robots', NOINDEX);
   }
 
+  /** Página no encontrada (404 del tema): título con la escuela y `noindex`. */
+  noEncontrada(sitio: SitioWeb): void {
+    this.limpiar();
+    this.titulo.setTitle(`No encontramos esta página · ${sitio.escuela.nombre}`);
+    this.meta('name', 'robots', NOINDEX);
+  }
+
   /** Quita todas las etiquetas de la plantilla (al salir de sus rutas). */
   limpiar(): void {
     for (const elemento of Array.from(this.document.head.querySelectorAll(`[${MARCA}]`))) {

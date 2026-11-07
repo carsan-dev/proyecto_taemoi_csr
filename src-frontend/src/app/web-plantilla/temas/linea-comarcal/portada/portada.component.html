@@ -1,0 +1,228 @@
+@let s = pagina.sitio();
+@let v = vista();
+@if (s && v) {
+  <app-lc-marco [sitio]="s">
+    <!-- 1. Portada y línea -->
+    <section class="portada" id="portada" aria-labelledby="portada-titulo">
+      <div class="envoltura portada-rejilla">
+        <div class="portada-texto">
+          @if (v.rotulo) {<p class="rotulo">{{ v.rotulo }}</p>}
+          @if (v.titular) {<h1 class="titular" id="portada-titulo">{{ v.titular }}</h1>}
+          @if (v.frase) {<p class="entrada">{{ v.frase }}</p>}
+          @if (v.botonHorarios || v.enlaceTarifas) {
+            <div class="acciones">
+              @if (v.botonHorarios) {
+                <a class="boton" routerLink="/" fragment="linea">{{ v.botonHorarios }}
+                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 3v11M4.5 9.5 9 14l4.5-4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+              }
+              @if (v.enlaceTarifas) {
+                <a class="enlace-flecha" routerLink="/" fragment="tarifas">{{ v.enlaceTarifas }}<ng-container *ngTemplateOutlet="flecha" /></a>
+              }
+            </div>
+          }
+        </div>
+        <figure #fotoPortada class="foto portada-foto">
+          @if (v.foto) {<img [src]="v.foto.url" [alt]="v.foto.alt" fetchpriority="high">}
+        </figure>
+      </div>
+      @if (v.horarios) {
+        <div class="envoltura">
+          <app-lc-linea-sedes [horarios]="v.horarios" [foto]="fotoPortada" />
+        </div>
+      }
+    </section>
+
+    @for (seccion of v.secciones; track seccion.tipo) {
+      @if (seccion.tipo === 'presentacion') {
+        <!-- 2. Presentación -->
+        <section class="presentacion" id="presentacion" aria-labelledby="presentacion-titulo">
+          <figure class="foto presentacion-foto">
+            @if (seccion.foto) {<img [src]="seccion.foto.url" [alt]="seccion.foto.alt" loading="lazy">}
+            <div class="presentacion-velo">
+              <div class="envoltura">
+                <p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>
+                @if (seccion.titulo) {<h2 class="titulo-seccion" id="presentacion-titulo">{{ seccion.titulo }}</h2>}
+              </div>
+            </div>
+          </figure>
+          <div class="presentacion-cuerpo">
+            <div class="envoltura">
+              @if (seccion.parrafos.length) {
+                <div class="cuerpo">
+                  @for (parrafo of seccion.parrafos; track $index) {<p>{{ parrafo }}</p>}
+                </div>
+              }
+              @if (seccion.datos.length) {
+                <ul class="datos" aria-label="El club en cifras">
+                  @for (dato of seccion.datos; track dato.etiqueta) {
+                    <li class="dato"><span class="dato-cifra">{{ dato.cifra }}</span><span class="dato-etiqueta">{{ dato.etiqueta }}</span></li>
+                  }
+                </ul>
+              }
+            </div>
+          </div>
+        </section>
+      } @else if (seccion.tipo === 'disciplinas') {
+        <!-- 3. Disciplinas -->
+        <section class="seccion seccion--anden" id="disciplinas" [attr.aria-label]="seccion.rotulo || null">
+          @for (disciplina of seccion.disciplinas; track disciplina.codigo; let primera = $first) {
+            <div class="envoltura disciplina">
+              <figure class="foto disciplina-foto">
+                @if (disciplina.foto) {<img [src]="disciplina.foto.url" [alt]="disciplina.foto.alt" loading="lazy">}
+              </figure>
+              <div class="disciplina-texto">
+                <div class="cabeza-seccion">
+                  @if (primera && seccion.rotulo) {<p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>}
+                  <h2 class="titulo-seccion">{{ disciplina.nombre }}</h2>
+                </div>
+                @if (disciplina.parrafos.length) {
+                  <div class="cuerpo">
+                    @for (parrafo of disciplina.parrafos; track $index) {<p>{{ parrafo }}</p>}
+                  </div>
+                }
+                @if (disciplina.filas.length) {
+                  <dl class="ficha">
+                    @for (fila of disciplina.filas; track $index) {
+                      <div class="ficha-fila"><dt>{{ fila.rotulo }}</dt><dd>{{ fila.texto }}</dd></div>
+                    }
+                  </dl>
+                }
+              </div>
+            </div>
+          }
+        </section>
+      } @else if (seccion.tipo === 'profesores') {
+        <!-- 4. Profesores -->
+        <section class="seccion" id="profesores" aria-labelledby="profesores-titulo">
+          <div class="envoltura">
+            <div class="cabeza-seccion">
+              <p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>
+              @if (seccion.titulo) {<h2 class="titulo-seccion" id="profesores-titulo">{{ seccion.titulo }}</h2>}
+            </div>
+            <ul class="profes">
+              @for (profe of seccion.profesores; track profe.n) {
+                <li class="profe">
+                  @if (profe.foto) {
+                    <figure class="foto profe-foto"><img [src]="profe.foto.url" [alt]="profe.foto.alt" loading="lazy"></figure>
+                  } @else {
+                    <div class="monograma" role="img" [attr.aria-label]="'Sin foto: iniciales de ' + profe.nombre">{{ profe.monograma }}</div>
+                  }
+                  <h3 class="profe-nombre">{{ profe.nombre }}</h3>
+                  @if (profe.cargo) {<p class="profe-grado">{{ profe.cargo }}</p>}
+                </li>
+              }
+            </ul>
+          </div>
+        </section>
+      } @else if (seccion.tipo === 'galeria') {
+        <!-- 5. Galería -->
+        <section class="seccion seccion--anden" id="galeria" aria-labelledby="galeria-titulo">
+          <div class="envoltura">
+            <div class="cabeza-seccion">
+              <h2 class="rotulo" id="galeria-titulo">{{ seccion.numero }} · {{ seccion.rotulo }}</h2>
+            </div>
+            <ol class="galeria">
+              @for (foto of seccion.fotos; track foto.n) {
+                <li [class]="foto.forma">
+                  <figure class="foto"><img [src]="foto.url" [alt]="foto.alt" loading="lazy"></figure>
+                  <span class="galeria-n" aria-hidden="true">{{ foto.numero }}</span>
+                </li>
+              }
+            </ol>
+          </div>
+        </section>
+      } @else if (seccion.tipo === 'eventos') {
+        <!-- 6. Eventos -->
+        <section class="seccion" id="eventos" aria-labelledby="eventos-titulo">
+          <div class="envoltura">
+            <div class="cabeza-seccion">
+              <p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>
+              @if (seccion.titulo) {<h2 class="titulo-seccion" id="eventos-titulo">{{ seccion.titulo }}</h2>}
+            </div>
+            <ol class="eventos">
+              @for (evento of seccion.eventos; track evento.id) {
+                <li class="evento">
+                  <time class="evento-fecha" [attr.datetime]="evento.fecha"><span class="evento-dia">{{ evento.dia }}</span><span class="evento-semana">{{ evento.semana }}</span></time>
+                  <div>
+                    <h3 class="evento-titulo">{{ evento.titulo }}</h3>
+                    @if (evento.lugar || evento.hora) {
+                      <p class="evento-lugar">
+                        {{ evento.lugar }}@if (evento.lugar && evento.hora) {<ng-container> · </ng-container>}@if (evento.hora) {<span class="hora">{{ evento.hora }}</span>}
+                      </p>
+                    }
+                  </div>
+                  @if (seccion.enlace) {
+                    <a class="enlace-flecha" [routerLink]="['/eventos', evento.id]">{{ seccion.enlace }}<span class="oculto">: {{ evento.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
+                  }
+                </li>
+              }
+            </ol>
+          </div>
+        </section>
+      } @else if (seccion.tipo === 'tarifas') {
+        <!-- 7. Tarifas -->
+        <section class="tarifas" id="tarifas" aria-labelledby="tarifas-titulo">
+          <div class="envoltura tarifas-rejilla">
+            <h2 class="rotulo" id="tarifas-titulo">{{ seccion.titulo ? seccion.numero + ' · ' + seccion.titulo : seccion.numero }}</h2>
+            <p class="tarifa-cifra"><span class="tarifa-importe">{{ seccion.importe }}</span><span class="tarifa-mes">{{ seccion.alMes }}</span></p>
+            <div class="tarifa-lado">
+              @if (seccion.igual) {<p class="tarifa-igual">{{ seccion.igual }}</p>}
+              @if (seccion.puntos.length) {
+                <ul class="tarifa-incluye">
+                  @for (punto of seccion.puntos; track $index) {<li>{{ punto }}</li>}
+                </ul>
+              }
+              @if (seccion.boton) {
+                <a class="boton boton--blanco" routerLink="/preinscripcion">{{ seccion.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>
+              }
+            </div>
+          </div>
+        </section>
+      } @else if (seccion.tipo === 'contacto') {
+        <!-- 8. Contacto -->
+        <section class="seccion seccion--anden" id="contacto" aria-labelledby="contacto-titulo">
+          <div class="envoltura contacto-rejilla">
+            <div class="contacto-principal">
+              <p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>
+              @if (seccion.titulo) {<h2 class="titulo-seccion contacto-titulo" id="contacto-titulo">{{ seccion.titulo }}</h2>}
+              @if (seccion.correo || seccion.telefono) {
+                <dl class="contacto-datos">
+                  @if (seccion.correo; as correo) {
+                    <dt>{{ correo.rotulo }}</dt>
+                    <dd><a [href]="correo.enlace">{{ correo.texto }}</a></dd>
+                  }
+                  @if (seccion.telefono; as telefono) {
+                    <dt>{{ telefono.rotulo }}</dt>
+                    <dd><a class="cifras" [href]="telefono.enlace">{{ telefono.texto }}</a></dd>
+                  }
+                </dl>
+              }
+            </div>
+            @if (seccion.sedes.length) {
+              <div class="contacto-sedes" id="sedes">
+                @if (seccion.sedesTitulo) {<h3 class="rotulo sedes-titulo">{{ seccion.sedesTitulo }}</h3>}
+                <ol class="ruta">
+                  @for (sede of seccion.sedes; track sede.clave) {
+                    <li class="ruta-sede">
+                      @if (sede.enlace) {
+                        <a class="ruta-nombre" [routerLink]="sede.enlace">{{ sede.nombre }}</a>
+                      } @else {
+                        <span class="ruta-nombre">{{ sede.nombre }}</span>
+                      }
+                      @if (sede.detalle) {<span class="ruta-dir">{{ sede.detalle }}</span>}
+                    </li>
+                  }
+                </ol>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    }
+  </app-lc-marco>
+}
+
+<ng-template #flecha>
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</ng-template>

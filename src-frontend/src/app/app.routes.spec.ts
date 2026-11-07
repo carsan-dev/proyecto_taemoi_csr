@@ -161,13 +161,13 @@ describe('app routes', () => {
       expect(routes.find((r) => r.path === 'material-examen')?.canDeactivate).toBeUndefined();
     });
 
-    it('ninguna ruta repite camino salvo los dos comodines (404 del panel y el público) y el grupo de la web por plantilla', () => {
+    it('ninguna ruta repite camino salvo los tres comodines (404 del panel, de la plantilla y el público) y el grupo de la web por plantilla', () => {
       const caminos = routes
         .filter((route) => !route.canMatch?.includes(esWebPlantilla))
         .map((route) => route.path)
         .filter((path) => path !== '**');
       expect(caminos.length).toBe(new Set(caminos).size);
-      expect(routes.filter((route) => route.path === '**').length).toBe(2);
+      expect(routes.filter((route) => route.path === '**').length).toBe(3);
     });
 
     it('la salida sin guardar sigue en Preinscripciones, Productos y cargos, Mi perfil y la ficha del alumno', () => {
@@ -378,9 +378,10 @@ describe('app routes', () => {
 
   it('404 del panel (8b-M2b): ** con gestionPanelGuard (y la hoja al activarse) va antes del comodín público', async () => {
     const comodines = routes.filter((route) => route.path === '**');
-    expect(comodines.length).toBe(2);
-    expect(routes[routes.length - 1]).toBe(comodines[1]);
-    const [panel, publico] = comodines;
+    expect(comodines.length).toBe(3);
+    expect(routes[routes.length - 1]).toBe(comodines[2]);
+    const [panel, plantilla, publico] = comodines;
+    expect(plantilla.canMatch).toEqual([esWebPlantilla]);
     expect(panel.canMatch).toEqual([gestionPanelGuard]);
     expect(panel.canActivate).toEqual([estilosPanelGuard]);
     expect(panel.data?.['panelNuevo']).toBeTrue();
