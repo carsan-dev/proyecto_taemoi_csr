@@ -514,6 +514,16 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Escuela → Datos de la escuela (pieza 394): fiscales, contacto, firmante y día límite; solo el propietario.
+    path: 'datos-escuela',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
+    loadComponent: () => import('./panel-nuevo/escuela/datos/datos-escuela.component').then(m => m.DatosEscuelaComponent),
+    canActivate: [roleGuard, adminOnlyGuard],
+    canDeactivate: [salirSinGuardarGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'configuracion-sistema',
     canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
