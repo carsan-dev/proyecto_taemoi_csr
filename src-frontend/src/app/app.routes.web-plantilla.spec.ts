@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Route, Router, Routes, provideRouter } from '@angular/router';
@@ -77,7 +79,8 @@ describe('app.routes · grupo de la web por plantilla', () => {
         }
         return { path: r.path, pathMatch: r.pathMatch, data, component: PantallaFalsaComponent };
       });
-      TestBed.configureTestingModule({ providers: [provideRouter(tabla)] });
+      // La pantalla de la plantilla pide sus datos (W4): HttpClient de pruebas, sin responder.
+      TestBed.configureTestingModule({ providers: [provideRouter(tabla), provideHttpClient(), provideHttpClientTesting()] });
       return RouterTestingHarness.create();
     }
 

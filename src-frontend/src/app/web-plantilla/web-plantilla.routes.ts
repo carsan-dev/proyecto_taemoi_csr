@@ -1,7 +1,12 @@
 import { Routes } from '@angular/router';
 
-/** La cáscara (SkeletonComponent) y SeoService lo reconocen: solo el contenido, sin GA4 ni el SEO de Moiskimdo. */
-const DATOS_PLANTILLA = { webPlantilla: true } as const;
+import type { PaginaWeb } from './comun/seo-escuela.service';
+
+/**
+ * `webPlantilla`: la cáscara (SkeletonComponent) y SeoService lo reconocen (solo el contenido, sin GA4 ni el SEO de
+ * Moiskimdo). `pagina`: qué datos y qué SEO pone la página (`SeoEscuelaService`).
+ */
+const datos = (pagina: PaginaWeb) => ({ webPlantilla: true, pagina }) as const;
 
 const pendiente = () =>
   import('./paginas/plantilla-pendiente.component').then((m) => m.PlantillaPendienteComponent);
@@ -13,11 +18,11 @@ const pendiente = () =>
  * llegan en W5.
  */
 export const WEB_PLANTILLA_ROUTES: Routes = [
-  { path: '', pathMatch: 'full', data: DATOS_PLANTILLA, loadComponent: pendiente },
-  { path: 'sedes/:slug', data: DATOS_PLANTILLA, loadComponent: pendiente },
-  { path: 'preinscripcion', data: DATOS_PLANTILLA, loadComponent: pendiente },
-  { path: 'tarifas', data: DATOS_PLANTILLA, loadComponent: pendiente },
-  { path: 'eventos', data: DATOS_PLANTILLA, loadComponent: pendiente },
-  { path: 'eventos/:id', data: DATOS_PLANTILLA, loadComponent: pendiente },
-  { path: 'legales', data: DATOS_PLANTILLA, loadComponent: pendiente },
+  { path: '', pathMatch: 'full', data: datos('portada'), loadComponent: pendiente },
+  { path: 'sedes/:slug', data: datos('sede'), loadComponent: pendiente },
+  { path: 'preinscripcion', data: datos('preinscripcion'), loadComponent: pendiente },
+  { path: 'tarifas', data: datos('tarifas'), loadComponent: pendiente },
+  { path: 'eventos', data: datos('eventos'), loadComponent: pendiente },
+  { path: 'eventos/:id', data: datos('evento'), loadComponent: pendiente },
+  { path: 'legales', data: datos('legales'), loadComponent: pendiente },
 ];
