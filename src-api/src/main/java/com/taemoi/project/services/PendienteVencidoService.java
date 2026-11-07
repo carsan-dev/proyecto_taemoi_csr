@@ -86,7 +86,8 @@ public class PendienteVencidoService {
 		// La gestión ve toda la escuela y el responsable, sus sedes: como /resumen sin sede.
 		FiltroSedesTesoreria sedes = gestionPorSede.filtroTesoreria(null);
 		List<CargoCandidato> candidatos = repositorio.candidatos(organizacion, sedes.todas(), sedes.parametro());
-		return resumir(vencidos(candidatos), diaLimite.diaLimiteMensualidad());
+		int dia = diaLimite.diaLimiteMensualidad();
+		return resumir(vencidos(candidatos, dia), dia);
 	}
 
 	/**
@@ -104,7 +105,7 @@ public class PendienteVencidoService {
 		Set<Long> pedidos = new LinkedHashSet<>(alumnoIds);
 		Map<Long, List<Vencido>> porAlumno = new HashMap<>();
 		for (Vencido v : vencidos(repositorio.candidatosDeAlumnos(organizacion, sedes.todas(), sedes.parametro(),
-				pedidos))) {
+				pedidos), diaLimite.diaLimiteMensualidad())) {
 			porAlumno.computeIfAbsent(v.cargo().getAlumnoId(), k -> new ArrayList<>()).add(v);
 		}
 		List<PendienteAlumnoDTO> resultado = new ArrayList<>();
@@ -139,7 +140,7 @@ public class PendienteVencidoService {
 		FiltroSedesTesoreria sedes = FiltroSedesTesoreria.TODAS;
 		Set<Long> cargos = new HashSet<>();
 		for (Vencido v : vencidos(repositorio.candidatosDeAlumnos(organizacionActiva(), sedes.todas(), sedes.parametro(),
-				alumnoIds))) {
+				alumnoIds), diaLimite.diaLimiteMensualidad())) {
 			cargos.add(v.cargo().getId());
 		}
 		return cargos;
@@ -155,12 +156,12 @@ public class PendienteVencidoService {
 
 	/**
 	 * La regla común de {@link #obtener()}, {@link #porAlumno} y {@link #cargosVencidosDeAlumnos}: los candidatos vencidos
-	 * hoy. El día límite sale de la misma lectura en memoria que el comportamiento heredado: ninguna consulta más.
+	 * hoy. El día límite lo lee una sola vez quien llama (de la caché por escuela, sin consultas) y lo pasa aquí, para que
+	 * el resumen muestre el mismo día con el que se calculó lo vencido aunque se guarde otro entre medias.
 	 */
-	private List<Vencido> vencidos(List<CargoCandidato> candidatos) {
+	private List<Vencido> vencidos(List<CargoCandidato> candidatos, int dia) {
 		LocalDate hoy = LocalDate.now(reloj);
 		boolean legado = comportamientoLegado.activo();
-		int dia = diaLimite.diaLimiteMensualidad();
 		List<Vencido> vencidos = new ArrayList<>();
 		for (CargoCandidato c : candidatos) {
 			Vencido v = vencido(c, hoy, legado, dia);

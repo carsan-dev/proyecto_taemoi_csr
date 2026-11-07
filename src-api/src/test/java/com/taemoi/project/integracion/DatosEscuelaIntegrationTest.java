@@ -279,6 +279,30 @@ class DatosEscuelaIntegrationTest extends MySqlIntegrationTest {
 		leer(conCuerpo(put(RUTA), validos()), tPropietario, 200);
 	}
 
+	@Test
+	void put_caracteresInvisibles_400_yAcentosYOrdinales_valen() throws Exception {
+		Map<String, Object> antes = filaDe(e.org);
+		Map<String, Map.Entry<String, String>> casos = new LinkedHashMap<>();
+		// U+202E invierte el sentido del texto; U+2028 es un separador de línea; U+200B y U+FEFF no se ven.
+		casos.put("nombreLegal", Map.entry("Club ‮Deportivo", "El nombre legal tiene caracteres no válidos."));
+		casos.put("direccion", Map.entry("Calle Uno Calle Dos", "La dirección fiscal tiene caracteres no válidos."));
+		casos.put("firmanteNombre", Map.entry("María​Ruiz", "El nombre del firmante tiene caracteres no válidos."));
+		casos.put("firmanteCargo", Map.entry("﻿Presidenta", "El cargo tiene caracteres no válidos."));
+		for (Map.Entry<String, Map.Entry<String, String>> caso : casos.entrySet()) {
+			Map<String, Object> cuerpo = validos();
+			cuerpo.put(caso.getKey(), caso.getValue().getKey());
+			JsonNode error = leer(conCuerpo(put(RUTA), cuerpo), tPropietario, 400);
+			assertEquals(Map.of(caso.getKey(), caso.getValue().getValue()), errores(error), caso.getKey());
+		}
+		assertEquals(antes, filaDe(e.org));
+
+		Map<String, Object> conAcentos = validos();
+		conAcentos.put("direccion", "Calle Ñandú nº 3, 2ª");
+		assertEquals("Calle Ñandú nº 3, 2ª",
+				leer(conCuerpo(put(RUTA), conAcentos), tPropietario, 200).get("direccion").asText());
+		leer(conCuerpo(put(RUTA), validos()), tPropietario, 200);
+	}
+
 	// ------------------------------------------------------------------ permisos y aislamiento
 
 	@Test

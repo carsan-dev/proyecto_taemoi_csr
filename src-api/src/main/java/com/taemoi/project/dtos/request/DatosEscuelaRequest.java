@@ -71,8 +71,12 @@ public record DatosEscuelaRequest(
 	public static final String NIF = "[0-9XYZ][0-9]{7}[A-Z]";
 	public static final String EMAIL = "[^\\s@]+@[^\\s@]+\\.[^\\s@]+";
 	public static final String TELEFONO = "\\+?[0-9 ]{9,15}";
-	/** Sin saltos de línea, tabuladores ni otros caracteres de control (los datos salen en recibos y documentos). */
-	public static final String SIN_CONTROL = "[^\\p{Cntrl}]*";
+	/**
+	 * Sin saltos de línea, tabuladores ni otros caracteres de control, de formato o invisibles (los datos salen en
+	 * recibos y documentos): fuera la categoría Unicode C (control, formato como U+202E o U+200B, privados, sueltos y sin
+	 * asignar) y los separadores de línea y de párrafo (U+2028, U+2029). Letras con tilde, ñ, º, ª y puntuación valen.
+	 */
+	public static final String SIN_CONTROL = "[^\\p{C}\\p{Zl}\\p{Zp}]*";
 	public static final String DIA_NO_VALIDO = "Escribe un día del 1 al 28.";
 
 	public DatosEscuelaRequest {
