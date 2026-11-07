@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.HostDeLaPeticion;
 import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.OAuth2UserService;
@@ -66,6 +67,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 										HttpServletResponse response,
 										Authentication authentication) throws IOException, ServletException {
 		OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+		// Fase 4 (pieza 3): destino en el origen del propio Host si está en organizacion_dominio (lista blanca); si no
+		// (moiskimdo.es, un Host desconocido), cors.allowed.origin tal cual, como siempre. Nunca un Host ajeno.
+		String origen = HostDeLaPeticion.origen(request, frontendUrl);
 
 		try {
 			// Procesar el login OAuth2 y crear/obtener el usuario
@@ -83,8 +87,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 				}
 			}
 
-			// Escuela de la sesión: misma regla que el login con contraseña.
-			Long organizacionId = membresiaService.elegirOrganizacionParaLogin(usuario)
+			// Escuela de la sesión: misma regla que el login con contraseña (en el Host de otra escuela, esa si puede).
+			Long organizacionId = AuthenticationServiceImpl.elegirOrganizacionParaLogin(membresiaService, usuario,
+					HostDeLaPeticion.escuelaPreferidaParaLogin(request))
 					.orElseThrow(() -> new IllegalArgumentException(motivoRechazo(usuario)));
 			membresiaService.registrarUltimaOrganizacion(usuario, organizacionId);
 			Set<Roles> autoridades = membresiaService.autoridadesEn(usuario.getId(), organizacionId);
@@ -95,7 +100,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 			// Determinar si usar Secure basado en el perfil activo
 			boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
-			Optional<String> dominioCookie = resolverDominioCookie();
+			Optional<String> dominioCookie = HostDeLaPeticion.dominioCookie(request, resolverDominioCookie());
 
 			// Limpiar posibles cookies heredadas (host-only y domain) antes de fijar la canónica
 			response.addHeader(HttpHeaders.SET_COOKIE,
@@ -119,17 +124,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 						construirCookieRememberMe(isProduction, domain).toString());
 			}
 
-			String redirectUrl = frontendUrl + destino(autoridades);
+			String redirectUrl = origen + destino(autoridades);
 			getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
 		} catch (IllegalArgumentException e) {
 			// No se encontró alumno con ese email
-			String errorUrl = frontendUrl + "/login?error=no_alumno_found&message=" +
+			String errorUrl = origen + "/login?error=no_alumno_found&message=" +
 							  java.net.URLEncoder.encode(e.getMessage(), "UTF-8");
 			getRedirectStrategy().sendRedirect(request, response, errorUrl);
 		} catch (Exception e) {
 			// Error general
-			String errorUrl = frontendUrl + "/login?error=oauth_error&message=" +
+			String errorUrl = origen + "/login?error=oauth_error&message=" +
 							  java.net.URLEncoder.encode("Error en la autenticación OAuth2", "UTF-8");
 			getRedirectStrategy().sendRedirect(request, response, errorUrl);
 		}
@@ -168,6 +173,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 		return "No hay alumnos activos asociados a este email. Contacte con el administrador.";
 	}
 
+	/** El dominio de siempre (de {@code app.base.url}); {@link HostDeLaPeticion#dominioCookie} lo quita en otro Host. */
 	private Optional<String> resolverDominioCookie() {
 		String baseUrl = (appBaseUrl != null && !appBaseUrl.isBlank()) ? appBaseUrl : frontendUrl;
 		if (baseUrl == null || baseUrl.isBlank()) {

@@ -12,7 +12,6 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +23,7 @@ import com.taemoi.project.entities.Turno;
 import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
+import com.taemoi.project.organizacion.UrlsEscuela;
 
 @Service
 public class PreinscripcionFinalizacionEmailService {
@@ -35,11 +35,12 @@ public class PreinscripcionFinalizacionEmailService {
 	/** Pieza E7-7a: firma con el nombre de la escuela de la solicitud (no la del hilo: el aviso sale tras el commit). */
 	private final MarcaEscuelaService marcaEscuela;
 
-	@Value("${app.frontend.base-url:http://localhost:4200}")
-	private String frontendBaseUrl;
+	private final UrlsEscuela urls;
 
 	public PreinscripcionFinalizacionEmailService(PreinscripcionRepository preinscripciones,
-			UsuarioRepository usuarios, EmailService emailService, MarcaEscuelaService marcaEscuela) {
+			UsuarioRepository usuarios, EmailService emailService, MarcaEscuelaService marcaEscuela,
+			UrlsEscuela urls) {
+		this.urls = urls;
 		this.preinscripciones = preinscripciones;
 		this.usuarios = usuarios;
 		this.emailService = emailService;
@@ -90,7 +91,7 @@ public class PreinscripcionFinalizacionEmailService {
 						+ "</li>")
 				.reduce("", String::concat);
 		String gruposTexto = grupos.isEmpty() ? "Según ficha de inscripción" : String.join(", ", grupos);
-		String urlBase = frontendBaseUrl.replaceAll("/+$", "");
+		String urlBase = urls.baseFrontend(p.getOrganizacionId()).replaceAll("/+$", "");
 		String ctaUrl;
 		String ctaTexto;
 		String acceso;
