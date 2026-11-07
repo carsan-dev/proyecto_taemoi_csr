@@ -1,6 +1,7 @@
 package com.taemoi.project.controladores;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -41,6 +42,8 @@ import com.taemoi.project.services.AuditoriaPayloadSanitizer;
 import com.taemoi.project.services.AuditoriaService;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.JwtService;
+import com.taemoi.project.services.MarcaEscuela;
+import com.taemoi.project.services.MarcaEscuelaPruebas;
 import com.taemoi.project.services.MarcaEscuelaService;
 import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.UsuarioService;
@@ -103,6 +106,76 @@ class EmailControllerWebMvcTest {
 	@BeforeEach
 	void buzonDeLaEscuela() {
 		when(marcaEscuela.buzonDeActiva()).thenReturn(DESTINO);
+		when(marcaEscuela.deActiva()).thenReturn(MarcaEscuelaPruebas.moiskimdoSinLogos());
+	}
+
+	/** El HTML que salía antes de la pieza 4 (fase 4), literal, para Moiskimdo. */
+	private static String htmlDeSiempre(String nombre, String apellidos, String email, String asunto, String mensaje) {
+		return "<!DOCTYPE html>" + "<html>" + "<head>" + "<style>"
+				+ "body {font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 20px;}"
+				+ ".container {max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 20px;}"
+				+ ".header {font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px; text-align: center;}"
+				+ ".content {margin-bottom: 15px;}"
+				+ ".content label {font-weight: bold; color: #555; display: block; margin-bottom: 5px;}"
+				+ ".footer {margin-top: 30px; font-size: 14px; color: #777; text-align: center;}"
+				+ ".logo {text-align: center; margin-bottom: 20px;}" + ".logo img {max-width: 150px;}" + "</style>"
+				+ "</head>" + "<body>" + "<div class='container'>"
+				+ "<div class='logo'><img src='https://promociones.globalum.es/wp-content/uploads/2020/06/Mois-Kim-Do-Escuela-de-Taekwondo-Umbrete.jpg' alt='Logo'></div>"
+				+ "<div class='header'>Nuevo mensaje de " + nombre + " " + apellidos
+				+ "</div>" + "<div class='content'><label>Nombre:</label> <div>" + nombre
+				+ "</div></div>" + "<div class='content'><label>Apellidos:</label> <div>" + apellidos
+				+ "</div></div>" + "<div class='content'><label>Correo electrónico:</label> <div>"
+				+ email + "</div></div>" + "<div class='content'><label>Asunto:</label> <div>"
+				+ asunto + "</div></div>" + "<div class='content'><label>Mensaje:</label> <div>"
+				+ mensaje + "</div></div>"
+				+ "<div class='footer'>Atentamente,<br>La aplicación de mensajería del Club Moiskimdo Taekwondo</div>"
+				+ "</div>" + "</body>" + "</html>";
+	}
+
+	@Test
+	void moiskimdo_correoIdenticoByteAByteAlDeSiempre_ySinRemitentePropio() throws Exception {
+		enviar(payload("Lucía", "Pérez", "lucia@example.com", "Información", "Hola\nque tal"))
+				.andExpect(status().isOk());
+
+		ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
+		verify(emailService).sendEmail(eq(DESTINO), eq("Nuevo mensaje de Lucía Pérez"), html.capture());
+		assertThat(html.getValue()).isEqualTo(
+				htmlDeSiempre("Lucía", "Pérez", "lucia@example.com", "Información", "Hola<br>que tal"));
+		verify(emailService, never()).sendEmail(anyString(), anyString(), anyString(), anyString());
+		verify(emailService, never()).sendEmailConImagen(anyString(), anyString(), anyString(), anyString(), any(),
+				anyString(), any());
+	}
+
+	@Test
+	void otraEscuela_conSuLogoEnLineaSuNombreYSuRemitente() throws Exception {
+		byte[] logo = { (byte) 0x89, 'P', 'N', 'G' };
+		when(marcaEscuela.deActiva()).thenReturn(new MarcaEscuela(7L, false, "Club Sierra <Sur>", "", "", logo, null,
+				"Sierra Sur Taekwondo"));
+
+		enviar(payload("Ana", "Ruiz", "ana@example.com", "Asunto", "Mensaje")).andExpect(status().isOk());
+
+		ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
+		verify(emailService).sendEmailConImagen(eq(DESTINO), eq("Nuevo mensaje de Ana Ruiz"), html.capture(),
+				eq("logo-escuela"), eq(logo), eq("image/png"), eq("Sierra Sur Taekwondo"));
+		assertThat(html.getValue())
+				.contains("<img src='cid:logo-escuela' alt='Logo'>")
+				.contains("La aplicación de mensajería del Club Sierra &lt;Sur&gt;</div>")
+				.doesNotContain("Moiskimdo").doesNotContain("globalum");
+		verify(emailService, never()).sendEmail(anyString(), anyString(), anyString());
+	}
+
+	@Test
+	void otraEscuela_sinLogo_sinImagenYConSuRemitente() throws Exception {
+		when(marcaEscuela.deActiva()).thenReturn(new MarcaEscuela(7L, false, "Club Sierra Sur", "", "", null, null,
+				null));
+
+		enviar(payload("Ana", "Ruiz", "ana@example.com", "Asunto", "Mensaje")).andExpect(status().isOk());
+
+		ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
+		verify(emailService).sendEmail(eq(DESTINO), eq("Nuevo mensaje de Ana Ruiz"), html.capture(),
+				eq("Club Sierra Sur"));
+		assertThat(html.getValue()).doesNotContain("<img").doesNotContain("<div class='logo'>")
+				.contains("mensajería del Club Sierra Sur</div>").doesNotContain("Moiskimdo");
 	}
 
 	@Test
