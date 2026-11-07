@@ -67,6 +67,7 @@ import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
 import com.taemoi.project.exceptions.alumno.FechaNacimientoInvalidaException;
 import com.taemoi.project.exceptions.alumno.ListaAlumnosVaciaException;
+import com.taemoi.project.organizacion.HostDeLaPeticion;
 import com.taemoi.project.repositories.AlumnoRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.EstadoAlumnos;
@@ -1980,8 +1981,13 @@ public class AlumnoController {
 		if (dto == null || dto.getId() == null || dto.getFotoAlumno() == null) {
 			return dto;
 		}
-		dto.getFotoAlumno().setUrl(baseUrl + "/api/alumnos/" + dto.getId() + "/imagen");
+		dto.getFotoAlumno().setUrl(urlFotoPublica(dto.getId()));
 		return dto;
+	}
+
+	/** Base de la petición: el origen del Host de otra escuela; en moiskimdo.es, {@code app.base.url} como siempre. */
+	private String urlFotoPublica(Long alumnoId) {
+		return HostDeLaPeticion.baseArchivosPeticion(baseUrl) + "/api/alumnos/" + alumnoId + "/imagen";
 	}
 
 	private com.taemoi.project.dtos.response.AlumnoConDeportesDTO aplicarUrlImagenPublica(
@@ -1989,7 +1995,7 @@ public class AlumnoController {
 		if (dto == null || dto.getId() == null || dto.getFotoAlumno() == null) {
 			return dto;
 		}
-		dto.getFotoAlumno().setUrl(baseUrl + "/api/alumnos/" + dto.getId() + "/imagen");
+		dto.getFotoAlumno().setUrl(urlFotoPublica(dto.getId()));
 		return dto;
 	}
 

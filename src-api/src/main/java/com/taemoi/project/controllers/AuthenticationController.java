@@ -54,6 +54,7 @@ import com.taemoi.project.dtos.response.UsuarioConAlumnoAsociadoDTO;
 import com.taemoi.project.entities.Alumno;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.entities.Usuario;
+import com.taemoi.project.organizacion.HostDeLaPeticion;
 import com.taemoi.project.organizacion.SesionVerificada;
 import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.plataforma.AutoridadPlataforma;
@@ -150,7 +151,7 @@ public class AuthenticationController {
 	 *         token JWT.
 	 */
 	@PostMapping("/signin")
-	public ResponseEntity<?> signin(@RequestBody LoginRequest request,
+	public ResponseEntity<?> signin(@RequestBody LoginRequest request, HttpServletRequest httpRequest,
 			HttpServletResponse response) {
 		JwtAuthenticationResponse jwtResponse;
 		try {
@@ -169,7 +170,7 @@ public class AuthenticationController {
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 		boolean rememberMe = Boolean.TRUE.equals(request.getRememberMe());
 
-		Optional<String> domainOpt = resolverDominioCookie();
+		Optional<String> domainOpt = resolverDominioCookie(httpRequest);
 		// Limpiar posibles cookies heredadas (host-only y domain) antes de fijar la canónica
 		response.addHeader(HttpHeaders.SET_COOKIE,
 				construirCookieJwt("", isProduction, false, true, null).toString());
@@ -221,7 +222,7 @@ public class AuthenticationController {
 	 */
 	@PostMapping("/invitacion/aceptar")
 	public ResponseEntity<?> aceptarInvitacion(@Valid @RequestBody PasswordResetUpdateRequest request,
-			HttpServletResponse response) {
+			HttpServletRequest httpRequest, HttpServletResponse response) {
 		Usuario cuenta = invitacionService.aceptar(request.getToken(), request.getNuevaContrasena());
 		JwtAuthenticationResponse sesion;
 		try {
@@ -229,7 +230,7 @@ public class AuthenticationController {
 		} catch (DisabledException e) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("mensaje", mensajeDeRechazo(e)));
 		}
-		escribirCookieSesion(response, sesion.getToken(), null);
+		escribirCookieSesion(httpRequest, response, sesion.getToken(), null);
 		return ResponseEntity.ok(sesion);
 	}
 
@@ -254,11 +255,11 @@ public class AuthenticationController {
 	}
 
 	@PostMapping("/logout")
-	public ResponseEntity<?> logout(HttpServletResponse response) {
+	public ResponseEntity<?> logout(HttpServletRequest httpRequest, HttpServletResponse response) {
 		// Determinar si usar Secure basado en el perfil activo
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
 
-		Optional<String> domainOpt = resolverDominioCookie();
+		Optional<String> domainOpt = resolverDominioCookie(httpRequest);
 		response.addHeader(HttpHeaders.SET_COOKIE,
 				construirCookieJwt("", isProduction, false, true, null).toString());
 		if (domainOpt.isPresent()) {
@@ -461,7 +462,7 @@ public class AuthenticationController {
 		Duration maxAge = persistente
 				? Duration.ofMillis(Math.max(0, expira.getTime() - System.currentTimeMillis()))
 				: null;
-		escribirCookieSesion(response, nuevo.get().getToken(), maxAge);
+		escribirCookieSesion(httpRequest, response, nuevo.get().getToken(), maxAge);
 		return ResponseEntity.ok(nuevo.get());
 	}
 
@@ -500,9 +501,10 @@ public class AuthenticationController {
 		return roles;
 	}
 
-	private void escribirCookieSesion(HttpServletResponse response, String token, Duration maxAge) {
+	private void escribirCookieSesion(HttpServletRequest httpRequest, HttpServletResponse response, String token,
+			Duration maxAge) {
 		boolean isProduction = "production".equals(activeProfile) || "docker".equals(activeProfile);
-		Optional<String> domainOpt = resolverDominioCookie();
+		Optional<String> domainOpt = resolverDominioCookie(httpRequest);
 		response.addHeader(HttpHeaders.SET_COOKIE,
 				construirCookieJwt("", isProduction, false, true, null).toString());
 		if (domainOpt.isPresent()) {
@@ -521,7 +523,15 @@ public class AuthenticationController {
 		response.addHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
 	}
 
-	private Optional<String> resolverDominioCookie() {
+	/**
+	 * Dominio de la cookie {@code jwt}: el de {@code app.base.url} (sin {@code www.}), como siempre; en el Host de otra
+	 * escuela de {@code organizacion_dominio}, ninguno (cookie solo del host; fase 4, pieza 3, {@link HostDeLaPeticion}).
+	 */
+	private Optional<String> resolverDominioCookie(HttpServletRequest httpRequest) {
+		return HostDeLaPeticion.dominioCookie(httpRequest, dominioCookieConfigurado());
+	}
+
+	private Optional<String> dominioCookieConfigurado() {
 		if (appBaseUrl == null || appBaseUrl.isBlank()) {
 			return Optional.empty();
 		}

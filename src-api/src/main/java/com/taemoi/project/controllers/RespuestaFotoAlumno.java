@@ -40,6 +40,7 @@ import org.springframework.stereotype.Component;
 import com.taemoi.project.archivos.RutasArchivos;
 import com.taemoi.project.archivos.UrlArchivoSerializer;
 import com.taemoi.project.entities.Imagen;
+import com.taemoi.project.organizacion.HostDeLaPeticion;
 import com.taemoi.project.services.ImagenService;
 
 /**
@@ -415,17 +416,20 @@ public class RespuestaFotoAlumno {
 		String nombre = imagen.getNombre();
 		String urlImagen = imagen.getUrl();
 		List<String> candidatos = new ArrayList<>();
+		// Fase 4 (pieza 3): el origen del Host de otra escuela de organizacion_dominio; en moiskimdo.es, un Host fuera
+		// de la tabla o sin petición, app.base.url como siempre.
+		String base = HostDeLaPeticion.baseArchivosPeticion(baseUrl);
 
-		if (urlImagen != null && !urlImagen.isBlank() && esUrlRedirigible(urlImagen.trim())) {
+		if (urlImagen != null && !urlImagen.isBlank() && esUrlRedirigible(urlImagen.trim(), base)) {
 			// Las URL nuevas se guardan sin host (/imagenes/…): se completan al leer con app.base.url.
-			candidatos.add(UrlArchivoSerializer.absoluta(urlImagen.trim(), baseUrl));
+			candidatos.add(UrlArchivoSerializer.absoluta(urlImagen.trim(), base));
 		}
 		// Los respaldos por nombre en la carpeta heredada solo valen para imágenes heredadas (sin org-<id>/).
 		if (nombre != null && !nombre.isBlank() && esNombreSimple(nombre.trim())
 				&& RutasArchivos.organizacionDeRuta(imagen.getRuta()) == null) {
 			candidatos.add("/imagenes/alumnos/" + nombre);
-			if (baseUrl != null && !baseUrl.isBlank()) {
-				candidatos.add(baseUrl + "/imagenes/alumnos/" + nombre);
+			if (base != null && !base.isBlank()) {
+				candidatos.add(base + "/imagenes/alumnos/" + nombre);
 			}
 		}
 
@@ -450,14 +454,19 @@ public class RespuestaFotoAlumno {
 	 * Decisión 422: la URL guardada solo se usa para redirigir si es relativa a {@code /imagenes/} sin {@code ..} o de un
 	 * origen propio: {@code https} (o {@code http} si el origen propio lo es), el mismo host exacto sin distinguir
 	 * mayúsculas (no vale un subdominio ni un sufijo), el mismo puerto y sin usuario delante del host. Cualquier otra
-	 * ({@code file:}, {@code javascript:}, {@code //host}, otro host…) no.
+	 * ({@code file:}, {@code javascript:}, {@code //host}, otro host…) no. Fase 4 (pieza 3): también vale el origen de
+	 * {@code base}, que solo difiere de {@code app.base.url} en un Host de {@code organizacion_dominio} (lista blanca).
 	 */
-	private boolean esUrlRedirigible(String url) {
+	private boolean esUrlRedirigible(String url, String base) {
 		if (url.startsWith(PREFIJO_URL_IMAGENES)) {
 			return url.indexOf('\\') < 0 && !tieneSegmentoPadre(url);
 		}
 		Origen origen = origenDe(url);
-		return origen != null && origenesRedireccion.contains(origen);
+		if (origen == null) {
+			return false;
+		}
+		// En moiskimdo.es la base es app.base.url: solo la lista configurada, exactamente como antes.
+		return origenesRedireccion.contains(origen) || (!Objects.equals(base, baseUrl) && origen.equals(origenDe(base)));
 	}
 
 	/** Fichero que se puede leer, por su ruta real, o si la fila se rechaza por apuntar fuera de la carpeta. */
