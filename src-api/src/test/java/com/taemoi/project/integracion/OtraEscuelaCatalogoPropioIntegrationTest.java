@@ -53,6 +53,7 @@ import com.taemoi.project.repositories.SistemaGradosRepository;
 import com.taemoi.project.repositories.TarifaRepository;
 import com.taemoi.project.services.AlumnoDeporteService;
 import com.taemoi.project.services.ComportamientoLegadoService;
+import com.taemoi.project.services.ContadorService;
 import com.taemoi.project.services.ProductoAlumnoService;
 import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.services.TesoreriaService;
@@ -78,6 +79,7 @@ class OtraEscuelaCatalogoPropioIntegrationTest extends MySqlIntegrationTest {
 	@Autowired CategoriaRepository categorias;
 	@Autowired ProductoRepository productos;
 	@Autowired AlumnoRepository alumnos;
+	@Autowired ContadorService contadores;
 	@Autowired AlumnoController alumnoController;
 	@Autowired AlumnoDeporteService alumnoDeporteService;
 	@Autowired ProductoAlumnoService productoAlumnoService;
@@ -350,7 +352,8 @@ class OtraEscuelaCatalogoPropioIntegrationTest extends MySqlIntegrationTest {
 			Alumno a = new Alumno();
 			a.setNombre("IT");
 			a.setApellidos("CATALOGO " + sufijo());
-			a.setNumeroExpediente((int) (Math.abs(UUID.randomUUID().getMostSignificantBits()) % 900000) + 1000);
+			// Del contador de la escuela, como un alta: uno al azar podía chocar con los ya repartidos.
+			a.setNumeroExpediente(contadores.siguienteNumeroExpediente());
 			a.setFechaNacimiento(Date.valueOf(LocalDate.of(anioNacimiento, 6, 1)));
 			a.setDireccion("Calle 0");
 			a.setTelefono("600000000");
