@@ -75,13 +75,21 @@ public class AforoPreinscripcionService {
   }
   return new Ocupacion(aforos(horarios),activos,pendientes);
  }
- /** Aforos efectivos de los turnos dados: el límite común y, en una consulta, los de sus sedes. */
+ /**
+  * Aforos efectivos de los turnos dados: el límite común y, en una consulta, los de sus sedes. La misma consulta trae
+  * el nombre de las sedes y si la escuela tiene varias activas (decisión 393), sin sentencias de más.
+  */
  public Aforos aforos(Collection<Turno> horarios){
   Set<Long> ids=new TreeSet<>();
   for(Turno t:horarios)if(t.getGrupo()!=null&&t.getGrupo().getSedeId()!=null)ids.add(t.getGrupo().getSedeId());
-  Map<Long,Integer> porSede=new HashMap<>();
-  if(!ids.isEmpty())for(Object[] fila:sedes.aforosPorSede(ids))porSede.put((Long)fila[0],((Number)fila[1]).intValue());
-  return new Aforos(configuracion.obtenerLimiteTurno(),porSede);
+  Map<Long,Integer> porSede=new HashMap<>();Map<Long,String> nombres=new HashMap<>();int activas=0;
+  if(!ids.isEmpty())for(Object[] fila:sedes.datosSedes(ids)){
+   Long id=(Long)fila[0];
+   if(fila[1]!=null&&ids.contains(id))porSede.put(id,((Number)fila[1]).intValue());
+   if(ids.contains(id))nombres.put(id,(String)fila[2]);
+   if(Boolean.TRUE.equals(fila[3]))activas++;
+  }
+  return new Aforos(configuracion.obtenerLimiteTurno(),porSede,nombres,activas>1);
  }
  /** Límite común de turno de la escuela activa. */
  public int limiteComun(){return configuracion.obtenerLimiteTurno();}
@@ -113,8 +121,10 @@ public class AforoPreinscripcionService {
   /** @param activos alumnos que cuentan por id de turno; @param pendientes solicitudes PENDIENTES por id de turno (se copia: la promoción lo actualiza). */
   public Ocupacion(Aforos aforos,Map<Long,Integer> activos,Map<Long,Integer> pendientes){this.aforos=aforos;this.activos=Map.copyOf(activos);this.pendientes=new HashMap<>(pendientes);}
   /** Con un único límite, sin aforos de sede. */
-  public Ocupacion(int limite,Map<Long,Integer> activos,Map<Long,Integer> pendientes){this(new Aforos(limite,Map.of()),activos,pendientes);}
+  public Ocupacion(int limite,Map<Long,Integer> activos,Map<Long,Integer> pendientes){this(new Aforos(limite,Map.of(),Map.of(),false),activos,pendientes);}
   public int limite(){return aforos.limite();}
+  /** Aforos, y con ellos las sedes de los turnos (decisión 393). */
+  public Aforos aforos(){return aforos;}
   public int aforo(Turno t){return aforos.de(t);}
   /** Alumnos que cuentan + pendientes de la temporada. */
   public int ocupacionEfectiva(Turno t){return activos.getOrDefault(t.getId(),0)+pendientes.getOrDefault(t.getId(),0);}
@@ -127,7 +137,11 @@ public class AforoPreinscripcionService {
   public void sumarPendiente(Collection<Turno> turnosDeLaSolicitud){turnosDeLaSolicitud.stream().map(Turno::getId).distinct().forEach(id->pendientes.merge(id,1,Integer::sum));}
  }
  /** Límite común de la escuela y aforos de las sedes que lo tienen; una sede de otra escuela no aparece (Hibernate filtra). */
- public record Aforos(int limite,Map<Long,Integer> porSede){
+ public record Aforos(int limite,Map<Long,Integer> porSede,Map<Long,String> nombresSede,boolean variasSedes){
+  /** Sin nombres de sede (solo aforos). */
+  public Aforos(int limite,Map<Long,Integer> porSede){this(limite,porSede,Map.of(),false);}
+  /** Nombre de la sede del turno solo si la escuela tiene varias sedes activas; si no, o si el grupo no tiene sede, {@code null}. */
+  public String sede(Turno t){Long sede=t.getGrupo()==null?null:t.getGrupo().getSedeId();return variasSedes&&sede!=null?nombresSede.get(sede):null;}
   /** El aforo de la sede del grupo del turno o, si no lo hay, el límite común. */
   public int de(Turno t){Long sede=t.getGrupo()==null?null:t.getGrupo().getSedeId();return sede==null?limite:porSede.getOrDefault(sede,limite);}
  }
