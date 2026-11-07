@@ -100,6 +100,9 @@ public class AsistenciaService {
 	/** 409 al guardar una clase festiva sin lista: «Ese día es festivo en &lt;sede&gt;.». */
 	public static final String FESTIVO_EN = "Ese día es festivo en %s.";
 
+	/** Días hacia delante en que se busca la próxima clase, para poder saltar festivos. */
+	private static final int HORIZONTE_PROXIMA = 28;
+
 	private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
 
 	private final EntityManager em;
@@ -140,7 +143,7 @@ public class AsistenciaService {
 		LocalDateTime ahora = LocalDateTime.now(reloj);
 		LocalDate hoy = ahora.toLocalDate();
 		LocalDate desde = hoy.minusDays(DIAS_RECIENTES);
-		Map<SedeYFecha, DiaFestivo> festivosDelGrupo = festivosDeLaSede(grupo.sedeId(), desde, hoy);
+		Map<SedeYFecha, DiaFestivo> festivosDelGrupo = festivosDeLaSede(grupo.sedeId(), desde, hoy.plusDays(HORIZONTE_PROXIMA));
 
 		Map<Long, TurnoConDia> delGrupo = turnosDelGrupo(grupoId);
 		Map<Long, Long> tamano = tamanoDeLasListas(grupoId);
@@ -167,7 +170,7 @@ public class AsistenciaService {
 				.thenComparing(AsistenciaDTOs.Clase::horaInicio, Comparator.nullsLast(Comparator.naturalOrder()))
 				.thenComparing(AsistenciaDTOs.Clase::turnoId));
 		List<AsistenciaDTOs.Clase> deHoy = recientes.stream().filter(c -> c.fecha().equals(hoy)).toList();
-		return new AsistenciaDTOs.Clases(deHoy, recientes, proxima(delGrupo.values(), ahora));
+		return new AsistenciaDTOs.Clases(deHoy, recientes, proxima(delGrupo.values(), ahora, grupo.sedeId(), festivosDelGrupo));
 	}
 
 	/**
@@ -609,8 +612,12 @@ public class AsistenciaService {
 		return horaFin != null && horaFin.compareTo(ahora.toLocalTime().format(HORA)) <= 0;
 	}
 
-	/** La primera clase que aún no ha empezado, en los próximos 7 días; sin turnos, {@code null}. */
-	private static AsistenciaDTOs.Proxima proxima(Collection<TurnoConDia> delGrupo, LocalDateTime ahora) {
+	/**
+	 * La primera clase que aún no ha empezado y no cae en festivo de la sede, dentro del horizonte (7 días sin festivos;
+	 * se amplía para saltar festivos seguidos); sin turnos o sin ninguna, {@code null}.
+	 */
+	private static AsistenciaDTOs.Proxima proxima(Collection<TurnoConDia> delGrupo, LocalDateTime ahora, Long sedeId,
+			Map<SedeYFecha, DiaFestivo> festivosDeLaSede) {
 		LocalDate hoy = ahora.toLocalDate();
 		String hora = ahora.toLocalTime().format(HORA);
 		AsistenciaDTOs.Proxima mejor = null;
@@ -618,9 +625,9 @@ public class AsistenciaService {
 			if (turno.horaInicio() == null) {
 				continue;
 			}
-			for (int dias = 0; dias <= 7; dias++) {
+			for (int dias = 0; dias <= HORIZONTE_PROXIMA; dias++) {
 				LocalDate fecha = hoy.plusDays(dias);
-				if (fecha.getDayOfWeek() == turno.dia() && (dias > 0 || turno.horaInicio().compareTo(hora) > 0)) {
+				if (fecha.getDayOfWeek() == turno.dia() && !festivosDeLaSede.containsKey(new SedeYFecha(sedeId, fecha)) && (dias > 0 || turno.horaInicio().compareTo(hora) > 0)) {
 					if (mejor == null || fecha.isBefore(mejor.fecha()) || (fecha.equals(mejor.fecha())
 							&& turno.horaInicio().compareTo(mejor.horaInicio()) < 0)) {
 						mejor = new AsistenciaDTOs.Proxima(fecha, turno.horaInicio());
