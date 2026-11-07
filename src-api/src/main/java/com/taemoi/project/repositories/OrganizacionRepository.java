@@ -36,4 +36,25 @@ public interface OrganizacionRepository extends JpaRepository<Organizacion, Long
 			VALUES (:id, :slug, :nombre, :emailContacto, :zonaHoraria, TRUE, FALSE)""", nativeQuery = true)
 	int insertarConId(@Param("id") Long id, @Param("slug") String slug, @Param("nombre") String nombre,
 			@Param("emailContacto") String emailContacto, @Param("zonaHoraria") String zonaHoraria);
+
+	/**
+	 * Selector de escuela: marca de varias escuelas de una vez. Filas {@code [organizacionId, imagenId|null]}: el id de
+	 * la imagen del logo SOLO si pertenece a esa escuela ({@code i.organizacion_id = o.id}). SQL nativo: {@code imagen}
+	 * lleva {@code @TenantId} y aquí se leen escuelas que no son la activa. Sin datos personales.
+	 */
+	@Query(value = """
+			SELECT o.id, i.id FROM organizacion o
+			LEFT JOIN imagen i ON i.id = o.logo_imagen_id AND i.organizacion_id = o.id
+			WHERE o.id IN (:ids)""", nativeQuery = true)
+	List<Object[]> logosDeEscuelas(@Param("ids") java.util.Collection<Long> ids);
+
+	/**
+	 * Selector de escuela: sedes activas por escuela, de una vez. Filas {@code [organizacionId, total]}; una escuela sin
+	 * sedes activas no sale. SQL nativo por el mismo motivo que {@link #logosDeEscuelas}.
+	 */
+	@Query(value = """
+			SELECT s.organizacion_id, COUNT(*) FROM sede s
+			WHERE s.activa = TRUE AND s.organizacion_id IN (:ids)
+			GROUP BY s.organizacion_id""", nativeQuery = true)
+	List<Object[]> sedesActivasPorEscuela(@Param("ids") java.util.Collection<Long> ids);
 }
