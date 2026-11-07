@@ -483,6 +483,10 @@ GET      /api/publico/escuela                                                   
 HEAD     /api/publico/escuela                                                                     PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # EscuelaPublicaController#escuela
 GET      /api/publico/escuela/logo                                                                PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # EscuelaPublicaController#logo
 HEAD     /api/publico/escuela/logo                                                                PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # EscuelaPublicaController#logo
+GET      /api/publico/web                                                                         PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#web
+HEAD     /api/publico/web                                                                         PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#web
+GET      /api/publico/web/legal                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#legal
+HEAD     /api/publico/web/legal                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#legal
 GET      /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#listar
 HEAD     /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#listar
 POST     /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#crear

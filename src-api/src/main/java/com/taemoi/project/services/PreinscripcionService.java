@@ -306,7 +306,9 @@ public Page<Preinscripcion> listar(String temporada,String deporteParametro,Esta
  private static void anadirSede(Map<String,Object> m,Long sedeId,AforoPreinscripcionService.Aforos aforos){if(aforos==null||!aforos.variasSedes()||sedeId==null)return;String nombre=aforos.nombresSede().get(sedeId);if(nombre==null)return;m.put("sedeId",sedeId);m.put("sede",nombre);}
  /* Código de disciplina de la ruta (antes enum Deporte convertido por Spring): 400 si la escuela no lo tiene. */
  private String parametroRequerido(String deporte){String codigo=catalogo.validarParametro(deporte);if(codigo==null)throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST);return codigo;}
- private boolean visibleEnPreinscripcion(Grupo g){return !CatalogoLegadoTaemoi.TAEKWONDO.equals(g.getDeporte())||!normalizar(g.getNombre()+" "+g.getTipo()).contains("competicion");}
+ private boolean visibleEnPreinscripcion(Grupo g){return esVisibleEnPreinscripcion(g);}
+ /** Si el grupo se ofrece en la preinscripción pública (los de competición de taekwondo, no). También lo usa la web por plantilla (W1). */
+ public static boolean esVisibleEnPreinscripcion(Grupo g){String texto=java.text.Normalizer.normalize(g.getNombre()+" "+g.getTipo(),java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(Locale.ROOT);return !CatalogoLegadoTaemoi.TAEKWONDO.equals(g.getDeporte())||!texto.contains("competicion");}
  private String nombrePublico(Grupo g){return nombreDeporte(g.getDeporte());}
  /* Nombre público de la disciplina (en Taemoi: «Taekwondo», «Defensa Personal Femenina» desde V30…). */
  private String nombreDeporte(String deporte){return catalogo.obtenerPorCodigo(deporte).getNombre();}
