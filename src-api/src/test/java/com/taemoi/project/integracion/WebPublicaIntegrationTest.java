@@ -69,10 +69,14 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 	private static final long ORG1 = 1L;
 	private static final String WEB = "/api/publico/web";
 	private static final String LEGAL = "/api/publico/web/legal";
-	/** Claves que nunca salen en {@code /api/publico/web}, en ningún nivel del JSON. */
+	/**
+	 * Claves que nunca salen en {@code /api/publico/web}, en ningún nivel del JSON. W2: {@code slug} sí sale, pero solo
+	 * el de las sedes (su página); que no sale el de la escuela lo comprueba su valor en
+	 * {@link #publicada_anonimo_sinCamposPrivados}.
+	 */
 	private static final Set<String> CLAVES_PRIVADAS = Set.of("cif", "nombreLegal", "firmanteNombre", "firmanteCargo",
 			"firmanteNif", "emailRemitenteNombre", "aforo", "aforoTurno", "aforoEfectivo", "ocupacion",
-			"ocupacionEfectiva", "alumnos", "activa", "codigoClubFederacion", "slug", "organizacionId",
+			"ocupacionEfectiva", "alumnos", "activa", "codigoClubFederacion", "organizacionId",
 			"logoImagenId", "zonaHoraria", "comportamientoLegadoTaemoi", "publicadaPor", "dni", "nif", "webUrl",
 			"vendibleProfesor", "provincia");
 	/** En {@code /legal}: el titular sí (con CIF), nunca el firmante ni el remitente. */
@@ -181,6 +185,9 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		eventoMas1 = evento(x, "Más 1 X", hoy.plusDays(1), true, null);
 		eventoMas3 = evento(x, "Más 3 X", hoy.plusDays(3), true, null);
 		evento(x, "Sin fecha X", null, true, null);
+		// W2: hora, lugar y sede del primero; el tercero apunta (mal, por SQL) a una sede de Y, que no debe salir.
+		jdbc.update("UPDATE evento SET hora = '18:30:00', lugar = 'Polideportivo X', sede_id = ? WHERE id = ?", sedeB,
+				eventoMas1);
 
 		// ---------------------------------------------------------------- Y (una de cada)
 		y = organizacion("y", "Escuela Web Y " + marca);
@@ -199,6 +206,12 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		eventoY = evento(y, "Evento de Y", hoy.plusDays(1), true, imagenY);
 		bloque(y, "portada.titular", "Titular de Y", imagenY, 1);
 		web(y, "estandar", true, "2026-09-15 09:00:00");
+
+		jdbc.update("UPDATE evento SET sede_id = ? WHERE id = ?", sedeY, eventoMas3);
+		// W2: datos de la web de la sede A; su segunda foto es una imagen de Y (no debe salir su URL).
+		jdbc.update("UPDATE sede SET slug = 'herrera', lugar = 'Pabellón cubierto X',"
+				+ " indicaciones_acceso = 'Entrada lateral X', foto_imagen_id = ?, foto2_imagen_id = ? WHERE id = ?",
+				imagenX, imagenY, sedeA);
 
 		// Bloques de X: uno apunta a una imagen de Y (no debe salir su URL).
 		bloque(x, "profesor.1.nombre", "Profesora X", null, 3);
@@ -297,6 +310,11 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("41567", a.get("codigoPostal").asText());
 		assertEquals("600000002", a.get("telefono").asText());
 		assertFalse(a.has("email"), "el correo de la sede no sale");
+		assertEquals("herrera", a.get("slug").asText());
+		assertEquals("Pabellón cubierto X", a.get("lugar").asText());
+		assertEquals("Entrada lateral X", a.get("indicacionesAcceso").asText());
+		assertTrue(a.get("fotoUrl").asText().endsWith("/imagenes/org-" + x + "/web/galeria-x.jpg"), a.toString());
+		assertTrue(a.get("foto2Url").isNull(), "la imagen de Y no sale en X");
 		assertEquals(List.of(grupoPeques, grupoInfantil), ids(a.get("grupos"), "id"), "edad 4-6 antes que 7-11");
 		JsonNode peques = a.get("grupos").get(0);
 		assertEquals("Peques X", peques.get("nombre").asText());
@@ -310,6 +328,9 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("17:00", lunes.get("horaInicio").asText());
 		assertEquals("17:45", lunes.get("horaFin").asText());
 		JsonNode b = sedes.get(1);
+		for (String campo : List.of("slug", "lugar", "indicacionesAcceso", "fotoUrl", "foto2Url")) {
+			assertTrue(b.get(campo).isNull(), campo + " sin poner: null");
+		}
 		assertEquals(List.of(grupoAdultos), ids(b.get("grupos"), "id"), "sin el grupo sin turnos");
 		assertTrue(b.get("grupos").get(0).get("rangoEdadMax").isNull());
 	}
@@ -370,6 +391,15 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(hoy.plusDays(1).toString(), eventos.get(0).get("fecha").asText());
 		assertFalse(eventos.get(0).get("conImagen").asBoolean());
 		assertTrue(eventos.get(1).get("conImagen").asBoolean());
+		// W2 (466): hora, lugar y sede si los tiene; si no, null.
+		assertEquals("18:30", eventos.get(0).get("hora").asText());
+		assertEquals("Polideportivo X", eventos.get(0).get("lugar").asText());
+		assertEquals(sedeB, eventos.get(0).get("sedeId").asLong());
+		assertEquals("Estepa X " + marca, eventos.get(0).get("sedeNombre").asText());
+		for (String campo : List.of("hora", "lugar", "sedeId", "sedeNombre")) {
+			assertTrue(eventos.get(1).get(campo).isNull(), campo + " sin poner: null");
+			assertTrue(eventos.get(2).get(campo).isNull(), campo + ": la sede de otra escuela no sale");
+		}
 	}
 
 	/** Por orden y clave; la imagen de otra escuela no sale. */
@@ -399,7 +429,7 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		String texto = r.getResponse().getContentAsString();
 		for (String secreto : List.of("G00000000", "Club Deportivo X", "Firmante Secreto", "00000000T",
 				"Remitente secreto", "sede-secreta@", "CLUB SECRETO", "Tarifa interna", "Pasado X", "Oculto X",
-				"Competición X", "Kick X", "Cerrad", "Sin turnos X", "Más 4 X")) {
+				"Competición X", "Kick X", "Cerrad", "Sin turnos X", "Más 4 X", "it-w1-x-" + marca)) {
 			assertFalse(texto.contains(secreto), secreto + " en " + texto);
 		}
 	}

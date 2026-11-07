@@ -78,12 +78,15 @@ public class WebPublicaConsultas {
 	}
 
 	/**
-	 * Filas {@code [id, titulo, fecha, id de la foto o null]} de los {@code maximo} próximos eventos visibles (fecha de
-	 * hoy o posterior), del más cercano al más lejano.
+	 * Filas {@code [id, titulo, fecha, id de la foto o null, hora, lugar, id de la sede, nombre de la sede]} de los
+	 * {@code maximo} próximos eventos visibles (fecha de hoy o posterior), del más cercano al más lejano. La sede, solo
+	 * si es de la misma escuela que el evento (si no, {@code null} las dos).
 	 */
 	public List<Object[]> proximosEventos(LocalDate hoy, int maximo) {
 		return em.createQuery("""
-				SELECT e.id, e.titulo, e.fechaEvento, f.id FROM Evento e LEFT JOIN e.fotoEvento f
+				SELECT e.id, e.titulo, e.fechaEvento, f.id, e.hora, e.lugar, s.id, s.nombre
+				FROM Evento e LEFT JOIN e.fotoEvento f
+				  LEFT JOIN Sede s ON s.id = e.sedeId AND s.organizacionId = e.organizacionId
 				WHERE e.visible = true AND e.fechaEvento >= :hoy ORDER BY e.fechaEvento, e.id""", Object[].class)
 				.setParameter("hoy", hoy).setMaxResults(maximo).getResultList();
 	}

@@ -3,6 +3,7 @@ package com.taemoi.project.web;
 import java.text.Normalizer;
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -130,6 +132,8 @@ public class WebPublicaService {
 
 		List<Sede> activas = sedes.findByActivaTrueOrderByIdAsc();
 		Set<Long> idsSedes = activas.stream().map(Sede::getId).collect(Collectors.toSet());
+		List<WebBloque> bloques = consultas.bloques();
+		Map<Long, String> urls = urlsDeImagenes(bloques, activas);
 		List<Tarifa> tarifas = consultas.tarifasActivas();
 		Set<Long> idsTarifas = tarifas.stream().map(Tarifa::getId).collect(Collectors.toSet());
 
@@ -139,26 +143,36 @@ public class WebPublicaService {
 				e.web() != null && e.web().isPublicada(),
 				vistaPrevia,
 				temporada,
-				bloques(),
-				sedes(activas, temporada),
+				bloques(bloques, urls),
+				sedes(activas, temporada, urls),
 				tarifas.stream().map(WebPublicaService::tarifa).toList(),
 				tarifasSede(idsTarifas, idsSedes, hoy),
 				consultas.licencias().stream()
 						.map(f -> new WebPublicaDTO.Licencia((String) f[0], (String) f[1], (Double) f[2])).toList(),
 				consultas.examenDesde(),
 				consultas.proximosEventos(hoy, PROXIMOS_EVENTOS).stream()
-						.map(f -> new WebPublicaDTO.Evento((Long) f[0], (String) f[1], (LocalDate) f[2], f[3] != null))
+						.map(f -> new WebPublicaDTO.Evento((Long) f[0], (String) f[1], (LocalDate) f[2], f[3] != null,
+								(LocalTime) f[4], (String) f[5], (Long) f[6], (String) f[7]))
 						.toList(),
 				new WebPublicaDTO.Contacto(o.getEmailContacto(), o.getTelefono()));
 	}
 
-	private List<WebPublicaDTO.Bloque> bloques() {
-		List<WebBloque> bloques = consultas.bloques();
-		List<Long> imagenes = bloques.stream().map(WebBloque::getImagenId).filter(Objects::nonNull).distinct().toList();
+	/**
+	 * URL de las imágenes de los bloques y de las fotos de las sedes (W2), en una consulta; las de otra escuela no
+	 * salen.
+	 */
+	private Map<Long, String> urlsDeImagenes(List<WebBloque> bloques, List<Sede> activas) {
+		List<Long> imagenes = Stream.concat(bloques.stream().map(WebBloque::getImagenId),
+				activas.stream().flatMap(s -> Stream.of(s.getFotoImagenId(), s.getFoto2ImagenId())))
+				.filter(Objects::nonNull).distinct().toList();
 		Map<Long, String> urls = new HashMap<>();
 		for (Object[] fila : consultas.urlsDeImagenes(imagenes)) {
 			urls.put((Long) fila[0], (String) fila[1]);
 		}
+		return urls;
+	}
+
+	private List<WebPublicaDTO.Bloque> bloques(List<WebBloque> bloques, Map<Long, String> urls) {
 		return bloques.stream()
 				.map(b -> new WebPublicaDTO.Bloque(b.getClave(), b.getTexto(),
 						b.getImagenId() == null ? null : urls.get(b.getImagenId()),
@@ -170,7 +184,7 @@ public class WebPublicaService {
 	 * Sedes activas con sus grupos visibles en la preinscripción (de disciplinas activas y con turnos) y las plazas de
 	 * cada turno y grupo: grupos, turnos, ocupación (4) y lista de espera, cada uno en una consulta.
 	 */
-	private List<WebPublicaDTO.Sede> sedes(List<Sede> activas, String temporada) {
+	private List<WebPublicaDTO.Sede> sedes(List<Sede> activas, String temporada, Map<Long, String> urls) {
 		List<Grupo> grupos = consultas.gruposDeSedes(activas.stream().map(Sede::getId).toList()).stream()
 				.filter(PreinscripcionService::esVisibleEnPreinscripcion).toList();
 		Map<Long, List<Turno>> turnosPorGrupo = grupos.isEmpty() ? Map.of()
@@ -203,7 +217,10 @@ public class WebPublicaService {
 				});
 		return activas.stream()
 				.map(s -> new WebPublicaDTO.Sede(s.getId(), s.getNombre(), s.getDireccion(), s.getLocalidad(),
-						s.getCodigoPostal(), s.getTelefono(), gruposPorSede.getOrDefault(s.getId(), List.of())))
+						s.getCodigoPostal(), s.getTelefono(), s.getSlug(), s.getLugar(), s.getIndicacionesAcceso(),
+						s.getFotoImagenId() == null ? null : urls.get(s.getFotoImagenId()),
+						s.getFoto2ImagenId() == null ? null : urls.get(s.getFoto2ImagenId()),
+						gruposPorSede.getOrDefault(s.getId(), List.of())))
 				.toList();
 	}
 
