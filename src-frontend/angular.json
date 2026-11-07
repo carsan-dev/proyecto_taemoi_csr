@@ -124,6 +124,16 @@
               "sourceMap": true,
               "namedChunks": true
             },
+            "plantilla": {
+              "index": {
+                "input": "src/index-plantilla.html",
+                "output": "index.html"
+              },
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
+            },
             "local": {
               "fileReplacements": [
                 {
@@ -165,6 +175,9 @@
             },
             "local": {
               "buildTarget": "Taemoi_Angular_Front:build:local"
+            },
+            "plantilla": {
+              "buildTarget": "Taemoi_Angular_Front:build:plantilla"
             }
           },
           "defaultConfiguration": "development"
@@ -313,6 +326,13 @@
               "src/app/servicios/authentication/authentication.invitacion.spec.ts",
               "src/app/componentes/vistas/layout/skeleton/skeleton.analitica.spec.ts",
               "src/app/componentes/vistas/layout/skeleton/skeleton.configurar-cookies.spec.ts",
+              "src/app/guards/web-plantilla.guard.spec.ts",
+              "src/app/app.routes.web-plantilla.spec.ts",
+              "src/app/componentes/vistas/layout/skeleton/skeleton.web-plantilla.spec.ts",
+              "src/app/servicios/generales/seo.service.web-plantilla.spec.ts",
+              "src/app/web-plantilla/datos/web-publica.service.spec.ts",
+              "src/app/web-plantilla/comun/seo-escuela.service.spec.ts",
+              "src/app/web-plantilla/paginas/plantilla-pendiente.component.spec.ts",
               "src/app/utils/analitica.util.spec.ts",
               "src/app/componentes/vistas/reset-password/reset-password.component.spec.ts",
               "src/app/componentes/vistas/registro-confirmar/registro-confirmar.token.spec.ts",

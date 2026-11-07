@@ -1,4 +1,10 @@
 <!-- skeleton.component.html -->
+<!-- El contenido (el router-outlet de app.component) se proyecta una vez y se pinta en la rama que toque. -->
+<ng-template #contenido><ng-content></ng-content></ng-template>
+@if (modo() === 'plantilla') {
+<!-- Web por plantilla (fase4-web-plan.md §3.2, punto 6): solo el contenido; sin cabecera, pie, aviso de cookies ni GA4. -->
+<ng-container [ngTemplateOutlet]="contenido"></ng-container>
+} @else {
 <div class="p-0 d-flex flex-column container-fluid" [class.marco-panel]="modo() !== 'hoy'"
   [class.admin-ui]="modo() !== 'hoy'">
   <div class="row flex-grow-1">
@@ -12,7 +18,7 @@
       }
       }
       <main class="row g-0" id="content">
-        <ng-content></ng-content>
+        <ng-container [ngTemplateOutlet]="contenido"></ng-container>
       </main>
     </div>
   </div>
@@ -50,3 +56,4 @@
     </div>
   </div>
 </div>
+}

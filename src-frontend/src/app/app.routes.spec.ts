@@ -4,6 +4,7 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { entradaGoogleGuard } from './guards/entrada-google.guard';
+import { esWebPlantilla } from './guards/web-plantilla.guard';
 import { estilosPanelGuard } from './panel-nuevo/estilos-panel.guard';
 import { estilosGestionGuard } from './panel-nuevo/estilos-gestion.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
@@ -160,8 +161,11 @@ describe('app routes', () => {
       expect(routes.find((r) => r.path === 'material-examen')?.canDeactivate).toBeUndefined();
     });
 
-    it('ninguna ruta repite camino salvo los dos comodines (404 del panel y el público)', () => {
-      const caminos = routes.map((route) => route.path).filter((path) => path !== '**');
+    it('ninguna ruta repite camino salvo los dos comodines (404 del panel y el público) y el grupo de la web por plantilla', () => {
+      const caminos = routes
+        .filter((route) => !route.canMatch?.includes(esWebPlantilla))
+        .map((route) => route.path)
+        .filter((path) => path !== '**');
       expect(caminos.length).toBe(new Set(caminos).size);
       expect(routes.filter((route) => route.path === '**').length).toBe(2);
     });

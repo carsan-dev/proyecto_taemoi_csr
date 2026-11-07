@@ -82,8 +82,9 @@ describe('Capa «Has cambiado de escuela» (demás pestañas, boceto aprobado)',
         expect(document.activeElement).not.toBe(fuera);
 
         // Si el navegador la cierra igual, vuelve a abrirse.
+        const cerrada = new Promise<void>((r) => dialogo.addEventListener('close', () => r(), { once: true }));
         dialogo.close();
-        await new Promise((r) => setTimeout(r, 20));
+        await Promise.race([cerrada, new Promise((r) => setTimeout(r, 1000))]);
         expect(dialogo.open).toBeTrue();
       });
 
