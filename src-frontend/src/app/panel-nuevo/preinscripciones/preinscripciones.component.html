@@ -219,7 +219,7 @@
                         (change)="alternarTurno(t, $any($event.target).checked)" />
                       <span class="preins__turno-texto">
                         <strong data-cifras>{{ t.diaSemana }} · {{ t.horaInicio }}–{{ t.horaFin }}</strong>
-                        <small>{{ t.grupo }} · {{ t.rangoEdadMin }}–{{ t.rangoEdadMax }} años</small>
+                        <small>{{ t.grupo }} · {{ t.sede ? t.sede + ' · ' : '' }}{{ t.rangoEdadMin }}–{{ t.rangoEdadMax }} años</small>
                         @if (fueraDeEdad(t) || t.completo) {
                         <span class="preins__turno-marcas">
                           @if (fueraDeEdad(t)) {

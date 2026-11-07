@@ -46,6 +46,13 @@ public interface SedeRepository extends JpaRepository<Sede, Long> {
 	@Query("SELECT s.id, s.aforoTurno FROM Sede s WHERE s.id IN :ids AND s.aforoTurno IS NOT NULL")
 	List<Object[]> aforosPorSede(@Param("ids") Collection<Long> ids);
 
+	/**
+	 * Decisión 393: filas {@code [id, aforoTurno, nombre, activa]} de las sedes {@code ids} y de todas las activas de la
+	 * escuela, en una consulta: da el aforo y el nombre de cada sede pedida y cuántas activas hay.
+	 */
+	@Query("SELECT s.id, s.aforoTurno, s.nombre, s.activa FROM Sede s WHERE s.id IN :ids OR s.activa = true")
+	List<Object[]> datosSedes(@Param("ids") Collection<Long> ids);
+
 	/** Pieza E8-2: nombre ya usado en la escuela activa, con la colación de la columna (como la clave única). */
 	boolean existsByNombre(String nombre);
 

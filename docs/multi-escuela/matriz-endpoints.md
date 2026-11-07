@@ -617,6 +617,20 @@ Las escrituras se auditan con el filtro genérico (`auditoria_evento`, cuerpo si
 `FestivoIntegrationTest`. Pasar lista no gana líneas: sus DTO crecen (`festivo`, `sede`, `motivo`) y el cuerpo de los 4xx
 del PUT guarda también `motivos` redactado.
 
+Pieza 394 (datos de la escuela, decisiones 267 y 375, V32_3): 3 líneas nuevas en `EscuelaDatosController`; ninguna
+casilla existente cambia. Regla de URL propia `/api/escuela/datos` (`ROLE_ADMIN` o `ROLE_ADMIN_PLATAFORMA`), antes de la
+de `/api/escuela/**`, y el mismo `@PreAuthorize` de clase; fuera de la lista blanca de la sesión solo-profesor.
+- `GET`/`HEAD` y `PUT /api/escuela/datos` (`#obtener`, `#guardar`): PROPIETARIO y SOLO_PLATAFORMA `PERMITE`; el resto
+  `DENIEGA`, también GESTOR y RESPONSABLE_SEDE. Siempre la escuela activa de la sesión (sin ids); SOLO_PLATAFORMA solo
+  entra en la escuela por defecto (Moiskimdo), y el administrador de plataforma con membresía, en la suya. Cuerpo y
+  respuesta `{nombreLegal, cif, direccion, emailContacto, telefono, firmanteNombre, firmanteCargo, firmanteNif,
+  diaLimiteMensualidad}`; el `PUT` sustituye todo y devuelve lo guardado. No cumplir la validación, 400 con `{mensaje,
+  errores{campo: mensaje}}`; cuerpo ilegible, 400 con `{mensaje}`. Todo 2xx del `PUT` registra `PANEL
+  DATOS_ESCUELA_CAMBIADOS organizacion=#id diaLimiteCambiado=SI|NO sinCambios=SI|NO` y está en
+  `EscrituraConRegistroPropio` (`ESCUELA_DATOS`); el cuerpo de sus 4xx se guarda con todos los campos redactados salvo
+  `diaLimiteMensualidad`.
+Lo prueban `DatosEscuelaIntegrationTest` y `RegistroUnicoProfesorIntegrationTest`.
+
 ## Cómo actualizarlo
 
 - **Endpoint nuevo.** El test A falla y en el mensaje aparece la línea que hay que añadir, con la decisión

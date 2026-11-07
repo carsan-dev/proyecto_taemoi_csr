@@ -2,6 +2,9 @@ package com.taemoi.project.entities;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -16,6 +19,9 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "organizacion")
 public class Organizacion {
+
+	/** Día límite de la mensualidad de una escuela que no lo ha cambiado (V32_3). */
+	public static final int DIA_LIMITE_MENSUALIDAD_POR_DEFECTO = 5;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -85,6 +91,14 @@ public class Organizacion {
 	 */
 	@Column(name = "comportamiento_legado_taemoi", nullable = false)
 	private Boolean comportamientoLegadoTaemoi = Boolean.FALSE;
+
+	/**
+	 * V32_3 (pieza 394, decisiones 267 y 375): último día del mes para pagar la mensualidad del mes en curso, de 1 a 28;
+	 * vence el día siguiente. 5 por defecto (las normas de Moiskimdo: «del día 1 al 5»), también en la base de datos.
+	 */
+	@JdbcTypeCode(SqlTypes.TINYINT)
+	@Column(name = "dia_limite_mensualidad", nullable = false)
+	private Integer diaLimiteMensualidad = DIA_LIMITE_MENSUALIDAD_POR_DEFECTO;
 
 	@Column(name = "creada_en", nullable = false, insertable = false, updatable = false)
 	private LocalDateTime creadaEn;
@@ -251,6 +265,14 @@ public class Organizacion {
 
 	public void setActiva(Boolean activa) {
 		this.activa = activa;
+	}
+
+	public Integer getDiaLimiteMensualidad() {
+		return diaLimiteMensualidad;
+	}
+
+	public void setDiaLimiteMensualidad(Integer diaLimiteMensualidad) {
+		this.diaLimiteMensualidad = diaLimiteMensualidad;
 	}
 
 	public LocalDateTime getCreadaEn() {
