@@ -75,7 +75,8 @@ public class OrganizacionRequestFilter extends OncePerRequestFilter {
 	 * ({@link ResolutorEscuelaPorHost}): la por defecto si el Host no está en {@code organizacion_dominio}
 	 * (endpoints públicos: preinscripción, eventos, login, registro...).</li>
 	 * </ul>
-	 * La escuela del Host queda en el atributo {@link ResolutorEscuelaPorHost#ATRIBUTO} (también con sesión).
+	 * La escuela del Host queda en el atributo {@link ResolutorEscuelaPorHost#ATRIBUTO} (también con sesión) y, si el
+	 * Host está en la tabla, el Host en {@link HostDeLaPeticion#ATRIBUTO} (cookies, Google, URL de archivos y login).
 	 * La identificación solo lee tablas globales; se hace con la organización por defecto fijada
 	 * porque Hibernate exige una al abrir cualquier sesión. En los despachos ASYNC y ERROR se reutiliza
 	 * el resultado (atributos de la petición): el token se verifica y el Host se mira una sola vez por petición.
@@ -85,6 +86,7 @@ public class OrganizacionRequestFilter extends OncePerRequestFilter {
 		if (request.getAttribute(SesionVerificada.ATRIBUTO_RESUELTA) == null) {
 			Long delHost = porHost.escuelaDe(request);
 			request.setAttribute(ResolutorEscuelaPorHost.ATRIBUTO, delHost);
+			HostDeLaPeticion.anotar(request, porHost, porDefecto);
 			Optional<SesionVerificada> sesion = TenantContext.calcularCon(porDefecto,
 					() -> identificador.identificar(request));
 			request.setAttribute(SesionVerificada.ATRIBUTO_RESUELTA, Boolean.TRUE);
