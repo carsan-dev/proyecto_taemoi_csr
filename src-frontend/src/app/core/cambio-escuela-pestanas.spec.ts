@@ -11,6 +11,7 @@ import {
   MENSAJE_CAMBIO_ESCUELA,
   MensajeCambioEscuela,
   PASA_BLOQUEO_CAMBIO_ESCUELA,
+  RECARGAR_PAGINA,
   RUTA_ENTRADA_SESION,
   bloqueoCambioEscuelaInterceptor,
 } from './cambio-escuela-pestanas';
@@ -18,6 +19,7 @@ import {
 describe('CambioEscuelaPestanasService (aviso entre pestañas)', () => {
   let servicio: CambioEscuelaPestanasService;
   let irA: jasmine.Spy;
+  let recarga: jasmine.Spy;
   let otraPestana: BroadcastChannel;
   let fuera: HTMLButtonElement;
   let http: HttpClient;
@@ -49,11 +51,13 @@ describe('CambioEscuelaPestanasService (aviso entre pestañas)', () => {
 
   beforeEach(() => {
     irA = jasmine.createSpy('irA');
+    recarga = jasmine.createSpy('recarga');
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([bloqueoCambioEscuelaInterceptor])),
         provideHttpClientTesting(),
         { provide: IR_A_URL, useValue: irA },
+        { provide: RECARGAR_PAGINA, useValue: recarga },
       ],
     });
     servicio = TestBed.inject(CambioEscuelaPestanasService);
@@ -306,6 +310,28 @@ describe('CambioEscuelaPestanasService (aviso entre pestañas)', () => {
       await esperarA(() => !!capa());
       expect(capa()!.querySelector('img:not(.tce-web__logo)')).toBeNull();
       expect(capa()!.querySelector('strong')!.textContent).toBe('<img src=x onerror="alert(1)">');
+    });
+  });
+  describe('al volver con Atrás desde la caché (bfcache)', () => {
+    const volver = (persistida: boolean): void => {
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: persistida }));
+    };
+
+    it('con la pestaña bloqueada por un cambio, recarga', () => {
+      servicio.iniciar();
+      const idCambio = servicio.anunciarCambio(SUR);
+      volver(true);
+      expect(recarga).toHaveBeenCalledTimes(1);
+      servicio.cancelarCambio(idCambio);
+    });
+
+    it('sin bloqueo, o sin que la página venga de la caché, no recarga', () => {
+      servicio.iniciar();
+      volver(true);
+      const idCambio = servicio.anunciarCambio(SUR);
+      volver(false);
+      expect(recarga).not.toHaveBeenCalled();
+      servicio.cancelarCambio(idCambio);
     });
   });
 });

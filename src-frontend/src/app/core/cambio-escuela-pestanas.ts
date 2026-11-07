@@ -50,6 +50,15 @@ export const IR_A_URL = new InjectionToken<(url: string) => void>('IR_A_URL', {
   },
 });
 
+/** Recarga de esta pestaña (al volver con Atrás desde la caché bloqueada); en los tests se sustituye. */
+export const RECARGAR_PAGINA = new InjectionToken<() => void>('RECARGAR_PAGINA', {
+  providedIn: 'root',
+  factory: () => {
+    const documento = inject(DOCUMENT);
+    return () => documento.defaultView?.location.reload();
+  },
+});
+
 const ESTADOS: readonly EstadoCambioEscuela[] = ['cambiando', 'confirmado', 'cancelado'];
 
 /** Un cambio anunciado por otra pestaña que aún no se ha cerrado. */
@@ -84,6 +93,7 @@ interface CambioAjeno {
 export class CambioEscuelaPestanasService implements OnDestroy {
   private readonly documento = inject(DOCUMENT);
   private readonly irA = inject(IR_A_URL);
+  private readonly recargarPagina = inject(RECARGAR_PAGINA);
   private canal: BroadcastChannel | null = null;
   private iniciado = false;
   private destruido = false;
@@ -103,6 +113,13 @@ export class CambioEscuelaPestanasService implements OnDestroy {
   private pidiendoCapa = false;
   /** Nombre de la escuela nueva para la capa (null: la variante sin nombre). */
   private nombreCapa: string | null = null;
+
+  /** Atrás desde la caché (bfcache) devuelve la página tal como se dejó: si estaba bloqueada o con la capa, se recarga. */
+  private readonly alVolverDeCache = (evento: PageTransitionEvent): void => {
+    if (evento.persisted && (this.bloqueada || this.capa)) {
+      this.recargarPagina();
+    }
+  };
 
   private readonly alRecibirAlmacen = (evento: StorageEvent): void => {
     if (evento.key !== CANAL_CAMBIO_ESCUELA || !evento.newValue) {
@@ -142,6 +159,7 @@ export class CambioEscuelaPestanasService implements OnDestroy {
     }
     // Siempre también el almacén: la pestaña que avisa puede no tener BroadcastChannel.
     ventana.addEventListener('storage', this.alRecibirAlmacen);
+    ventana.addEventListener('pageshow', this.alVolverDeCache);
   }
 
   /**
@@ -192,6 +210,7 @@ export class CambioEscuelaPestanasService implements OnDestroy {
     this.canal?.close();
     this.canal = null;
     this.documento.defaultView?.removeEventListener('storage', this.alRecibirAlmacen);
+    this.documento.defaultView?.removeEventListener('pageshow', this.alVolverDeCache);
     this.ajenos.forEach((cambio) => clearTimeout(cambio.temporizador));
     this.ajenos.clear();
     this.quitarCapa();
@@ -387,6 +406,8 @@ export interface OpcionesCapaCambioEscuela {
   alRecargar: () => void;
 }
 
+const FRASE_CAPA_MINIMA = 'Lo hiciste en otra pestaña. Recarga esta para seguir con los datos de ';
+
 /** Si no se puede cargar la capa con sus estilos (p. ej. un despliegue entretanto), una sin estilos con los mismos textos. */
 function pintarCapaMinima(documento: Document, opciones: OpcionesCapaCambioEscuela): HTMLDialogElement {
   const capa = documento.createElement('dialog');
@@ -394,15 +415,25 @@ function pintarCapaMinima(documento: Document, opciones: OpcionesCapaCambioEscue
   capa.setAttribute('role', 'alertdialog');
   capa.setAttribute('aria-modal', 'true');
   capa.setAttribute('aria-labelledby', 'taemoi-cambio-escuela-titulo');
+  capa.setAttribute('aria-describedby', 'taemoi-cambio-escuela-texto');
   const titulo = documento.createElement('h2');
   titulo.id = 'taemoi-cambio-escuela-titulo';
   titulo.textContent = 'Has cambiado de escuela';
+  const texto = documento.createElement('p');
+  texto.id = 'taemoi-cambio-escuela-texto';
+  if (opciones.nombre) {
+    const fuerte = documento.createElement('strong');
+    fuerte.textContent = opciones.nombre;
+    texto.replaceChildren(FRASE_CAPA_MINIMA, fuerte, '.');
+  } else {
+    texto.replaceChildren(`${FRASE_CAPA_MINIMA}la escuela nueva.`);
+  }
   const boton = documento.createElement('button');
   boton.type = 'button';
   boton.textContent = 'Recargar';
   boton.style.minHeight = '44px';
   boton.addEventListener('click', () => opciones.alRecargar());
-  capa.append(titulo, boton);
+  capa.append(titulo, texto, boton);
   capa.addEventListener('cancel', (evento) => evento.preventDefault());
   documento.body.appendChild(capa);
   try {

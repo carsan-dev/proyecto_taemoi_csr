@@ -1,3 +1,5 @@
+import { fakeAsync, tick } from '@angular/core/testing';
+
 import { EVENTO_NOMBRE_CAPA } from './cambio-escuela-pestanas';
 import {
   SitioCapaCambioEscuela,
@@ -151,4 +153,21 @@ describe('Capa «Has cambiado de escuela» (demás pestañas, boceto aprobado)',
       expect(sitioDeLaPestana(document, '/alumnos')).toBe('panel');
     });
   });
+
+  it('si la página sigue tras «Recargar» (un beforeunload ha cancelado la carga), a los 2 s el botón vuelve a «Recargar»', fakeAsync(() => {
+    pintar('panel');
+    boton().click();
+    expect(boton().getAttribute('aria-disabled')).toBe('true');
+    expect(alRecargar).toHaveBeenCalledTimes(1);
+    tick(1999);
+    expect(boton().getAttribute('aria-disabled')).toBe('true');
+    tick(1);
+    expect(boton().hasAttribute('aria-disabled')).toBeFalse();
+    expect(boton().hasAttribute('aria-busy')).toBeFalse();
+    expect(boton().textContent!.trim()).toBe('Recargar');
+    expect(capa!.querySelector('[role=status]')!.textContent).toBe('');
+    boton().click();
+    expect(alRecargar).toHaveBeenCalledTimes(2);
+    tick(2000);
+  }));
 });

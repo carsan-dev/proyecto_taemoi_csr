@@ -13,13 +13,14 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { errorInterceptor } from '../../core/interceptors/error.interceptor';
 import { credentialsInterceptor } from '../../interceptors/credentials.interceptor';
+import { bloqueoCambioEscuelaInterceptor } from '../../core/cambio-escuela-pestanas';
 import { contextoErrorLocal } from '../carga/lecturas-panel.service';
 import { DetalleBloque, ListadoMaterial, SubidaMaterial } from './material-examen.models';
 
 /**
  * El cliente de las subidas con progreso. La app va con `withFetch()`, y fetch no informa del progreso de subida
  * (`FetchBackend` lo dice en `HttpRequest.reportProgress`), así que aquí se usa `HttpXhrBackend` en un inyector propio, con
- * los dos interceptores que importan: la cookie de sesión y el 401 de sesión caducada. Ninguno toca el cuerpo: `clone`
+ * los tres interceptores que importan: el bloqueo del cambio de escuela, la cookie de sesión y el 401 de sesión caducada. Ninguno toca el cuerpo: `clone`
  * conserva la referencia al `File`. El proveedor explícito de `HttpBackend` hace falta porque `provideHttpClient` hereda
  * el `FETCH_BACKEND` del inyector padre.
  */
@@ -28,7 +29,7 @@ export const CLIENTE_SUBIDAS = new InjectionToken<HttpClient>('cliente de subida
   factory: () =>
     createEnvironmentInjector(
       [
-        provideHttpClient(withInterceptors([credentialsInterceptor, errorInterceptor])),
+        provideHttpClient(withInterceptors([bloqueoCambioEscuelaInterceptor, credentialsInterceptor, errorInterceptor])),
         { provide: HttpBackend, useExisting: HttpXhrBackend },
       ],
       inject(EnvironmentInjector)

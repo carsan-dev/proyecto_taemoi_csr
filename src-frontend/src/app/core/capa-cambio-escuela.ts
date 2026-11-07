@@ -24,6 +24,8 @@ const LOGO_WEB = '/assets/media/Logo_escuela.svg';
 const ID_ESTILOS = 'taemoi-cambio-escuela-estilos';
 const ID_TITULO = 'taemoi-cambio-escuela-titulo';
 const ID_TEXTO = 'taemoi-cambio-escuela-texto';
+/** Tiempo que se espera tras «Recargar» antes de devolver el botón (la carga no salió: p. ej. un `beforeunload` que se quedó). */
+const ESPERA_RECARGA_MS = 2000;
 
 const ICONO_GIRANDO =
   '<svg class="tce-girando" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 1-9 9"/></svg>';
@@ -113,6 +115,16 @@ export function pintarCapaCambioEscuela(
     boton.innerHTML = `${ICONO_GIRANDO}<span>Recargando…</span>`;
     voz.textContent = 'Recargando…';
     opciones.alRecargar();
+    // Si la página sigue (un `beforeunload` ha cancelado la carga), «Recargar» vuelve a estar disponible.
+    setTimeout(() => {
+      if (!capa.isConnected) {
+        return;
+      }
+      boton.removeAttribute('aria-disabled');
+      boton.removeAttribute('aria-busy');
+      boton.innerHTML = '<span>Recargar</span>';
+      voz.textContent = '';
+    }, ESPERA_RECARGA_MS);
   });
   // Único control: Tab y Mayús+Tab se quedan en el botón; Esc no hace nada.
   capa.addEventListener('keydown', (evento) => {
