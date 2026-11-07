@@ -9,9 +9,6 @@ import type { PaginaWeb } from './comun/seo-escuela.service';
  */
 const datos = (pagina: PaginaWeb) => ({ webPlantilla: true, pagina }) as const;
 
-const pendiente = () =>
-  import('./paginas/plantilla-pendiente.component').then((m) => m.PlantillaPendienteComponent);
-
 /** Las páginas del primer tema (W5): cada una, su chunk perezoso. Solo hay un tema construido (§9 n.º 12). */
 const portada = () =>
   import('./temas/linea-comarcal/portada/portada.component').then((m) => m.PortadaLineaComarcalComponent);
@@ -24,6 +21,10 @@ const evento = () =>
   import('./temas/linea-comarcal/evento/evento.component').then((m) => m.EventoLineaComarcalComponent);
 const legales = () =>
   import('./temas/linea-comarcal/legales/legales.component').then((m) => m.LegalesLineaComarcalComponent);
+const preinscripcion = () =>
+  import('./temas/linea-comarcal/preinscripcion/preinscripcion.component').then(
+    (m) => m.PreinscripcionLineaComarcalComponent,
+  );
 export const noEncontradaDelTema = () =>
   import('./temas/linea-comarcal/no-encontrada/no-encontrada.component').then((m) => m.NoEncontradaLineaComarcalComponent);
 
@@ -56,13 +57,13 @@ export const RUTAS_SOLO_MOISKIMDO = [
  * Rutas de la web por plantilla (fase4-web-plan.md §3.1). Se cargan perezosas desde el grupo con `canMatch` de
  * `app.routes.ts`, que solo casa con la meta de `index-plantilla.html`. Sin comodín: lo que no casa aquí (panel, login,
  * plataforma…) sigue a las rutas de siempre, y lo desconocido cae en el comodín de la plantilla del final de
- * `app.routes.ts` (la 404 del tema). Portada, sede, tarifas, eventos, evento y legales son las del primer tema;
- * preinscripción, la pantalla técnica provisional hasta que se construya. Sin publicar, cada página pinta «Web aún no publicada».
+ * `app.routes.ts` (la 404 del tema). Las siete páginas son las del primer tema. Sin publicar, cada página pinta «Web aún
+ * no publicada».
  */
 export const WEB_PLANTILLA_ROUTES: Routes = [
   { path: '', pathMatch: 'full', data: datos('portada'), loadComponent: portada },
   { path: 'sedes/:slug', data: datos('sede'), loadComponent: sede },
-  { path: 'preinscripcion', data: datos('preinscripcion'), loadComponent: pendiente },
+  { path: 'preinscripcion', data: datos('preinscripcion'), loadComponent: preinscripcion },
   { path: 'tarifas', data: datos('tarifas'), loadComponent: tarifas },
   { path: 'eventos', data: datos('eventos'), loadComponent: eventos },
   { path: 'eventos/:id', data: datos('evento'), loadComponent: evento },

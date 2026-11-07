@@ -501,7 +501,8 @@ function vistaHorarios(sitio: SitioWeb, textos: TextosTema, ahora: Date): Omit<V
 export function vistaSalidas(sede: SedeWeb, textos: TextosTema, ahora: Date): VistaSalida[] {
   const textosPlazas = { lleno: textos.t('horarios.lleno'), espera: textos.t('horarios.espera') };
   const hoy = ahora.getDay();
-  return salidasDeSede(sede).map((s) => {
+  const salidas = salidasDeSede(sede);
+  return salidas.map((s) => {
     const estado = estadoPlazas(s.plazas);
     const edades = edadesEnTexto(s.grupo.rangoEdadMin, s.grupo.rangoEdadMax);
     const quien = [s.grupo.nombre, edades?.toLowerCase(), sede.nombre].filter(Boolean).join(', ');
@@ -523,7 +524,12 @@ export function vistaSalidas(sede: SedeWeb, textos: TextosTema, ahora: Date): Vi
         texto,
         secundaria: espera,
         etiqueta: `${texto}: ${quien}`,
-        consulta: { sede: sede.slug ?? String(sede.id), grupo: String(s.grupo.id) },
+        consulta: {
+          sede: sede.slug ?? String(sede.id),
+          grupo: String(s.grupo.id),
+          // Un grupo a varias horas: la preinscripción elige la primera salida del grupo; las demás, por sus días.
+          ...(salidas.find((x) => x.grupo.id === s.grupo.id) === s ? {} : { dias: s.dias.join(',') }),
+        },
       },
     };
   });

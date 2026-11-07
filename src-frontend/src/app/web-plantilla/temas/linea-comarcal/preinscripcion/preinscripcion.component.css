@@ -1,0 +1,297 @@
+/*
+ * Preinscripción del tema «La línea comarcal» (boceto fase4-web/boceto-linea-comarcal-preinscripcion.html), con sus
+ * reglas tal cual bajo .lc .p-preinscripcion (sin encapsulación, como las demás páginas del tema). La firma va siempre a
+ * la vista y es obligatoria (decisión 493): sin la casilla «Firmo con mi nombre» ni el desplegable «Prefiero firmar a
+ * mano». Sin «Últimas N plazas» (§4.3) ni profesores por sede (la API no los da).
+ */
+
+.lc .p-preinscripcion { --error: #B3261E; }
+/* En el flujo, la cabecera no repite «Preinscribirme» (boceto). */
+.lc:has(.p-preinscripcion) .cabecera-cta { display: none; }
+.lc .p-preinscripcion [hidden] { display: none !important; }
+:where(.lc .p-preinscripcion) :where(input, textarea, button, select) { font: inherit; color: inherit; }
+.lc .p-preinscripcion input, .lc .p-preinscripcion textarea { caret-color: var(--tinta); }
+/* La cáscara de la aplicación (Bootstrap) da a legend flotado y tamaño propio: aquí, el del boceto. */
+.lc .p-preinscripcion legend { float: none; width: auto; margin: 0; padding: 0; font-size: inherit; line-height: inherit; }
+
+/* ---------- Esqueleto del flujo: una pregunta por pantalla ---------- */
+.lc .p-preinscripcion .flujo { padding: 20px 0 var(--seccion); }
+.lc .p-preinscripcion .flujo-principal { max-width: 42rem; }
+.lc .p-preinscripcion .resumen { display: none; }
+@media (min-width: 1000px) {
+  .lc .p-preinscripcion .flujo { padding-top: 32px; }
+  .lc .p-preinscripcion .flujo-rejilla { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: start; }
+  .lc .p-preinscripcion .flujo-principal { grid-column: 1 / 8; max-width: none; }
+  .lc .p-preinscripcion .resumen { display: block; grid-column: 9 / 13; position: sticky; top: calc(var(--cabecera) + 32px); }
+  .lc .p-preinscripcion .flujo--fin .flujo-principal { grid-column: 1 / -1; }
+}
+.lc .p-preinscripcion .atras {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  color: var(--tinta); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em;
+}
+.lc .p-preinscripcion .atras svg { transition: transform 160ms ease-out; }
+.lc .p-preinscripcion .atras:hover svg { transform: translateX(-3px); }
+
+/* Progreso: la línea en pequeño, sin exagerar */
+.lc .p-preinscripcion .progreso { margin: 16px 0 36px; }
+.lc .p-preinscripcion .progreso-texto { margin-bottom: 14px; }
+.lc .p-preinscripcion .progreso-linea { position: relative; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); max-width: 28rem; }
+.lc .p-preinscripcion .progreso-linea::before, .lc .p-preinscripcion .progreso-hecho {
+  content: ""; position: absolute; top: 9px; height: 6px; border-radius: 3px;
+  left: calc(50% / var(--n)); right: calc(50% / var(--n)); background: var(--filete);
+}
+.lc .p-preinscripcion .progreso-hecho { background: var(--escuela-trazo); right: auto; width: calc((100% - 100% / var(--n)) * var(--avance)); }
+.lc .p-preinscripcion .progreso-paso { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--tinta-2); text-align: center; }
+.lc .p-preinscripcion .progreso-circulo { position: relative; width: 24px; height: 24px; border-radius: 50%; background: var(--blanco); border: 4px solid var(--apagado); }
+.lc .p-preinscripcion .progreso-paso--hecho .progreso-circulo { border-color: var(--escuela-trazo); background: var(--escuela-trazo); }
+.lc .p-preinscripcion .progreso-paso--ahora .progreso-circulo { border-color: var(--escuela-trazo); }
+.lc .p-preinscripcion .progreso-paso--ahora .progreso-circulo::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--escuela-trazo); }
+.lc .p-preinscripcion .progreso-paso--ahora { color: var(--tinta); font-weight: 700; }
+
+/* Pregunta */
+.lc .p-preinscripcion .pregunta { margin: 0; padding: 0; border: 0; min-width: 0; }
+.lc .p-preinscripcion .pregunta legend { padding: 0; }
+.lc .p-preinscripcion .pregunta-titulo {
+  font-family: var(--display); font-weight: 900; text-transform: uppercase; letter-spacing: -0.01em;
+  line-height: 0.96; text-wrap: balance; font-size: clamp(56px, 16vw, 88px);
+}
+@media (min-width: 900px) { .lc .p-preinscripcion .pregunta-titulo { font-size: clamp(88px, 8vw, 120px); } }
+.lc .p-preinscripcion .pregunta-titulo:focus { outline: none; }
+.lc .p-preinscripcion .pista { margin-top: 16px; color: var(--tinta-2); font-size: 1.0625rem; max-width: 52ch; }
+.lc .p-preinscripcion .contexto { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-top: 16px; font-size: 1.0625rem; }
+.lc .p-preinscripcion .contexto strong { font-weight: 600; }
+.lc .p-preinscripcion .contexto a { font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
+.lc .p-preinscripcion .continuar { margin-top: 36px; }
+
+/* Paso 1: la línea como selector, en el orden de siempre */
+.lc .p-preinscripcion .selector-linea { margin-top: 28px; }
+.lc .p-preinscripcion .sel { position: relative; }
+.lc .p-preinscripcion .sel::before { content: ""; position: absolute; left: 6px; top: 0; bottom: 0; width: 12px; background: var(--escuela-trazo); }
+.lc .p-preinscripcion .sel:first-child::before { top: 31px; }
+.lc .p-preinscripcion .sel:last-child::before { bottom: auto; height: 31px; }
+.lc .p-preinscripcion .sel:only-child::before { display: none; }
+.lc .p-preinscripcion .sel input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 2; }
+.lc .p-preinscripcion .sel label { position: relative; display: block; padding: 18px 0 18px 48px; min-height: 72px; cursor: pointer; }
+.lc .p-preinscripcion .sel-circulo {
+  position: absolute; left: 0; top: 19px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--blanco); border: 4px solid var(--escuela-trazo); transition: transform 180ms ease-out, background-color 180ms ease-out;
+}
+.lc .p-preinscripcion .sel-nombre { display: block; font: 800 1.75rem/0.95 var(--display); text-transform: uppercase; }
+.lc .p-preinscripcion .sel-dato { display: block; margin-top: 6px; color: var(--tinta-2); font-size: 0.9375rem; }
+.lc .p-preinscripcion .sel input:hover + label .sel-circulo { transform: scale(1.25); background: color-mix(in srgb, var(--escuela-trazo) 30%, var(--blanco)); }
+.lc .p-preinscripcion .sel input:hover + label .sel-nombre { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.12em; text-decoration-color: var(--escuela-trazo); }
+.lc .p-preinscripcion .sel input:checked + label .sel-circulo { background: var(--escuela-trazo); transform: scale(1.25); }
+.lc .p-preinscripcion .sel input:checked + label .sel-circulo::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--blanco); }
+.lc .p-preinscripcion .sel input:focus-visible + label { outline: 3px solid var(--foco); outline-offset: 2px; }
+.lc .p-preinscripcion .sel-elegida { display: none; margin-left: 10px; font: 600 0.8125rem/1 var(--texto); letter-spacing: 0.08em; text-transform: uppercase; color: var(--tinta-2); vertical-align: 4px; }
+.lc .p-preinscripcion .sel input:checked + label .sel-elegida { display: inline; }
+.lc .p-preinscripcion .campo--error .selector-linea, .lc .p-preinscripcion .campo--error.pregunta .selector-linea { margin-top: 12px; }
+
+/* Paso 2: filas de salidas de la sede */
+.lc .p-preinscripcion .salidas { counter-reset: salida; }
+.lc .p-preinscripcion .salida {
+  display: grid; gap: 10px; padding: 20px 0 24px; border-bottom: 1px solid var(--filete);
+  grid-template-areas: "hora" "grupo" "detalle" "accion";
+}
+.lc .p-preinscripcion .salida-hora { grid-area: hora; font-family: var(--texto); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.lc .p-preinscripcion .hora-ini { font-size: 2rem; letter-spacing: -0.01em; }
+.lc .p-preinscripcion .hora-fin { font-size: 1.125rem; color: var(--tinta-2); margin-left: 2px; }
+.lc .p-preinscripcion .salida-grupo { grid-area: grupo; }
+.lc .p-preinscripcion .grupo-nombre { font: 800 1.375rem/1 var(--display); text-transform: uppercase; }
+.lc .p-preinscripcion .grupo-edades { color: var(--tinta-2); margin-top: 4px; }
+.lc .p-preinscripcion .salida-detalle { grid-area: detalle; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.lc .p-preinscripcion .dias { display: flex; gap: 3px; }
+.lc .p-preinscripcion .dia {
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  font: 600 0.875rem/1 var(--texto); color: var(--apagado); border: 2px solid transparent;
+}
+.lc .p-preinscripcion .dia--si { color: var(--tinta); font-weight: 700; border-color: var(--escuela-trazo); }
+.lc .p-preinscripcion .plazas { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; white-space: nowrap; }
+.lc .p-preinscripcion .plazas svg { flex: none; }
+.lc .p-preinscripcion .plazas--completo, .lc .p-preinscripcion .plazas--espera { color: var(--tinta-2); }
+.lc .p-preinscripcion .salida-accion { grid-area: accion; }
+.lc .p-preinscripcion .salida-accion .boton { width: 100%; }
+@media (min-width: 900px) {
+  .lc .p-preinscripcion .salida { grid-template-columns: 11.5rem minmax(0, 1fr) auto; grid-template-areas: "hora grupo accion" "hora detalle accion"; align-items: center; column-gap: 24px; padding: 22px 0; }
+  .lc .p-preinscripcion .salida-hora { align-self: start; padding-top: 2px; }
+  .lc .p-preinscripcion .hora-ini { font-size: 2.5rem; }
+  .lc .p-preinscripcion .hora-fin { display: block; margin: 6px 0 0; font-size: 1.125rem; }
+  .lc .p-preinscripcion .salida-accion .boton { width: auto; }
+}
+@media (min-width: 1180px) {
+  .lc .p-preinscripcion .salida { grid-template-columns: 13.5rem minmax(0, 1fr) 27.5rem 19.5rem; grid-template-areas: "hora grupo detalle accion"; }
+  .lc .p-preinscripcion .salida-hora { align-self: center; padding-top: 0; }
+  .lc .p-preinscripcion .hora-fin { display: inline; margin-left: 2px; }
+  .lc .p-preinscripcion .salida-detalle { flex-wrap: nowrap; }
+  .lc .p-preinscripcion .plazas { min-width: 11rem; }
+  .lc .p-preinscripcion .salida-accion { justify-self: end; }
+}
+.lc .p-preinscripcion .hoy { display: table; padding: 1px 6px; margin: 0 0 8px; background: var(--aviso); color: var(--tinta); font: 700 0.8125rem/1.3 var(--texto); letter-spacing: 0.08em; }
+.lc .p-preinscripcion .dia--hoy { background: var(--aviso); border-color: var(--tinta); }
+.lc .p-preinscripcion .plazas--pocas { color: var(--tinta); }
+.lc .p-preinscripcion .salidas { margin-top: 28px; border-top: 1px solid var(--tinta); }
+.lc .p-preinscripcion .salida-nota { grid-column: 1 / -1; color: var(--tinta-2); font-size: 0.9375rem; }
+.lc .p-preinscripcion .elegido { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; font: 600 0.8125rem/1 var(--texto); letter-spacing: 0.08em; text-transform: uppercase; vertical-align: 3px; }
+.lc .p-preinscripcion .elegido svg { color: var(--escuela-trazo); }
+@media (min-width: 900px) {
+  .lc .p-preinscripcion .salida { grid-template-columns: 9rem minmax(0, 1fr) auto; }
+}
+/* Paso 2: primero la fecha; con ella, solo los grupos de su edad */
+.lc .p-preinscripcion .nacimiento { margin: 32px 0 0; padding: 20px 0 24px; min-width: 0; border: 0; border-top: 1px solid var(--tinta); border-bottom: 1px solid var(--filete); }
+.lc .p-preinscripcion .nacimiento legend { float: left; width: 100%; padding: 0 0 6px; font: 800 1.75rem/0.95 var(--display); text-transform: uppercase; }
+.lc .p-preinscripcion .nacimiento legend + * { clear: both; }
+.lc .p-preinscripcion .nacimiento .campo-pista { margin-top: 8px; }
+.lc .p-preinscripcion .nacimiento-fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 20px; }
+.lc .p-preinscripcion .nacimiento-fila .fecha { margin-top: 12px; }
+.lc .p-preinscripcion .edad-estado { margin-top: 16px; font-size: 1.0625rem; }
+.lc .p-preinscripcion .edad-estado strong { font-weight: 700; }
+.lc .p-preinscripcion .grupos-espera { margin-top: 24px; color: var(--tinta-2); font-size: 1.0625rem; max-width: 46ch; }
+.lc .p-preinscripcion #campo-grupos .salidas { margin-top: 20px; }
+.lc .p-preinscripcion .salida-dias { grid-column: 1 / -1; margin: 6px 0 0; padding: 18px 0 0; border: 0; border-top: 1px dashed var(--filete); min-width: 0; }
+.lc .p-preinscripcion .salida-dias legend { float: left; width: 100%; padding: 0; font-weight: 700; font-size: 1.125rem; }
+.lc .p-preinscripcion .salida-dias legend + * { clear: both; padding-top: 4px; }
+.lc .p-preinscripcion .salida-dias:focus { outline: none; }
+.lc .p-preinscripcion .salida-dias:focus-visible { outline: 3px solid var(--foco); outline-offset: 4px; }
+.lc .p-preinscripcion .casillas-dia { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.lc .p-preinscripcion .casilla-dia {
+  position: relative; display: inline-flex; align-items: center; gap: 12px; min-height: 56px; min-width: 9.5rem;
+  padding: 10px 18px 10px 14px; border: 2px solid var(--tinta-2); border-radius: 4px; background: var(--blanco);
+  font-weight: 600; font-size: 1.0625rem; cursor: pointer; transition: background-color 160ms ease-out, border-color 160ms ease-out;
+}
+.lc .p-preinscripcion .casilla-dia input { width: 28px; height: 28px; margin: 0; accent-color: var(--escuela-trazo); cursor: pointer; }
+.lc .p-preinscripcion .casilla-dia:hover { border-color: var(--tinta); }
+.lc .p-preinscripcion .casilla-dia:has(input:checked) { border-color: var(--tinta); background: var(--anden); }
+.lc .p-preinscripcion .casilla-dia:has(input:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
+.lc .p-preinscripcion .casilla-dia input:focus-visible { outline: none; }
+.lc .p-preinscripcion .casilla-hoy { margin-left: 2px; padding: 1px 6px; background: var(--aviso); font: 700 0.75rem/1.3 var(--texto); letter-spacing: 0.08em; }
+.lc .p-preinscripcion .campo--error .casilla-dia { border-color: var(--error); border-width: 3px; }
+.lc .p-preinscripcion .dia-unico { grid-column: 1 / -1; margin-top: 4px; padding-top: 14px; border-top: 1px dashed var(--filete); }
+.lc .p-preinscripcion .vacio { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--tinta); }
+.lc .p-preinscripcion .vacio h2 { font: 800 2rem/0.95 var(--display); text-transform: uppercase; text-wrap: balance; }
+.lc .p-preinscripcion .vacio > p { margin-top: 12px; max-width: 52ch; font-size: 1.0625rem; }
+.lc .p-preinscripcion .otras { margin-top: 16px; border-top: 1px solid var(--filete); }
+.lc .p-preinscripcion .otra { border-bottom: 1px solid var(--filete); }
+.lc .p-preinscripcion .otra a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 16px; padding: 14px 0; color: var(--tinta); text-decoration: none; }
+.lc .p-preinscripcion .otra a:hover .otra-nombre { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.12em; text-decoration-color: var(--escuela-trazo); }
+.lc .p-preinscripcion .otra-nombre { font: 800 1.5rem/1 var(--display); text-transform: uppercase; }
+.lc .p-preinscripcion .otra-dato { grid-column: 1; color: var(--tinta-2); font-size: 0.9375rem; }
+.lc .p-preinscripcion .otra svg { grid-column: 2; grid-row: 1 / span 2; color: var(--escuela-texto); }
+.lc .p-preinscripcion .vacio-contacto { margin-top: 20px; }
+.lc .p-preinscripcion .vacio-contacto a { font-weight: 600; }
+@media (min-width: 1180px) {
+  .lc .p-preinscripcion .salida { grid-template-columns: 9rem minmax(0, 1fr) auto; grid-template-areas: "hora grupo accion" "hora detalle accion"; }
+  .lc .p-preinscripcion .salida-hora { align-self: start; }
+  .lc .p-preinscripcion .hora-fin { display: block; margin: 6px 0 0; }
+  .lc .p-preinscripcion .salida-detalle { flex-wrap: wrap; }
+  .lc .p-preinscripcion .plazas { min-width: 0; }
+}
+
+/* Paso 3: formulario */
+.lc .p-preinscripcion .eleccion { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin-top: 20px; padding: 12px 0; border-top: 1px solid var(--filete); border-bottom: 1px solid var(--filete); font-size: 0.9375rem; }
+.lc .p-preinscripcion .eleccion strong { font-weight: 600; }
+.lc .p-preinscripcion .eleccion a { font-weight: 600; }
+@media (min-width: 1000px) { .lc .p-preinscripcion .eleccion { display: none; } }
+.lc .p-preinscripcion .aviso-espera { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; margin-top: 24px; padding: 16px 18px; border: 2px solid var(--tinta); }
+.lc .p-preinscripcion .aviso-espera svg { margin-top: 2px; }
+.lc .p-preinscripcion .aviso-espera strong { display: block; }
+.lc .p-preinscripcion .bloque-form { margin-top: 52px; padding-top: 20px; border-top: 1px solid var(--tinta); }
+.lc .p-preinscripcion .bloque-form h2 { font: 800 2rem/0.95 var(--display); text-transform: uppercase; }
+.lc .p-preinscripcion .bloque-form > .pista:first-of-type { margin-top: 8px; }
+.lc .p-preinscripcion .campo { margin-top: 28px; }
+.lc .p-preinscripcion .campo-etiqueta, .lc .p-preinscripcion .campo legend { display: block; font-weight: 600; font-size: 1.0625rem; padding: 0; }
+.lc .p-preinscripcion .campo fieldset, .lc .p-preinscripcion fieldset.campo { border: 0; margin: 28px 0 0; padding: 0; min-width: 0; }
+.lc .p-preinscripcion .campo-pista { margin-top: 4px; color: var(--tinta-2); font-size: 0.9375rem; }
+.lc .p-preinscripcion .opcional { font-weight: 400; color: var(--tinta-2); }
+.lc .p-preinscripcion .control {
+  display: block; width: 100%; min-height: 48px; margin-top: 8px; padding: 10px 12px;
+  background: var(--blanco); border: 2px solid var(--tinta-2); border-radius: 4px; font-size: 1.0625rem; line-height: 1.3;
+}
+.lc .p-preinscripcion .control:hover { border-color: var(--tinta); }
+.lc .p-preinscripcion textarea.control { min-height: 120px; resize: vertical; }
+.lc .p-preinscripcion .ancho-20 { max-width: 20rem; }
+.lc .p-preinscripcion .ancho-12 { max-width: 12rem; }
+.lc .p-preinscripcion .fecha { display: flex; gap: 12px; margin-top: 8px; }
+.lc .p-preinscripcion .fecha label { font-size: 0.9375rem; color: var(--tinta-2); }
+.lc .p-preinscripcion .fecha .control { margin-top: 4px; }
+.lc .p-preinscripcion .fecha-dia, .lc .p-preinscripcion .fecha-mes { width: 4.25rem; }
+.lc .p-preinscripcion .fecha-anio { width: 6rem; }
+.lc .p-preinscripcion .opciones { display: flex; gap: 12px 28px; flex-wrap: wrap; margin-top: 10px; }
+.lc .p-preinscripcion .opcion { position: relative; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; font-size: 1.0625rem; }
+.lc .p-preinscripcion .opcion input { width: 28px; height: 28px; margin: 0; accent-color: var(--escuela-trazo); cursor: pointer; }
+.lc .p-preinscripcion .marca-casilla { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 16px; cursor: pointer; font-size: 1.0625rem; }
+.lc .p-preinscripcion .marca-casilla input { width: 28px; height: 28px; margin: 0; accent-color: var(--escuela-trazo); cursor: pointer; }
+.lc .p-preinscripcion .contador { display: block; margin-top: 6px; color: var(--tinta-2); font-size: 0.875rem; text-align: right; font-variant-numeric: tabular-nums; }
+.lc .p-preinscripcion .desplegable { margin-top: 12px; border-top: 1px solid var(--filete); border-bottom: 1px solid var(--filete); }
+.lc .p-preinscripcion .desplegable summary {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 0; cursor: pointer; list-style: none;
+  color: var(--escuela-texto); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em;
+}
+.lc .p-preinscripcion .desplegable summary::-webkit-details-marker { display: none; }
+.lc .p-preinscripcion .desplegable summary svg { flex: none; transition: transform 160ms ease-out; }
+.lc .p-preinscripcion .desplegable[open] summary svg { transform: rotate(90deg); }
+.lc .p-preinscripcion .normas { margin: 4px 0 16px; padding: 16px 18px; background: var(--anden); }
+.lc .p-preinscripcion .aviso-edad { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; margin-top: 12px; padding: 14px 16px; border: 2px solid var(--tinta); }
+.lc .p-preinscripcion .aviso-edad svg { margin-top: 2px; }
+.lc .p-preinscripcion .aviso-edad a { font-weight: 600; }
+.lc .p-preinscripcion .normas p { font-weight: 600; }
+.lc .p-preinscripcion .normas ol { margin-top: 12px; padding-left: 1.4em; list-style: decimal; }
+.lc .p-preinscripcion .normas li + li { margin-top: 8px; }
+.lc .p-preinscripcion .normas li::marker { font-weight: 700; font-variant-numeric: tabular-nums; }
+.lc .p-preinscripcion .firma { display: block; width: 100%; height: 180px; margin-top: 8px; background: var(--blanco); border: 2px solid var(--tinta-2); border-radius: 4px; touch-action: none; cursor: crosshair; }
+.lc .p-preinscripcion .firma-pie { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; }
+.lc .p-preinscripcion .boton--texto { background: none; border: 0; min-height: 44px; padding: 0; color: var(--escuela-texto); font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; }
+.lc .p-preinscripcion .enviar { margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--tinta); }
+.lc .p-preinscripcion .enviar .boton { width: 100%; }
+@media (min-width: 600px) { .lc .p-preinscripcion .enviar .boton { width: auto; } }
+
+/* Errores: resumen arriba y mensaje en el campo; forma y texto, no solo color */
+.lc .p-preinscripcion .errores { margin: 8px 0 32px; padding: 18px 20px 20px; border: 3px solid var(--error); }
+.lc .p-preinscripcion .errores:focus { outline: 3px solid var(--tinta); outline-offset: 3px; }
+.lc .p-preinscripcion .errores h2 { display: flex; align-items: center; gap: 10px; font: 800 1.75rem/1 var(--display); text-transform: uppercase; }
+.lc .p-preinscripcion .errores ul { margin-top: 12px; }
+.lc .p-preinscripcion .errores li + li { margin-top: 6px; }
+.lc .p-preinscripcion .errores a { color: var(--error); font-weight: 600; text-decoration-thickness: 2px; }
+.lc .p-preinscripcion .campo-error { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; color: var(--error); font-weight: 600; }
+.lc .p-preinscripcion .campo-error svg { flex: none; margin-top: 3px; }
+.lc .p-preinscripcion .campo--error .control, .lc .p-preinscripcion .campo--error .firma { border-color: var(--error); border-width: 3px; }
+
+/* Paso 4: confirmación */
+.lc .p-preinscripcion .banda { margin-inline: calc(-1 * var(--m)); padding: clamp(40px, 7vw, 88px) var(--m); background: var(--tarifa-fondo); color: var(--tarifa-tinta); --foco: var(--tarifa-tinta); }
+.lc .p-preinscripcion .banda .pregunta-titulo { max-width: 12ch; font-size: clamp(44px, 13vw, 88px); }
+@media (min-width: 900px) { .lc .p-preinscripcion .banda .pregunta-titulo { font-size: clamp(88px, 8vw, 120px); } }
+.lc .p-preinscripcion .banda-ref { margin-top: 24px; font-size: 1.125rem; }
+.lc .p-preinscripcion .banda-ref strong { display: block; font: 900 clamp(2.5rem, 6vw, 4rem)/1 var(--display); letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+.lc .p-preinscripcion .banda-estado { margin-top: 20px; max-width: 46ch; font-size: 1.125rem; }
+.lc .p-preinscripcion .fin-rejilla { display: grid; gap: 56px; margin-top: 56px; }
+@media (min-width: 1000px) { .lc .p-preinscripcion .fin-rejilla { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); } .lc .p-preinscripcion .fin-pasos { grid-column: 1 / 7; } .lc .p-preinscripcion .fin-resumen { grid-column: 8 / 13; } }
+.lc .p-preinscripcion .fin-rejilla h2 { font: 800 2.25rem/0.95 var(--display); text-transform: uppercase; margin-bottom: 20px; }
+.lc .p-preinscripcion .ruta { position: relative; padding: 18px 0; }
+.lc .p-preinscripcion .ruta::before { content: ""; position: absolute; left: 0; top: 0; width: 24px; height: 6px; background: var(--escuela-trazo); }
+.lc .p-preinscripcion .ruta-sede { position: relative; padding: 0 0 28px 44px; }
+.lc .p-preinscripcion .ruta-sede::before { content: ""; position: absolute; left: 9px; top: 0; bottom: 0; width: 6px; background: var(--escuela-trazo); }
+.lc .p-preinscripcion .ruta-sede:first-child::before { top: -18px; }
+.lc .p-preinscripcion .ruta-sede:last-child::before { bottom: auto; height: 12px; }
+.lc .p-preinscripcion .ruta-sede:last-child { padding-bottom: 0; }
+.lc .p-preinscripcion .ruta-sede::after { content: ""; position: absolute; left: 2px; top: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--blanco); border: 4px solid var(--escuela-trazo); }
+.lc .p-preinscripcion .ruta-sede:first-child::after { background: var(--escuela-trazo); }
+.lc .p-preinscripcion .ruta-nombre { display: block; font: 800 1.5rem/1 var(--display); text-transform: uppercase; }
+.lc .p-preinscripcion .ruta-dir { display: block; margin-top: 6px; color: var(--tinta-2); }
+.lc .p-preinscripcion .ficha { border-top: 1px solid var(--tinta); }
+.lc .p-preinscripcion .ficha-fila { display: grid; gap: 2px; padding: 12px 0 14px; border-bottom: 1px solid var(--filete); }
+.lc .p-preinscripcion .ficha dt { font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); }
+.lc .p-preinscripcion .ficha dd { font-weight: 600; }
+@media (min-width: 600px) { .lc .p-preinscripcion .ficha-fila { grid-template-columns: 9rem minmax(0, 1fr); gap: 16px; align-items: baseline; } }
+.lc .p-preinscripcion .fin-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-top: 32px; }
+
+/* Resumen lateral: lo elegido se conserva y se puede cambiar */
+.lc .p-preinscripcion .resumen h2 { font: 800 1.75rem/1 var(--display); text-transform: uppercase; padding-bottom: 14px; border-bottom: 1px solid var(--tinta); }
+.lc .p-preinscripcion .resumen-fila { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 14px 0; border-bottom: 1px solid var(--filete); }
+.lc .p-preinscripcion .resumen-fila dt { grid-column: 1; font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); }
+.lc .p-preinscripcion .resumen-fila dd { grid-column: 1; font-weight: 600; }
+.lc .p-preinscripcion .resumen-fila dd.resumen-vacio { font-weight: 400; color: var(--tinta-2); }
+.lc .p-preinscripcion .resumen-fila .resumen-cambiar { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.lc .p-preinscripcion .resumen-cambiar a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) {
+  .lc .p-preinscripcion .atras svg, .lc .p-preinscripcion .sel-circulo, .lc .p-preinscripcion .casilla-dia,
+  .lc .p-preinscripcion .desplegable summary svg { transition: none; }
+}

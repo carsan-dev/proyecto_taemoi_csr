@@ -1,0 +1,411 @@
+@let s = pagina.sitio();
+@if (pagina.estado() === 'no-publicada') {
+  @defer (on immediate) {
+    <app-web-sin-publicar />
+  }
+} @else if (s) {
+  <app-lc-marco [sitio]="s" pagina="otra">
+    <div class="p-preinscripcion">
+      <div class="flujo" [class.flujo--fin]="paso() === 4">
+        <div class="envoltura flujo-rejilla">
+          <div class="flujo-principal">
+            @if (paso() !== 4) {
+              @let a = atras();
+              <a class="atras" [routerLink]="a.ruta" [queryParams]="a.consulta" [fragment]="a.fragmento"><ng-container *ngTemplateOutlet="flechaIzq" />{{ t.atras }}</a>
+              @let pr = pasos();
+              <div class="progreso">
+                <p class="rotulo progreso-texto">{{ pr.texto }}</p>
+                <ol class="progreso-linea" [style]="pr.estilo" aria-hidden="true">
+                  <span class="progreso-hecho"></span>
+                  @for (x of pr.lista; track x.nombre) {
+                    <li class="progreso-paso" [class.progreso-paso--hecho]="x.hecho" [class.progreso-paso--ahora]="x.ahora"><span class="progreso-circulo"></span>{{ x.nombre }}</li>
+                  }
+                </ol>
+              </div>
+            }
+
+            @switch (paso()) {
+              <!-- Paso 1: pueblo -->
+              @case (1) {
+                <form novalidate (submit)="enviarPueblo($event)">
+                  <ng-container *ngTemplateOutlet="resumenErrores" />
+                  <fieldset class="pregunta" id="campo-sede" aria-describedby="sede-pista" [class.campo--error]="error('sede')">
+                    <legend><h1 class="pregunta-titulo" tabindex="-1">{{ t.tituloPueblo }}</h1></legend>
+                    <p class="pista" id="sede-pista">{{ t.pistaPueblo }}</p>
+                    <div id="sede-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'sede' }" /></div>
+                    <ol class="selector-linea">
+                      @for (o of opciones(); track o.clave) {
+                        <li class="sel">
+                          <input type="radio" name="sede" [id]="'s-' + o.clave" [value]="o.clave" [checked]="sedeMarcada() === o.clave" (change)="sedeMarcada.set(o.clave)" [attr.aria-invalid]="invalido('s-' + o.clave)">
+                          <label [for]="'s-' + o.clave">
+                            <span class="sel-circulo" aria-hidden="true"></span>
+                            <span class="sel-nombre">{{ o.nombre }}<span class="sel-elegida" aria-hidden="true">{{ t.elegida }}</span></span>
+                            <span class="sel-dato">{{ o.dato }}@if (o.proxima; as p) {<span> · {{ p.texto }} <span class="hora">{{ p.hora }}</span></span>}</span>
+                          </label>
+                        </li>
+                      }
+                    </ol>
+                  </fieldset>
+                  <button class="boton continuar" type="submit">{{ t.continuar }}<ng-container *ngTemplateOutlet="flecha" /></button>
+                </form>
+              }
+
+              <!-- Paso 2: grupo -->
+              @case (2) {
+                @let sd = sede()!;
+                <form novalidate (submit)="enviarGrupo($event)">
+                  <ng-container *ngTemplateOutlet="resumenErrores" />
+                  <h1 class="pregunta-titulo" tabindex="-1">{{ t.tituloGrupo }}</h1>
+                  <p class="contexto">
+                    <span>{{ t.en }} <strong>{{ sd.nombre }}</strong>@if (sd.lugar) {<span> · {{ sd.lugar }}</span>}</span>
+                    @if (!una()) {
+                      <a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(1)">{{ t.cambiarDePueblo }}</a>
+                    }
+                  </p>
+                  <fieldset class="nacimiento" id="campo-fecha" aria-describedby="fecha-pista fecha-error" [class.campo--error]="error('fecha')">
+                    <legend>{{ t.fechaLeyenda }}</legend>
+                    <p class="campo-pista" id="fecha-pista">{{ t.fechaPista }}</p>
+                    <div class="nacimiento-fila">
+                      <div><ng-container *ngTemplateOutlet="campoFecha" /></div>
+                      <button class="boton boton--secundario" type="button" id="ver-grupos" (click)="verGrupos()">{{ t.verGrupos }}</button>
+                    </div>
+                  </fieldset>
+                  <p class="edad-estado" id="edad-estado" role="status">@if (estadoEdad(); as e) {<span>{{ t.cumpleEsteAnio }} <strong>{{ e.anios }}</strong>{{ e.resto }}</span>}</p>
+                  <div id="campo-grupos" [class.campo--error]="error('grupos')">
+                    <div id="grupos-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'grupos' }" /></div>
+                    @if (filas(); as filas) {
+                      @if (filas.length) {
+                        <ol class="salidas" [attr.aria-label]="rellenar(t.gruposPara, { x: sd.nombre, n: edad()! })">
+                          @for (f of filas; track f.clave) {
+                            @let elegida = esElegida(f);
+                            <li class="salida" [class.salida--elegida]="elegida">
+                              <p class="salida-hora">@if (f.hoy) {<mark class="hoy">{{ t.hoy }}</mark>}<span class="hora-ini">{{ f.salida.inicio }}</span><span class="hora-fin">–{{ f.salida.fin }}</span></p>
+                              <div class="salida-grupo">
+                                <p class="grupo-nombre">{{ f.grupo }}@if (elegida) {<span class="elegido"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2 7 10.4l4.2-4.6" stroke="#FFFFFF" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ t.elegido }}</span>}</p>
+                                @if (f.edades) {<p class="grupo-edades">{{ f.edades }}</p>}
+                              </div>
+                              <div class="salida-detalle">
+                                <p class="dias-p">
+                                  <span class="dias" aria-hidden="true">
+                                    @for (d of f.dias; track d.letra) {
+                                      <span class="dia" [class.dia--si]="d.si" [class.dia--hoy]="d.si && d.hoy">{{ d.letra }}</span>
+                                    }
+                                  </span>
+                                  <span class="oculto">{{ f.diasTexto }}</span>
+                                </p>
+                                @if (f.plazas) {
+                                  <p [class]="'plazas plazas--' + f.plazas"><ng-container *ngTemplateOutlet="icono; context: { $implicit: f.plazas }" /><span class="cifras">{{ f.plazasTexto }}</span></p>
+                                }
+                              </div>
+                              @if (!elegida) {
+                                <div class="salida-accion">
+                                  <button class="boton" [class.boton--secundario]="!f.libre" type="button" [id]="'g-' + f.clave" [attr.aria-label]="f.etiqueta" (click)="elegir(f)">{{ f.boton }}<ng-container *ngTemplateOutlet="flecha" /></button>
+                                </div>
+                              }
+                              @if (!f.libre) {
+                                <p class="salida-nota">{{ t.notaEspera }}</p>
+                              }
+                              @if (elegida) {
+                                @if (casillas().length > 1) {
+                                  <fieldset class="salida-dias" id="campo-dias" tabindex="-1" aria-describedby="dias-pista dias-error" [class.campo--error]="error('dias')">
+                                    <legend>{{ f.libre ? t.queDias : t.queDiasEspera }}</legend>
+                                    <p class="campo-pista" id="dias-pista">{{ t.diasPista }}</p>
+                                    <div id="dias-error" aria-live="assertive"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'dias' }" /></div>
+                                    <div class="casillas-dia">
+                                      @for (c of casillas(); track c.numero; let primera = $first) {
+                                        <label class="casilla-dia"><input type="checkbox" name="dia-semana" [value]="c.numero" [id]="primera ? 'd-primero' : null" [checked]="diasMarcados().includes(c.numero)" (change)="marcarDia(c.numero, $any($event.target).checked)" [attr.aria-invalid]="primera ? invalido('d-primero') : null">{{ c.nombre }}@if (c.hoy) {<span class="casilla-hoy">{{ t.hoy }}</span>}</label>
+                                      }
+                                    </div>
+                                  </fieldset>
+                                } @else if (casillas().length === 1) {
+                                  <p class="dia-unico" id="campo-dias" tabindex="-1">{{ t.diaUnico }} <strong>{{ rellenar(t.elDia, { x: casillas()[0].nombre.toLowerCase() }) }}</strong>.</p>
+                                }
+                              }
+                            </li>
+                          }
+                        </ol>
+                      } @else if (vacio(); as v) {
+                        <div class="vacio">
+                          <h2>{{ v.titulo }}</h2>
+                          @if (v.otras.length) {
+                            <p>{{ t.vacioOtras }}</p>
+                            <ul class="otras">
+                              @for (o of v.otras; track o.parametro) {
+                                <li class="otra">
+                                  <a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(2, { sede: o.parametro, grupo: null, dias: null })">
+                                    <span class="otra-nombre">{{ o.nombre }}</span>
+                                    <span class="otra-dato">{{ o.dato }}</span>
+                                    <ng-container *ngTemplateOutlet="flecha" />
+                                  </a>
+                                </li>
+                              }
+                            </ul>
+                          } @else {
+                            <p>{{ v.texto }}</p>
+                          }
+                          @if (v.telefono; as tel) {
+                            <p class="vacio-contacto">{{ tel.antes }} <a class="cifras" [href]="tel.enlace">{{ tel.texto }}</a> {{ t.vacioLlamarFin }}</p>
+                          }
+                          <p class="vacio-contacto"><a href="#fecha-pista" (click)="revisarFecha($event)">{{ t.revisarFecha }}</a></p>
+                        </div>
+                      }
+                    } @else {
+                      <p class="grupos-espera">{{ rellenar(t.esperaFecha, { x: sd.nombre }) }}</p>
+                    }
+                  </div>
+                  @if (!vacio()) {
+                    <div class="continuar"><button class="boton" type="submit">{{ t.continuar }}<ng-container *ngTemplateOutlet="flecha" /></button></div>
+                  }
+                </form>
+              }
+
+              <!-- Paso 3: datos y firma -->
+              @case (3) {
+                @let sd = sede()!;
+                @let sl = salida()!;
+                @let men = menor();
+                <form novalidate (submit)="enviarDatos($event)">
+                  <ng-container *ngTemplateOutlet="resumenErrores" />
+                  <h1 class="pregunta-titulo" tabindex="-1">{{ t.tituloDatos }}</h1>
+                  <p class="eleccion"><strong>{{ sd.nombre }}</strong><span>{{ resumen().grupo }} · {{ resumen().horario }}</span><a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(2)">{{ t.cambiar }}<span class="oculto">{{ t.cambiarGrupoDias }}</span></a></p>
+                  @if (espera()) {
+                    <div class="aviso-espera" role="note">
+                      <svg width="22" height="22" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M9 5.2V9l2.8 1.8" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round"/></svg>
+                      <p><strong>{{ t.avisoEsperaTitulo }}</strong>{{ rellenar(t.avisoEsperaTexto, { grupo: sl.grupo.nombre, dias: textoDias(dias()) }) }}</p>
+                    </div>
+                  }
+                  <p class="pista">{{ t.pistaDatos }}</p>
+
+                  <section class="bloque-form" aria-labelledby="b-alumno">
+                    <h2 id="b-alumno">{{ t.bloqueAlumno }}</h2>
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'nombre', etiqueta: t.nombre, auto: 'given-name', ancho: 'ancho-20' } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'apellidos', etiqueta: t.apellidos, auto: 'family-name' } }" />
+                    <fieldset class="campo" id="campo-fecha" aria-describedby="fecha-pista fecha-error" [class.campo--error]="error('fecha')">
+                      <legend>{{ t.fechaNacimiento }}</legend>
+                      <p class="campo-pista" id="fecha-pista">{{ t.fechaPistaDatos }}</p>
+                      <ng-container *ngTemplateOutlet="campoFecha" />
+                      <div id="aviso-edad" role="status">
+                        @if (avisoEdad(); as aviso) {
+                          <div class="aviso-edad"><ng-container *ngTemplateOutlet="iconoError" /><p>{{ aviso }} <a [routerLink]="['/preinscripcion']" [queryParams]="consultaElegirOtro()">{{ t.avisoEdadEnlace }}</a></p></div>
+                        }
+                      </div>
+                    </fieldset>
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'dni', etiqueta: t.dni, opcional: men ? t.opcionalMenores : '', max: 9, ancho: 'ancho-12', pista: t.dniPista } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'direccion', etiqueta: t.direccion, auto: 'street-address' } }" />
+                    <fieldset class="campo" id="campo-discapacidad" aria-describedby="discapacidad-error" [class.campo--error]="error('discapacidad')">
+                      <legend>{{ t.discapacidad }}</legend>
+                      <div id="discapacidad-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'discapacidad' }" /></div>
+                      <div class="opciones">
+                        <label class="opcion"><input type="radio" name="discapacidad" id="discapacidad" value="si" [checked]="datos().discapacidad === 'si'" (change)="actualizar('discapacidad', 'si')" [attr.aria-invalid]="invalido('discapacidad')">{{ t.si }}</label>
+                        <label class="opcion"><input type="radio" name="discapacidad" value="no" [checked]="datos().discapacidad === 'no'" (change)="actualizar('discapacidad', 'no')">{{ t.no }}</label>
+                      </div>
+                    </fieldset>
+                  </section>
+
+                  @if (men) {
+                    <section class="bloque-form" id="bloque-tutor" aria-labelledby="b-tutor">
+                      <h2 id="b-tutor">{{ t.bloqueTutor }}</h2>
+                      <p class="pista">{{ t.pistaTutor }}</p>
+                      <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'tutorNombre', etiqueta: t.tutorNombre, auto: 'name' } }" />
+                      <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'tutorDni', etiqueta: t.dni, max: 9, ancho: 'ancho-12' } }" />
+                    </section>
+                  }
+
+                  <section class="bloque-form" aria-labelledby="b-contacto">
+                    <h2 id="b-contacto">{{ t.bloqueContacto }}</h2>
+                    <p class="pista">{{ espera() ? t.pistaContactoEspera : t.pistaContacto }}</p>
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'telefono', etiqueta: t.telefono, tipo: 'tel', auto: 'tel', modo: 'tel', ancho: 'ancho-20', pista: t.telefonoPista } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'telefono2', etiqueta: t.telefono2, opcional: t.opcional, tipo: 'tel', modo: 'tel', ancho: 'ancho-20' } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'email', etiqueta: t.email, tipo: 'email', auto: 'email', pista: t.emailPista } }" />
+                  </section>
+
+                  <section class="bloque-form" aria-labelledby="b-obs">
+                    <h2 id="b-obs">{{ t.bloqueHorario }}</h2>
+                    <div class="campo" id="campo-observaciones" [class.campo--error]="error('observaciones')">
+                      <label class="campo-etiqueta" for="observaciones">{{ t.observaciones }} <span class="opcional">{{ t.opcional }}</span></label>
+                      <p class="campo-pista" id="observaciones-pista">{{ t.observacionesPista }}</p>
+                      <div id="observaciones-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'observaciones' }" /></div>
+                      <textarea class="control" id="observaciones" name="observaciones" rows="4" [attr.maxlength]="maxObservaciones" aria-describedby="observaciones-pista observaciones-error observaciones-contador" [value]="datos().observaciones" (input)="escribir('observaciones', $event)" [attr.aria-invalid]="invalido('observaciones')"></textarea>
+                      <span class="contador" id="observaciones-contador" aria-live="polite">{{ datos().observaciones.length }}/{{ maxObservaciones }}</span>
+                    </div>
+                  </section>
+
+                  <section class="bloque-form" aria-labelledby="b-normas">
+                    <h2 id="b-normas">{{ t.bloqueNormas }}</h2>
+                    <div class="campo" id="campo-normas" [class.campo--error]="error('normas')">
+                      <p class="campo-pista" id="normas-pista">{{ t.normasPista }}</p>
+                      @if (normas(); as n) {
+                        @if (n.estado === 'listo') {
+                          <details class="desplegable" id="normas-texto">
+                            <summary><ng-container *ngTemplateOutlet="iconoAbrir" />{{ rellenar(t.leerNormas, { n: n.normas.length }) }}</summary>
+                            <div class="normas">
+                              @if (n.importes) {<p>{{ n.importes }}</p>}
+                              <ol>
+                                @for (norma of n.normas; track $index) {<li>{{ norma }}</li>}
+                              </ol>
+                            </div>
+                          </details>
+                        }
+                      }
+                      <div id="normas-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'normas' }" /></div>
+                      <label class="marca-casilla"><input type="checkbox" id="normas" name="normas" aria-describedby="normas-pista normas-error" [checked]="datos().normas" (change)="actualizar('normas', $any($event.target).checked)" [attr.aria-invalid]="invalido('normas')"><span>{{ t.aceptoNormas }}</span></label>
+                    </div>
+                    <label class="marca-casilla"><input type="checkbox" id="fotos" name="fotos" [checked]="datos().fotos" (change)="actualizar('fotos', $any($event.target).checked)"><span>{{ t.fotos }} <span class="opcional">{{ t.opcional }}</span></span></label>
+                  </section>
+
+                  <section class="bloque-form" aria-labelledby="b-firma">
+                    <h2 id="b-firma">{{ t.bloqueFirma }}</h2>
+                    <p class="pista" id="firma-quien">{{ men ? t.firmaTutor : t.firmaAlumno }}</p>
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'firmante', etiqueta: t.firmante, auto: 'name' } }" />
+                    <div class="campo" id="campo-firma" [class.campo--error]="error('firma')">
+                      <p class="campo-etiqueta" id="firma-etiqueta">{{ t.firma }}</p>
+                      <p class="campo-pista" id="firma-pista">{{ t.firmaPista }}</p>
+                      <div id="firma-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'firma' }" /></div>
+                      <canvas #lienzo class="firma" id="firma" role="img" tabindex="-1" aria-labelledby="firma-etiqueta" aria-describedby="firma-quien firma-pista firma-error" [attr.aria-invalid]="invalido('firma')" (pointerdown)="empezarTrazo($event)" (pointermove)="seguirTrazo($event)" (pointerup)="terminarTrazo()" (pointercancel)="terminarTrazo()"></canvas>
+                      <div class="firma-pie"><span class="opcional" id="firma-estado" aria-live="polite">{{ firmado() ? t.firmado : t.sinFirmar }}</span><button class="boton--texto" type="button" id="borrar-firma" (click)="borrarFirma()">{{ t.borrarFirma }}</button></div>
+                    </div>
+                  </section>
+
+                  <div class="enviar"><button class="boton" type="submit" [attr.aria-disabled]="enviando() ? true : null" [attr.aria-busy]="enviando() ? true : null">{{ espera() ? t.enviarEspera : t.enviar }}<ng-container *ngTemplateOutlet="flecha" /></button></div>
+                </form>
+              }
+
+              <!-- Paso 4: confirmación -->
+              @case (4) {
+                @if (fin(); as f) {
+                  <section class="banda" aria-labelledby="fin-titulo">
+                    <h1 class="pregunta-titulo" id="fin-titulo" tabindex="-1">{{ f.titulo }}</h1>
+                    <p class="banda-ref">{{ t.referencia }}<strong>{{ f.referencia }}</strong></p>
+                    <p class="banda-estado">{{ f.estado }}</p>
+                  </section>
+                  <div class="fin-rejilla">
+                    <section class="fin-pasos" aria-labelledby="fin-ahora">
+                      <h2 id="fin-ahora">{{ t.queAhora }}</h2>
+                      <ol class="ruta">
+                        @for (p of f.pasos; track p.titulo) {
+                          <li class="ruta-sede"><span class="ruta-nombre">{{ p.titulo }}</span><span class="ruta-dir">{{ p.texto }}</span></li>
+                        }
+                      </ol>
+                      <div class="fin-acciones">
+                        <a class="boton boton--secundario" [href]="f.documento">{{ t.descargar }}</a>
+                        <a class="enlace-flecha" routerLink="/" [queryParams]="consultaVolver()">{{ t.volverInicio }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                      </div>
+                    </section>
+                    <section class="fin-resumen" aria-labelledby="fin-res">
+                      <h2 id="fin-res">{{ t.resumen }}</h2>
+                      <dl class="ficha">
+                        @for (fila of f.ficha; track fila.rotulo) {
+                          <div class="ficha-fila"><dt>{{ fila.rotulo }}</dt><dd>{{ fila.texto }}@if (fila.resto) {<br><span class="opcional">{{ fila.resto }}</span>}</dd></div>
+                        }
+                      </dl>
+                    </section>
+                  </div>
+                }
+              }
+            }
+          </div>
+
+          <!-- Resumen lateral -->
+          @if (paso() !== 4) {
+            @let r = resumen();
+            @let sdr = sede();
+            <aside class="resumen" aria-labelledby="resumen-titulo">
+              <h2 id="resumen-titulo">{{ t.resumenTitulo }}</h2>
+              <dl>
+                <div class="resumen-fila">
+                  <dt>{{ t.resumenPueblo }}</dt>
+                  @if (sdr) {<dd>{{ sdr.nombre }}@if (sdr.lugar) {<br><span class="opcional">{{ sdr.lugar }}</span>}</dd>} @else {<dd class="resumen-vacio">{{ t.sinElegir }}</dd>}
+                  @if (sdr && !una() && paso() > 1) {
+                    <dd class="resumen-cambiar"><a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(1)">{{ t.cambiar }}<span class="oculto"> {{ t.cambiarPueblo }}</span></a></dd>
+                  }
+                </div>
+                @if (paso() >= 2) {
+                  <div class="resumen-fila">
+                    <dt>{{ t.resumenEdad }}</dt>
+                    @if (r.edad) {<dd>{{ r.edad }}</dd>} @else {<dd class="resumen-vacio">{{ t.sinElegir }}</dd>}
+                  </div>
+                }
+                <div class="resumen-fila">
+                  <dt>{{ t.resumenGrupo }}</dt>
+                  @if (r.grupo) {<dd>{{ r.grupo }}</dd>} @else {<dd class="resumen-vacio">{{ t.sinElegir }}</dd>}
+                  @if (r.grupo && paso() > 2) {
+                    <dd class="resumen-cambiar"><a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(2)">{{ t.cambiar }}<span class="oculto"> {{ t.cambiarGrupo }}</span></a></dd>
+                  }
+                </div>
+                <div class="resumen-fila">
+                  <dt>{{ t.resumenDias }}</dt>
+                  @if (r.horario) {<dd>{{ r.horario }}@if (r.resto) {<br><span class="opcional">{{ r.resto }}</span>}</dd>} @else {<dd class="resumen-vacio">{{ t.sinElegir }}</dd>}
+                  @if (r.grupo && paso() > 2) {
+                    <dd class="resumen-cambiar"><a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(2)">{{ t.cambiar }}<span class="oculto"> {{ t.cambiarDias }}</span></a></dd>
+                  }
+                </div>
+                @if (r.plaza) {
+                  <div class="resumen-fila"><dt>{{ t.resumenPlaza }}</dt><dd>{{ r.plaza }}</dd></div>
+                }
+              </dl>
+              @if (r.tarifa) {<p class="resumen-tarifa">{{ r.tarifa }}</p>}
+            </aside>
+          }
+        </div>
+      </div>
+    </div>
+  </app-lc-marco>
+}
+
+<!-- Resumen de errores: arriba del paso; cada uno lleva a su campo -->
+<ng-template #resumenErrores>
+  <div id="errores">
+    @if (errores().length) {
+      <div class="errores" role="alert" tabindex="-1" aria-labelledby="errores-titulo">
+        <h2 id="errores-titulo"><svg width="24" height="24" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="currentColor"/><path d="M9 4.8v5.2" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="13" r="1.2" fill="#FFFFFF"/></svg>{{ tituloErrores() }}</h2>
+        <ul>
+          @for (e of errores(); track $index) {
+            <li>@if (e.id) {<a [href]="'#' + e.id" (click)="irAlCampo($event, e.id)">{{ e.msg }}</a>} @else {<span>{{ e.msg }}</span>}</li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+</ng-template>
+
+<ng-template #errorCampo let-campo>
+  @if (error(campo); as e) {
+    <p class="campo-error"><ng-container *ngTemplateOutlet="iconoError" /><span><span class="oculto">{{ t.error }}</span>{{ e.msg }}</span></p>
+  }
+</ng-template>
+
+<ng-template #campoTexto let-o>
+  <div class="campo" [id]="'campo-' + o.id" [class.campo--error]="error(o.id)">
+    <label class="campo-etiqueta" [for]="o.id">{{ o.etiqueta }}@if (o.opcional) {<span class="opcional"> {{ o.opcional }}</span>}</label>
+    @if (o.pista) {<p class="campo-pista" [id]="o.id + '-pista'">{{ o.pista }}</p>}
+    <div [id]="o.id + '-error'"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: o.id }" /></div>
+    <input class="control" [class]="o.ancho ?? ''" [id]="o.id" [name]="o.id" [type]="o.tipo ?? 'text'" [attr.autocomplete]="o.auto ?? null" [attr.inputmode]="o.modo ?? null" [attr.maxlength]="o.max ?? null" spellcheck="false" [value]="valor(o.id)" (input)="escribir(o.id, $event)" [attr.aria-describedby]="(o.pista ? o.id + '-pista ' : '') + o.id + '-error'" [attr.aria-invalid]="invalido(o.id)">
+  </div>
+</ng-template>
+
+<ng-template #campoFecha>
+  <div id="fecha-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'fecha' }" /></div>
+  <div class="fecha">
+    <div><label for="dia">{{ t.dia }}</label><input class="control fecha-dia" id="dia" name="dia" inputmode="numeric" maxlength="2" autocomplete="bday-day" [value]="datos().dia" (input)="escribir('dia', $event)" [attr.aria-invalid]="invalido('dia')"></div>
+    <div><label for="mes">{{ t.mes }}</label><input class="control fecha-mes" id="mes" name="mes" inputmode="numeric" maxlength="2" autocomplete="bday-month" [value]="datos().mes" (input)="escribir('mes', $event)" [attr.aria-invalid]="invalido('mes')"></div>
+    <div><label for="anio">{{ t.anio }}</label><input class="control fecha-anio" id="anio" name="anio" inputmode="numeric" maxlength="4" autocomplete="bday-year" [value]="datos().anio" (input)="escribir('anio', $event)" [attr.aria-invalid]="invalido('anio')"></div>
+  </div>
+</ng-template>
+
+<ng-template #iconoError><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7.5" fill="currentColor"/><path d="M9 4.8v5.2" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="13" r="1.2" fill="#FFFFFF"/></svg></ng-template>
+<ng-template #iconoAbrir><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></ng-template>
+<ng-template #flecha><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></ng-template>
+<ng-template #flechaIzq><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></ng-template>
+<ng-template #icono let-estado>
+  @switch (estado) {
+    @case ('quedan') {
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="#F2C230" stroke="#101418" stroke-width="1.5"/></svg>
+    }
+    @case ('lleno') {
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M4.1 13.9l9.8-9.8" stroke="currentColor" stroke-width="1.75"/></svg>
+    }
+    @case ('espera') {
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M9 5.2V9l2.8 1.8" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round"/></svg>
+    }
+  }
+</ng-template>
