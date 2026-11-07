@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -423,6 +424,57 @@ class AltaEscuelaIntegrationTest extends MySqlIntegrationTest {
 				.contains("MIEMBROS ROL_DADO usuario=#" + existente.getId() + " rol=PROPIETARIO"));
 	}
 
+	@Test
+	void alta_conInvitacionPendienteDeOtraEscuela_reenviaLaInvitacionConEstaEscuela() throws Exception {
+		// Cuenta invitada (sin aceptar) como profesora en otra escuela, con su enlace vivo.
+		String slugOtra = "it-f42-pend-otra-" + marca;
+		jdbc.update("INSERT INTO organizacion (slug, nombre) VALUES (?, 'Escuela IT F42 pendiente otra')", slugOtra);
+		long otra = jdbc.queryForObject("SELECT id FROM organizacion WHERE slug = ?", Long.class, slugOtra);
+		String correo = "it-f42-pendiente-" + marca + "@example.test";
+		Usuario pendiente = TenantContext.calcularCon(ORG1, () -> {
+			Usuario usuario = new Usuario();
+			usuario.setNombre("Pendiente");
+			usuario.setApellidos("Ficticia");
+			usuario.setEmail(correo);
+			usuario.setAuthProvider(AuthProvider.LOCAL);
+			return usuarios.save(usuario);
+		});
+		String hashViejo = "hash-viejo-" + marca;
+		assertEquals(1, jdbc.update("""
+				UPDATE usuario SET reset_token_hash = ?, reset_token_expires_at = DATE_ADD(NOW(), INTERVAL 7 DAY),
+				       ultima_organizacion_id = ? WHERE id = ?""", hashViejo, otra, pendiente.getId()));
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'PROFESOR')",
+				pendiente.getId(), otra);
+
+		String nombre = "Escuela IT Pendiente " + marca;
+		JsonNode creada = leer(alta(cuerpo(nombre, "pe-" + marca + "@example.test", "Sede", null, null,
+				correo.toUpperCase(), "PILATES")), cookieSuperadmin, 201);
+		long org = creada.get("id").asLong();
+
+		// Como el reenvío de una invitación: token nuevo con ESTA escuela y correo; sigue sin contraseña (sin acceso
+		// hasta que la acepte) y conserva su rol en la otra escuela.
+		assertEquals(correo, creada.get("invitacionEnviadaA").asText(), creada.toString());
+		Map<String, Object> cuenta = jdbc.queryForMap(
+				"SELECT contrasena, reset_token_hash, ultima_organizacion_id FROM usuario WHERE id = ?", pendiente.getId());
+		assertNull(cuenta.get("contrasena"));
+		assertNotNull(cuenta.get("reset_token_hash"));
+		assertFalse(hashViejo.equals(cuenta.get("reset_token_hash")), "El enlace anterior deja de valer");
+		assertEquals(org, ((Number) cuenta.get("ultima_organizacion_id")).longValue());
+		assertEquals(List.of("PROPIETARIO"), jdbc.queryForList(
+				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = ? AND activa = TRUE", String.class,
+				pendiente.getId(), org));
+		assertEquals(List.of("PROFESOR"), jdbc.queryForList(
+				"SELECT rol FROM membresia WHERE usuario_id = ? AND organizacion_id = ? AND activa = TRUE", String.class,
+				pendiente.getId(), otra));
+		verify(email, times(1)).sendEmailConImagen(eq(correo), contains(nombre), anyString(), any(), any(), any(),
+				any());
+		List<String> resumenes = jdbc.queryForList("SELECT resumen FROM auditoria_evento WHERE organizacion_id = ?",
+				String.class, org);
+		assertTrue(resumenes.contains("MIEMBROS INVITACION_REENVIADA usuario=#" + pendiente.getId()), resumenes.toString());
+		assertTrue(resumenes.contains("MIEMBROS ROL_DADO usuario=#" + pendiente.getId() + " rol=PROPIETARIO"),
+				resumenes.toString());
+	}
+
 	// ------------------------------------------------------------------ errores
 
 	@Test
@@ -447,6 +499,23 @@ class AltaEscuelaIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("Ya hay una escuela con ese nombre.", error.get("mensaje").asText());
 		assertEquals(antes, contar("SELECT COUNT(*) FROM organizacion"));
 		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE email = ?", "it-f42-rep2-" + marca + "@example.test"));
+	}
+
+	@Test
+	void nombreRepetido_409_sinTildesNiEnes() throws Exception {
+		String nombre = "Club IT Ñandú Pérez " + marca;
+		leer(alta(cuerpo(nombre, "t1-" + marca + "@example.test", "Sede", "Eva", "Ficticia",
+				"it-f42-tilde1-" + marca + "@example.test", "PILATES")), cookieSuperadmin, 201);
+		long antes = contar("SELECT COUNT(*) FROM organizacion");
+		for (String parecido : List.of("Club IT Nandu Perez " + marca, "CLUB IT ÑANDU PÉREZ " + marca,
+				"club it nandú perez " + marca)) {
+			JsonNode error = leer(alta(cuerpo(parecido, "t2-" + marca + "@example.test", "Sede", "Eva", "Ficticia",
+					"it-f42-tilde2-" + marca + "@example.test", "PILATES")), cookieSuperadmin, 409);
+			assertEquals("Ya hay una escuela con ese nombre.", error.get("mensaje").asText(), parecido);
+		}
+		assertEquals(antes, contar("SELECT COUNT(*) FROM organizacion"));
+		assertEquals(0, contar("SELECT COUNT(*) FROM usuario WHERE email = ?", "it-f42-tilde2-" + marca + "@example.test"));
+		verify(email, times(1)).sendEmailConImagen(any(), any(), any(), any(), any(), any(), any());
 	}
 
 	@Test

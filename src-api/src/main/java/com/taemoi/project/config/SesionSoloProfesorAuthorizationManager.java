@@ -179,6 +179,8 @@ final class SesionSoloProfesorAuthorizationManager<T> implements AuthorizationMa
 				rutas.matcher(HttpMethod.GET, "/api/auth/roles"),
 				rutas.matcher(HttpMethod.GET, "/api/auth/user"),
 				rutas.matcher(HttpMethod.GET, "/api/auth/organizaciones"),
+				// El logo de cada escuela del selector (solo GET; HEAD cuenta como GET): 404 si no es suya.
+				rutas.matcher(HttpMethod.GET, "/api/auth/organizaciones/*/logo"),
 				rutas.matcher(HttpMethod.POST, "/api/auth/organizacion"),
 				// Si además es administrador de plataforma: el frontend lo pregunta aquí en vez de sondear
 				// /api/plataforma/errores. Solo GET (HEAD cuenta como GET); solo lee la autoridad de la sesión.

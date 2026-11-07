@@ -15,6 +15,7 @@ import java.util.TreeMap;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.taemoi.project.dtos.response.MarcaPanelDTO;
 import com.taemoi.project.dtos.response.OrganizacionUsuarioDTO;
 import com.taemoi.project.entities.Membresia;
 import com.taemoi.project.entities.Organizacion;
@@ -114,12 +115,29 @@ public class MembresiaServiceImpl implements MembresiaService {
 		porOrganizacion.values().removeIf(autoridades -> !RolMembresia.abreSesion(autoridades));
 		Map<Long, Organizacion> datos = new HashMap<>();
 		organizaciones.findAllById(porOrganizacion.keySet()).forEach(o -> datos.put(o.getId(), o));
+		// Marca y sedes de todas las escuelas del usuario: una consulta por tipo, no una por escuela.
+		Map<Long, Long> logos = new HashMap<>();
+		Map<Long, Integer> sedes = new HashMap<>();
+		if (!porOrganizacion.isEmpty()) {
+			for (Object[] fila : organizaciones.logosDeEscuelas(porOrganizacion.keySet())) {
+				if (fila[1] != null) {
+					logos.put(((Number) fila[0]).longValue(), ((Number) fila[1]).longValue());
+				}
+			}
+			for (Object[] fila : organizaciones.sedesActivasPorEscuela(porOrganizacion.keySet())) {
+				sedes.put(((Number) fila[0]).longValue(), ((Number) fila[1]).intValue());
+			}
+		}
 		List<OrganizacionUsuarioDTO> resultado = new ArrayList<>();
 		porOrganizacion.forEach((id, autoridades) -> {
 			Organizacion org = datos.get(id);
 			if (org != null) {
 				resultado.add(new OrganizacionUsuarioDTO(id, org.getSlug(), org.getNombre(),
-						autoridades.stream().map(Enum::name).sorted().toList(), id.equals(organizacionActiva)));
+						autoridades.stream().map(Enum::name).sorted().toList(), id.equals(organizacionActiva),
+						logos.containsKey(id) ? MarcaPanelDTO.Logo.SUBIDO
+								: Boolean.TRUE.equals(org.getComportamientoLegadoTaemoi()) ? MarcaPanelDTO.Logo.LEGADO
+										: MarcaPanelDTO.Logo.NINGUNO,
+						logos.get(id), org.getColorPrimario(), sedes.getOrDefault(id, 0)));
 			}
 		});
 		return resultado;
