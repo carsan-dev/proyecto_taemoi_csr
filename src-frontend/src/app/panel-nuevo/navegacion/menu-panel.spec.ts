@@ -255,3 +255,27 @@ describe('menu-panel: Miembros (E9-4)', () => {
     expect(seccionActiva('/miembros')).toBe('escuela');
   });
 });
+
+describe('menu-panel: Datos de la escuela (pieza 394)', () => {
+  const base: ContextoMenu = { propietario: true, gestion: true, profesor: false, misGrupos: false, plataforma: false };
+
+  it('«Datos de la escuela» va en Escuela, tras Miembros y antes de Configuración, solo para el propietario', () => {
+    const escuela = MENU_PANEL.find((s) => s.id === 'escuela')!;
+    const rutas = escuela.entradas.map((e) => e.ruta);
+    expect(rutas.indexOf('/datos-escuela')).toBe(rutas.indexOf('/miembros') + 1);
+    expect(rutas.indexOf('/datos-escuela')).toBe(rutas.indexOf('/configuracion-sistema') - 1);
+    expect(escuela.entradas.find((e) => e.ruta === '/datos-escuela')).toEqual(
+      jasmine.objectContaining({ etiqueta: 'Datos de la escuela', condicion: 'propietario' })
+    );
+    expect(rutasDeGestion(base)).toContain('/datos-escuela');
+    expect(rutasDeGestion({ ...base, propietario: false })).not.toContain('/datos-escuela');
+    expect(rutasDeGestion({ ...base, propietario: false, gestion: false, panelSede: true })).not.toContain('/datos-escuela');
+    expect(rutasDeGestion({ propietario: false, profesor: true, soloProfesor: true, misGrupos: false, plataforma: false })).not.toContain(
+      '/datos-escuela'
+    );
+  });
+
+  it('/datos-escuela enciende la entrada Escuela', () => {
+    expect(seccionActiva('/datos-escuela')).toBe('escuela');
+  });
+});

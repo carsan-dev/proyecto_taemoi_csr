@@ -1,0 +1,140 @@
+<main class="pn datos" pnAcento aria-labelledby="datos-titulo">
+  <div class="datos__pagina">
+    <nav class="datos__migas" aria-label="Ruta"><span>Escuela</span><span aria-hidden="true">/</span></nav>
+    <header class="cabecera">
+      <h1 id="datos-titulo">Datos de la escuela</h1>
+      <p class="marca-ro">
+        @if (logo(); as src) {
+        <img class="marca-ro__logo" [src]="src" alt="" width="24" height="24" (error)="logo.set(null)" />
+        }
+        @if (color(); as c) {
+        <span class="marca-ro__color" role="img" [attr.aria-label]="'Color de la escuela: ' + c" [style.background]="c"></span>
+        }
+        <svg class="marca-ro__candado" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="1.5"></rect><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path></svg>
+        <span>Logo y color: los cambia el equipo de Taemoi</span>
+      </p>
+      @if (primera()) {
+      <p class="primera">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>Rellena estos datos antes de cobrar o abrir la preinscripción.</span>
+      </p>
+      }
+    </header>
+
+    @if (estado() === 'cargando') {
+    <pn-esqueleto etiqueta="Cargando los datos de la escuela…">
+      <div class="esqueleto"></div>
+      <div class="esqueleto"></div>
+      <div class="esqueleto"></div>
+    </pn-esqueleto>
+    } @else if (estado() === 'error') {
+    <pn-bloque-error [titulo]="textos.errorCarga" (reintentar)="cargar()" />
+    } @else {
+    <form class="formulario" novalidate (submit)="$event.preventDefault(); guardar()">
+      <section class="bloque" aria-labelledby="t-fiscales">
+        <h2 class="bloque__titulo" id="t-fiscales">Datos fiscales</h2>
+        <p class="bloque__desc">Salen en los recibos y en los documentos de la preinscripción.</p>
+        <div class="campos">
+          <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'nombreLegal' }" />
+          <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'cif' }" />
+          <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'direccion' }" />
+        </div>
+      </section>
+
+      <section class="bloque" aria-labelledby="t-contacto">
+        <h2 class="bloque__titulo" id="t-contacto">Contacto</h2>
+        <div class="campos campos--dos">
+          <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'emailContacto' }" />
+          <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'telefono' }" />
+        </div>
+      </section>
+
+      <section class="bloque" aria-labelledby="t-firmante">
+        <h2 class="bloque__titulo" id="t-firmante">Firmante de los documentos</h2>
+        <p class="bloque__desc">Firma los consentimientos y los recibos en nombre de la escuela.</p>
+        <div class="campos">
+          <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'firmanteNombre' }" />
+          <div class="campos--dos">
+            <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'firmanteCargo' }" />
+            <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'firmanteNif' }" />
+          </div>
+        </div>
+      </section>
+
+      <section class="bloque" aria-labelledby="t-cobros">
+        <h2 class="bloque__titulo" id="t-cobros">Cobros</h2>
+        <div class="campos">
+          <ng-container [ngTemplateOutlet]="campo" [ngTemplateOutletContext]="{ k: 'diaLimiteMensualidad' }" />
+        </div>
+        <p class="separa">
+          <a class="enlace" routerLink="/productosListar">El precio de la licencia de competidor se cambia en Productos<svg aria-hidden="true"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path
+            d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
+        </p>
+      </section>
+    </form>
+    }
+
+    <span class="oculto" role="status" aria-live="polite">@if (hayCambios()) { {{ pendientes() }} {{ pendientes() === 1 ? 'cambio' : 'cambios' }} sin guardar }</span>
+    @if (barraVisible()) {
+    <div class="pendientes" role="region" aria-label="Cambios sin guardar">
+      @if (malos().length > 0) {
+      <strong class="pendientes-aviso pendientes-aviso--error">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ malos().length === 1 ? 'Corrige 1 campo' : 'Corrige ' + malos().length + ' campos' }} para guardar.</span>
+      </strong>
+      } @else {
+      <strong class="pendientes-aviso">{{ pendientes() === 1 ? '1 cambio' : pendientes() + ' cambios' }} sin guardar</strong>
+      }
+      <button class="texto" type="button" [attr.aria-disabled]="guardando() ? 'true' : null" (click)="descartar()">Descartar</button>
+      <button pnOcupado class="primario" type="button" [ocupado]="guardando()" textoOcupado="Guardando…" (click)="guardar()">Guardar cambios</button>
+    </div>
+    }
+  </div>
+</main>
+
+<!-- Un campo de texto: etiqueta con (obligatorio)/(opcional), ayuda o error, y contador visible si tiene máximo. -->
+<ng-template #campo let-k="k">
+  @let c = def(k);
+  @let id = 'dato-' + k;
+  @let mal = error(k);
+  <div class="fv-campo">
+    <label [for]="id">{{ c.etiqueta }} <span class="op">{{ c.obligatorio ? '(obligatorio)' : '(opcional)' }}</span></label>
+    @if (k === 'diaLimiteMensualidad') {
+    <div class="dia">
+      <input [id]="id" class="fv-control" type="text" inputmode="numeric" autocomplete="off" aria-required="true"
+        [attr.maxlength]="c.maxlength" [readOnly]="guardando()" [value]="valor(k)" [attr.aria-invalid]="mal ? 'true' : 'false'"
+        [attr.aria-describedby]="id + '-ayuda ' + id + '-frase'" (input)="escribir(k, $event)" (blur)="tocar(k)" />
+      <span>de cada mes</span>
+    </div>
+    } @else {
+    <input [id]="id" class="fv-control" [class.fv-control--corto]="c.corto" [type]="c.tipo ?? 'text'" [attr.autocomplete]="c.autocompletar ?? 'off'"
+      [attr.aria-required]="c.obligatorio ? 'true' : null" [attr.maxlength]="c.max ?? c.maxlength"
+      [attr.autocapitalize]="c.mayusculas ? 'characters' : null" [attr.spellcheck]="c.mayusculas ? 'false' : null"
+      [readOnly]="guardando()" [value]="valor(k)" [attr.aria-invalid]="mal ? 'true' : 'false'" [attr.aria-describedby]="id + '-ayuda'"
+      (input)="escribir(k, $event)" (blur)="tocar(k)" />
+    }
+    <p class="fv-ayuda" [id]="id + '-ayuda'" [hidden]="!mal && !c.ayuda && !c.max">
+      @if (mal) {
+      <span class="fv-error" role="alert">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ mal }}</span>
+      </span>
+      } @else if (c.ayuda) {
+      <span>{{ c.ayuda }}</span>
+      }
+      @if (c.max) {
+      <span class="contador" [attr.aria-label]="longitud(k) + ' de ' + c.max + ' caracteres'">{{ longitud(k) }} / {{ c.max }}</span>
+      }
+    </p>
+    @if (k === 'diaLimiteMensualidad') {
+    <p class="frase" [id]="id + '-frase'" aria-live="polite" [hidden]="dia() === null">
+      @if (dia() !== null) {Una mensualidad sin pagar pasa a vencida el <strong>día {{ dia()! + 1 }}</strong> de cada mes.}
+    </p>
+    }
+  </div>
+</ng-template>
