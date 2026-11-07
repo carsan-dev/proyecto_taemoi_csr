@@ -115,6 +115,13 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		 * nunca el nombre ni los emails. Caso en AltaEscuelaIntegrationTest.
 		 */
 		ESCUELA_CREAR("POST", "/api/plataforma/escuelas"),
+		/**
+		 * Pieza W3 de la web por plantilla: publicar la web con un tema, el propietario (su escuela) y el superadmin (la
+		 * escuela por id). PublicacionWebService#publicar registra todo 2xx en la escuela de la web (WEB TEMA_PUBLICADO
+		 * con organizacion, tema, primera y, si no cambia nada, sinCambios). Caso en WebPublicacionIntegrationTest.
+		 */
+		WEB_PUBLICAR("PUT", "/api/escuela/web/publicacion"),
+		WEB_PUBLICAR_PLATAFORMA("PUT", "/api/plataforma/escuelas/[^/]+/web/publicacion"),
 		// Pieza E7-9 (decisión 214): rutas del profesor y quitar un profesor de un grupo; el registro, entre paréntesis.
 		/** ProfesorService#actualizarApto (PROFESOR APTO_CAMBIADO). */
 		PROFESOR_APTO("PUT", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/apto"),
