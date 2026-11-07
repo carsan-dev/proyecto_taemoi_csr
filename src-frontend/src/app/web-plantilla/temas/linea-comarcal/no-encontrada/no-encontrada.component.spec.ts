@@ -87,9 +87,15 @@ describe('NoEncontradaLineaComarcalComponent', () => {
     expect(document.head.querySelector('meta[name="robots"][data-web-plantilla]')!.getAttribute('content')).toBe('noindex, nofollow');
   });
 
-  it('web sin publicar: al login', async () => {
-    await abrir(404);
+  it('web sin publicar: «Web aún no publicada» en la misma URL', async () => {
+    const raiz = await abrir(404);
     await harness.fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/login');
+    http
+      .expectOne(`${environment.apiUrl}/publico/escuela`)
+      .flush({ nombre: 'Taekwondo Sierra Sur', logo: 'NINGUNO', logoVersion: null, tema: null });
+    harness.detectChanges();
+    expect(TestBed.inject(Router).url).toBe('/no-existe');
+    expect(raiz.querySelector('.lc')).toBeNull();
+    expect(raiz.querySelector('app-web-sin-publicar .sp-nombre')?.textContent).toBe('Taekwondo Sierra Sur');
   });
 });

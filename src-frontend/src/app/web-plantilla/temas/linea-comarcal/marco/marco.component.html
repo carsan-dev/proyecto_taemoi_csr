@@ -19,8 +19,8 @@
       @if (v.menu.length) {
         <nav class="nav" id="nav-principal" aria-label="Principal" [class.abierta]="menuAbierto()" (click)="alPulsarEnlaceDelMenu($event)">
           <ul class="nav-lista">
-            @for (enlace of v.menu; track enlace.fragmento) {
-              <li><a [routerLink]="enlace.ruta" [fragment]="enlace.fragmento">{{ enlace.texto }}</a></li>
+            @for (enlace of v.menu; track enlace.ruta + '#' + enlace.fragmento) {
+              <li><a [routerLink]="enlace.ruta" [fragment]="enlace.fragmento ?? undefined" [attr.aria-current]="enlace.actual ? 'page' : null">{{ enlace.texto }}</a></li>
             }
           </ul>
         </nav>
@@ -53,7 +53,7 @@
         @if (v.legales.length) {
           <ul class="pie-legal" aria-label="Legal">
             @for (enlace of v.legales; track enlace.fragmento) {
-              <li><a [routerLink]="enlace.ruta" [fragment]="enlace.fragmento">{{ enlace.texto }}</a></li>
+              <li><a [routerLink]="enlace.ruta" [fragment]="enlace.fragmento ?? undefined">{{ enlace.texto }}</a></li>
             }
           </ul>
         }

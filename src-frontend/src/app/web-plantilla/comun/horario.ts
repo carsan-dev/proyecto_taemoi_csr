@@ -204,22 +204,32 @@ export interface ProximaClase {
 
 /** La próxima clase de la sede desde `ahora` (la de hoy solo si aún no ha empezado); null sin turnos. */
 export function proximaClase(sede: SedeWeb, ahora: Date): ProximaClase | null {
-  const turnos = sede.grupos.flatMap((g) => g.turnos);
+  const proxima = proximaClaseConGrupo(sede, ahora);
+  return proxima ? { hoy: proxima.hoy, cuando: proxima.cuando, hora: proxima.hora } : null;
+}
+
+/**
+ * Como {@link proximaClase}, con el grupo de esa clase (página de sede: «Próxima clase · Jueves 19:30 · Infantil»). A la
+ * misma hora en dos grupos, el primero en el orden de la API.
+ */
+export function proximaClaseConGrupo(sede: SedeWeb, ahora: Date): (ProximaClase & { grupo: GrupoWeb }) | null {
   const hoyDia = ahora.getDay();
   const ahoraMin = ahora.getHours() * 60 + ahora.getMinutes();
   for (let k = 0; k < 8; k++) {
     const dia = (hoyDia + k) % 7;
-    let mejor: number | null = null;
-    for (const turno of turnos) {
-      if (numeroDia(turno.diaSemana) !== dia) {
-        continue;
-      }
-      const m = minutos(turno.horaInicio);
-      if (m === null || (k === 0 && m <= ahoraMin)) {
-        continue;
-      }
-      if (mejor === null || m < mejor) {
-        mejor = m;
+    let mejor: { minutos: number; grupo: GrupoWeb } | null = null;
+    for (const grupo of sede.grupos) {
+      for (const turno of grupo.turnos) {
+        if (numeroDia(turno.diaSemana) !== dia) {
+          continue;
+        }
+        const m = minutos(turno.horaInicio);
+        if (m === null || (k === 0 && m <= ahoraMin)) {
+          continue;
+        }
+        if (mejor === null || m < mejor.minutos) {
+          mejor = { minutos: m, grupo };
+        }
       }
     }
     if (mejor !== null) {
@@ -227,7 +237,8 @@ export function proximaClase(sede: SedeWeb, ahora: Date): ProximaClase | null {
       return {
         hoy: k === 0,
         cuando: k === 0 ? '' : k === 1 ? 'Mañana' : nombre.charAt(0).toUpperCase() + nombre.slice(1),
-        hora: horaDeMinutos(mejor),
+        hora: horaDeMinutos(mejor.minutos),
+        grupo: mejor.grupo,
       };
     }
   }

@@ -39,7 +39,7 @@ function evento(id: number, titulo: string, fecha: string, cambios: Partial<Even
 
 /**
  * Portada del tema «La línea comarcal» (W5, boceto `boceto-linea-comarcal.html`): datos reales de `GET /api/publico/web`,
- * variantes de una y seis sedes, plazas (§4.3), bloques por defecto y vacíos (§9 n.º 11), orden, sin publicar → login.
+ * variantes de una y seis sedes, plazas (§4.3), bloques por defecto y vacíos (§9 n.º 11), orden, sin publicar.
  */
 describe('PortadaLineaComarcalComponent', () => {
   const url = `${environment.apiUrl}/publico/web`;
@@ -424,14 +424,17 @@ describe('PortadaLineaComarcalComponent', () => {
     expect(llevar.calls.mostRecent().object as unknown).toBe(raiz.querySelector('#contacto'));
   });
 
-  it('web sin publicar (404 de la API): va al login sin dejar la portada en el historial', async () => {
-    const router = TestBed.inject(Router);
-    const navegar = spyOn(router, 'navigateByUrl').and.callThrough();
-    await abrir('no-publicada');
+  it('web sin publicar (404 de la API): «Web aún no publicada» en la misma URL, sin el tema', async () => {
+    const raiz = await abrir('no-publicada');
     await harness.fixture.whenStable();
-    expect(navegar).toHaveBeenCalledWith('/login', { replaceUrl: true });
-    expect(router.url).toBe('/login');
-    expect(harness.routeNativeElement!.querySelector('.login')).not.toBeNull();
+    http
+      .expectOne(`${environment.apiUrl}/publico/escuela`)
+      .flush({ nombre: 'Taekwondo Sierra Sur', logo: 'NINGUNO', logoVersion: null, tema: null });
+    harness.detectChanges();
+    expect(TestBed.inject(Router).url).toBe('/');
+    expect(raiz.querySelector('.lc')).toBeNull();
+    expect(raiz.querySelector('app-web-sin-publicar h1')?.textContent).toBe('Esta web todavía no está publicada');
+    expect(raiz.querySelector('app-web-sin-publicar a.sp-entrar')?.getAttribute('href')).toBe('/login');
   });
 
   it('error de la API: no pinta nada', async () => {

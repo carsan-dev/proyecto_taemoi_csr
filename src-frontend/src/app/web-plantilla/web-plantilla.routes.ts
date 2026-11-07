@@ -15,6 +15,9 @@ const pendiente = () =>
 /** Las páginas del primer tema (W5): cada una, su chunk perezoso. Solo hay un tema construido (§9 n.º 12). */
 const portada = () =>
   import('./temas/linea-comarcal/portada/portada.component').then((m) => m.PortadaLineaComarcalComponent);
+const sede = () => import('./temas/linea-comarcal/sede/sede.component').then((m) => m.SedeLineaComarcalComponent);
+const tarifas = () =>
+  import('./temas/linea-comarcal/tarifas/tarifas.component').then((m) => m.TarifasLineaComarcalComponent);
 export const noEncontradaDelTema = () =>
   import('./temas/linea-comarcal/no-encontrada/no-encontrada.component').then((m) => m.NoEncontradaLineaComarcalComponent);
 
@@ -47,14 +50,14 @@ export const RUTAS_SOLO_MOISKIMDO = [
  * Rutas de la web por plantilla (fase4-web-plan.md §3.1). Se cargan perezosas desde el grupo con `canMatch` de
  * `app.routes.ts`, que solo casa con la meta de `index-plantilla.html`. Sin comodín: lo que no casa aquí (panel, login,
  * plataforma…) sigue a las rutas de siempre, y lo desconocido cae en el comodín de la plantilla del final de
- * `app.routes.ts` (la 404 del tema). La portada es la del primer tema; el resto de páginas, la pantalla técnica
- * provisional hasta que se construyan.
+ * `app.routes.ts` (la 404 del tema). Portada, sede y tarifas son las del primer tema; el resto de páginas, la pantalla
+ * técnica provisional hasta que se construyan. Sin publicar, cada página pinta «Web aún no publicada».
  */
 export const WEB_PLANTILLA_ROUTES: Routes = [
   { path: '', pathMatch: 'full', data: datos('portada'), loadComponent: portada },
-  { path: 'sedes/:slug', data: datos('sede'), loadComponent: pendiente },
+  { path: 'sedes/:slug', data: datos('sede'), loadComponent: sede },
   { path: 'preinscripcion', data: datos('preinscripcion'), loadComponent: pendiente },
-  { path: 'tarifas', data: datos('tarifas'), loadComponent: pendiente },
+  { path: 'tarifas', data: datos('tarifas'), loadComponent: tarifas },
   { path: 'eventos', data: datos('eventos'), loadComponent: pendiente },
   { path: 'eventos/:id', data: datos('evento'), loadComponent: pendiente },
   { path: 'legales', data: datos('legales'), loadComponent: pendiente },

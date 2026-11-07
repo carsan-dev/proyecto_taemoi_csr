@@ -1,6 +1,10 @@
 @let s = pagina.sitio();
 @let v = vista();
-@if (s && v) {
+@if (pagina.estado() === 'no-publicada') {
+  @defer (on immediate) {
+    <app-web-sin-publicar />
+  }
+} @else if (s && v) {
   <app-lc-marco [sitio]="s">
     <!-- 1. Portada y línea -->
     <section class="portada" id="portada" aria-labelledby="portada-titulo">

@@ -218,3 +218,9 @@ body.lc-menu-abierto { overflow: hidden; }
   .lc .boton svg, .lc .enlace-flecha svg { transition: transform 160ms ease-out; }
   .lc .boton:hover svg, .lc .enlace-flecha:hover svg { transform: translateX(3px); }
 }
+
+/* ---------- Página actual en la cabecera (páginas interiores) ---------- */
+.lc .nav-lista a[aria-current="page"] {
+  text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.3em;
+  text-decoration-color: var(--escuela-trazo);
+}

@@ -1,6 +1,6 @@
 import { DestroyRef, Signal, computed, effect, inject, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
 import { EstadoRecurso, SitioWeb } from '../datos/modelos';
 import { WebPublicaService } from '../datos/web-publica.service';
@@ -18,17 +18,21 @@ export interface PaginaWebEstado {
  *
  * - pide `GET /api/publico/web` (o la vista previa, con `?vista-previa=`) con `WebPublicaService`;
  * - con datos, pone el SEO de la página (`ruta` da el `canonical`); la 404 del tema, título y `noindex`;
- * - web sin publicar (404 de la API): el host solo enseña el login (§9 n.º 10, boceto
- *   `boceto-login-404-sin-publicar.html`): va a `/login` sin dejar la página en el historial;
+ * - página de sede (`opciones.slug`): si el slug no es de ninguna sede, el SEO de la 404 del tema (`noindex`);
+ * - web sin publicar (404 de la API): solo `noindex`; la página pinta «Web aún no publicada» (§9 n.º 10, boceto
+ *   `boceto-login-404-sin-publicar.html`, sección 3) con `SinPublicarComponent`, en la misma URL;
  * - error: nada visible (los bocetos no tienen ese estado) y sin etiquetas de la plantilla.
  *
  * Al salir de la página quita sus etiquetas.
  */
-export function paginaWeb(pagina: PaginaWeb | 'no-encontrada', ruta: () => string): PaginaWebEstado {
+export function paginaWeb(
+  pagina: PaginaWeb | 'no-encontrada',
+  ruta: () => string,
+  opciones: { slug?: Signal<string | null> } = {},
+): PaginaWebEstado {
   const activa = inject(ActivatedRoute);
   const web = inject(WebPublicaService);
   const seo = inject(SeoEscuelaService);
-  const router = inject(Router);
 
   const consulta = toSignal(activa.queryParamMap, { requireSync: true });
   const vistaPrevia = computed(() => consulta().get('vista-previa'));
@@ -46,18 +50,22 @@ export function paginaWeb(pagina: PaginaWeb | 'no-encontrada', ruta: () => strin
   effect(() => {
     const actual = recurso()();
     const previa = vistaPrevia();
+    const slug = opciones.slug?.() ?? null;
+    const destino = ruta();
     untracked(() => {
       switch (actual.estado) {
         case 'listo':
-          if (pagina === 'no-encontrada') {
+          if (
+            pagina === 'no-encontrada' ||
+            (pagina === 'sede' && !actual.datos.sedes.some((s) => s.slug != null && s.slug === slug))
+          ) {
             seo.noEncontrada(actual.datos);
           } else {
-            seo.aplicar({ pagina, sitio: actual.datos, ruta: ruta(), vistaPrevia: web.esVistaPrevia(previa) });
+            seo.aplicar({ pagina, sitio: actual.datos, ruta: destino, vistaPrevia: web.esVistaPrevia(previa), slug });
           }
           break;
         case 'no-publicada':
           seo.noPublicada();
-          void router.navigateByUrl('/login', { replaceUrl: true });
           break;
         case 'error':
           seo.limpiar();

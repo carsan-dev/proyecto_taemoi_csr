@@ -1,0 +1,136 @@
+/*
+ * Página de tarifas del tema «La línea comarcal» (boceto fase4-web/boceto-linea-comarcal-tarifas.html), con sus reglas
+ * tal cual bajo .lc .p-tarifas: la portada (sin encapsulación) usa los mismos nombres de clase con otros valores y sus
+ * estilos siguen cargados al navegar.
+ */
+
+/* ---------- Secciones ---------- */
+.lc .p-tarifas .seccion { position: relative; padding: calc(var(--seccion) * 1.1) 0 var(--seccion); }
+.lc .p-tarifas .seccion--anden { background: var(--anden); }
+.lc .p-tarifas .cabeza-seccion { margin-bottom: clamp(36px, 4.5vw, 64px); }
+.lc .p-tarifas .cabeza-seccion .rotulo { margin-bottom: 18px; }
+/* ---------- Banda: sección a sangre del color de la escuela ---------- */
+.lc .p-tarifas .tarifas { position: relative; background: var(--tarifa-fondo); color: var(--tarifa-tinta); --foco: var(--tarifa-tinta); padding: calc(var(--seccion) * 1.1) 0 var(--seccion); }
+.lc .p-tarifas .tarifas .rotulo { color: var(--tarifa-tinta); margin-bottom: 12px; }
+.lc .p-tarifas .tarifas-rejilla { display: grid; gap: 32px; }
+.lc .p-tarifas .tarifa-cifra { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 20px; }
+.lc .p-tarifas .tarifa-importe { font: 900 clamp(132px, 22vw, 220px)/0.88 var(--display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.lc .p-tarifas .tarifa-mes { font: 800 clamp(1.75rem, 2.6vw, 2.5rem)/1 var(--display); text-transform: uppercase; }
+.lc .p-tarifas .tarifa-igual { font: 800 clamp(1.75rem, 2.6vw, 2.5rem)/0.95 var(--display); text-transform: uppercase; }
+.lc .p-tarifas .tarifa-incluye { margin: 20px 0 32px; border-top: 1px solid currentColor; }
+.lc .p-tarifas .tarifa-incluye li { padding: 12px 0; border-bottom: 1px solid currentColor; }
+.lc .p-tarifas .boton--blanco { background: var(--blanco); border-color: var(--blanco); color: var(--tarifa-boton-tinta); }
+.lc .p-tarifas .boton--blanco:hover { background: var(--anden); border-color: var(--anden); color: var(--tarifa-boton-tinta); }
+@media (min-width: 900px) {
+  .lc .p-tarifas .tarifas-rejilla { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: end; }
+  .lc .p-tarifas .tarifas .rotulo { grid-column: 1 / -1; }
+  .lc .p-tarifas .tarifa-cifra { grid-column: 1 / 8; }
+  .lc .p-tarifas .tarifa-lado { grid-column: 8 / 13; padding-bottom: 12px; }
+}
+
+/* ---------- Tarifas: la banda del color de la escuela abre la página ---------- */
+.lc .p-tarifas .tarifas { padding: clamp(48px, 8vw, 112px) 0 clamp(56px, 9vw, 128px); }
+.lc .p-tarifas .tarifas .rotulo { margin-bottom: 4px; }
+.lc .p-tarifas .tarifa-igual { text-transform: none; font: 600 1.375rem/1.3 var(--texto); }
+.lc .p-tarifas .tarifas .enlace-flecha, .lc .p-tarifas .tarifas .enlace-flecha:hover { color: var(--tarifa-tinta); }
+.lc .p-tarifas .tarifas-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.lc .p-tarifas .tarifa-vacio { font: 900 clamp(60px, 15vw, 132px)/0.88 var(--display); text-transform: uppercase; letter-spacing: -0.01em; text-wrap: balance; max-width: 11ch; }
+.lc .p-tarifas .tarifa-contacto { margin: 20px 0 28px; border-top: 1px solid currentColor; }
+.lc .p-tarifas .tarifa-contacto div { display: grid; gap: 0 16px; padding: 10px 0; border-bottom: 1px solid currentColor; }
+.lc .p-tarifas .tarifa-contacto dt { font-size: 0.875rem; font-weight: 600; }
+.lc .p-tarifas .tarifa-contacto a { display: inline-flex; align-items: center; min-height: 44px; color: var(--tarifa-tinta); font: 600 1.375rem/1.2 var(--texto); }
+@media (min-width: 900px) {
+  .lc .p-tarifas .tarifa-contacto div { grid-template-columns: 7rem minmax(0, 1fr); align-items: center; }
+}
+
+/* ---------- Cuadro de tarifas: tabla de tarifas de transporte ---------- */
+.lc .p-tarifas .cuadro { width: 100%; border-collapse: collapse; }
+.lc .p-tarifas .cuadro caption { text-align: left; padding-top: 0; padding-bottom: 14px; color: inherit; border-bottom: 1px solid var(--tinta); caption-side: top; }
+.lc .p-tarifas .cuadro caption .rotulo { display: block; }
+.lc .p-tarifas .cuadro thead th {
+  padding: 14px 0 12px; text-align: left; border-bottom: 1px solid var(--filete);
+  font: 600 0.8125rem/1.3 var(--texto); text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2);
+}
+.lc .p-tarifas .cuadro thead th:last-child, .lc .p-tarifas .cuadro td.importe { text-align: right; }
+.lc .p-tarifas .cuadro tbody th, .lc .p-tarifas .cuadro tbody td { padding: 18px 0; border-bottom: 1px solid var(--filete); vertical-align: baseline; text-align: left; }
+.lc .p-tarifas .cuadro tbody th[scope="rowgroup"], .lc .p-tarifas .cuadro tbody tr > th:first-child { font: 800 1.375rem/1 var(--display); text-transform: uppercase; padding-right: 16px; }
+.lc .p-tarifas .cuadro .quien { font-weight: 400; padding-right: 16px; }
+.lc .p-tarifas .cuadro .importe { font: 900 2.25rem/0.9 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lc .p-tarifas .cuadro .importe small { font: 600 0.9375rem/1 var(--texto); color: var(--tinta-2); margin-left: 4px; }
+.lc .p-tarifas .cuadro tbody.grupo-tarifa tr:first-child > * { border-bottom-color: transparent; padding-bottom: 6px; }
+.lc .p-tarifas .cuadro tbody.grupo-tarifa tr + tr > * { padding-top: 6px; }
+.lc .p-tarifas .cuadro tbody.grupo-tarifa th[scope="rowgroup"] { border-bottom: 1px solid var(--filete); }
+.lc .p-tarifas .cuadro-pie { margin-top: 16px; color: var(--tinta-2); max-width: 60ch; }
+/* Móvil: tarifa arriba, a quién e importe en la misma fila */
+@media (max-width: 599px) {
+  .lc .p-tarifas .cuadro thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .lc .p-tarifas .cuadro, .lc .p-tarifas .cuadro tbody, .lc .p-tarifas .cuadro tr, .lc .p-tarifas .cuadro caption { display: block; }
+  .lc .p-tarifas .cuadro tbody { border-bottom: 1px solid var(--filete); padding: 16px 0; }
+  .lc .p-tarifas .cuadro tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 12px; }
+  .lc .p-tarifas .cuadro tbody th, .lc .p-tarifas .cuadro tbody td, .lc .p-tarifas .cuadro tbody.grupo-tarifa th[scope="rowgroup"] { display: block; padding: 0; border: 0; }
+  .lc .p-tarifas .cuadro tbody tr > th:first-child, .lc .p-tarifas .cuadro tbody th[scope="rowgroup"] { grid-column: 1 / -1; margin-bottom: 8px; }
+  .lc .p-tarifas .cuadro tbody.grupo-tarifa tr:first-child > *, .lc .p-tarifas .cuadro tbody.grupo-tarifa tr + tr > * { padding: 0; }
+  .lc .p-tarifas .cuadro tbody.grupo-tarifa tr + tr { margin-top: 8px; }
+  .lc .p-tarifas .cuadro tbody.grupo-tarifa th[scope="rowgroup"] { display: block; }
+  .lc .p-tarifas .cuadro .importe { font-size: 2rem; }
+}
+@media (min-width: 900px) {
+  .lc .p-tarifas .cuadro-rejilla { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); }
+  .lc .p-tarifas .cuadro-rejilla > .cabeza-seccion { grid-column: 1 / 5; }
+  .lc .p-tarifas .cuadro-rejilla > .cuadro-caja { grid-column: 6 / 13; }
+  .lc .p-tarifas .cuadro .importe { font-size: 2.75rem; }
+}
+
+/* ---------- Por sede: la línea con el importe en cada parada ---------- */
+.lc .p-tarifas .linea-tarifa { position: relative; margin-top: 8px; --n: 6; }
+.lc .p-tarifas .lt-parada { position: relative; padding: 0 0 28px 48px; }
+.lc .p-tarifas .lt-parada::before { content: ""; position: absolute; left: 6px; top: 0; bottom: 0; width: 12px; background: var(--escuela-trazo); }
+.lc .p-tarifas .lt-parada:first-child::before { top: 12px; border-radius: 6px 6px 0 0; }
+.lc .p-tarifas .lt-parada:last-child { padding-bottom: 0; }
+.lc .p-tarifas .lt-parada:last-child::before { bottom: auto; height: 24px; border-radius: 0 0 6px 6px; }
+.lc .p-tarifas .lt-parada:only-child::before { display: none; }
+.lc .p-tarifas .lt-circulo { position: absolute; left: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--blanco); border: 4px solid var(--escuela-trazo); }
+.lc .p-tarifas .lt-cabeza { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 16px; }
+.lc .p-tarifas .lt-nombre { font: 800 1.625rem/0.95 var(--display); text-transform: uppercase; text-wrap: balance; }
+.lc .p-tarifas a.lt-nombre { display: inline-flex; align-items: center; min-height: 44px; color: var(--tinta); text-decoration: underline; text-decoration-color: var(--escuela-trazo); text-decoration-thickness: 2px; text-underline-offset: 0.15em; }
+.lc .p-tarifas a.lt-nombre:hover { text-decoration-thickness: 3px; }
+.lc .p-tarifas .lt-importe { font: 700 1.375rem/1.2 var(--texto); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lc .p-tarifas .lt-importe small { font-size: 0.9375rem; font-weight: 500; color: var(--tinta-2); }
+/* Excepción: amarillo de aviso + rombo + texto que lo dice */
+.lc .p-tarifas .excepcion {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 4px 10px 5px 8px;
+  background: var(--aviso); color: var(--tinta); font: 700 0.9375rem/1.3 var(--texto); font-variant-numeric: tabular-nums;
+}
+.lc .p-tarifas .excepcion svg, .lc .p-tarifas .lt-leyenda svg { flex: none; }
+.lc .p-tarifas .lt-leyenda { display: flex; align-items: center; gap: 8px; margin-top: 32px; color: var(--tinta-2); font-size: 0.9375rem; }
+@media (min-width: 900px) {
+  .lc .p-tarifas .linea-tarifa { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); margin-top: 16px; }
+  .lc .p-tarifas .lt-parada { padding: 52px 10px 0; text-align: center; }
+  .lc .p-tarifas .lt-parada::before { left: 0; right: 0; top: 18px; bottom: auto; width: auto; height: 12px; }
+  .lc .p-tarifas .lt-parada:first-child::before { left: calc(50% - 40px); top: 18px; border-radius: 6px 0 0 6px; }
+  .lc .p-tarifas .lt-parada:last-child::before { right: calc(50% - 40px); bottom: auto; height: 12px; border-radius: 0 6px 6px 0; }
+  .lc .p-tarifas .lt-parada:only-child::before { display: block; left: calc(50% - 72px); right: calc(50% - 72px); border-radius: 6px; }
+  .lc .p-tarifas .lt-circulo { left: 50%; top: 12px; margin-left: -12px; }
+  .lc .p-tarifas .lt-cabeza { flex-direction: column; align-items: center; gap: 10px; }
+  .lc .p-tarifas .lt-nombre { font-size: clamp(1.375rem, 1.9vw, 1.75rem); }
+  .lc .p-tarifas .lt-importe { font-size: 1.75rem; }
+  .lc .p-tarifas .lt-importe small { display: block; margin-top: 2px; }
+  .lc .p-tarifas .excepcion { display: flex; width: fit-content; margin: 14px auto 0; text-align: left; }
+  .lc .p-tarifas .lt-leyenda { margin-top: 40px; }
+}
+
+/* ---------- Aparte: licencia y exámenes ---------- */
+.lc .p-tarifas .aparte { border-top: 1px solid var(--tinta); }
+.lc .p-tarifas .aparte li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px 24px; padding: 20px 0; border-bottom: 1px solid var(--filete); }
+.lc .p-tarifas .aparte-concepto { font: 800 1.5rem/1 var(--display); text-transform: uppercase; text-wrap: balance; }
+.lc .p-tarifas .aparte-precio { font: 700 1.25rem/1.25 var(--texto); font-variant-numeric: tabular-nums; }
+.lc .p-tarifas .aparte-nota { margin-top: 16px; color: var(--tinta-2); max-width: 60ch; }
+.lc .p-tarifas .cierre { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; margin-top: clamp(48px, 6vw, 72px); }
+@media (min-width: 900px) {
+  .lc .p-tarifas .aparte-rejilla { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); }
+  .lc .p-tarifas .aparte-rejilla > .cabeza-seccion { grid-column: 1 / 5; }
+  .lc .p-tarifas .aparte-rejilla > .aparte-caja { grid-column: 6 / 13; }
+  .lc .p-tarifas .aparte li { grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; padding: 24px 0; }
+  .lc .p-tarifas .aparte-concepto { font-size: 1.75rem; }
+  .lc .p-tarifas .aparte-precio { text-align: right; font-size: 1.5rem; }
+}

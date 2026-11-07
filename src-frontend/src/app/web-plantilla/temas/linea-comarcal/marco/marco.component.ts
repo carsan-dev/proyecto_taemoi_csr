@@ -15,7 +15,7 @@ import { RouterLink } from '@angular/router';
 
 import { RELOJ_WEB } from '../../../comun/reloj';
 import { SitioWeb } from '../../../datos/modelos';
-import { vistaMarco } from '../contenido';
+import { PaginaMarco, vistaMarco } from '../contenido';
 import { TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS } from '../textos';
 
 /**
@@ -38,6 +38,8 @@ import { TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS } from '../textos';
 })
 export class MarcoLineaComarcalComponent {
   readonly sitio = input.required<SitioWeb>();
+  /** En qué página está: en la portada el menú va a sus secciones; en las demás, «Tarifas» va a su página. */
+  readonly pagina = input<PaginaMarco>('portada');
 
   private readonly documento = inject(DOCUMENT);
   private readonly reloj = inject(RELOJ_WEB);
@@ -45,7 +47,7 @@ export class MarcoLineaComarcalComponent {
   private readonly principal = viewChild<ElementRef<HTMLElement>>('principal');
 
   protected readonly fijos = FIJOS;
-  protected readonly vista = computed(() => vistaMarco(this.sitio(), this.reloj()));
+  protected readonly vista = computed(() => vistaMarco(this.sitio(), this.reloj(), this.pagina()));
   protected readonly menuAbierto = signal(false);
 
   constructor() {

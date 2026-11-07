@@ -1,0 +1,241 @@
+@let s = pagina.sitio();
+@if (pagina.estado() === 'no-publicada') {
+  @defer (on immediate) {
+    <app-web-sin-publicar />
+  }
+} @else if (s) {
+  <app-lc-marco [sitio]="s" pagina="otra">
+    @if (vista(); as v) {
+      <div class="p-sede">
+        <!-- Cartel del pueblo -->
+        <section class="sede-portada" aria-labelledby="sede-titulo">
+          <div class="envoltura sede-rejilla">
+            <div class="sede-texto">
+              <nav class="tramo" [class.tramo--una]="v.tramo.una" [attr.aria-label]="textos.posicion">
+                <span class="tramo-linea" aria-hidden="true" [style.left]="v.tramo.izquierda" [style.right]="v.tramo.derecha"></span>
+                @for (x of v.tramo.terminales; track $index) {
+                  <span class="tramo-term" aria-hidden="true" [style.left]="x"></span>
+                }
+                @if (!v.tramo.una) {
+                  <ng-container *ngTemplateOutlet="vecina; context: { $implicit: v.tramo.anterior, sentido: 'ant' }" />
+                }
+                <p class="tramo-parada tramo-parada--actual" aria-current="page">
+                  <span class="tramo-circulo" aria-hidden="true"></span>
+                  <span class="tramo-nombre">{{ v.tramo.actual }}</span>
+                </p>
+                @if (!v.tramo.una) {
+                  <ng-container *ngTemplateOutlet="vecina; context: { $implicit: v.tramo.siguiente, sentido: 'sig' }" />
+                }
+              </nav>
+              <h1 class="sede-titular" [class.sede-titular--largo]="v.titularLargo" id="sede-titulo">{{ v.nombre }}</h1>
+              @if (v.lugar || v.direccion) {
+                <p class="sede-lugar">
+                  @if (v.lugar) {<strong>{{ v.lugar }}</strong>}
+                  @if (v.direccion) {<span>{{ v.direccion }}</span>}
+                </p>
+              }
+              <div class="acciones">
+                @if (v.preinscribirme) {
+                  <a class="boton" routerLink="/preinscripcion" [queryParams]="v.consulta" [attr.aria-label]="v.preinscribirmeEtiqueta">{{ v.preinscribirme }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                }
+                <a class="enlace-flecha" [routerLink]="[]" fragment="horarios">{{ textos.verGrupos }}<ng-container *ngTemplateOutlet="flecha" /></a>
+              </div>
+            </div>
+            @if (v.foto) {
+              <figure class="foto sede-foto"><img [src]="v.foto.url" width="1600" height="2000" fetchpriority="high" [alt]="v.foto.alt"></figure>
+            }
+          </div>
+        </section>
+
+        <!-- Horarios -->
+        <section class="seccion seccion--anden" id="horarios" aria-labelledby="horarios-titulo">
+          <div class="envoltura">
+            <div class="cabeza-seccion">
+              <p class="rotulo">{{ v.horarios.rotulo }}</p>
+              <h2 class="titulo-seccion" id="horarios-titulo">{{ v.horarios.titulo }}</h2>
+            </div>
+            <div class="tablero">
+              <p class="proxima">
+                @if (v.horarios.proxima; as p) {
+                  <span class="proxima-rotulo">{{ p.rotulo }}</span>
+                  <span class="proxima-cuando">@if (p.hoy) {<mark class="hoy">HOY</mark>} @else {<ng-container>{{ p.cuando }} </ng-container>}<span class="hora">{{ p.hora }}</span></span>
+                  @if (p.grupo) {<span class="proxima-grupo">{{ p.grupo }}</span>}
+                } @else {
+                  <span class="proxima-rotulo">{{ textos.sinClases }}</span>
+                }
+              </p>
+              @if (v.horarios.salidas.length) {
+                <div class="salidas-cabeza" aria-hidden="true"><span>{{ textos.cabezaHora }}</span><span>{{ textos.cabezaGrupo }}</span><span>{{ textos.cabezaDias }}</span><span></span></div>
+                <ol class="salidas" [attr.aria-label]="gruposDe(v.nombre)">
+                  @for (salida of v.horarios.salidas; track salida.clave) {
+                    <li class="salida">
+                      <p class="salida-hora">@if (salida.hoy) {<mark class="hoy">HOY</mark>}<span class="hora-ini">{{ salida.inicio }}</span><span class="hora-fin">–{{ salida.fin }}</span></p>
+                      <div class="salida-grupo">
+                        <p class="grupo-nombre">{{ salida.grupo }}</p>
+                        <p class="grupo-edades">{{ salida.edades ? salida.edades + ' · ' + salida.disciplina : salida.disciplina }}</p>
+                      </div>
+                      <div class="salida-detalle">
+                        <p class="dias-p">
+                          <span class="dias" aria-hidden="true">
+                            @for (dia of salida.dias; track dia.letra) {
+                              <span class="dia" [class.dia--si]="dia.si" [class.dia--hoy]="dia.si && dia.hoy">{{ dia.letra }}</span>
+                            }
+                          </span>
+                          <span class="oculto">{{ salida.diasTexto }}</span>
+                        </p>
+                        @if (salida.plazas) {
+                          <p [class]="'plazas plazas--' + salida.plazas">
+                            <ng-container *ngTemplateOutlet="icono; context: { $implicit: salida.plazas }" />
+                            <span class="cifras">{{ salida.plazasTexto }}</span>
+                          </p>
+                        }
+                      </div>
+                      @if (salida.accion.texto) {
+                        <div class="salida-accion">
+                          <a class="boton" [class.boton--secundario]="salida.accion.secundaria" routerLink="/preinscripcion" [queryParams]="salida.accion.consulta" [attr.aria-label]="salida.accion.etiqueta">{{ salida.accion.texto }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                        </div>
+                      }
+                    </li>
+                  }
+                </ol>
+                <ul class="leyenda" [attr.aria-label]="textos.leyenda">
+                  <li><ng-container *ngTemplateOutlet="icono; context: { $implicit: 'quedan' }" />{{ textos.leyendaQuedan }}</li>
+                  <li><ng-container *ngTemplateOutlet="icono; context: { $implicit: 'lleno' }" />{{ v.horarios.leyenda.lleno }}</li>
+                  <li><ng-container *ngTemplateOutlet="icono; context: { $implicit: 'espera' }" />{{ textos.leyendaEspera }}</li>
+                </ul>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Cómo llegar -->
+        @if (v.llegar; as l) {
+          <section class="seccion" id="llegar" aria-labelledby="llegar-titulo">
+            <div class="envoltura llegar">
+              <div class="llegar-texto">
+                <div class="cabeza-seccion">
+                  <p class="rotulo">{{ textos.rotuloLlegar }}</p>
+                  <h2 class="titulo-seccion" id="llegar-titulo">{{ textos.tituloLlegar }}</h2>
+                </div>
+                @if (l.filas.length) {
+                  <dl class="ficha">
+                    @for (fila of l.filas; track fila.rotulo) {
+                      <div class="ficha-fila">
+                        <dt>{{ fila.rotulo }}</dt>
+                        <dd>
+                          @if (fila.enlace) {<a class="cifras" [href]="fila.enlace">{{ fila.texto }}</a>} @else {<ng-container>{{ fila.texto }}</ng-container>}
+                          @if (fila.nota) {<span class="ficha-nota">{{ fila.nota }}</span>}
+                        </dd>
+                      </div>
+                    }
+                  </dl>
+                }
+                @if (l.mapa) {
+                  <div class="llegar-acciones">
+                    <a class="boton boton--secundario" [href]="l.mapa" target="_blank" rel="noopener">{{ textos.abrirMapa }}<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7 9M11.5 9.5v4h-9v-9h4" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="oculto">{{ textos.otraPestana }}</span></a>
+                  </div>
+                }
+              </div>
+              @if (l.foto) {
+                <figure class="foto llegar-foto"><img [src]="l.foto.url" width="1600" height="2000" loading="lazy" [alt]="l.foto.alt"></figure>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Tarifa -->
+        @if (v.tarifa; as tf) {
+          <section class="tarifas" id="tarifas" aria-labelledby="tarifas-titulo">
+            <div class="envoltura tarifas-rejilla">
+              <h2 class="rotulo" id="tarifas-titulo">{{ textos.rotuloTarifaSede }}</h2>
+              <p class="tarifa-cifra"><span class="tarifa-importe">{{ tf.importe }}</span><span class="tarifa-mes">{{ tf.alMes }}</span></p>
+              <div class="tarifa-lado">
+                @if (tf.igual) {<p class="tarifa-igual">{{ tf.igual }}</p>}
+                @if (tf.puntos.length) {
+                  <ul class="tarifa-incluye">
+                    @for (punto of tf.puntos; track $index) {<li>{{ punto }}</li>}
+                  </ul>
+                }
+                @if (tf.boton) {
+                  <a class="boton boton--blanco" routerLink="/preinscripcion" [queryParams]="v.consulta">{{ tf.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                }
+              </div>
+            </div>
+          </section>
+        }
+
+        <!-- Todas las sedes -->
+        @if (v.ruta; as ruta) {
+          <section class="seccion" id="sedes" aria-labelledby="sedes-titulo">
+            <div class="envoltura">
+              <div class="cabeza-seccion">
+                <p class="rotulo">{{ textos.rotuloRuta }}</p>
+                <h2 class="titulo-seccion" id="sedes-titulo">{{ textos.tituloRuta }}</h2>
+              </div>
+              <ol class="ruta">
+                @for (parada of ruta; track parada.clave) {
+                  <li class="ruta-sede" [class.ruta-sede--actual]="parada.actual">
+                    @if (parada.actual) {
+                      <span class="ruta-nombre">{{ parada.nombre }}</span><span class="ruta-aqui">{{ textos.estasAqui }}</span>
+                    } @else if (parada.enlace) {
+                      <a class="ruta-nombre" [routerLink]="parada.enlace">{{ parada.nombre }}</a>
+                    } @else {
+                      <span class="ruta-nombre">{{ parada.nombre }}</span>
+                    }
+                    @if (parada.detalle) {<span class="ruta-dir">{{ parada.detalle }}</span>}
+                  </li>
+                }
+              </ol>
+            </div>
+          </section>
+        }
+      </div>
+    } @else {
+      <app-lc-no-encontrada-contenido [sitio]="s" />
+    }
+  </app-lc-marco>
+}
+
+<ng-template #vecina let-s let-sentido="sentido">
+  @if (s) {
+    @if (s.enlace) {
+      <a class="tramo-parada" [routerLink]="s.enlace">
+        <ng-container *ngTemplateOutlet="vecinaContenido; context: { $implicit: s, sentido }" />
+      </a>
+    } @else {
+      <p class="tramo-parada">
+        <ng-container *ngTemplateOutlet="vecinaContenido; context: { $implicit: s, sentido }" />
+      </p>
+    }
+  } @else {
+    <span class="tramo-hueco" aria-hidden="true"></span>
+  }
+</ng-template>
+
+<ng-template #vecinaContenido let-s let-sentido="sentido">
+  <span class="tramo-circulo" aria-hidden="true"></span>
+  @if (sentido === 'ant') {
+    <span class="tramo-sentido"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4.5 4 9l4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ textos.anterior }}</span>
+  } @else {
+    <span class="tramo-sentido">{{ textos.siguiente }}<ng-container *ngTemplateOutlet="flecha" /></span>
+  }
+  <span class="tramo-nombre">{{ s.nombre }}</span>
+</ng-template>
+
+<ng-template #icono let-estado>
+  @switch (estado) {
+    @case ('quedan') {
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="#F2C230" stroke="#101418" stroke-width="1.5"/></svg>
+    }
+    @case ('lleno') {
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M4.1 13.9l9.8-9.8" stroke="currentColor" stroke-width="1.75"/></svg>
+    }
+    @case ('espera') {
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M9 5.2V9l2.8 1.8" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round"/></svg>
+    }
+  }
+</ng-template>
+
+<ng-template #flecha>
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</ng-template>

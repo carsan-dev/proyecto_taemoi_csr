@@ -50,8 +50,17 @@ export class TextosTema {
 export interface EnlaceAncla {
   texto: string;
   ruta: string;
-  fragmento: string;
+  /** Ancla de la portada (`/#linea`); null si el enlace va a otra página (`/tarifas`). */
+  fragmento: string | null;
+  /** Si es la página en la que se está (`aria-current="page"`). */
+  actual?: boolean;
 }
+
+/**
+ * En qué página está el marco. En la portada, el menú lleva a sus secciones; en las demás páginas (boceto
+ * `boceto-linea-comarcal-sede.html`, `-tarifas.html`…), «Tarifas» va a su página y el resto a la portada.
+ */
+export type PaginaMarco = 'portada' | 'tarifas' | 'otra';
 
 export interface VistaMarco {
   nombre: string;
@@ -68,7 +77,7 @@ export interface VistaMarco {
   creditos: string | null;
 }
 
-export function vistaMarco(sitio: SitioWeb, ahora: Date): VistaMarco {
+export function vistaMarco(sitio: SitioWeb, ahora: Date, pagina: PaginaMarco = 'portada'): VistaMarco {
   const textos = new TextosTema(sitio);
   const nombre = sitio.escuela.nombre.trim();
   const palabras = nombre.split(/\s+/).filter(Boolean);
@@ -101,8 +110,13 @@ export function vistaMarco(sitio: SitioWeb, ahora: Date): VistaMarco {
       '--tarifa-boton-tinta': c.tarifaBotonTinta,
     },
     menu: menu
-      .filter(([, , visible]) => visible)
-      .map(([clave, fragmento]) => ({ texto: textos.t(clave), ruta: '/', fragmento }))
+      .filter(([clave, , visible]) => visible || (pagina !== 'portada' && clave === 'menu.tarifas'))
+      .map(([clave, fragmento]): EnlaceAncla => {
+        const texto = textos.t(clave);
+        return pagina !== 'portada' && clave === 'menu.tarifas'
+          ? { texto, ruta: '/tarifas', fragmento: null, actual: pagina === 'tarifas' }
+          : { texto, ruta: '/', fragmento };
+      })
       .filter((e) => e.texto),
     cta: textos.t('cabecera.boton'),
     anio: ahora.getFullYear(),
@@ -151,6 +165,8 @@ export function seccionesConContenido(sitio: SitioWeb): {
 export interface VistaDia {
   letra: string;
   si: boolean;
+  /** El día de hoy (página de sede: el día se marca en amarillo). */
+  hoy: boolean;
 }
 
 export interface VistaSalida {
@@ -159,6 +175,10 @@ export interface VistaSalida {
   fin: string;
   grupo: string;
   edades: string | null;
+  /** Nombre de la disciplina del grupo («4 a 6 años · Taekwondo» en la página de sede). */
+  disciplina: string;
+  /** Si tiene clase hoy (página de sede: «HOY» junto a la hora). */
+  hoy: boolean;
   dias: VistaDia[];
   diasTexto: string;
   plazas: EstadoPlazas | null;
@@ -444,7 +464,6 @@ function construirSeccion(tipo: TipoSeccion, x: Contexto): VistaSeccion | null {
 
 function vistaHorarios(sitio: SitioWeb, textos: TextosTema, ahora: Date): Omit<VistaHorarios, 'numero'> {
   const apoyoPropio = textos.bloques.tiene('horarios.apoyo') ? textos.bloques.texto('horarios.apoyo', '') : null;
-  const textosPlazas = { lleno: textos.t('horarios.lleno'), espera: textos.t('horarios.espera') };
   return {
     titulo: textos.t('horarios.titulo'),
     apoyoMovil: apoyoPropio ?? FIJOS.apoyoHorariosMovil,
@@ -464,33 +483,42 @@ function vistaHorarios(sitio: SitioWeb, textos: TextosTema, ahora: Date): Omit<V
         enlaceSede: sede.slug ? `/sedes/${sede.slug}` : null,
         mapa: sede.lugar?.trim() || sede.direccion?.trim() ? enlaceMapa([sede.lugar, sede.direccion, localidad]) : null,
         proxima: proximaClase(sede, ahora),
-        salidas: salidasDeSede(sede).map((s) => {
-          const estado = estadoPlazas(s.plazas);
-          const edades = edadesEnTexto(s.grupo.rangoEdadMin, s.grupo.rangoEdadMax);
-          const quien = [s.grupo.nombre, edades?.toLowerCase(), sede.nombre].filter(Boolean).join(', ');
-          const espera = estado === 'lleno' || estado === 'espera';
-          const texto = espera ? textos.t('horarios.boton_espera') : textos.t('horarios.boton');
-          return {
-            clave: `${s.grupo.id}-${s.inicio}-${s.fin}`,
-            inicio: s.inicio,
-            fin: s.fin,
-            grupo: s.grupo.nombre,
-            edades,
-            dias: DIAS_SEMANA.map((d) => ({ letra: d.letra, si: s.dias.includes(d.numero) })),
-            diasTexto: diasEnTexto(s.dias),
-            plazas: estado,
-            plazasTexto: textoPlazas(s.plazas, textosPlazas),
-            accion: {
-              texto,
-              secundaria: espera,
-              etiqueta: `${texto}: ${quien}`,
-              consulta: { sede: sede.slug ?? String(sede.id), grupo: String(s.grupo.id) },
-            },
-          };
-        }),
+        salidas: vistaSalidas(sede, textos, ahora),
       };
     }),
   };
+}
+
+/** Las salidas de una sede (tablero de la portada y de la página de sede). */
+export function vistaSalidas(sede: SedeWeb, textos: TextosTema, ahora: Date): VistaSalida[] {
+  const textosPlazas = { lleno: textos.t('horarios.lleno'), espera: textos.t('horarios.espera') };
+  const hoy = ahora.getDay();
+  return salidasDeSede(sede).map((s) => {
+    const estado = estadoPlazas(s.plazas);
+    const edades = edadesEnTexto(s.grupo.rangoEdadMin, s.grupo.rangoEdadMax);
+    const quien = [s.grupo.nombre, edades?.toLowerCase(), sede.nombre].filter(Boolean).join(', ');
+    const espera = estado === 'lleno' || estado === 'espera';
+    const texto = espera ? textos.t('horarios.boton_espera') : textos.t('horarios.boton');
+    return {
+      clave: `${s.grupo.id}-${s.inicio}-${s.fin}`,
+      inicio: s.inicio,
+      fin: s.fin,
+      grupo: s.grupo.nombre,
+      edades,
+      disciplina: s.grupo.disciplinaNombre,
+      hoy: s.dias.includes(hoy),
+      dias: DIAS_SEMANA.map((d) => ({ letra: d.letra, si: s.dias.includes(d.numero), hoy: d.numero === hoy })),
+      diasTexto: diasEnTexto(s.dias),
+      plazas: estado,
+      plazasTexto: textoPlazas(s.plazas, textosPlazas),
+      accion: {
+        texto,
+        secundaria: espera,
+        etiqueta: `${texto}: ${quien}`,
+        consulta: { sede: sede.slug ?? String(sede.id), grupo: String(s.grupo.id) },
+      },
+    };
+  });
 }
 
 function datosDelClub(sitio: SitioWeb, x: Contexto): VistaDato[] {
@@ -598,6 +626,10 @@ export function tarifaPrincipal(sitio: SitioWeb, hoy = new Date()): { importe: n
   );
   return { importe: tarifa.importe!, igual };
 }
+
+/** Sede recordada (fase4-web-plan.md §6, «Legales»: almacenamiento técnico, sin aviso de cookies). La guardan la línea de
+ * la portada y la página de sede. */
+export const CLAVE_SEDE_RECORDADA = 'linea-comarcal:sede';
 
 export function claveSede(sede: SedeWeb): string {
   return sede.slug ?? `sede-${sede.id}`;

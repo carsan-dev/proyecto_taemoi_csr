@@ -1,0 +1,160 @@
+@let s = pagina.sitio();
+@let v = vista();
+@if (pagina.estado() === 'no-publicada') {
+  @defer (on immediate) {
+    <app-web-sin-publicar />
+  }
+} @else if (s && v) {
+  <app-lc-marco [sitio]="s" pagina="tarifas">
+    <div class="p-tarifas">
+      <!-- La banda: la cuota de un vistazo -->
+      <section class="tarifas" id="tarifas" aria-labelledby="tarifas-titulo">
+        <div class="envoltura tarifas-rejilla">
+          <h1 class="rotulo" id="tarifas-titulo">{{ v.titulo }}</h1>
+          @if (v.cuota; as b) {
+            <p class="tarifa-cifra"><span class="tarifa-importe">{{ b.importe }}</span><span class="tarifa-mes">{{ b.alMes }}</span></p>
+            <div class="tarifa-lado">
+              <p class="tarifa-igual">{{ b.texto }}</p>
+              <ul class="tarifa-incluye">
+                @for (punto of b.incluye; track $index) {<li>{{ punto }}</li>}
+              </ul>
+              <div class="tarifas-acciones">
+                @if (b.boton) {
+                  <a class="boton boton--blanco" routerLink="/preinscripcion">{{ b.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                }
+                @if (v.conHorarios) {
+                  <a class="enlace-flecha" routerLink="/" fragment="linea">{{ v.verHorarios }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                }
+              </div>
+            </div>
+          } @else if (v.vacia; as b) {
+            <p class="tarifa-vacio">{{ b.titular }}</p>
+            <div class="tarifa-lado">
+              <p class="tarifa-igual">{{ b.texto }}</p>
+              @if (b.correo || b.telefono) {
+                <dl class="tarifa-contacto">
+                  @if (b.correo; as c) {
+                    <div><dt>{{ c.rotulo }}</dt><dd><a [href]="c.enlace">{{ c.texto }}</a></dd></div>
+                  }
+                  @if (b.telefono; as tel) {
+                    <div><dt>{{ tel.rotulo }}</dt><dd><a class="cifras" [href]="tel.enlace">{{ tel.texto }}</a></dd></div>
+                  }
+                </dl>
+              }
+              @if (v.conHorarios) {
+                <div class="tarifas-acciones">
+                  <a class="enlace-flecha" routerLink="/" fragment="linea">{{ v.verHorarios }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Cuadro de tarifas -->
+      @if (v.cuadro; as cuadro) {
+        <section class="seccion" id="cuadro" aria-labelledby="cuadro-titulo">
+          <div class="envoltura cuadro-rejilla">
+            <div class="cabeza-seccion">
+              <p class="rotulo">{{ textos.rotuloCuadro }}</p>
+              <h2 class="titulo-seccion" id="cuadro-titulo">{{ textos.tituloCuadro }}</h2>
+            </div>
+            <div class="cuadro-caja">
+              <table class="cuadro">
+                <caption><span class="rotulo">{{ cuadro.leyenda }}</span></caption>
+                <thead><tr><th scope="col">{{ textos.columnaTarifa }}</th><th scope="col">{{ textos.columnaQuien }}</th><th scope="col">{{ textos.columnaImporte }}</th></tr></thead>
+                @for (fila of cuadro.filas; track $index) {
+                  @if (fila.importes.length > 1) {
+                    <tbody class="grupo-tarifa">
+                      @for (x of fila.importes; track $index; let primera = $first) {
+                        <tr>
+                          @if (primera) {<th scope="rowgroup" [attr.rowspan]="fila.importes.length">{{ fila.nombre }}</th>}
+                          <td class="quien">{{ x.quien }}</td>
+                          <td class="importe cifras">{{ x.importe }}<small>{{ alMes }}</small></td>
+                        </tr>
+                      }
+                    </tbody>
+                  } @else {
+                    <tbody>
+                      <tr>
+                        <th scope="row">{{ fila.nombre }}</th>
+                        <td class="quien">{{ fila.importes[0].quien }}</td>
+                        <td class="importe cifras">{{ fila.importes[0].importe }}<small>{{ alMes }}</small></td>
+                      </tr>
+                    </tbody>
+                  }
+                }
+              </table>
+              <p class="cuadro-pie">{{ textos.pieCuadro }}</p>
+            </div>
+          </div>
+        </section>
+      }
+
+      <!-- Por sede -->
+      @if (v.porSede; as porSede) {
+        <section class="seccion seccion--anden" id="por-sede" aria-labelledby="por-sede-titulo">
+          <div class="envoltura">
+            <div class="cabeza-seccion">
+              <p class="rotulo">{{ textos.rotuloPorSede }}</p>
+              <h2 class="titulo-seccion" id="por-sede-titulo">{{ textos.tituloPorSede }}</h2>
+            </div>
+            <ol class="linea-tarifa" [attr.aria-label]="textos.etiquetaPorSede" [style.--n]="porSede.paradas.length">
+              @for (parada of porSede.paradas; track parada.clave) {
+                <li class="lt-parada">
+                  <span class="lt-circulo" aria-hidden="true"></span>
+                  <div class="lt-cabeza">
+                    @if (parada.enlace) {
+                      <a class="lt-nombre" [routerLink]="parada.enlace">{{ parada.nombre }}</a>
+                    } @else {
+                      <span class="lt-nombre">{{ parada.nombre }}</span>
+                    }
+                    <p class="lt-importe cifras">{{ parada.importe }} <small>{{ alMes }}</small></p>
+                  </div>
+                  @if (parada.cambio) {
+                    <p class="excepcion"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 13 7 7 13 1 7z" fill="#101418"/></svg><span>{{ parada.cambio }}</span></p>
+                  }
+                </li>
+              }
+            </ol>
+            @if (porSede.conCambio) {
+              <p class="lt-leyenda"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 13 7 7 13 1 7z" fill="#F2C230" stroke="#101418" stroke-width="1.5" stroke-linejoin="round"/></svg>{{ textos.leyendaCambio }}</p>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Aparte -->
+      @if (v.aparte.length) {
+        <section class="seccion" id="aparte" aria-labelledby="aparte-titulo">
+          <div class="envoltura aparte-rejilla">
+            <div class="cabeza-seccion">
+              <p class="rotulo">{{ textos.rotuloAparte }}</p>
+              <h2 class="titulo-seccion" id="aparte-titulo">{{ textos.tituloAparte }}</h2>
+            </div>
+            <div class="aparte-caja">
+              <ul class="aparte">
+                @for (x of v.aparte; track $index) {
+                  <li><span class="aparte-concepto">{{ x.concepto }}</span><span class="aparte-precio">{{ x.precio }}</span></li>
+                }
+              </ul>
+              <p class="aparte-nota">{{ textos.notaAparte }}</p>
+              <div class="cierre">
+                @if (v.boton) {
+                  <a class="boton" routerLink="/preinscripcion">{{ v.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                }
+                @if (v.conHorarios) {
+                  <a class="boton boton--secundario" routerLink="/" fragment="linea">{{ v.verHorarios }}</a>
+                }
+              </div>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  </app-lc-marco>
+}
+
+<ng-template #flecha>
+  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</ng-template>

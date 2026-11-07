@@ -1,40 +1,37 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { paginaWeb } from '../../../comun/pagina-web';
+import { SitioWeb } from '../../../datos/modelos';
+import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
 
 /**
- * 404 del tema «La línea comarcal» (boceto `fase4-web/boceto-login-404-sin-publicar.html`, §9 n.º 10): cabecera y pie
- * del tema, la línea cortada, un mensaje corto y dos salidas (inicio y horarios). La URL no cambia. Sin publicar, al
- * login (`paginaWeb`); mientras carga o con error, nada.
+ * El cuerpo de la 404 del tema (dentro del marco): la línea cortada, un mensaje corto y dos salidas (inicio y
+ * horarios). Lo usan la 404 y la página de una sede que no existe.
  */
 @Component({
-  selector: 'app-lc-no-encontrada',
+  selector: 'app-lc-no-encontrada-contenido',
   standalone: true,
-  imports: [MarcoLineaComarcalComponent, RouterLink],
+  imports: [RouterLink],
   template: `
-    @if (pagina.sitio(); as sitio) {
-      <app-lc-marco [sitio]="sitio">
-        <div class="error">
-          <div class="envoltura">
-            <svg class="error-linea" viewBox="0 0 1000 28" preserveAspectRatio="none" aria-hidden="true">
-              <line class="trazo" x1="0" y1="14" x2="560" y2="14" stroke-width="8" />
-              <line class="corte" x1="600" y1="14" x2="1000" y2="14" stroke-width="3" stroke-dasharray="10 12" />
-            </svg>
-            <h1 class="error-titular">No encontramos esta página</h1>
-            <p class="error-texto">Puede que el enlace esté mal escrito o que la página ya no exista.</p>
-            <p class="error-codigo">Error 404</p>
-            <div class="acciones">
-              <a class="boton" routerLink="/">Ir al inicio</a>
-              @if (sitio.sedes.length) {
-                <a class="boton boton--secundario" routerLink="/" fragment="linea">Ver horarios</a>
-              }
-            </div>
-          </div>
+    <div class="error">
+      <div class="envoltura">
+        <svg class="error-linea" viewBox="0 0 1000 28" preserveAspectRatio="none" aria-hidden="true">
+          <line class="trazo" x1="0" y1="14" x2="560" y2="14" stroke-width="8" />
+          <line class="corte" x1="600" y1="14" x2="1000" y2="14" stroke-width="3" stroke-dasharray="10 12" />
+        </svg>
+        <h1 class="error-titular">No encontramos esta página</h1>
+        <p class="error-texto">Puede que el enlace esté mal escrito o que la página ya no exista.</p>
+        <p class="error-codigo">Error 404</p>
+        <div class="acciones">
+          <a class="boton" routerLink="/">Ir al inicio</a>
+          @if (sitio().sedes.length) {
+            <a class="boton boton--secundario" routerLink="/" fragment="linea">Ver horarios</a>
+          }
         </div>
-      </app-lc-marco>
-    }
+      </div>
+    </div>
   `,
   styles: `
     .lc .error { padding: clamp(48px, 8vw, 112px) 0 clamp(72px, 10vw, 144px); }
@@ -50,6 +47,32 @@ import { MarcoLineaComarcalComponent } from '../marco/marco.component';
     .lc .error .acciones { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
   `,
   encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ContenidoNoEncontradaLineaComarcalComponent {
+  readonly sitio = input.required<SitioWeb>();
+}
+
+/**
+ * 404 del tema «La línea comarcal» (boceto `fase4-web/boceto-login-404-sin-publicar.html`, §9 n.º 10): cabecera y pie
+ * del tema y el cuerpo de la 404. La URL no cambia. Sin publicar, la página «Web aún no publicada»; mientras carga o
+ * con error, nada.
+ */
+@Component({
+  selector: 'app-lc-no-encontrada',
+  standalone: true,
+  imports: [MarcoLineaComarcalComponent, ContenidoNoEncontradaLineaComarcalComponent, SinPublicarComponent],
+  template: `
+    @if (pagina.estado() === 'no-publicada') {
+      @defer (on immediate) {
+        <app-web-sin-publicar />
+      }
+    } @else if (pagina.sitio(); as sitio) {
+      <app-lc-marco [sitio]="sitio" pagina="otra">
+        <app-lc-no-encontrada-contenido [sitio]="sitio" />
+      </app-lc-marco>
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NoEncontradaLineaComarcalComponent {

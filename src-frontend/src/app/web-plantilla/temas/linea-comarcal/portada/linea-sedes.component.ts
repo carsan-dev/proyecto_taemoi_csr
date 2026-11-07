@@ -13,10 +13,9 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { VistaHorarios, VistaSede } from '../contenido';
+import { CLAVE_SEDE_RECORDADA, VistaHorarios, VistaSede } from '../contenido';
 
-/** Sede recordada (fase4-web-plan.md §6, «Legales»: almacenamiento técnico, sin aviso de cookies). */
-export const CLAVE_SEDE_RECORDADA = 'linea-comarcal:sede';
+export { CLAVE_SEDE_RECORDADA } from '../contenido';
 const ESCRITORIO = '(min-width: 900px)';
 
 /**
