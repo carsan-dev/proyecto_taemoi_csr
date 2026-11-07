@@ -730,18 +730,29 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
       { id: 21, diaSemana: 'Viernes', horaInicio: '20:00', horaFin: '21:00', grupo: 'Mayores', rangoEdadMin: 16, rangoEdadMax: 99, completo: true },
     ];
 
-    function abrirEditor(): HTMLElement {
+    function abrirEditor(turnos: unknown[] = TURNOS): HTMLElement {
       cargar();
       abrir('PRE-1');
       boton(detalle(), 'Cambiar la asignación').click();
       fixture.detectChanges();
       const r = http.expectOne(`${environment.apiUrl}/preinscripciones/public/turnos/TAEKWONDO`);
-      r.flush(TURNOS);
+      r.flush(turnos);
       fixture.detectChanges();
       return detalle().querySelector<HTMLElement>('.preins__asignacion')!;
     }
 
     const casilla = (editor: HTMLElement, id: number) => editor.querySelector<HTMLInputElement>(`input[data-turno="${id}"]`)!;
+
+    it('decisión 393: con varias sedes muestra la sede tras el grupo; sin sede, el texto de siempre', () => {
+      const editor = abrirEditor([
+        { ...TURNOS[0], sedeId: 3, sede: 'Estepa' },
+        { ...TURNOS[1], sedeId: 4, sede: 'Casariche' },
+        TURNOS[2],
+      ]);
+      expect(texto(casilla(editor, 11).closest('label'))).toContain('Infantil · Estepa · 5–12 años');
+      expect(texto(casilla(editor, 12).closest('label'))).toContain('Infantil · Casariche · 5–12 años');
+      expect(texto(casilla(editor, 21).closest('label'))).toContain('Mayores · 16–99 años');
+    });
 
     it('turnos de la disciplina con sus avisos; un turno por día; guarda con PUT …/turnos {turnoIds} y relee', () => {
       const editor = abrirEditor();
