@@ -1,4 +1,5 @@
-﻿<div class="login-page">
+﻿<div class="login-page" [attr.data-logo]="marca().tipo"
+  [style.--marca-fondo]="colorMarca('primario')" [style.--marca-sobre]="colorMarca('sobrePrimario')">
   <div class="login-container">
     <div class="login-card">
       <!-- Left Section - Branding -->
@@ -9,7 +10,20 @@
           </div>
           <h1 class="brand-title">BIENVENIDO</h1>
           <p class="brand-subtitle">Inicia sesi&oacute;n en tu cuenta</p>
-          <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela" class="brand-logo">
+          @switch (marca().tipo) {
+            @case ('subido') {
+              <img [src]="urlLogoSubido()" [alt]="nombreEscuela() ? 'Logo de ' + nombreEscuela() : 'Logo de la escuela'" class="brand-logo brand-logo--subido" (error)="logoSubidoFallo()">
+            }
+            @case ('ninguno') {
+              <div class="marca-texto">
+                <span class="monograma" aria-hidden="true">{{ inicialesEscuela() }}</span>
+                <p class="marca-texto-nombre">{{ nombreEscuela() }}</p>
+              </div>
+            }
+            @default {
+              <img src="../../../../assets/media/Logo_escuela.svg" alt="Logo de la escuela" class="brand-logo">
+            }
+          }
           <div class="brand-features">
             <div class="feature-item">
               <i class="bi bi-check-circle-fill"></i>
@@ -33,6 +47,16 @@
           <i class="bi bi-arrow-left"></i>
           <span>Inicio</span>
         </a>
+        @if (marca().tipo === 'subido' || marca().tipo === 'ninguno') {
+          <p class="marca-movil">
+            @if (marca().tipo === 'subido') {
+              <img class="marca-movil-logo marca-movil-logo--subido" [src]="urlLogoSubido()" alt="" width="40" height="40" (error)="logoSubidoFallo()">
+            } @else {
+              <span class="marca-movil-logo" aria-hidden="true">{{ inicialesEscuela() }}</span>
+            }
+            <span class="marca-movil-nombre">{{ nombreEscuela() }}</span>
+          </p>
+        }
         <div class="form-header">
           <h2 class="form-title">{{ mostrarRegistro ? 'Crear cuenta' : 'Iniciar sesi&oacute;n' }}</h2>
           @if (!mostrarRegistro) {

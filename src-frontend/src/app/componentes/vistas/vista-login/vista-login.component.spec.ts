@@ -1,12 +1,14 @@
-import { of } from 'rxjs';
+import { NEVER, of } from 'rxjs';
 import { VistaLoginComponent } from './vista-login.component';
 
 describe('VistaLoginComponent', () => {
+  const marcaSinRespuesta = { escuela: () => NEVER };
+
   it('abre el registro y prellena el correo desde la URL', () => {
     const auth = { comprobarLogueado: () => false };
     const router = { navigate: jasmine.createSpy('navigate') };
     const route = { queryParams: of({modo: 'registro', email: ' Familia@Example.COM '}) };
-    const component = new VistaLoginComponent(auth as any, router as any, route as any);
+    const component = new VistaLoginComponent(auth as any, router as any, route as any, marcaSinRespuesta as any);
 
     component.ngOnInit();
 
@@ -19,7 +21,7 @@ describe('VistaLoginComponent', () => {
     const auth = { comprobarLogueado: () => false };
     const router = { navigate: jasmine.createSpy('navigate') };
     const route = { queryParams: of({}) };
-    const component = new VistaLoginComponent(auth as any, router as any, route as any);
+    const component = new VistaLoginComponent(auth as any, router as any, route as any, marcaSinRespuesta as any);
 
     const resultado = (component as any).obtenerErrorLogin({
       status: 429,
