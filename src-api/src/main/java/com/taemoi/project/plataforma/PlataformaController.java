@@ -27,6 +27,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.taemoi.project.marca.MarcaPanelService;
 import com.taemoi.project.marca.ReglaContraste;
+import com.taemoi.project.web.EstadoWebDTO;
+import com.taemoi.project.web.PublicacionWebService;
+import com.taemoi.project.web.TemasWeb;
 
 /**
  * Configuración y consultas de plataforma (todas las escuelas). Protegido dos veces con la misma autoridad: la
@@ -41,13 +44,15 @@ public class PlataformaController {
 	private final LogoEscuelaService logos;
 	private final MarcaPanelService marcas;
 	private final AltaEscuelaService altas;
+	private final PublicacionWebService webs;
 
 	public PlataformaController(ErroresPlataformaService errores, LogoEscuelaService logos, MarcaPanelService marcas,
-			AltaEscuelaService altas) {
+			AltaEscuelaService altas, PublicacionWebService webs) {
 		this.errores = errores;
 		this.logos = logos;
 		this.marcas = marcas;
 		this.altas = altas;
+		this.webs = webs;
 	}
 
 	/** Mensaje del 400 de {@code PUT …/marca} sin la clave {@code colorPrimario}. */
@@ -132,6 +137,27 @@ public class PlataformaController {
 	public ResponseEntity<EscuelaPlataformaConTemaDTO> cambiarMarca(@PathVariable Long organizacionId,
 			@RequestBody(required = false) JsonNode cuerpo) {
 		return ResponseEntity.ok(marcas.cambiarColor(organizacionId, colorPrimario(cuerpo)));
+	}
+
+	/**
+	 * Pieza W3 de la web por plantilla: estado de la web de una escuela (tema publicado, si está publicada, cuándo y los
+	 * temas disponibles). 404 si la escuela no existe; 409 si tiene su web propia (Moiskimdo).
+	 */
+	@GetMapping("/escuelas/{organizacionId}/web")
+	public ResponseEntity<EstadoWebDTO> obtenerWeb(@PathVariable Long organizacionId) {
+		return ResponseEntity.ok(webs.estado(organizacionId));
+	}
+
+	/**
+	 * Pieza W3: publica la web de una escuela con el tema del cuerpo ({@code {"tema": "chandal"}}), como su
+	 * propietario. Se registra en la escuela DESTINO. 200 con el estado; 400 tema que no vale; 404 escuela que no
+	 * existe; 409 Moiskimdo o publicación a la vez.
+	 */
+	@PutMapping("/escuelas/{organizacionId}/web/publicacion")
+	public ResponseEntity<EstadoWebDTO> publicarWeb(@PathVariable Long organizacionId,
+			@RequestBody(required = false) JsonNode cuerpo) {
+		return ResponseEntity.ok(webs.publicar(organizacionId, TemasWeb.temaDe(cuerpo),
+				"/api/plataforma/escuelas/" + organizacionId + "/web/publicacion"));
 	}
 
 	/**

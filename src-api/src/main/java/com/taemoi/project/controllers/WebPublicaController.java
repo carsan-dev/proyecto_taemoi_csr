@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.entities.Roles;
 import com.taemoi.project.web.LegalWebDTO;
+import com.taemoi.project.web.TemasWeb;
 import com.taemoi.project.web.WebPublicaDTO;
 import com.taemoi.project.web.WebPublicaService;
 
@@ -53,11 +54,26 @@ public class WebPublicaController {
 		this.json = json;
 	}
 
-	/** Escuela, tema, bloques, sedes con grupos, turnos y plazas, tarifas, licencias, próximos eventos y contacto. */
+	/**
+	 * Escuela, tema, bloques, sedes con grupos, turnos y plazas, tarifas, licencias, próximos eventos y contacto.
+	 *
+	 * <p>Pieza W3: {@code tema} solo cuenta en la vista previa de la gestión (el tema elegido en «Web · Tema» y aún no
+	 * publicado, que no se guarda): sale ese tema en lugar del publicado; uno que no existe, 400. En cualquier otra
+	 * petición (anónima o sin rol de gestión) se ignora.
+	 */
 	@GetMapping
 	public ResponseEntity<WebPublicaDTO> web(
-			@RequestParam(name = "vistaPrevia", defaultValue = "false") boolean vistaPrevia) {
-		return responder(web.web(vistaPrevia && esGestion()), vistaPrevia);
+			@RequestParam(name = "vistaPrevia", defaultValue = "false") boolean vistaPrevia,
+			@RequestParam(name = "tema", required = false) String tema) {
+		boolean deGestion = vistaPrevia && esGestion();
+		String temaVistaPrevia = null;
+		if (deGestion && tema != null) {
+			if (!TemasWeb.esValido(tema)) {
+				throw new IllegalArgumentException(TemasWeb.TEMA_NO_VALIDO);
+			}
+			temaVistaPrevia = tema;
+		}
+		return responder(web.web(deGestion, temaVistaPrevia), vistaPrevia);
 	}
 
 	/** Titular (con CIF y domicilio), normas por disciplina y fecha de la última publicación. */
