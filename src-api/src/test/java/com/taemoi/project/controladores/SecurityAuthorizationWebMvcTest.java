@@ -103,6 +103,9 @@ class SecurityAuthorizationWebMvcTest {
 	private MembresiaService membresiaService;
 
 	@MockitoBean
+	private com.taemoi.project.plataforma.LogoEscuelaService logoEscuelaService;
+
+	@MockitoBean
 	private AccesoFamiliaService accesoFamiliaService;
 
 	/** Pieza E10-2: fichas propias de la cuenta para el alumnoDTO de {@code /api/auth/user}. */
