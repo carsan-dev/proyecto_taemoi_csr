@@ -7,6 +7,7 @@ import { routes } from './app.routes';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { NgxSpinnerModule } from 'ngx-spinner';
+import { bloqueoCambioEscuelaInterceptor } from './core/cambio-escuela-pestanas';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { credentialsInterceptor } from './interceptors/credentials.interceptor';
 import { loadingInterceptor } from './interceptors/loading.interceptor';
@@ -34,7 +35,7 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     { provide: ErrorHandler, useFactory: () => new RecargaPorChunkErrorHandler() },
-    provideHttpClient(withFetch(), withInterceptors([credentialsInterceptor, loadingInterceptor, errorInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([bloqueoCambioEscuelaInterceptor, credentialsInterceptor, loadingInterceptor, errorInterceptor])),
     provideAnimationsAsync(),
     importProvidersFrom(NgxSpinnerModule.forRoot({ type: 'ball-clip-rotate' })),
   ],

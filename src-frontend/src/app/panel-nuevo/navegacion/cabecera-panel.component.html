@@ -2,12 +2,24 @@
   @if (lista()) {
   <header class="pn-cab fixed-header">
     <div class="pn-cab__fila">
+      @if (variasEscuelas()) {
+      <!-- Selector de escuela: con dos o más, el nombre abre «Cambiar de escuela» (sin logo, sus iniciales). -->
+      <pn-selector-escuela class="pn-cab__selector" [escuelas]="escuelas()" [attr.title]="nombreEscuela()">
+        @if (logo(); as src) {
+        <img class="pn-cab__logo" src="{{ src }}" alt="" width="46" height="46" (error)="logoFallo.set(true)" />
+        } @else if (inicialesActiva()) {
+        <span class="pn-cab__iniciales-escuela" aria-hidden="true">{{ inicialesActiva() }}</span>
+        }
+        <span class="pn-cab__nombre"><span class="pn-cab__oculto">Escuela: </span>{{ nombreEscuela() }}</span>
+      </pn-selector-escuela>
+      } @else {
       <a class="pn-cab__marca" [routerLink]="soloProfesor() ? secciones()[0].ruta : '/adminpage'" [attr.title]="nombreEscuela()">
         @if (logo(); as src) {
         <img class="pn-cab__logo" src="{{ src }}" alt="" width="46" height="46" (error)="logoFallo.set(true)" />
         }
         <span class="pn-cab__nombre">{{ nombreEscuela() }}</span>
       </a>
+      }
 
       <nav class="pn-cab__nav" [attr.aria-label]="soloProfesor() ? 'Profesor' : 'Gestión'">
         <ul class="pn-cab__lista">

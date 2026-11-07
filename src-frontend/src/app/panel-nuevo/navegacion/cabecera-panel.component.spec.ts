@@ -11,6 +11,8 @@ import { AuthenticationService } from '../../servicios/authentication/authentica
 import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
 import { MarcaPanel } from '../marca-escuela-panel.service';
+import { escuela } from '../selector-escuela/escuelas-prueba';
+import { EscuelaUsuario, SelectorEscuelaService } from '../selector-escuela/selector-escuela.service';
 import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-contraste';
 import { CabeceraPanelComponent, RECARGAR_PAGINA, fondoActivoCabecera, iniciales, ocultaBarraInferior } from './cabecera-panel.component';
 import { itSinReloj } from '../../testing/reloj-prueba';
@@ -98,6 +100,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   let logout: jasmine.Spy;
   let total: ReturnType<typeof signal<number>>;
   let datosPermisos: PermisosSesion;
+  let escuelasCuenta: EscuelaUsuario[];
 
   async function montar(ruta = '/alumnosListar'): Promise<void> {
     await TestBed.configureTestingModule({
@@ -133,6 +136,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
         },
         { provide: SolicitudesContadorService, useValue: { total, refrescar, reiniciar: () => undefined } },
         { provide: RECARGAR_PAGINA, useValue: recargar },
+        { provide: SelectorEscuelaService, useValue: { organizaciones: () => of(escuelasCuenta) } },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
@@ -165,6 +169,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
     logout = jasmine.createSpy('logout');
     total = signal(0);
     datosPermisos = permisos();
+    escuelasCuenta = [escuela({ activa: true })];
   });
 
   afterEach(() => http.verify());
@@ -791,6 +796,42 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       fixture.detectChanges();
       expect(el().querySelector('#pn-menu-mas')).toBeNull();
       expect(document.activeElement).toBe(mas);
+    });
+  });
+  describe('selector de escuela', () => {
+    it('con una sola escuela, la marca es el enlace de siempre y no hay menú de escuelas', async () => {
+      await montar();
+      responderMarca(marca({ logo: 'NINGUNO' }));
+      expect(el().querySelector('a.pn-cab__marca')).not.toBeNull();
+      expect(el().querySelector('pn-selector-escuela')).toBeNull();
+      expect(el().querySelector('.pn-cab__iniciales-escuela')).toBeNull();
+    });
+
+    it('con dos o más, el nombre de la escuela es el botón que abre «Cambiar de escuela»', async () => {
+      escuelasCuenta = [
+        escuela({ id: 1, nombre: 'Club Ficticio del Sur', activa: true }),
+        escuela({ id: 2, nombre: 'Escuela Ficticia Norte' }),
+      ];
+      await montar();
+      responderMarca();
+      expect(el().querySelector('a.pn-cab__marca')).toBeNull();
+      const boton = el().querySelector<HTMLButtonElement>('pn-selector-escuela #pn-escuela-boton')!;
+      expect(boton.textContent).toContain('Club Ficticio del Sur');
+      expect(boton.querySelector('img.pn-cab__logo')).not.toBeNull();
+      boton.click();
+      fixture.detectChanges();
+      expect(el().querySelectorAll('#pn-menu-escuela [role="menuitemradio"]').length).toBe(2);
+      expect(el().querySelector('pn-selector-escuela')?.classList).toContain('pn-selector--encima');
+    });
+
+    it('con varias escuelas y sin logo, la cabecera muestra las iniciales de la actual', async () => {
+      escuelasCuenta = [
+        escuela({ id: 1, nombre: 'Club Ficticio del Sur', activa: true }),
+        escuela({ id: 2, nombre: 'Escuela Ficticia Norte' }),
+      ];
+      await montar();
+      responderMarca(marca({ logo: 'NINGUNO' }));
+      expect(el().querySelector('.pn-cab__iniciales-escuela')?.textContent?.trim()).toBe('CF');
     });
   });
 });

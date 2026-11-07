@@ -1,0 +1,56 @@
+<div class="pn pn-paso" [attr.aria-busy]="escuelas() ? null : 'true'">
+  @if (escuelas(); as lista) {
+  <div class="pn-paso__col">
+    @if (nombre()) {
+    <p class="pn-paso__cuenta">
+      <span class="pn-paso__avatar" aria-hidden="true">{{ iniciales() }}</span>
+      <span>Has entrado como <strong>{{ nombre() }}</strong></span>
+    </p>
+    }
+    <h1 class="pn-paso__titulo" id="pn-paso-titulo">¿En qué escuela quieres entrar?</h1>
+    <p class="pn-paso__intro">Tu cuenta está en {{ lista.length }} escuelas. Luego puedes cambiar desde el nombre de la
+      escuela, arriba en el panel.</p>
+
+    @if (fallida()) {
+    <div class="pn-paso__fallo" role="alert">
+      <i class="bi bi-exclamation-circle pn-paso__fallo-icono" aria-hidden="true"></i>
+      <p class="pn-paso__fallo-texto">
+        <strong>No se ha podido cambiar de escuela. Inténtalo otra vez.</strong>
+        <span>Si vuelve a fallar, entra en la de «La última vez» y cambia luego desde el panel.</span>
+      </p>
+      <button type="button" class="pn-paso__reintentar" (click)="reintentar()">Reintentar</button>
+    </div>
+    }
+
+    <ul class="pn-paso__lista" aria-labelledby="pn-paso-titulo">
+      @for (escuela of lista; track escuela.id) {
+      <li>
+        <button type="button" class="pn-paso__opcion" (click)="elegir(escuela)" (keydown)="tecla($event)">
+          <pn-logo-escuela class="pn-paso__logo" [escuela]="escuela" />
+          <span class="pn-paso__texto">
+            <span class="pn-paso__fila">
+              <span class="pn-paso__nombre">{{ escuela.nombre }}</span>
+              @if (escuela.activa) {
+              <span class="pn-paso__ultima">La última vez</span>
+              }
+            </span>
+            <span class="pn-paso__meta">{{ meta(escuela) }}</span>
+          </span>
+          <i class="bi bi-chevron-right pn-paso__ir" aria-hidden="true"></i>
+        </button>
+      </li>
+      }
+    </ul>
+
+    @if (nombre()) {
+    <p class="pn-paso__pie">¿No eres {{ nombre() }}?
+      <button type="button" class="pn-paso__boton-texto" (click)="cerrarSesion()">Cerrar sesión</button>
+    </p>
+    } @else {
+    <p class="pn-paso__pie">
+      <button type="button" class="pn-paso__boton-texto" (click)="cerrarSesion()">Cerrar sesión</button>
+    </p>
+    }
+  </div>
+  }
+</div>

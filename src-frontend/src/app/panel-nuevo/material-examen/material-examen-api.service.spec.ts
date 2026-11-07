@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
+import { CambioEscuelaPestanasService } from '../../core/cambio-escuela-pestanas';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
 import { CLIENTE_SUBIDAS, MaterialExamenApiService } from './material-examen-api.service';
 
@@ -157,6 +158,24 @@ describe('MaterialExamenApiService', () => {
       expect(send).toHaveBeenCalledOnceWith(video);
       expect((send.calls.mostRecent().object as XMLHttpRequest).withCredentials).toBeTrue();
       expect(peticionFetch).not.toHaveBeenCalled();
+      s.unsubscribe();
+    });
+  });
+
+  describe('cambio de escuela en curso', () => {
+    // El cliente de las subidas tiene su propio HttpClient: sin el interceptor de bloqueo, un vídeo en cola saldría con
+    // la cookie de la escuela nueva (la pestaña ya bloqueada por el cambio).
+    it('una subida no sale mientras la pestaña tiene un cambio anunciado, y sale tras cancelarlo', () => {
+      TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient()] });
+      const send = spyOn(XMLHttpRequest.prototype, 'send');
+      const pestanas = TestBed.inject(CambioEscuelaPestanasService);
+      const idCambio = pestanas.anunciarCambio({ id: 2, nombre: 'Club Ficticio Sur' });
+
+      const s = TestBed.inject(MaterialExamenApiService).subirVideo('T', 'b', video).subscribe({ error: () => undefined });
+      expect(send).not.toHaveBeenCalled();
+
+      pestanas.cancelarCambio(idCambio);
+      expect(send).toHaveBeenCalledOnceWith(video);
       s.unsubscribe();
     });
   });

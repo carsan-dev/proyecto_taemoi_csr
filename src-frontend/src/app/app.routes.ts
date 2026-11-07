@@ -32,6 +32,8 @@ const ROUTE_ROLE_SETS = {
   cuenta: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR'] as const satisfies readonly RouteRole[],
   adminOnly: ['ROLE_ADMIN'] as const satisfies readonly RouteRole[],
   userPortal: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_USER'] as const satisfies readonly RouteRole[],
+  /** Cualquier sesión de escuela (el selector de escuela «Tras entrar»). */
+  sesion: ['ROLE_ADMIN', 'ROLE_MANAGER', 'ROLE_RESPONSABLE_SEDE', 'ROLE_PROFESOR', 'ROLE_USER'] as const satisfies readonly RouteRole[],
 };
 
 function privateRouteData(
@@ -188,6 +190,23 @@ export const routes: Routes = [
     data: { seo: SEO_ROUTES.noIndex },
     canActivate: [entradaGoogleGuard],
     children: [],
+  },
+  {
+    // Selector de escuela «Tras entrar» (fase 4): tras el login con contraseña, solo con dos escuelas o más (lo mira el
+    // guard de la ruta hija antes de activar la pantalla).
+    path: 'elegir-escuela',
+    canMatch: [estilosPanelGuard],
+    data: { seo: SEO_ROUTES.noIndex, requiredRoles: ROUTE_ROLE_SETS.sesion },
+    loadChildren: () => import('./panel-nuevo/selector-escuela/selector-escuela.routes').then(m => m.RUTAS_ELEGIR_ESCUELA),
+    canActivate: [roleGuard],
+  },
+  {
+    // Ruta neutra del cambio de escuela (fase 4): se sale aquí, sin cambiar la URL, antes de pedir el cambio. `panelNuevo`
+    // mantiene la cabecera del panel debajo de «Entrando en …».
+    path: 'cambiando-escuela',
+    canMatch: [estilosPanelGuard],
+    data: { seo: SEO_ROUTES.noIndex, panelNuevo: true },
+    loadChildren: () => import('./panel-nuevo/selector-escuela/selector-escuela.routes').then(m => m.RUTAS_CAMBIANDO_ESCUELA),
   },
   {
     path: 'recuperar-contrasena',

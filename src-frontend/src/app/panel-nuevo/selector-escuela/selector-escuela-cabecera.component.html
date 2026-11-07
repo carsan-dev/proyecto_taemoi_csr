@@ -1,0 +1,49 @@
+<button type="button" id="pn-escuela-boton" class="pn-selector__boton" aria-haspopup="menu"
+  [attr.aria-expanded]="abierto()" [attr.aria-controls]="abierto() ? 'pn-menu-escuela' : null" (click)="alternar()"
+  (keydown)="teclaBoton($event)">
+  <ng-content />
+  <i class="bi bi-chevron-down pn-selector__flecha" aria-hidden="true"></i>
+  <span class="pn-selector__oculto">. Cambiar de escuela</span>
+</button>
+
+@if (abierto()) {
+@if (hoja()) {
+<!-- Por debajo de 768 px, la hoja inferior es modal: <dialog> con showModal() (fondo inerte, foco contenido). -->
+<dialog #hojaDialogo class="pn-selector__hoja" aria-labelledby="pn-escuela-titulo" (cancel)="alCancelarHoja($event)"
+  (close)="cerrar(true)">
+  <ng-container *ngTemplateOutlet="menuEscuelas" />
+</dialog>
+} @else {
+<ng-container *ngTemplateOutlet="menuEscuelas" />
+}
+}
+
+<ng-template #menuEscuelas>
+  <div class="pn-selector__velo" (click)="cerrar(true)"></div>
+  <div class="pn-selector__menu" id="pn-menu-escuela" role="menu" aria-labelledby="pn-escuela-titulo"
+    (keydown)="teclaMenu($event)">
+    <div class="pn-selector__asa" aria-hidden="true"></div>
+    <div class="pn-selector__cabecera">
+      <p class="pn-selector__titulo" id="pn-escuela-titulo">Cambiar de escuela</p>
+      <button type="button" class="pn-selector__cerrar" aria-label="Cerrar" [attr.tabindex]="hoja() ? 0 : -1"
+        (click)="cerrar(true)">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+    <ul class="pn-selector__lista" role="none">
+      @for (escuela of escuelas; track escuela.id) {
+      <li role="none">
+        <button type="button" class="pn-selector__item" role="menuitemradio" [attr.aria-checked]="escuela.activa"
+          [attr.tabindex]="hoja() ? 0 : -1" (click)="elegir(escuela)">
+          <pn-logo-escuela class="pn-selector__logo" [escuela]="escuela" />
+          <span class="pn-selector__texto">
+            <span class="pn-selector__nombre">{{ escuela.nombre }}</span>
+            <span class="pn-selector__meta">{{ meta(escuela) }}</span>
+          </span>
+          <i class="bi bi-check-lg pn-selector__marca" aria-hidden="true"></i>
+        </button>
+      </li>
+      }
+    </ul>
+  </div>
+</ng-template>

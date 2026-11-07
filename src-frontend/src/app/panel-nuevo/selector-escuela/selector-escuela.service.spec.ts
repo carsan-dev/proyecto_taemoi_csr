@@ -1,0 +1,417 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component, OnDestroy } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { BehaviorSubject, firstValueFrom } from 'rxjs';
+
+import { environment } from '../../../environments/environment';
+import { CambioEscuelaPestanasService, PASA_BLOQUEO_CAMBIO_ESCUELA } from '../../core/cambio-escuela-pestanas';
+import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { AuthenticationService } from '../../servicios/authentication/authentication.service';
+import { sesionCerrada } from '../../servicios/authentication/sesion-cerrada';
+import { contraste } from '../acento-escuela';
+import { LOGO_LEGADO } from '../marca-escuela-panel.service';
+import {
+  ESPERA_CAMBIO_ESCUELA,
+  ESPERA_MAXIMA_CAMBIO_ESCUELA_MS,
+  IR_A_URL,
+  RUTA_CAMBIANDO_ESCUELA,
+  RUTA_ELEGIR_ESCUELA,
+  RUTA_ENTRADA_SESION,
+  SelectorEscuelaService,
+  coloresIniciales,
+  debeElegirTrasEntrar,
+  inicialesEscuela,
+  metaEscuela,
+  ordenTrasEntrar,
+  textoRoles,
+  urlLogoEscuela,
+} from './selector-escuela.service';
+import { escuela } from './escuelas-prueba';
+import { RUTAS_CAMBIANDO_ESCUELA } from './selector-escuela.routes';
+
+const URL_LISTA = `${environment.apiUrl}/auth/organizaciones`;
+const URL_CAMBIO = `${environment.apiUrl}/auth/organizacion`;
+
+describe('Selector de escuela: reglas puras', () => {
+  it('«Tras entrar» solo con dos escuelas o más y alguna que no sea solo de familia', () => {
+    expect(debeElegirTrasEntrar([])).toBeFalse();
+    expect(debeElegirTrasEntrar([escuela({ activa: true })])).toBeFalse();
+    expect(
+      debeElegirTrasEntrar([escuela({ id: 1, roles: ['ROLE_USER'] }), escuela({ id: 2, roles: ['ROLE_USER'] })])
+    ).toBeFalse();
+    expect(
+      debeElegirTrasEntrar([escuela({ id: 1, roles: ['ROLE_USER'] }), escuela({ id: 2, roles: ['ROLE_PROFESOR'] })])
+    ).toBeTrue();
+    expect(debeElegirTrasEntrar([escuela({ id: 1 }), escuela({ id: 2 }), escuela({ id: 3 })])).toBeTrue();
+  });
+
+  it('pone primero la de «La última vez» (activa) y deja las demás en el orden de la API', () => {
+    const lista = [escuela({ id: 1 }), escuela({ id: 2 }), escuela({ id: 3, activa: true })];
+    expect(ordenTrasEntrar(lista).map((e) => e.id)).toEqual([3, 1, 2]);
+    expect(ordenTrasEntrar([escuela({ id: 4 }), escuela({ id: 5 })]).map((e) => e.id)).toEqual([4, 5]);
+  });
+
+  it('escribe los roles con los nombres de la decisión 262, de más a menos poder', () => {
+    expect(textoRoles(['ROLE_ADMIN'])).toBe('Administración');
+    expect(textoRoles(['ROLE_USER', 'ROLE_MANAGER'])).toBe('Gestión y familia');
+    expect(textoRoles(['ROLE_USER', 'ROLE_PROFESOR', 'ROLE_MANAGER'])).toBe('Gestión, profesorado y familia');
+    expect(textoRoles(['ROLE_RESPONSABLE_SEDE'])).toBe('Responsable de sede');
+    expect(textoRoles(['ROLE_ADMIN_PLATAFORMA'])).toBe('');
+  });
+
+  it('añade «N sedes» solo con más de una sede', () => {
+    expect(metaEscuela(escuela({ roles: ['ROLE_MANAGER'], numeroSedes: 6 }))).toBe('Gestión · 6 sedes');
+    expect(metaEscuela(escuela({ roles: ['ROLE_MANAGER'], numeroSedes: 1 }))).toBe('Gestión');
+    expect(metaEscuela(escuela({ roles: ['ROLE_MANAGER'], numeroSedes: 0 }))).toBe('Gestión');
+  });
+
+  it('saca las iniciales sin artículos ni preposiciones', () => {
+    expect(inicialesEscuela('Taekwondo Sierra Sur')).toBe('TS');
+    expect(inicialesEscuela('Club de la Prueba')).toBe('CP');
+    expect(inicialesEscuela("Moi's Kim Do")).toBe('MK');
+    expect(inicialesEscuela('Judo')).toBe('J');
+    expect(inicialesEscuela(null)).toBe('');
+  });
+
+  it('da la URL del logo de cada escuela: el subido con su versión, el de siempre o ninguno', () => {
+    expect(urlLogoEscuela(escuela({ id: 7, logo: 'SUBIDO', logoVersion: 31 }))).toBe(
+      `${environment.apiUrl}/auth/organizaciones/7/logo?v=31`
+    );
+    expect(urlLogoEscuela(escuela({ logo: 'SUBIDO', logoVersion: null }))).toBeNull();
+    expect(urlLogoEscuela(escuela({ logo: 'LEGADO' }))).toBe(LOGO_LEGADO);
+    expect(urlLogoEscuela(escuela({ logo: 'NINGUNO' }))).toBeNull();
+  });
+
+  it('las iniciales llegan siempre a 4,5:1 sobre su fondo', () => {
+    for (const color of ['#0B5CAD', '#1B2B2E', '#F7E04B', '#777777', '#3E9B4F', null, 'rojo', '#FFFFFF']) {
+      const { fondo, texto } = coloresIniciales(color);
+      expect(contraste(fondo, texto)).withContext(String(color)).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(coloresIniciales('#0b5cad')).toEqual({ fondo: '#0B5CAD', texto: '#FFFFFF' });
+    expect(coloresIniciales(null).fondo).toBe('#1A2230');
+  });
+
+  it('el POST del cambio espera como mucho 15 s', () => {
+    expect(ESPERA_MAXIMA_CAMBIO_ESCUELA_MS).toBe(15_000);
+    TestBed.configureTestingModule({});
+    expect(TestBed.inject(ESPERA_CAMBIO_ESCUELA)).toBe(15_000);
+    TestBed.resetTestingModule();
+  });
+});
+
+describe('SelectorEscuelaService', () => {
+  let servicio: SelectorEscuelaService;
+  let http: HttpTestingController;
+  let email: BehaviorSubject<string | null>;
+  let irA: jasmine.Spy;
+  let pestanas: jasmine.SpyObj<CambioEscuelaPestanasService>;
+  let harness: RouterTestingHarness;
+  let registro: string[];
+  /** Tiempo máximo del POST en estas pruebas (un `describe` anidado lo acorta en su `beforeAll`). */
+  let esperaPrueba = ESPERA_MAXIMA_CAMBIO_ESCUELA_MS;
+
+  /** Pantalla con cambios sin guardar: su `canDeactivate` pregunta (aquí, `permitirSalida`). */
+  @Component({ standalone: true, template: '<p>Ficha</p>' })
+  class FichaPruebaComponent implements OnDestroy {
+    static permitirSalida = true;
+    puedeSalir(): boolean {
+      registro.push('pregunta');
+      return FichaPruebaComponent.permitirSalida;
+    }
+    ngOnDestroy(): void {
+      registro.push('ficha destruida');
+    }
+  }
+
+  const SUR = escuela({ id: 2, nombre: 'Club Ficticio Sur' });
+  const ESTE = escuela({ id: 3, nombre: 'Escuela del Este' });
+
+  /** Deja correr la navegación del router (promesas y temporizadores). */
+  async function esperar(): Promise<void> {
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r));
+    }
+  }
+
+  beforeEach(async () => {
+    email = new BehaviorSubject<string | null>('gestor@example.test');
+    irA = jasmine.createSpy('irA');
+    registro = [];
+    FichaPruebaComponent.permitirSalida = true;
+    pestanas = jasmine.createSpyObj<CambioEscuelaPestanasService>('CambioEscuelaPestanasService', [
+      'anunciarCambio',
+      'confirmarCambio',
+      'cancelarCambio',
+      'bloquear',
+    ]);
+    pestanas.anunciarCambio.and.callFake(() => {
+      // Cuántos POST había ya en vuelo al anunciar (debe ser ninguno: el anuncio va antes).
+      registro.push(`anuncio con ${http.match(URL_CAMBIO).length} peticiones`);
+      return 'id-1';
+    });
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([
+          {
+            path: 'ficha',
+            component: FichaPruebaComponent,
+            canDeactivate: [(pantalla: FichaPruebaComponent) => pantalla.puedeSalir()],
+          },
+          { path: 'cambiando-escuela', children: RUTAS_CAMBIANDO_ESCUELA },
+        ]),
+        { provide: AuthenticationService, useValue: { emailCambio: email.asObservable() } },
+        { provide: IR_A_URL, useValue: irA },
+        { provide: CambioEscuelaPestanasService, useValue: pestanas },
+        { provide: ESPERA_CAMBIO_ESCUELA, useFactory: () => esperaPrueba },
+      ],
+    });
+    servicio = TestBed.inject(SelectorEscuelaService);
+    http = TestBed.inject(HttpTestingController);
+    harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/ficha', FichaPruebaComponent);
+    sessionStorage.setItem('alumnoId', '41');
+    sessionStorage.setItem('panelProductosEstado', '{"filtros":{}}');
+    localStorage.setItem('dashboard-user-estado-deportes-41', '[{"deporte":"TAEKWONDO"}]');
+  });
+
+  afterEach(() => {
+    http.verify();
+    sessionStorage.removeItem('alumnoId');
+    sessionStorage.removeItem('panelProductosEstado');
+    localStorage.removeItem('dashboard-user-estado-deportes-41');
+  });
+
+
+  it('pide las escuelas una vez y comparte la respuesta, sin el aviso global de error', async () => {
+    const a = firstValueFrom(servicio.organizaciones());
+    const b = firstValueFrom(servicio.organizaciones());
+    const peticion = http.expectOne(URL_LISTA);
+    expect(peticion.request.method).toBe('GET');
+    expect(peticion.request.withCredentials).toBeTrue();
+    expect(peticion.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    peticion.flush([escuela({ activa: true })]);
+    expect((await a).length).toBe(1);
+    expect(await b).toEqual(await a);
+    expect((await firstValueFrom(servicio.organizaciones())).length).toBe(1);
+    http.expectNone(URL_LISTA);
+  });
+
+  it('no guarda un error: la siguiente llamada vuelve a pedir', async () => {
+    const fallo = firstValueFrom(servicio.organizaciones()).catch((e) => e);
+    http.expectOne(URL_LISTA).flush('no', { status: 500, statusText: 'Error' });
+    expect((await fallo).status).toBe(500);
+    const bien = firstValueFrom(servicio.organizaciones());
+    http.expectOne(URL_LISTA).flush([escuela()]);
+    expect((await bien).length).toBe(1);
+  });
+
+  it('descarta la lista al entrar con otra cuenta y al cerrar sesión', () => {
+    servicio.organizaciones().subscribe();
+    http.expectOne(URL_LISTA).flush([escuela()]);
+
+    email.next('otra@example.test');
+    servicio.organizaciones().subscribe();
+    http.expectOne(URL_LISTA).flush([escuela({ id: 2 })]);
+
+    sesionCerrada.next();
+    servicio.organizaciones().subscribe();
+    http.expectOne(URL_LISTA).flush([]);
+  });
+
+  it('tras el login manda a «Tras entrar» solo si toca; si no, o si falla, al destino de siempre', async () => {
+    const dos = firstValueFrom(servicio.destinoTrasEntrar('/adminpage'));
+    http.expectOne(URL_LISTA).flush([escuela({ id: 1, activa: true }), escuela({ id: 2 })]);
+    expect(await dos).toBe(RUTA_ELEGIR_ESCUELA);
+
+    email.next('una@example.test');
+    const una = firstValueFrom(servicio.destinoTrasEntrar('/adminpage'));
+    http.expectOne(URL_LISTA).flush([escuela({ activa: true })]);
+    expect(await una).toBe('/adminpage');
+
+    email.next('falla@example.test');
+    const falla = firstValueFrom(servicio.destinoTrasEntrar('/mis-grupos'));
+    http.expectOne(URL_LISTA).flush('no', { status: 503, statusText: 'Error' });
+    expect(await falla).toBe('/mis-grupos');
+  });
+
+  it('cambia de escuela: sale de la pantalla, anuncia a las pestañas, POST, confirma, limpia y recarga la app', async () => {
+    const cambio = firstValueFrom(servicio.cambiar(SUR));
+    await esperar();
+    // Primero se sale de la pantalla (sus confirmaciones y sus `beforeunload` ya no existen), luego se anuncia el cambio
+    // (todas las pestañas bloqueadas) y solo entonces se pide.
+    expect(registro).toEqual(['pregunta', 'ficha destruida', 'anuncio con 0 peticiones']);
+    expect(pestanas.anunciarCambio).toHaveBeenCalledOnceWith({ id: 2, nombre: 'Club Ficticio Sur' });
+    expect(servicio.entrando()).toEqual(SUR);
+    harness.detectChanges();
+    expect(harness.routeNativeElement?.querySelector('pn-entrando-escuela')?.textContent).toContain(
+      'Entrando en Club Ficticio Sur…'
+    );
+    const peticion = http.expectOne(URL_CAMBIO);
+    expect(peticion.request.method).toBe('POST');
+    expect(peticion.request.body).toEqual({ organizacionId: 2 });
+    expect(peticion.request.withCredentials).toBeTrue();
+    expect(peticion.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    // La única petición que pasa el bloqueo.
+    expect(peticion.request.context.get(PASA_BLOQUEO_CAMBIO_ESCUELA)).toBeTrue();
+    expect(irA).not.toHaveBeenCalled();
+    expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
+    peticion.flush({ token: 'nuevo' });
+
+    expect(await cambio).toBeTrue();
+    expect(sessionStorage.getItem('alumnoId')).toBeNull();
+    expect(sessionStorage.getItem('panelProductosEstado')).toBeNull();
+    expect(localStorage.getItem('dashboard-user-estado-deportes-41')).toBeNull();
+    expect(pestanas.confirmarCambio).toHaveBeenCalledOnceWith('id-1');
+    expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
+    expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+    expect(RUTA_ENTRADA_SESION).toBe('/login/google');
+    // La URL del navegador no cambia (`skipLocationChange`) y, mientras recarga, no se sale de la ruta neutra.
+    expect(TestBed.inject(Router).url).toBe(RUTA_CAMBIANDO_ESCUELA);
+    expect(await TestBed.inject(Router).navigateByUrl('/ficha')).toBeFalse();
+  });
+
+  it('si la pantalla no deja salir (cambios sin guardar), no pide nada ni toca nada', async () => {
+    FichaPruebaComponent.permitirSalida = false;
+    const cambio = firstValueFrom(servicio.cambiar(SUR));
+    await esperar();
+
+    expect(await cambio).toBeFalse();
+    expect(registro).toEqual(['pregunta']);
+    http.expectNone(URL_CAMBIO);
+    expect(sessionStorage.getItem('alumnoId')).toBe('41');
+    expect(localStorage.getItem('dashboard-user-estado-deportes-41')).not.toBeNull();
+    expect(pestanas.anunciarCambio).not.toHaveBeenCalled();
+    expect(irA).not.toHaveBeenCalled();
+    expect(servicio.ocupado).toBeFalse();
+    expect(servicio.entrando()).toBeNull();
+    expect(TestBed.inject(Router).url).toBe('/ficha');
+
+    // Tras guardar, el mismo cambio ya sale.
+    FichaPruebaComponent.permitirSalida = true;
+    servicio.cambiar(SUR).subscribe();
+    await esperar();
+    http.expectOne(URL_CAMBIO).flush({});
+    expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+  });
+
+  it('un segundo cambio con otro en vuelo no lanza otra petición', async () => {
+    servicio.cambiar(SUR).subscribe();
+    const segundo = await firstValueFrom(servicio.cambiar(ESTE));
+    expect(segundo).toBeFalse();
+    expect(servicio.ocupado).toBeTrue();
+    await esperar();
+    http.expectOne(URL_CAMBIO).flush({});
+    // Ya recargando: sigue sin admitir otro cambio.
+    expect(await firstValueFrom(servicio.cambiar(ESTE))).toBeFalse();
+    await esperar();
+    http.expectNone(URL_CAMBIO);
+    expect(irA).toHaveBeenCalledTimes(1);
+  });
+
+  it('si la API rechaza el cambio, la escuela no cambia: cancela el anuncio, vuelve a la pantalla, ni recarga ni limpia, y se puede reintentar', async () => {
+    const fallo = firstValueFrom(servicio.cambiar(SUR)).catch((e) => e);
+    await esperar();
+    http.expectOne(URL_CAMBIO).flush({ mensaje: 'Acceso denegado.' }, { status: 403, statusText: 'Forbidden' });
+    expect((await fallo).status).toBe(403);
+    expect(irA).not.toHaveBeenCalled();
+    expect(pestanas.cancelarCambio).toHaveBeenCalledOnceWith('id-1');
+    expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
+    expect(pestanas.bloquear).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('alumnoId')).toBe('41');
+    expect(localStorage.getItem('dashboard-user-estado-deportes-41')).not.toBeNull();
+    expect(servicio.ocupado).toBeFalse();
+    expect(servicio.entrando()).toBeNull();
+    expect(TestBed.inject(Router).url).toBe('/ficha');
+    expect(harness.routeNativeElement?.querySelector('pn-entrando-escuela')).toBeNull();
+    expect(servicio.tomarFallo()).toBe(2);
+    expect(servicio.tomarFallo()).toBeNull();
+
+    servicio.cambiar(SUR).subscribe();
+    await esperar();
+    http.expectOne(URL_CAMBIO).flush({});
+    expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+  });
+  it('un 409 también es rechazo confirmado: cancela, vuelve a la pantalla, no bloquea ni recarga', async () => {
+    const fallo = firstValueFrom(servicio.cambiar(SUR)).catch((e) => e);
+    await esperar();
+    http.expectOne(URL_CAMBIO).flush({ mensaje: 'Conflicto.' }, { status: 409, statusText: 'Conflict' });
+    expect((await fallo).status).toBe(409);
+    expect(pestanas.cancelarCambio).toHaveBeenCalledOnceWith('id-1');
+    expect(pestanas.bloquear).not.toHaveBeenCalled();
+    expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
+    expect(irA).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('alumnoId')).toBe('41');
+    expect(servicio.ocupado).toBeFalse();
+    expect(TestBed.inject(Router).url).toBe('/ficha');
+    expect(servicio.tomarFallo()).toBe(2);
+  });
+
+  [502, 504].forEach((status) => {
+    it(`un ${status} es incierto (no rechazo): bloquea avisando ya a las demás, limpia y recarga entera`, async () => {
+      let error: unknown = null;
+      let resultado: boolean | null = null;
+      servicio.cambiar(SUR).subscribe({ next: (r) => (resultado = r), error: (e) => (error = e) });
+      await esperar();
+      http.expectOne(URL_CAMBIO).flush({}, { status, statusText: 'Error' });
+      await esperar();
+
+      expect(error).toBeNull();
+      expect(resultado).toBeTrue();
+      expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
+      expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
+      expect(pestanas.bloquear).toHaveBeenCalledOnceWith('id-1');
+      expect(sessionStorage.getItem('alumnoId')).toBeNull();
+      expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+      expect(servicio.tomarFallo()).toBeNull();
+    });
+  });
+
+  it('con la red caída el resultado es incierto: no vuelve a la escuela de antes, limpia y recarga entera', async () => {
+    let error: unknown = null;
+    let resultado: boolean | null = null;
+    servicio.cambiar(SUR).subscribe({ next: (r) => (resultado = r), error: (e) => (error = e) });
+    await esperar();
+    http.expectOne(URL_CAMBIO).error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    await esperar();
+
+    expect(error).toBeNull();
+    expect(resultado).toBeTrue();
+    expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
+    expect(pestanas.confirmarCambio).not.toHaveBeenCalled();
+    expect(pestanas.bloquear).toHaveBeenCalledOnceWith('id-1');
+    expect(sessionStorage.getItem('alumnoId')).toBeNull();
+    expect(localStorage.getItem('dashboard-user-estado-deportes-41')).toBeNull();
+    expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+    expect(servicio.tomarFallo()).toBeNull();
+    // Sigue sin admitir otro cambio, pero la ruta neutra ya no retiene a nadie.
+    expect(servicio.ocupado).toBeTrue();
+    expect(await firstValueFrom(servicio.cambiar(ESTE))).toBeFalse();
+    expect(TestBed.inject(Router).url).toBe(RUTA_CAMBIANDO_ESCUELA);
+    expect(await TestBed.inject(Router).navigateByUrl('/ficha')).toBeTrue();
+  });
+
+  describe('sin respuesta del POST', () => {
+    beforeAll(() => (esperaPrueba = 40));
+    afterAll(() => (esperaPrueba = ESPERA_MAXIMA_CAMBIO_ESCUELA_MS));
+
+    it('agotado el tiempo, lo trata como incierto: corta la petición, recarga entera y libera la ruta neutra', async () => {
+      servicio.cambiar(SUR).subscribe();
+      for (let i = 0; i < 100 && !irA.calls.any(); i++) {
+        await new Promise((r) => setTimeout(r, 10));
+      }
+      const peticion = http.expectOne(URL_CAMBIO);
+      expect(peticion.cancelled).toBeTrue();
+      expect(pestanas.bloquear).toHaveBeenCalledTimes(1);
+      expect(pestanas.cancelarCambio).not.toHaveBeenCalled();
+      expect(irA).toHaveBeenCalledOnceWith(RUTA_ENTRADA_SESION);
+      expect(sessionStorage.getItem('alumnoId')).toBeNull();
+      expect(servicio.retieneLaRuta).toBeFalse();
+      expect(await TestBed.inject(Router).navigateByUrl('/ficha')).toBeTrue();
+    });
+  });
+});

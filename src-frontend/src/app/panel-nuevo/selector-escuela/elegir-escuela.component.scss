@@ -1,0 +1,273 @@
+// «Tras entrar» del boceto del selector de escuela. Solo tokens de panel-nuevo.scss bajo .pn (los de por defecto: aún no
+// se ha elegido escuela). Pantalla completa: tapa la cabecera y el pie de la web (z-index 9999 y su menú, 10000), por
+// debajo del aviso de cookies (12000).
+
+.pn-paso {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  overflow-y: auto;
+  padding: 56px var(--pn-espacio-l) 48px;
+  background: var(--pn-fondo);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  overscroll-behavior: contain;
+}
+
+.pn-paso__col {
+  width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+.pn-paso__cuenta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 28px;
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+
+  strong {
+    color: var(--pn-tinta);
+    font-weight: 600;
+  }
+}
+
+.pn-paso__avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  font-weight: 700;
+}
+
+.pn-paso__titulo {
+  margin: 0;
+  font: var(--pn-titulo-pantalla);
+  letter-spacing: var(--pn-titulo-pantalla-espaciado, -0.01em);
+  text-wrap: balance;
+}
+
+.pn-paso__intro {
+  max-width: 60ch;
+  margin: 8px 0 24px;
+  color: var(--pn-tinta-2);
+}
+
+// Lista: un bloque con filete; cada escuela, una fila que se pulsa entera.
+.pn-paso__lista {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  list-style: none;
+
+  li + li {
+    border-top: 1px solid var(--pn-linea);
+  }
+}
+
+.pn-paso__opcion {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 76px;
+  padding: 14px 14px 14px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-superficie-2);
+
+    .pn-paso__ir {
+      color: var(--pn-tinta-2);
+    }
+  }
+
+  &:focus-visible {
+    background: var(--pn-superficie-2);
+    outline-offset: -3px;
+  }
+}
+
+.pn-paso__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pn-paso__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.pn-paso__nombre {
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+// «La última vez»: pastilla en el acento (no es un estado ni un importe).
+.pn-paso__ultima {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-acento-suave);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  white-space: nowrap;
+}
+
+.pn-paso__meta {
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+}
+
+.pn-paso__ir {
+  color: var(--pn-tinta-3);
+  font-size: 1.125rem;
+  transition: color var(--pn-transicion);
+}
+
+.pn-paso__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 20px 0 0;
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+}
+
+// Botón de texto (DESIGN.md): acento, hover acento-suave.
+.pn-paso__boton-texto {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-acento-suave);
+  }
+}
+
+// Error del cambio (pn-bloque-error en fila): icono, qué falló, cómo seguir y «Reintentar».
+.pn-paso__fallo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+}
+
+.pn-paso__fallo-icono {
+  color: var(--pn-peligro);
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+.pn-paso__fallo-texto {
+  flex: 1 1 240px;
+  margin: 0;
+
+  strong {
+    display: block;
+    font-weight: 600;
+  }
+
+  span {
+    color: var(--pn-tinta-2);
+    font: var(--pn-secundario);
+  }
+}
+
+// Secundario (DESIGN.md): blanco, borde acento-borde y texto acento; hover acento-suave.
+.pn-paso__reintentar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--pn-acento-borde);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--pn-transicion),
+    border-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-acento-suave);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .pn-paso {
+    padding: 28px var(--pn-espacio-m) 32px;
+  }
+
+  .pn-paso__cuenta {
+    margin-bottom: 20px;
+  }
+
+  .pn-paso__titulo {
+    font-size: 1.375rem;
+  }
+
+  .pn-paso__opcion {
+    gap: 12px;
+    min-height: 72px;
+    padding: 12px 12px 12px 14px;
+  }
+
+  .pn-paso__logo {
+    --pn-logo-escuela: 42px;
+  }
+
+  .pn-paso__reintentar {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .pn-paso__boton-texto {
+    min-height: 44px;
+  }
+}

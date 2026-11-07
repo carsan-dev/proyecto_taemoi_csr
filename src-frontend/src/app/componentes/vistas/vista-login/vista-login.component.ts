@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, Injector, OnDestroy, OnInit, Optional, signal } from '@angular/core';
+import { catchError, from, of, switchMap } from 'rxjs';
 import { AuthenticationService } from '../../../servicios/authentication/authentication.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -43,7 +44,8 @@ export class VistaLoginComponent implements OnInit, OnDestroy {
     private readonly authService: AuthenticationService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly marcaEscuela: MarcaEscuelaLoginService
+    private readonly marcaEscuela: MarcaEscuelaLoginService,
+    @Optional() private readonly injector?: Injector
   ) {}
 
   ngOnInit(): void {
@@ -257,7 +259,7 @@ export class VistaLoginComponent implements OnInit, OnDestroy {
               timer: 2000,
             });
 
-            this.redirigirSegunRol(roles);
+            this.redirigirTrasEntrar(roles);
           }
         });
       },
@@ -321,6 +323,26 @@ export class VistaLoginComponent implements OnInit, OnDestroy {
 
   private redirigirSegunRol(roles: string[]) {
     this.authService.resolverRutaInicio(roles).subscribe((rutaDestino) => this.router.navigate([rutaDestino]));
+  }
+
+  /**
+   * Tras entrar con contraseña, el selector de escuela (en diferido, fuera del bundle inicial) decide si antes se pasa
+   * por «Tras entrar» (dos escuelas o más). Si no se puede cargar o falla, el destino de siempre.
+   */
+  private redirigirTrasEntrar(roles: string[]) {
+    this.authService
+      .resolverRutaInicio(roles)
+      .pipe(
+        switchMap((ruta) =>
+          from(import('../../../panel-nuevo/selector-escuela/selector-escuela.service')).pipe(
+            switchMap(({ SelectorEscuelaService }) =>
+              this.injector!.get(SelectorEscuelaService).destinoTrasEntrar(ruta)
+            ),
+            catchError(() => of(ruta))
+          )
+        )
+      )
+      .subscribe((rutaDestino) => this.router.navigate([rutaDestino]));
   }
 
   private setRememberMeCookie(): void {

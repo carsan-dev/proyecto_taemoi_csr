@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boceto · Aviso «Has cambiado de escuela» en las demás pestañas</title>
+<!--
+  Boceto (maqueta, no código de la app) de la capa que bloquea las DEMÁS pestañas de la app cuando una cuenta con
+  varias escuelas cambia de escuela en una de ellas (selector aprobado en boceto-selector-escuela.html).
+
+  Cuándo sale: la pestaña que cambia avisa al resto del mismo origen (BroadcastChannel «taemoi.cambioEscuela» o, sin
+  él, el evento storage). Cada pestaña que lo recibe se queda con la memoria de la escuela anterior y la cookie de la
+  nueva: deja de pedir nada a la API y se tapa con esta capa hasta recargar. Lógica ya hecha en la rama
+  feat/f4-selector-escuela-panel: src-frontend/src/app/core/cambio-escuela-pestanas.ts (CambioEscuelaPestanasService,
+  <dialog role=alertdialog> con showModal(), pintado sin Angular porque va en el bundle inicial). «Recargar» vacía el
+  sessionStorage de la pestaña y hace una carga completa de /login/google, que lleva a cada uno a su sitio según sus
+  roles en la escuela nueva (también desde la web pública: no se queda en la web).
+
+  Comportamiento de la capa (igual en los tres sitios): no se cierra (ni Esc ni clic fuera; no hay X), el fondo queda
+  oscurecido e inerte, el foco va al botón «Recargar» y no sale de la capa. role=alertdialog, aria-modal,
+  aria-labelledby (título) y aria-describedby (frase). Botón de 44 px o más. Tras pulsar: «Recargando…» con el botón
+  ocupado (aria-busy y aria-disabled, el foco se queda en él) y la frase en una región role=status.
+  En el boceto la capa es un <div> y el fondo lleva inert (con showModal la barra «Probar» también quedaría inerte).
+
+  Textos propuestos:
+    Título: «Has cambiado de escuela»
+    Con el nombre de la nueva: «Lo hiciste en otra pestaña. Recarga esta para seguir con los datos de
+      Taekwondo Sierra Sur.»
+    Sin el nombre: «Lo hiciste en otra pestaña. Recarga esta para seguir con los datos de la escuela nueva.»
+    Botón: «Recargar» → «Recargando…»
+  OJO: hoy el mensaje entre pestañas solo lleva {tipo: 'escuela-cambiada'}; para la variante con nombre tendría que
+  llevar también el nombre de la escuela nueva. Sin él, la variante sin nombre es la que sale.
+
+  De dónde sale cada estilo:
+    1. Panel nuevo: diálogo del panel (panel-nuevo/dialogo/dialogo.component.scss y capas/_capas.scss; DESIGN.md
+       «Diálogo y hoja»): 440 px, radio 8, sombra de diálogo, velo de la tinta al 40 %, título Montserrat Panel 700 de
+       18 px, frase en tinta-2 con el nombre en negrita, botón principal de 40 px a la derecha. Por debajo de 768 px,
+       hoja inferior (radio 14 arriba, botón de 44 px a ancho completo) sin asa ni X: no se puede deslizar ni cerrar.
+       Propuesta: sin color de escuela (marca-por-defecto #1A2230, como el diálogo de peligro), porque la pestaña es de
+       la escuela anterior y la capa habla de la nueva. Sin animación de entrada (DESIGN.md: solo se mueve lo que
+       responde a una acción). Fondo: listado de Alumnos con la cabecera de Moi's Kim Do y datos inventados.
+    2. Área de familias (vista-principal-user): sus avisos son SweetAlert2 11 sin personalizar, así que la capa copia
+       su forma (caja blanca de 32em y radio 5 px, icono en anillo arriba, título de 1,875em en #545454, texto centrado,
+       velo negro al 40 % y la entrada «swal2-show»), pero con la paleta del área: azul de «Mis clases» (#0d6efd en el
+       anillo, #0a58ca de fondo del botón para llegar a 6:1 con el blanco) en lugar del morado por defecto de
+       SweetAlert2 (anti-referencia). Montserrat 400/700 como el resto de pantallas de hoy. Fondo: cabecera de usuario
+       (header.component, degradado #1b2b2e → #284747) y la tarjeta de bienvenida del área.
+    3. Web pública de Moiskimdo (escaparate-principal y cabecera pública): caja blanca de radio 16 px y sombra
+       $shadow-lg de la cabecera, el logo de la escuela arriba, Montserrat y botón en píldora (radio 50 px) en el
+       oscuro de la marca (#1b2b2e), como los botones del hero. Entrada corta de opacidad y 8 px. Fondo: cabecera con
+       «Volver al panel» (sesión del panel en la web) y el hero con su póster.
+  Recursos: el logo, el póster, las fuentes del panel y Osaka se cargan del propio repo (../../src-frontend/src/assets);
+  Montserrat 400/700 de Google Fonts, como la app y otros bocetos. Abrir el fichero desde docs/multi-escuela/.
+
+  Barra «Probar» (o la URL): ?lugar=panel|familias|web&ancho=ventana|movil&nombre=si|no&estado=normal|recargando
+    lugar   sitio de la pestaña bloqueada (por defecto panel)
+    ancho   ventana = el ancho real del navegador; movil = un marco de 390 × 844 con la misma página
+    nombre  si = la pestaña conoce la escuela nueva; no = variante sin nombre
+    estado  normal = recién llegada la capa; recargando = tras pulsar «Recargar»
+  Interno: &marco=1 es la página dentro del marco móvil (sin barra).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
+<style>
+@font-face{font-family:"Montserrat Panel";src:url("../../src-frontend/src/assets/fonts/montserrat-latin-600-normal.woff2") format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Montserrat Panel";src:url("../../src-frontend/src/assets/fonts/montserrat-latin-700-normal.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Public Sans";src:url("../../src-frontend/src/assets/fonts/public-sans-latin-wght-normal.woff2") format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:"Osaka-Sans Serif";src:url("../../src-frontend/src/assets/fonts/osaka-re.ttf") format("truetype");font-display:swap}
+
+*,*::before,*::after{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0;background:#f5f5f2;overflow-x:hidden}
+button{font:inherit;color:inherit}
+[hidden]{display:none!important}
+svg.i{width:18px;height:18px;flex:none}
+.oculto{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+
+/* ---------------------------------------------------------------- Barra «Probar» (no es parte de la pantalla) */
+.bb{position:relative;z-index:200;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:8px 24px;background:#fff;border-bottom:1px dashed #cfcfc8;font:400 .8125rem/1.3 "Public Sans","Segoe UI",system-ui,sans-serif;color:#1a2230}
+.bb strong{font-weight:600}
+.bb__grupo{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.bb__grupo>span{color:#5d6573}
+.bb button{min-height:30px;padding:0 12px;border:1px solid #868d97;border-radius:999px;background:#fff;color:#1a2230;font:500 .8125rem/1 "Public Sans","Segoe UI",system-ui,sans-serif;cursor:pointer}
+.bb button[aria-pressed=true]{border-color:#1a2230;background:#1a2230;color:#fff}
+.bb button:focus-visible{outline:3px solid #6f8abb;outline-offset:2px}
+.bb__nota{flex-basis:100%;margin:0;color:#5d6573}
+@media (max-width:767.98px){.bb{padding:8px 16px;gap:6px 12px}}
+
+/* Marco móvil */
+.marco-fondo{display:grid;justify-items:center;gap:10px;padding:24px 0 40px;background:#e9e9e4}
+.marco-fondo p{margin:0;font:500 .8125rem/1 "Public Sans",system-ui,sans-serif;color:#5d6573}
+.marco{display:block;width:min(390px,100%);height:844px;border:1px solid #cfcfc8;border-radius:20px;background:#fff;box-shadow:0 12px 32px -12px rgb(26 34 48/30%)}
+
+.escena{position:relative;min-height:100dvh}
+.escena[inert]{user-select:none}
+
+/* =================================================================== 1. PANEL NUEVO (tokens de DESIGN.md bajo .pn) */
+.pn{
+  --pn-marca-primario:#1b2b2e;--pn-marca-sobre-primario:#fff;--pn-marca-sobre-primario-2:#c6cacb;--pn-marca-primario-tinta:#1b2b2e;--pn-marca-primario-suave:#e8eaea;
+  --pn-marca-por-defecto:#1a2230;--pn-marca-suave-por-defecto:#e8e9ea;
+  --pn-acento:#01707f;--pn-acento-borde:#4595a3;--pn-acento-suave:#d5f5fc;
+  --pn-atencion:#a14f0b;--pn-atencion-suave:#fcf2e6;
+  --pn-fondo:#f5f5f2;--pn-superficie:#fff;--pn-superficie-2:#fafaf8;--pn-linea:#e4e4df;--pn-linea-fuerte:#cfcfc8;--pn-borde-control:#868d97;
+  --pn-tinta:#1a2230;--pn-tinta-2:#5d6573;--pn-tinta-3:#7a8290;--pn-bien:#2f6b3a;--pn-cinto-borde:#7a8290;
+  --pn-fuente-titulo:"Montserrat Panel",montserrat,system-ui,sans-serif;--pn-fuente-cuerpo:"Public Sans","Segoe UI",system-ui,sans-serif;
+  --pn-titulo-pantalla:700 1.5rem/1.15 var(--pn-fuente-titulo);--pn-titulo-bloque:700 1.0625rem/1.25 var(--pn-fuente-titulo);
+  --pn-titulo-dialogo:700 1.125rem/1.3 var(--pn-fuente-titulo);
+  --pn-cuerpo:400 .9375rem/1.45 var(--pn-fuente-cuerpo);--pn-secundario:400 .875rem/1.35 var(--pn-fuente-cuerpo);--pn-etiqueta:600 .8125rem/1.2 var(--pn-fuente-cuerpo);
+  --pn-radio-s:6px;--pn-radio-m:8px;--pn-radio-carnet:14px;--pn-radio-pastilla:999px;
+  --pn-sombra-barra:0 -6px 20px -8px rgb(26 34 48/22%),0 -2px 4px rgb(26 34 48/6%);
+  --pn-sombra-dialogo:0 24px 48px -12px rgb(26 34 48/28%),0 4px 10px rgb(26 34 48/8%);
+  --pn-sombra-hoja:0 -12px 32px -8px rgb(26 34 48/28%);
+  --pn-velo:rgb(26 34 48/40%);--pn-transicion:150ms ease-out;
+  background:var(--pn-fondo);color:var(--pn-tinta);font:var(--pn-cuerpo);-webkit-font-smoothing:antialiased;
+}
+.pn ::selection{background:var(--pn-acento-suave);color:var(--pn-tinta)}
+.pn a:focus-visible,.pn button:focus-visible,.pn input:focus-visible{outline:3px solid var(--pn-acento-borde);outline-offset:2px}
+
+.cab{position:sticky;top:0;z-index:40;height:64px;background:var(--pn-marca-primario);color:var(--pn-marca-sobre-primario)}
+.cab__fila{display:flex;align-items:center;gap:16px;height:100%;max-width:1280px;margin:0 auto;padding:0 24px}
+.cab__marca{display:flex;align-items:center;gap:12px;min-width:0;color:inherit;text-decoration:none}
+.cab__logo{display:block;flex:none;width:46px;height:46px;border-radius:50%;background:#fff;object-fit:contain;padding:2px}
+.cab__nombre{min-width:0;font:var(--pn-titulo-bloque);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cab__nav{display:none;margin-left:auto}
+.cab__nav ul{display:flex;gap:2px;margin:0;padding:0;list-style:none}
+.cab__nav a{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 10px;border-radius:var(--pn-radio-m);color:var(--pn-marca-sobre-primario-2);font:600 .875rem/1 var(--pn-fuente-cuerpo);text-decoration:none;white-space:nowrap}
+.cab__nav a[aria-current=page]{background:rgb(255 255 255/14%);color:var(--pn-marca-sobre-primario)}
+.cab__cuenta{display:flex;flex:none;align-items:center;gap:8px;margin-left:auto;font:600 .875rem/1 var(--pn-fuente-cuerpo)}
+.cab__nav+.cab__cuenta{margin-left:8px}
+.cab__avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--pn-acento-suave);color:var(--pn-acento);font:700 .8125rem/1 var(--pn-fuente-cuerpo)}
+.cab__cuenta-nombre{display:none}
+@media (min-width:1024px){.cab__nav{display:block}}
+@media (min-width:1024px) and (max-width:1219.98px){.cab__nombre{display:none}}
+@media (min-width:1280px){.cab__cuenta-nombre{display:inline}}
+@media (max-width:767.98px){.cab{height:56px}.cab__fila{padding:0 16px;gap:12px}.cab__logo{width:40px;height:40px}.cab__nombre{font-size:1rem}}
+
+.pagina{max-width:1280px;margin:0 auto;padding:24px 24px 96px}
+.pagina h1{margin:0;font:var(--pn-titulo-pantalla);letter-spacing:-.01em}
+.pagina__cabeza{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:20px}
+.pagina__sub{margin:6px 0 0;font:var(--pn-secundario);color:var(--pn-tinta-2);font-variant-numeric:tabular-nums}
+.btn-pn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border:0;border-radius:var(--pn-radio-m);background:var(--pn-marca-primario-tinta);color:#fff;font:var(--pn-etiqueta);font-size:.875rem;white-space:nowrap;cursor:pointer}
+.herramientas{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+.buscador{position:relative;flex:1 1 280px;max-width:420px}
+.buscador svg{position:absolute;left:12px;top:50%;width:18px;height:18px;transform:translateY(-50%);color:var(--pn-tinta-3)}
+.buscador input{width:100%;min-height:42px;padding:0 12px 0 38px;border:1px solid var(--pn-borde-control);border-radius:var(--pn-radio-m);background:var(--pn-superficie);color:var(--pn-tinta);font:var(--pn-cuerpo)}
+.buscador input::placeholder{color:var(--pn-tinta-2);opacity:1}
+.filtros{display:flex;flex-wrap:wrap;gap:8px}
+.filtro{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid var(--pn-borde-control);border-radius:var(--pn-radio-pastilla);background:var(--pn-superficie);color:var(--pn-tinta);font:var(--pn-etiqueta)}
+.filtro[aria-pressed=true]{border-color:var(--pn-acento-borde);background:var(--pn-acento-suave);color:var(--pn-acento)}
+.lista-al{margin:0;padding:0;list-style:none;border:1px solid var(--pn-linea);border-radius:var(--pn-radio-m);background:var(--pn-superficie);overflow:hidden}
+.lista-al li+li{border-top:1px solid var(--pn-linea)}
+.fila{display:grid;grid-template-columns:40px minmax(0,1fr) auto;align-items:center;gap:14px;padding:10px 12px 10px 16px}
+.foto{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--pn-marca-primario-suave);color:var(--pn-tinta-2);font:700 .8125rem/1 var(--pn-fuente-cuerpo)}
+.fila__l1{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;min-width:0}
+.fila__nombre{color:var(--pn-acento);font-weight:600;text-decoration:none}
+.fila__meta{font:var(--pn-secundario);color:var(--pn-tinta-2);font-variant-numeric:tabular-nums}
+.fila__l2{display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px;margin-top:2px;font:var(--pn-secundario);color:var(--pn-tinta-2)}
+.disc{display:inline-flex;align-items:center;gap:6px}
+.cinto{display:inline-block;width:16px;height:8px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--pn-cinto-borde)}
+.fila__dcha{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.importe{font:600 .9375rem/1 var(--pn-fuente-cuerpo);color:var(--pn-atencion);font-variant-numeric:tabular-nums;white-space:nowrap}
+.btn-texto{display:inline-flex;align-items:center;min-height:34px;padding:0 10px;border:0;border-radius:var(--pn-radio-m);background:none;color:var(--pn-acento);font:600 .875rem/1 var(--pn-fuente-cuerpo);cursor:pointer}
+.al-dia{display:inline-flex;align-items:center;gap:4px;font:var(--pn-secundario);color:var(--pn-bien)}
+.al-dia svg{width:16px;height:16px}
+.nav-inferior{position:fixed;inset:auto 0 0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);height:64px;margin:0;padding:0;list-style:none;background:var(--pn-superficie);box-shadow:var(--pn-sombra-barra)}
+.nav-inferior a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:100%;color:var(--pn-tinta-2);font:600 .75rem/1.2 var(--pn-fuente-cuerpo);text-decoration:none}
+.nav-inferior a svg{width:22px;height:22px}
+.nav-inferior a[aria-current=page]{color:var(--pn-acento)}
+.nav-inferior a[aria-current=page]::before{content:"";position:absolute;top:0;left:25%;right:25%;height:3px;border-radius:0 0 3px 3px;background:var(--pn-acento)}
+@media (min-width:1024px){.nav-inferior{display:none}}
+@media (max-width:767.98px){
+  .pagina{padding:16px 16px 96px}
+  .pagina h1{font-size:1.375rem}
+  .pagina__cabeza .btn-pn{min-height:44px}
+  .buscador{max-width:none;flex-basis:100%}
+  .buscador input{min-height:44px}
+  .fila{grid-template-columns:40px minmax(0,1fr);align-items:start;gap:12px;padding:12px}
+  .fila__dcha{grid-column:2;justify-content:flex-start;margin-top:-4px}
+}
+
+/* --- Capa del panel: diálogo del panel; hoja inferior por debajo de 768. Sin color de escuela (marca-por-defecto). */
+.capa{position:fixed;inset:var(--bb-alto,0px) 0 0;z-index:150;display:grid;grid-template-columns:minmax(0,1fr);place-items:center;padding:16px;overflow-y:auto}
+.capa-pn{
+  --pn-marca-primario-tinta:var(--pn-marca-por-defecto);--pn-marca-primario-suave:var(--pn-marca-suave-por-defecto);
+  --pn-acento-borde:#6f8abb;
+  background:var(--pn-velo)}
+.dlg-pn{width:440px;max-width:calc(100vw - 32px);border-radius:var(--pn-radio-m);background:var(--pn-superficie);color:var(--pn-tinta);box-shadow:var(--pn-sombra-dialogo)}
+.dlg-pn__titulo{margin:0;padding:24px 24px 0;font:var(--pn-titulo-dialogo);color:var(--pn-tinta);text-wrap:balance}
+.dlg-pn__mensaje{margin:0;padding:8px 24px 0;color:var(--pn-tinta-2);max-width:60ch;text-wrap:pretty}
+.dlg-pn__mensaje strong{color:var(--pn-tinta);font-weight:600}
+.dlg-pn__pie{display:flex;justify-content:flex-end;padding:24px}
+.dlg-pn__accion{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:120px;min-height:44px;padding:0 18px;border:0;border-radius:var(--pn-radio-m);background:var(--pn-marca-primario-tinta);color:var(--pn-marca-sobre-primario);font:600 .9375rem/1 var(--pn-fuente-cuerpo);cursor:pointer;transition:background-color var(--pn-transicion)}
+.dlg-pn__accion:hover:not([aria-disabled=true]){background:color-mix(in srgb,var(--pn-marca-primario-tinta) 86%,#000)}
+.dlg-pn__accion:focus-visible{outline:3px solid var(--pn-acento-borde);outline-offset:2px}
+.dlg-pn__accion[aria-disabled=true]{cursor:progress;color:#c6c8cb}
+@media (max-width:767.98px){
+  .capa-pn{align-items:end;padding:0}
+  .dlg-pn{width:100%;max-width:100%;border-radius:var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;box-shadow:var(--pn-sombra-hoja);padding:4px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+  .dlg-pn__titulo{padding:20px 0 0}
+  .dlg-pn__mensaje{padding:8px 0 0}
+  .dlg-pn__pie{padding:24px 0 0}
+  .dlg-pn__accion{width:100%}
+}
+
+/* Indicador del botón ocupado (button[pnOcupado]): 16 px; quieto con prefers-reduced-motion */
+.girando{width:16px;height:16px;flex:none;animation:girar .8s linear infinite}
+@keyframes girar{to{transform:rotate(360deg)}}
+
+/* =================================================================== Cabecera de hoy (familias y web, header.component) */
+.vieja{font-family:Montserrat,sans-serif;color:#212529;-webkit-font-smoothing:antialiased}
+.vieja a:focus-visible,.vieja button:focus-visible{outline:3px solid #0a58ca;outline-offset:2px}
+.hd{position:absolute;top:0;left:0;right:0;z-index:40;background:linear-gradient(135deg,rgb(27 43 46/95%) 0%,rgb(40 71 71/90%) 100%);box-shadow:0 8px 32px rgb(0 0 0/20%),inset 0 0 0 1px rgb(255 255 255/10%);color:#fff}
+.hd__fila{display:flex;align-items:center;gap:16px;min-height:96px;padding:8px 24px}
+.hd__logo{display:block;height:80px;width:auto}
+.hd__nav{display:flex;align-items:center;gap:4px;margin:0 0 0 16px;padding:0;list-style:none}
+.hd__nav a{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border-radius:8px;color:rgb(255 255 255/85%);font-weight:600;font-size:.95rem;text-decoration:none;white-space:nowrap}
+.hd__nav a[aria-current=page]{background:rgb(255 255 255/12%);color:#fff}
+.hd__nav svg{width:16px;height:16px}
+.hd__dcha{display:flex;align-items:center;gap:12px;margin-left:auto}
+.hd__social{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:rgb(255 255 255/10%);color:#fff}
+.hd__social svg{width:16px;height:16px}
+.hd__boton{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:50px;background:#fff;color:#1b2b2e;font-weight:700;font-size:.9rem;text-decoration:none;white-space:nowrap}
+.hd__boton svg{width:16px;height:16px}
+.hd__usuario{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 14px 0 6px;border:1px solid rgb(255 255 255/22%);border-radius:50px;background:rgb(255 255 255/8%);font-weight:600;font-size:.9rem}
+.hd__inic{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#fff;color:#1b2b2e;font-weight:700;font-size:.8rem}
+.hd__movil{display:none}
+.hd__titulo{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;text-align:center}
+.hd__titulo b{font:700 1.23rem/1.1 "Osaka-Sans Serif",sans-serif;letter-spacing:2px;text-shadow:0 2px 4px rgb(0 0 0/30%)}
+.hd__titulo b span{display:inline-block;white-space:nowrap}
+.hd__titulo small{margin-top:2px;font-size:.6rem;font-weight:500;letter-spacing:1px;color:rgb(255 255 255/70%)}
+.hd__menu{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:8px;background:none;color:#fff}
+.hd__menu svg{width:26px;height:26px}
+@media (max-width:1199.98px){.hd__nav li:nth-child(n+5){display:none}.hd__social{display:none}}
+@media (max-width:991.98px){
+  .hd__fila{min-height:66px;padding:8px 12px;gap:6px}
+  .hd__logo,.hd__nav,.hd__dcha .hd__social{display:none}
+  .hd__movil{display:contents}
+  .hd__logo-m{display:block;width:50px;height:50px}
+  .hd__dcha{margin-left:0}
+  .hd__boton{min-height:40px;padding:0 12px;font-size:.8rem}
+  .hd__usuario{padding:0 4px;border:0;background:none}
+  .hd__usuario span:last-child{display:none}
+}
+
+/* =================================================================== 2. ÁREA DE FAMILIAS (vista-principal-user) */
+.fa{min-height:100dvh;padding:124px 16px 40px;background:radial-gradient(1200px 500px at 110% -5%,rgb(13 110 253/8%),transparent),radial-gradient(900px 450px at -10% 10%,rgb(33 150 243/6%),transparent),#edf3f8}
+.fa__marco{display:flex;flex-direction:column;gap:22px;max-width:1200px;margin:0 auto}
+.fa__hero{position:relative;overflow:hidden;padding:24px;border-radius:24px;background:linear-gradient(135deg,rgb(27 43 46/97%),rgb(40 71 71/96%));color:#fff;box-shadow:0 22px 48px rgb(9 23 40/15%)}
+.fa__hero-fila{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px}
+.fa__cejilla{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border:1px solid rgb(255 255 255/28%);border-radius:999px;background:rgb(255 255 255/8%);font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgb(255 255 255/90%)}
+.fa__cejilla svg{width:13px;height:13px}
+.fa__titulo{margin:13px 0 4px;font-size:clamp(1.65rem,2.6vw,2.25rem);line-height:1.1;font-weight:700}
+.fa__sub{display:inline-flex;align-items:center;gap:8px;margin:0;color:rgb(255 255 255/88%)}
+.fa__sub svg{width:18px;height:18px;color:#9fd0ff}
+.fa__acciones{display:flex;flex-wrap:wrap;gap:12px}
+.fa__btn{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 17px;border:0;border-radius:12px;font-size:.92rem;font-weight:700;color:#fff;background:rgb(255 255 255/14%);box-shadow:inset 0 0 0 1px rgb(255 255 255/24%)}
+.fa__btn--prim{background:linear-gradient(135deg,#0d6efd,#0a58ca);box-shadow:0 8px 20px rgb(13 110 253/30%)}
+.fa__btn svg{width:17px;height:17px}
+.fa__cifras{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:20px}
+.fa__cifra{display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:rgb(255 255 255/8%);box-shadow:inset 0 0 0 1px rgb(255 255 255/12%)}
+.fa__cifra-ico{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:rgb(255 255 255/12%)}
+.fa__cifra-ico svg{width:18px;height:18px}
+.fa__cifra b{display:block;font-size:1.35rem;line-height:1.1}
+.fa__cifra span{font-size:.8rem;color:rgb(255 255 255/78%)}
+.fa__tarjetas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.fa__tarjeta{padding:20px;border-radius:18px;background:#fff;border:1px solid rgb(31 42 55/10%);box-shadow:0 8px 22px rgb(12 27 45/8%)}
+.fa__tarjeta h2{margin:0 0 6px;font-size:1.1rem;font-weight:700;color:#1f2a37}
+.fa__tarjeta p{margin:0;color:#5f6b7a}
+.fa__dia{display:inline-block;margin:10px 0 4px;padding:4px 10px;border-radius:999px;background:#e7f1ff;color:#0a58ca;font-weight:700;font-size:.8rem}
+.fa__hora{display:block;font-size:1.5rem;font-weight:700;color:#1f2a37}
+@media (max-width:991.98px){.fa{padding-top:86px}.fa__cifras{grid-template-columns:repeat(2,minmax(0,1fr))}.fa__tarjetas{grid-template-columns:1fr}}
+@media (max-width:575.98px){.fa{padding:82px 12px 32px}.fa__hero{padding:18px;border-radius:18px}.fa__acciones{width:100%}.fa__btn{flex:1 1 100%;justify-content:center}}
+
+/* --- Capa de familias: forma de SweetAlert2 11 (swal2-popup) con la paleta del área */
+.capa-fa{padding:10px;background:rgb(0 0 0/40%);font-family:Montserrat,sans-serif}
+.dlg-fa{display:grid;width:32em;max-width:100%;padding:0 0 1.25em;border-radius:5px;background:#fff;color:#545454;font-size:1rem;text-align:center;animation:swal-mostrar .3s}
+.dlg-fa__icono{display:grid;place-items:center;width:5em;height:5em;margin:2.5em auto .6em;border:.25em solid #9ec5fe;border-radius:50%;color:#0d6efd}
+.dlg-fa__icono svg{width:2.3em;height:2.3em}
+.dlg-fa__titulo{margin:0;padding:.8em 1em 0;font-size:1.875em;font-weight:700;line-height:1.2;color:#545454;text-wrap:balance}
+.dlg-fa__texto{margin:0;padding:1em 1.6em .3em;font-size:1.125em;line-height:1.5;text-wrap:pretty}
+.dlg-fa__texto strong{color:#2f2f2f;font-weight:700}
+.dlg-fa__acciones{display:flex;justify-content:center;margin:1.25em auto 0;padding:0 1.6em}
+.dlg-fa__accion{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-width:9em;min-height:44px;margin:.3125em;padding:.625em 1.4em;border:0;border-radius:.25em;background:#0a58ca;color:#fff;font-size:1em;font-weight:700;cursor:pointer;transition:background-color .1s,box-shadow .1s}
+.dlg-fa__accion:hover:not([aria-disabled=true]){background:#084298}
+.capa-fa .dlg-fa__accion:focus-visible{outline:3px solid #0a58ca;outline-offset:3px}
+.dlg-fa__accion[aria-disabled=true]{cursor:progress}
+@keyframes swal-mostrar{0%{transform:scale(.7)}45%{transform:scale(1.05)}80%{transform:scale(.95)}100%{transform:scale(1)}}
+@media (max-width:575.98px){.dlg-fa__icono{margin-top:1.75em}.dlg-fa__titulo{font-size:1.6em}.dlg-fa__texto{font-size:1.0625em;padding:.9em 1.2em .3em}.dlg-fa__acciones{padding:0 1.2em}.dlg-fa__accion{width:100%;margin:.3125em 0}}
+
+/* =================================================================== 3. WEB PÚBLICA (escaparate-principal) */
+.wb{background:#f8f9fa}
+.wb__hero{position:relative;display:grid;place-items:center;min-height:100dvh;padding:120px 20px 60px;overflow:hidden;color:#fff;text-align:center;background:#1b2b2e url("../../src-frontend/src/assets/media/video_portada.webp") center/cover no-repeat}
+.wb__hero::before{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgb(0 0 0/30%),rgb(0 0 0/60%))}
+.wb__contenido{position:relative;max-width:900px}
+.wb__insignia{display:inline-flex;align-items:center;gap:8px;margin-bottom:32px;padding:12px 24px;border:1px solid rgb(255 255 255/20%);border-radius:50px;background:rgb(255 255 255/10%);font-weight:600;font-size:.95rem}
+.wb__insignia svg{width:18px;height:18px;color:#ffd54f}
+.wb__titulo{margin:0 auto;font:700 clamp(2.6rem,6.4vw,5.8rem)/1 "Osaka-Sans Serif",sans-serif;letter-spacing:1.2px;text-shadow:3px 3px 15px rgb(0 0 0/80%)}
+.wb__titulo span{display:block}
+.wb__titulo span+span{margin-top:.45rem;font-size:clamp(1.2rem,3vw,2.5rem);letter-spacing:.45em;line-height:1.08}
+.wb__sub{margin:24px 0 8px;font-size:clamp(1rem,2vw,1.4rem);font-weight:700}
+.wb__desc{margin:0 0 32px;font-size:1.1rem;color:rgb(255 255 255/90%)}
+.wb__botones{display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+.wb__btn{display:inline-flex;align-items:center;gap:12px;padding:16px 32px;border:0;border-radius:50px;font-weight:600;font-size:1rem;background:#fff;color:#1b2b2e}
+.wb__btn--sec{background:rgb(255 255 255/10%);color:#fff;box-shadow:inset 0 0 0 2px rgb(255 255 255/30%)}
+.wb__btn svg{width:18px;height:18px}
+@media (max-width:575.98px){.wb__hero{padding-top:100px}.wb__insignia{margin-bottom:24px;padding:8px 16px;font-size:.8rem}.wb__btn{padding:14px 24px;font-size:.95rem}}
+
+/* --- Capa de la web: caja blanca de radio 16 y $shadow-lg, logo arriba, botón en píldora del oscuro de la marca */
+.capa-wb{padding:20px;background:rgb(10 18 20/62%);font-family:Montserrat,sans-serif;animation:aparecer .22s ease-out}
+.dlg-wb{width:440px;max-width:100%;padding:32px 32px 28px;border-radius:16px;background:#fff;color:#212529;text-align:center;box-shadow:0 8px 32px rgb(0 0 0/20%),0 2px 8px rgb(0 0 0/8%);animation:subir .22s cubic-bezier(.22,1,.36,1)}
+.dlg-wb__logo{display:block;width:72px;height:72px;margin:0 auto 18px}
+.dlg-wb__titulo{margin:0;font-size:1.5rem;font-weight:700;line-height:1.2;color:#1b2b2e;text-wrap:balance}
+.dlg-wb__texto{margin:12px 0 0;font-size:1rem;line-height:1.55;color:#4b5563;text-wrap:pretty}
+.dlg-wb__texto strong{color:#1b2b2e;font-weight:700}
+.dlg-wb__accion{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:180px;min-height:48px;margin-top:26px;padding:0 32px;border:0;border-radius:50px;background:#1b2b2e;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:background-color .2s ease-out}
+.dlg-wb__accion:hover:not([aria-disabled=true]){background:#284747}
+.capa-wb .dlg-wb__accion:focus-visible{outline:3px solid #0f6a72;outline-offset:3px}
+.dlg-wb__accion[aria-disabled=true]{cursor:progress;color:#c6cacb}
+@keyframes aparecer{from{opacity:0}}
+@keyframes subir{from{opacity:0;transform:translateY(8px)}}
+@media (max-width:575.98px){.dlg-wb{padding:28px 20px 22px}.dlg-wb__titulo{font-size:1.3rem}.dlg-wb__accion{width:100%}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-girando" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 3a9 9 0 1 1-9 9"/></symbol>
+  <symbol id="i-recargar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.5-4.6L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.5 4.6L20 16"/><path d="M20 20.5V16h-4.5"/></symbol>
+  <symbol id="i-buscar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-mas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-inicio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7v8.5a1 1 0 0 1-1 1h-4.5V15h-5v5.5H5a1 1 0 0 1-1-1Z"/></symbol>
+  <symbol id="i-alumnos" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.4c1.8.8 3 2.7 3 5.6"/></symbol>
+  <symbol id="i-grupos" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="7" height="7" rx="1.5"/><rect x="13.5" y="4" width="7" height="7" rx="1.5"/><rect x="3.5" y="14" width="7" height="7" rx="1.5"/><rect x="13.5" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-tesoreria" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></symbol>
+  <symbol id="i-solicitudes" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13.5 6.5 5h11l2.5 8.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z"/><path d="M4 13.5h4.5l1 2h5l1-2H20"/></symbol>
+  <symbol id="i-escuela" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 5l9 4.5-9 4.5Z"/><path d="M7 11.5v4.5c1.4 1.3 3 2 5 2s3.6-.7 5-2v-4.5"/></symbol>
+  <symbol id="i-masmenu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-abajo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-trofeo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0Z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></symbol>
+  <symbol id="i-calendario" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-reloj" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-euro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><path d="M4.5 10.5h8M4.5 13.5h8"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4Z"/></symbol>
+  <symbol id="i-estrellas" viewBox="0 0 24 24" fill="currentColor"><path d="M10 3l1.6 4.4L16 9l-4.4 1.6L10 15l-1.6-4.4L4 9l4.4-1.6Zm8 9 .9 2.1L21 15l-2.1.9L18 18l-.9-2.1L15 15l2.1-.9Z"/></symbol>
+  <symbol id="i-persona" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="10" r="3"/><path d="M6.5 18.5c1.3-2 3.2-3 5.5-3s4.2 1 5.5 3"/></symbol>
+  <symbol id="i-documento" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20Z"/><path d="M14 3.5V8h4M9 13h6M9 16.5h4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m10.5 9.5 4 2.5-4 2.5Z" fill="currentColor"/></symbol>
+  <symbol id="i-volver" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-insignia" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 14.2 5l3.3-.4.4 3.3L20.5 10 18.6 12.6l.6 3.3-3.2.9-1.5 3-3-1.3-3 1.3-1.5-3-3.2-.9.6-3.3L3.5 10l2.6-2.1.4-3.3 3.3.4Z"/></symbol>
+  <symbol id="i-social" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="3.6"/></symbol>
+</svg>
+
+<div class="bb" role="region" aria-label="Controles del boceto" id="bb">
+  <strong>Probar</strong>
+  <div class="bb__grupo" id="bb-lugar"><span>Pestaña bloqueada:</span></div>
+  <div class="bb__grupo" id="bb-ancho"><span>Ancho:</span></div>
+  <div class="bb__grupo" id="bb-nombre"><span>Escuela nueva:</span></div>
+  <div class="bb__grupo" id="bb-estado"><span>Estado:</span></div>
+  <p class="bb__nota" id="bb-nota"></p>
+</div>
+
+<div id="raiz"></div>
+
+<script>
+(() => {
+  const P = new URLSearchParams(location.search);
+  const enMarco = P.get('marco') === '1';
+  const $ = (id) => document.getElementById(id);
+  const ico = (id, cls = 'i') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+  const euros = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' }).format(n);
+  const LOGO = '../../src-frontend/src/assets/media/Logo_escuela.svg';
+
+  const LUGARES = [['panel', 'Panel nuevo'], ['familias', 'Área de familias'], ['web', 'Web pública']];
+  const ANCHOS = [['ventana', 'Ventana'], ['movil', 'Móvil (390)']];
+  const NOMBRES = [['si', 'Se conoce'], ['no', 'No se conoce']];
+  const ESTADOS = [['normal', 'Al llegar'], ['recargando', 'Recargando…']];
+  const elegir = (lista, v, def) => (lista.some(([k]) => k === v) ? v : def);
+  const s = {
+    lugar: elegir(LUGARES, P.get('lugar'), 'panel'),
+    ancho: elegir(ANCHOS, P.get('ancho'), 'ventana'),
+    nombre: elegir(NOMBRES, P.get('nombre'), 'si'),
+    estado: elegir(ESTADOS, P.get('estado'), 'normal'),
+  };
+  const ESCUELA_NUEVA = 'Taekwondo Sierra Sur';
+
+  const params = (extra = {}) => {
+    const q = new URLSearchParams({ lugar: s.lugar, ancho: s.ancho, nombre: s.nombre, estado: s.estado, ...extra });
+    return '?' + q.toString();
+  };
+
+  // ------------------------------------------------------------ textos (los tres sitios dicen lo mismo)
+  const TITULO = 'Has cambiado de escuela';
+  const frase = () => s.nombre === 'si'
+    ? `Lo hiciste en otra pestaña. Recarga esta para seguir con los datos de <strong>${ESCUELA_NUEVA}</strong>.`
+    : 'Lo hiciste en otra pestaña. Recarga esta para seguir con los datos de la escuela nueva.';
+  const contenidoBoton = (ocupado, clsGiro = 'girando') => ocupado
+    ? `${ico('girando', clsGiro)}<span>Recargando…</span>`
+    : '<span>Recargar</span>';
+
+  // ------------------------------------------------------------ fondos
+  const ALUMNOS = [
+    { n: 'Lucía Romero Gil', exp: '0412', edad: 9, disc: [['#f2c94c', 'Taekwondo · 8.º gup']], tarifa: 'Infantil', pend: 35 },
+    { n: 'Hugo Navarro Ruiz', exp: '0388', edad: 12, disc: [['#2b6cb0', 'Taekwondo · 4.º gup'], ['#fff', 'Kickboxing · blanco']], tarifa: 'Dos disciplinas', pend: 0 },
+    { n: 'Carmen Vega Ortiz', exp: '0291', edad: 34, disc: [['', 'Pilates']], tarifa: 'Adulto', pend: 0 },
+    { n: 'Daniel Prieto Sanz', exp: '0455', edad: 7, disc: [['#fff', 'Taekwondo · 10.º gup']], tarifa: 'Infantil', pend: 70 },
+    { n: 'Marta Lozano Díaz', exp: '0173', edad: 28, disc: [['', 'Defensa personal femenina']], tarifa: 'Adulto', pend: 0 },
+    { n: 'Pablo Herrera Cano', exp: '0502', edad: 15, disc: [['#2f8f46', 'Kickboxing · verde']], tarifa: 'Juvenil', pend: 0 },
+    { n: 'Irene Castro León', exp: '0219', edad: 11, disc: [['#e8892c', 'Taekwondo · 7.º gup']], tarifa: 'Infantil', pend: 35 },
+  ];
+  const iniciales = (n) => n.split(' ').slice(0, 2).map((p) => p[0]).join('');
+
+  function fondoPanel() {
+    const entradas = [['inicio', 'Inicio'], ['alumnos', 'Alumnos', true], ['grupos', 'Grupos'], ['tesoreria', 'Tesorería'], ['solicitudes', 'Solicitudes'], ['escuela', 'Escuela']];
+    const filas = ALUMNOS.map((a) => `<li class="fila">
+        <span class="foto" aria-hidden="true">${iniciales(a.n)}</span>
+        <div>
+          <div class="fila__l1"><a class="fila__nombre" href="#">${a.n}</a><span class="fila__meta">Nº ${a.exp} · ${a.edad} años</span></div>
+          <div class="fila__l2">${a.disc.map(([c, t]) => `<span class="disc">${c ? `<span class="cinto" style="background:${c}" aria-hidden="true"></span>` : ''}${t}</span>`).join('')}<span>${a.tarifa}</span></div>
+        </div>
+        <div class="fila__dcha">${a.pend ? `<span class="importe">${euros(a.pend)}</span><button type="button" class="btn-texto">Cobrar</button>` : `<span class="al-dia">${ico('check')}Al día</span>`}</div>
+      </li>`).join('');
+    return `<div class="pn">
+      <header class="cab"><div class="cab__fila">
+        <a class="cab__marca" href="#"><img class="cab__logo" src="${LOGO}" alt="Logo de Moi's Kim Do"><span class="cab__nombre">Moi's Kim Do</span></a>
+        <nav class="cab__nav" aria-label="Principal"><ul>${entradas.map(([i, t, act]) => `<li><a href="#"${act ? ' aria-current="page"' : ''}>${ico(i)}${t}</a></li>`).join('')}</ul></nav>
+        <span class="cab__cuenta"><span class="cab__avatar" aria-hidden="true">AL</span><span class="cab__cuenta-nombre">Ana López</span><span class="oculto">Cuenta de Ana López</span></span>
+      </div></header>
+      <main class="pagina">
+        <div class="pagina__cabeza">
+          <div><h1>Alumnos</h1><p class="pagina__sub">112 activos · 834 en total</p></div>
+          <button type="button" class="btn-pn">${ico('mas')}Nuevo alumno</button>
+        </div>
+        <div class="herramientas">
+          <label class="buscador">${ico('buscar')}<span class="oculto">Buscar alumno</span><input type="search" placeholder="Buscar por nombre o nº de expediente"></label>
+          <div class="filtros"><button type="button" class="filtro" aria-pressed="true">Activos</button><button type="button" class="filtro" aria-pressed="false">Con pendiente</button><button type="button" class="filtro" aria-pressed="false">Disciplina${ico('abajo')}</button></div>
+        </div>
+        <ul class="lista-al">${filas}</ul>
+      </main>
+      <nav aria-label="Principal (móvil)"><ul class="nav-inferior">
+        <li><a href="#">${ico('inicio')}Inicio</a></li>
+        <li><a href="#" aria-current="page">${ico('alumnos')}Alumnos</a></li>
+        <li><a href="#">${ico('tesoreria')}Tesorería</a></li>
+        <li><a href="#">${ico('masmenu')}Más</a></li>
+      </ul></nav>
+    </div>`;
+  }
+
+  function cabeceraVieja(dcha, actual) {
+    const nav = [['inicio', 'Inicio'], ['trofeo', '¿Qué hacemos?'], ['calendario', 'Eventos'], ['reloj', 'Horarios'], ['euro', 'Tarifas'], ['chat', 'Contacto']];
+    return `<header class="hd"><div class="hd__fila">
+      <span class="hd__movil"><button type="button" class="hd__menu" aria-label="Abrir menú de navegación">${ico('masmenu')}</button><img class="hd__logo-m" src="${LOGO}" alt="Logo de Moi's Kim Do"><span class="hd__titulo"><b><span>MOI'S</span> <span>KIM DO</span></b><small>ESCUELA DE ARTES MARCIALES</small></span></span>
+      <img class="hd__logo" src="${LOGO}" alt="Logo de Moi's Kim Do">
+      <ul class="hd__nav">${nav.map(([i, t]) => `<li><a href="#"${t === actual ? ' aria-current="page"' : ''}>${ico(i)}${t}</a></li>`).join('')}</ul>
+      <div class="hd__dcha"><a class="hd__social" href="#" aria-label="Instagram">${ico('social')}</a>${dcha}</div>
+    </div></header>`;
+  }
+
+  function fondoFamilias() {
+    return `<div class="vieja">${cabeceraVieja('<span class="hd__usuario"><span class="hd__inic" aria-hidden="true">AL</span><span>Ana López</span></span>', '')}
+      <main class="fa"><div class="fa__marco">
+        <section class="fa__hero">
+          <div class="fa__hero-fila">
+            <div><span class="fa__cejilla">${ico('estrellas')}Área de alumnos</span><h1 class="fa__titulo">Bienvenido/a</h1><p class="fa__sub">${ico('persona')}Lucía Romero Gil</p></div>
+            <div class="fa__acciones"><button type="button" class="fa__btn fa__btn--prim">${ico('play')}Mis clases</button><button type="button" class="fa__btn">${ico('documento')}Mis documentos</button><button type="button" class="fa__btn">${ico('calendario')}Ver horarios</button></div>
+          </div>
+          <div class="fa__cifras">
+            <div class="fa__cifra"><span class="fa__cifra-ico">${ico('grupos')}</span><div><b>2</b><span>Grupos activos</span></div></div>
+            <div class="fa__cifra"><span class="fa__cifra-ico">${ico('trofeo')}</span><div><b>1</b><span>Deportes inscritos</span></div></div>
+            <div class="fa__cifra"><span class="fa__cifra-ico">${ico('check')}</span><div><b>1</b><span>Aptos para examen</span></div></div>
+            <div class="fa__cifra"><span class="fa__cifra-ico">${ico('documento')}</span><div><b>3</b><span>Documentos</span></div></div>
+          </div>
+        </section>
+        <div class="fa__tarjetas">
+          <section class="fa__tarjeta"><h2>Próxima clase</h2><span class="fa__dia">Hoy</span><span class="fa__hora">17:00 – 18:00</span><p>Taekwondo infantil · Umbrete</p></section>
+          <section class="fa__tarjeta"><h2>Próximo examen</h2><p>Convocatoria de diciembre. Lucía ya puede presentarse a 7.º gup.</p></section>
+        </div>
+      </div></main></div>`;
+  }
+
+  function fondoWeb() {
+    return `<div class="vieja wb">${cabeceraVieja(`<a class="hd__boton" href="#">${ico('volver')}Volver al panel</a>`, 'Inicio')}
+      <main class="wb__hero"><div class="wb__contenido">
+        <span class="wb__insignia">${ico('insignia')}Más de 15 años de experiencia</span>
+        <h1 class="wb__titulo"><span>MOI'S KIM DO</span><span>UMBRETE</span></h1>
+        <p class="wb__sub">Artes marciales en Umbrete, Sevilla</p>
+        <p class="wb__desc">Transforma tu vida a través de las artes marciales</p>
+        <div class="wb__botones"><button type="button" class="wb__btn">${ico('calendario')}Ver horarios</button><button type="button" class="wb__btn wb__btn--sec">${ico('persona')}Inscríbete ahora</button></div>
+      </div></main></div>`;
+  }
+
+  // ------------------------------------------------------------ capas
+  function capa() {
+    const ocupado = s.estado === 'recargando';
+    const aria = `role="alertdialog" aria-modal="true" aria-labelledby="capa-titulo" aria-describedby="capa-texto"`;
+    const boton = (cls) => `<button type="button" class="${cls}" id="capa-recargar"${ocupado ? ' aria-disabled="true" aria-busy="true"' : ''}>${contenidoBoton(ocupado)}</button>`;
+    const voz = `<p class="oculto" role="status" id="capa-voz">${ocupado ? 'Recargando…' : ''}</p>`;
+    if (s.lugar === 'panel') {
+      return `<div class="capa capa-pn pn" id="capa"><div class="dlg-pn" ${aria} id="dlg">
+        <h2 class="dlg-pn__titulo" id="capa-titulo">${TITULO}</h2>
+        <p class="dlg-pn__mensaje" id="capa-texto">${frase()}</p>
+        <div class="dlg-pn__pie">${boton('dlg-pn__accion')}</div>${voz}
+      </div></div>`;
+    }
+    if (s.lugar === 'familias') {
+      return `<div class="capa capa-fa vieja" id="capa"><div class="dlg-fa" ${aria} id="dlg">
+        <div class="dlg-fa__icono" aria-hidden="true">${ico('recargar')}</div>
+        <h2 class="dlg-fa__titulo" id="capa-titulo">${TITULO}</h2>
+        <p class="dlg-fa__texto" id="capa-texto">${frase()}</p>
+        <div class="dlg-fa__acciones">${boton('dlg-fa__accion')}</div>${voz}
+      </div></div>`;
+    }
+    return `<div class="capa capa-wb vieja" id="capa"><div class="dlg-wb" ${aria} id="dlg">
+      <img class="dlg-wb__logo" src="${LOGO}" alt="">
+      <h2 class="dlg-wb__titulo" id="capa-titulo">${TITULO}</h2>
+      <p class="dlg-wb__texto" id="capa-texto">${frase()}</p>
+      ${boton('dlg-wb__accion')}${voz}
+    </div></div>`;
+  }
+
+  function engancharCapa() {
+    const b = $('capa-recargar');
+    // Pulsar «Recargar»: botón ocupado (aria-disabled, no disabled: el foco se queda) y aviso a los lectores.
+    b.addEventListener('click', () => {
+      if (b.getAttribute('aria-disabled') === 'true') return;
+      s.estado = 'recargando';
+      b.setAttribute('aria-disabled', 'true'); b.setAttribute('aria-busy', 'true');
+      b.innerHTML = contenidoBoton(true);
+      $('capa-voz').textContent = '';
+      setTimeout(() => { $('capa-voz').textContent = 'Recargando…'; }, 100);
+      if (!enMarco) { pintarBarra(); history.replaceState(null, '', params()); }
+    });
+    // No se cierra: Esc no hace nada; Tab no sale de la capa (único control: el botón); el clic fuera, nada.
+    $('dlg').addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') ev.preventDefault();
+      if (ev.key === 'Tab') { ev.preventDefault(); b.focus(); }
+    });
+    $('capa').addEventListener('mousedown', (ev) => { if (!ev.target.closest('#capa-recargar')) { ev.preventDefault(); b.focus(); } });
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') ev.preventDefault(); });
+    b.focus({ preventScroll: true });
+  }
+
+  // ------------------------------------------------------------ barra «Probar»
+  function pintarBarra() {
+    if (enMarco) { $('bb').hidden = true; return; }
+    [['bb-lugar', LUGARES, 'lugar'], ['bb-ancho', ANCHOS, 'ancho'], ['bb-nombre', NOMBRES, 'nombre'], ['bb-estado', ESTADOS, 'estado']].forEach(([id, lista, k]) => {
+      const g = $(id); g.querySelectorAll('button').forEach((b) => b.remove());
+      lista.forEach(([v, t]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = t;
+        b.setAttribute('aria-pressed', String(s[k] === v));
+        b.addEventListener('click', () => { s[k] = v; history.replaceState(null, '', params()); pintar(); });
+        g.appendChild(b);
+      });
+    });
+    const donde = { panel: 'Panel nuevo: hoja inferior por debajo de 768 px.', familias: 'Área de familias: forma de sus SweetAlert2, con su azul.', web: 'Web pública: «Recargar» lleva a la entrada de la sesión, no se queda en la web.' }[s.lugar];
+    $('bb-nota').textContent = `${donde} La capa no se cierra con Esc ni con clic fuera; pulsa «Recargar» para ver «Recargando…».`;
+  }
+
+  function pintar() {
+    pintarBarra();
+    if (s.ancho === 'movil' && !enMarco) {
+      $('raiz').innerHTML = `<div class="marco-fondo"><p>Móvil · 390 × 844</p><iframe class="marco" title="Pestaña bloqueada en un móvil de 390 px" src="${params({ marco: '1' })}"></iframe></div>`;
+      return;
+    }
+    const fondo = { panel: fondoPanel, familias: fondoFamilias, web: fondoWeb }[s.lugar]();
+    $('raiz').innerHTML = `<div class="escena" inert aria-hidden="true">${fondo}</div>${capa()}`;
+    engancharCapa();
+    medirBarra();
+  }
+
+  // La barra «Probar» no es de la pantalla: la capa empieza debajo de ella para no taparla.
+  function medirBarra() {
+    document.documentElement.style.setProperty('--bb-alto', enMarco ? '0px' : $('bb').offsetHeight + 'px');
+  }
+  addEventListener('resize', medirBarra);
+
+  pintar();
+})();
+</script>
+</body>
+</html>
