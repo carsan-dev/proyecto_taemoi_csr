@@ -35,7 +35,8 @@ import jakarta.validation.constraints.Email;
 
 /**
  * Fase 4, pieza F4-2 (decisiones 390, 392 y 444): el superadmin da de alta una escuela: la escuela, su primera sede, su
- * propietario (invitación o, si el email ya tiene cuenta, solo el rol) y el catálogo de las disciplinas elegidas copiado
+ * propietario (invitación; si el email ya tiene cuenta, el rol, y si esa cuenta sigue con la invitación sin aceptar, de
+ * esta escuela o de otra, además se le reenvía con esta escuela, como el reenvío del panel de miembros) y el catálogo de las disciplinas elegidas copiado
  * de la escuela plantilla ({@code app.plataforma.plantilla-organizacion-id}, por defecto 1). Cambia D3: el superadmin,
  * sin membresía, también crea escuelas; queda registrado en la escuela NUEVA.
  *
@@ -50,7 +51,8 @@ import jakarta.validation.constraints.Email;
  * <p>Concurrencia: dos altas que calculan el mismo slug (mismo nombre, o nombres distintos con el mismo slug) o que crean
  * la misma cuenta de propietario chocan en un índice único: la segunda espera a que la primera confirme y falla, ya
  * deshecha. Entonces se repite el alta UNA vez ({@link #crear}), con otro id reservado: el mismo nombre da 409, otro
- * nombre recibe el slug con sufijo y el propietario, ya con cuenta, solo recibe el rol. Si la repetición vuelve a chocar
+ * nombre recibe el slug con sufijo y el propietario, ya con cuenta, recibe el rol (y, si sigue pendiente, la invitación
+ * reenviada con su escuela). Si la repetición vuelve a chocar
  * en un índice único (tres o más altas a la vez), 409 {@value #ALTA_A_LA_VEZ}: no se repite más.
  */
 @Service
@@ -207,6 +209,17 @@ public class AltaEscuelaService {
 					valoresRol(cuenta.getId()));
 		}
 		registroMiembros.registrar(RegistroAccionesMiembros.Accion.ROL_DADO, RUTA, valoresRol(cuenta.getId()));
+		// Cuenta que aún no ha aceptado su invitación (de otra escuela, o de una alta a la vez con el mismo propietario):
+		// sin contraseña no entra, y el rol nuevo no le llegaría. Como reenviar en el panel de miembros
+		// (GestionMiembrosService#reenviarInvitacion): token nuevo con ESTA escuela (el anterior deja de valer) y el correo
+		// tras confirmar. El UPDATE está condicionado a que siga pendiente: si la aceptó entretanto, solo el rol.
+		boolean reenviada = invitado == null && cuenta.invitacionPendiente()
+				&& invitaciones.renovarToken(cuenta, id, RolMembresia.PROPIETARIO);
+		if (reenviada) {
+			Map<String, Object> valores = new LinkedHashMap<>();
+			valores.put("usuario", cuenta.getId());
+			registroMiembros.registrar(RegistroAccionesMiembros.Accion.INVITACION_REENVIADA, RUTA, valores);
+		}
 
 		copia.copiar(plantilla, seleccion);
 
@@ -216,7 +229,8 @@ public class AltaEscuelaService {
 						+ cuenta.getId() + " invitado=" + (invitado != null ? "SI" : "NO") + " disciplinas="
 						+ seleccion.disciplinas().stream().map(PlantillaCatalogo.Disciplina::codigo)
 								.collect(Collectors.joining(",")));
-		return new AltaEscuelaDTO(id, datos.nombre(), invitado != null ? datos.emailPropietario() : null);
+		return new AltaEscuelaDTO(id, datos.nombre(),
+				invitado != null || reenviada ? datos.emailPropietario() : null);
 	}
 
 	/**

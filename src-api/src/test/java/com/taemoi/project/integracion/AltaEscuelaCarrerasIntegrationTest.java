@@ -60,7 +60,8 @@ import jakarta.servlet.http.Cookie;
  *
  * <ul>
  * <li>Mismo propietario NUEVO en dos escuelas distintas: las dos crean la cuenta; la segunda choca con el índice único de
- * {@code usuario.email} y se repite entera, ahora por el camino de la cuenta existente: 201 y 201, un solo correo.</li>
+ * {@code usuario.email} y se repite entera, ahora por el camino de la cuenta existente, que sigue pendiente: reenvía la
+ * invitación con su escuela (token nuevo). 201 y 201, una cuenta y dos correos; solo vale el enlace del segundo.</li>
  * <li>Dos nombres distintos con el mismo slug: la segunda choca con {@code uk_organizacion_slug} y se repite con el slug
  * recalculado ({@code -2}): 201 y 201, no un 409 falso de «nombre repetido».</li>
  * </ul>
@@ -147,7 +148,7 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
-	void mismoPropietarioNuevoEnDosAltasALaVez_lasDosSalen_unaCuentaYUnSoloCorreo() throws Exception {
+	void mismoPropietarioNuevoEnDosAltasALaVez_lasDosSalen_unaCuentaYCadaUnaSuCorreo() throws Exception {
 		String emailPropietario = "it-f42c-mismo-" + marca + "@example.test";
 		String nombreA = "Escuela IT Carrera A " + marca;
 		String nombreB = "Escuela IT Carrera B " + marca;
@@ -155,8 +156,9 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 		List<String> resultados = aLaVez(cuerpo(nombreA, "Eva", "Ficticia", emailPropietario),
 				cuerpo(nombreB, "Eva", "Ficticia", emailPropietario));
 
-		// Una alta invita (la cuenta es suya) y la otra, al repetirse, encuentra la cuenta y solo da el rol.
-		assertEquals(List.of("201 invitacion=" + emailPropietario, "201 invitacion=null"), resultados);
+		// Una alta invita (la cuenta es suya) y la otra, al repetirse, encuentra la cuenta aún pendiente y reenvía la
+		// invitación con su escuela, como el reenvío del panel de miembros.
+		assertEquals(List.of("201 invitacion=" + emailPropietario, "201 invitacion=" + emailPropietario), resultados);
 		assertEquals(1, contar("SELECT COUNT(*) FROM usuario WHERE email = ?", emailPropietario));
 		assertEquals(1, contar("SELECT COUNT(*) FROM organizacion WHERE nombre = ?", nombreA));
 		assertEquals(1, contar("SELECT COUNT(*) FROM organizacion WHERE nombre = ?", nombreB));
@@ -174,8 +176,9 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 					SELECT COUNT(*) FROM disciplina d JOIN organizacion o ON o.id = d.organizacion_id WHERE o.nombre = ?""",
 					nombre), nombre);
 		}
-		// El correo de la invitación sale una vez: el del intento deshecho no se envía.
-		verify(email, times(1)).sendEmailConImagen(eq(emailPropietario), any(), any(), any(), any(), any(), any());
+		// Un correo por escuela: el del intento deshecho no se envía.
+		verify(email, times(2)).sendEmailConImagen(eq(emailPropietario), any(), any(), any(), any(), any(), any());
+		assertNull(jdbc.queryForObject("SELECT contrasena FROM usuario WHERE email = ?", String.class, emailPropietario));
 		assertEquals(0, encuentro.getCount(), "Las dos altas llegaron a la vez a insertar la escuela");
 	}
 
