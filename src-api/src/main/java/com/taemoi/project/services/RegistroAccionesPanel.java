@@ -18,8 +18,9 @@ import com.taemoi.project.entities.AuditoriaAccion;
  * <p>Nunca el email, el nombre, el cargo ni una fecha. Cualquier otro tipo de valor es un error de programación y la
  * acción no se hace.
  *
- * <p>Hoy solo lo usa el perfil de la cuenta (decisión 322). Los tipos {@code DISENO_*} son históricos (pieza 8b-I,
- * interruptor retirado en V31_13): quedan como referencia de las filas «PANEL DISENO_*» del registro de auditoría.
+ * <p>Lo usan el perfil de la cuenta (decisión 322) y los datos de la escuela (pieza 394). Los tipos {@code DISENO_*} son
+ * históricos (pieza 8b-I, interruptor retirado en V31_13): quedan como referencia de las filas «PANEL DISENO_*» del
+ * registro de auditoría.
  */
 @Component
 public class RegistroAccionesPanel {
@@ -33,6 +34,11 @@ public class RegistroAccionesPanel {
 	public enum Accion {
 		/** La cuenta guarda su perfil ({@code usuario=#id}); nunca el nombre ni la fecha. */
 		PERFIL_CAMBIADO,
+		/**
+		 * Pieza 394: el propietario (o el administrador de plataforma) guarda los datos de la escuela
+		 * ({@code organizacion=#id diaLimiteCambiado=SI|NO}); nunca los datos legales, de contacto ni del firmante.
+		 */
+		DATOS_ESCUELA_CAMBIADOS,
 		/** El propietario da el permiso ({@code usuario=#id}). */
 		DISENO_PERMITIR,
 		/** El propietario quita el permiso ({@code usuario=#id}). */
