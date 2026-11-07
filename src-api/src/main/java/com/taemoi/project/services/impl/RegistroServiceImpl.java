@@ -34,6 +34,7 @@ import com.taemoi.project.services.MembresiaService;
 import com.taemoi.project.services.RegistroService;
 import com.taemoi.project.services.VinculoFamiliaService;
 import com.taemoi.project.utils.EmailUtils;
+import com.taemoi.project.organizacion.UrlsEscuela;
 
 @Service
 public class RegistroServiceImpl implements RegistroService {
@@ -50,8 +51,7 @@ public class RegistroServiceImpl implements RegistroService {
 	private final MarcaEscuelaService marcaEscuela;
 	private final SecureRandom secureRandom = new SecureRandom();
 
-	@Value("${app.frontend.base-url:https://moiskimdo.es}")
-	private String frontendBaseUrl;
+	private final UrlsEscuela urls;
 
 	@Value("${app.auth.registro-token-hours:1}")
 	private long tokenHours;
@@ -63,7 +63,9 @@ public class RegistroServiceImpl implements RegistroService {
 			EmailService emailService,
 			MembresiaService membresiaService,
 			VinculoFamiliaService vinculoFamiliaService,
-			MarcaEscuelaService marcaEscuela) {
+			MarcaEscuelaService marcaEscuela,
+			UrlsEscuela urls) {
+		this.urls = urls;
 		this.registroPendienteRepository = registroPendienteRepository;
 		this.alumnoRepository = alumnoRepository;
 		this.usuarioRepository = usuarioRepository;
@@ -113,7 +115,7 @@ public class RegistroServiceImpl implements RegistroService {
 		registro.setTokenExpiresAt(LocalDateTime.now().plusHours(tokenHours));
 		registroPendienteRepository.save(registro);
 
-		String urlConfirmacion = frontendBaseUrl + "/registro-confirmar?token=" + token;
+		String urlConfirmacion = urls.baseFrontend(alumno.getOrganizacionId()) + "/registro-confirmar?token=" + token;
 		MarcaEscuela marca = marcaEscuela.deEntidadOActiva(alumno.getOrganizacionId());
 		String contenido = buildRegistroEmailHtml(alumno.getNombre(), urlConfirmacion, tokenHours, marca);
 		EmailService.enviar(emailService, normalizedEmail, "Confirmar registro", contenido, marca.remitente());
