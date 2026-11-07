@@ -470,6 +470,7 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 			m.put(metodo + " /api/auth/roles", "el frontend decide qué mostrar por los roles");
 			m.put(metodo + " /api/auth/user", "el frontend sabe quién es al recargar (sin alumno)");
 			m.put(metodo + " /api/auth/organizaciones", "selector de escuela");
+			m.put(metodo + " /api/auth/organizaciones/{id}/logo", "selector de escuela: el logo de cada una");
 			m.put(metodo + " /api/auth/plataforma", "si además es administrador de plataforma (sin un 403 de sondeo)");
 			m.put(metodo + " /api/auth/permisos",
 					"E8-1 (D8-14): menús y guards con roles [PROFESOR], MIS_GRUPOS y MI_CAJA, sin sus sedes");

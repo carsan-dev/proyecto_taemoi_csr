@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.taemoi.project.entities.AuditoriaAccion;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.Organizacion;
+import com.taemoi.project.marca.MarcaPanelService;
 import com.taemoi.project.organizacion.TransaccionEnEscuela;
 import com.taemoi.project.repositories.ImagenRepository;
 import com.taemoi.project.repositories.OrganizacionRepository;
@@ -174,6 +175,34 @@ public class LogoEscuelaService {
 			}
 			try {
 				return Files.readAllBytes(fichero);
+			} catch (IOException e) {
+				throw new UncheckedIOException("No se pudo leer el logo", e);
+			}
+		});
+	}
+
+	/**
+	 * PNG del logo SUBIDO de una escuela (sin el de siempre de Moiskimdo) y el id de su imagen, que debe ser de esa
+	 * escuela. Para el selector de escuela: quien llama ya comprobó la membresía.
+	 *
+	 * @throws NoSuchElementException la escuela no existe o no tiene logo subido legible
+	 */
+	public MarcaPanelService.LogoPanel logoSubido(Long organizacionId) {
+		if (organizacionId == null || organizacionId <= 0) {
+			throw new NoSuchElementException("Escuela no encontrada.");
+		}
+		return enEscuela.leer(organizacionId, () -> {
+			Organizacion escuela = organizaciones.findById(organizacionId)
+					.orElseThrow(() -> new NoSuchElementException("Escuela no encontrada."));
+			Imagen imagen = escuela.getLogoImagenId() == null ? null
+					: imagenes.findById(escuela.getLogoImagenId())
+							.filter(i -> organizacionId.equals(i.getOrganizacionId())).orElse(null);
+			Path fichero = imagen == null ? null : imagenService.resolverRutaArchivo(imagen);
+			if (fichero == null || !Files.isRegularFile(fichero)) {
+				throw new NoSuchElementException("La escuela no tiene logo.");
+			}
+			try {
+				return new MarcaPanelService.LogoPanel(Files.readAllBytes(fichero), imagen.getId());
 			} catch (IOException e) {
 				throw new UncheckedIOException("No se pudo leer el logo", e);
 			}

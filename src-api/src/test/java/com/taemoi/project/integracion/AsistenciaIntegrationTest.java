@@ -835,6 +835,70 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(noche.get("hoy").get(2).get("pasada").asBoolean());
 	}
 
+	/**
+	 * La próxima salta los festivos de la sede del grupo: de un día, de varias sedes a la vez, un periodo y encadenados.
+	 * Un festivo de otra sede no la mueve. Sin festivos, la fecha no cambia.
+	 */
+	@Test
+	void clases_proximaSaltaLosFestivosDeLaSede() throws Exception {
+		ahora("2026-10-26T21:30:00"); // Lunes, ya acabadas las de hoy.
+		long sede = nuevaSede();
+		long otraSede = nuevaSede();
+		long grupo = grupoNuevo(sede, profA);
+		turno(grupo, "Martes", "17:00", "18:00");
+		turno(grupo, "Jueves", "17:00", "18:00");
+		String ruta = "/api/profesor/grupos/" + grupo + "/clases";
+		assertEquals("2026-10-27", proximaDe(ruta), "sin festivos");
+
+		crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"2026-10-27\",\"sedeIds\":[" + otraSede + "]}");
+		assertEquals("2026-10-27", proximaDe(ruta), "el festivo de otra sede no cuenta");
+
+		long variasSedes = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"2026-10-27\",\"sedeIds\":[" + sede + ","
+				+ otraSede + "]}");
+		assertEquals("2026-10-29", proximaDe(ruta), "salta el martes festivo y va al jueves");
+		assertEquals("2026-10-29", leer(get("/api/grupos/" + grupo + "/clases"), tGestor, 200).get("proxima").get("fecha")
+				.asText());
+
+		assertEquals(204, estado(delete("/api/festivos/" + variasSedes), tGestor));
+		crearFestivo("{\"tipo\":\"RANGO\",\"fechaDesde\":\"2026-10-27\",\"fechaHasta\":\"2026-11-03\","
+				+ "\"sedeIds\":[" + sede + "]}");
+		assertEquals("2026-11-05", proximaDe(ruta), "un periodo seguido salta ambos turnos hasta el jueves libre");
+	}
+
+	/** Un festivo anual, uno de hoy con la clase sin empezar y un periodo ya en curso también se saltan. */
+	@Test
+	void clases_proximaSaltaAnualHoyYPeriodoEnCurso() throws Exception {
+		long sede = nuevaSede();
+		long grupo = grupoNuevo(sede, profA);
+		turno(grupo, "Lunes", "17:00", "18:00");
+		turno(grupo, "Martes", "17:00", "18:00");
+		turno(grupo, "Jueves", "17:00", "18:00");
+		String ruta = "/api/profesor/grupos/" + grupo + "/clases";
+
+		// Anual: el martes 27 es 27 de octubre.
+		ahora("2026-10-26T21:30:00");
+		long anual = crearFestivo("{\"tipo\":\"ANUAL\",\"mes\":10,\"dia\":27,\"sedeIds\":[" + sede + "]}");
+		assertEquals("2026-10-29", proximaDe(ruta), "el anual del martes salta al jueves");
+		assertEquals(204, estado(delete("/api/festivos/" + anual), tGestor));
+
+		// Hoy festivo y la clase de las 17:00 aún sin empezar: no cuenta hoy.
+		ahora("2026-10-26T09:00:00");
+		assertEquals("2026-10-26", proximaDe(ruta), "sin festivo, la de hoy");
+		long hoy = crearFestivo("{\"tipo\":\"DIA\",\"fechaDesde\":\"2026-10-26\",\"sedeIds\":[" + sede + "]}");
+		assertEquals("2026-10-27", proximaDe(ruta), "hoy festivo: la siguiente es el martes");
+		assertEquals(204, estado(delete("/api/festivos/" + hoy), tGestor));
+
+		// Periodo empezado antes de hoy que cubre la siguiente sesión.
+		ahora("2026-10-26T21:30:00");
+		crearFestivo("{\"tipo\":\"RANGO\",\"fechaDesde\":\"2026-10-20\",\"fechaHasta\":\"2026-10-28\",\"sedeIds\":["
+				+ sede + "]}");
+		assertEquals("2026-10-29", proximaDe(ruta), "el periodo en curso cubre el martes");
+	}
+
+	private String proximaDe(String ruta) throws Exception {
+		return leer(get(ruta), tProfA, 200).get("proxima").get("fecha").asText();
+	}
+
 	@Test
 	void clases_grupoSinTurnos_proximaNull_yListasVacias() throws Exception {
 		long grupo = grupoNuevo(e.sA, profA);
