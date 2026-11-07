@@ -13,6 +13,7 @@ import { AuthenticationService } from '../../../../servicios/authentication/auth
 import { EstilosPanelService } from '../../../../panel-nuevo/estilos-panel.service';
 import { esperarEstilos } from '../../../../panel-nuevo/esperar-estilos';
 import { CabeceraPanelComponent } from '../../../../panel-nuevo/navegacion/cabecera-panel.component';
+import { hayMetaWebPlantilla } from '../../../../guards/web-plantilla.guard';
 
 /** Rutas del panel sin `portalContext: 'admin'` que una sesión de gestión abre desde su menú (Mi caja, Mis grupos, plataforma). */
 const RUTAS_PANEL = ['/mi-caja', '/mis-grupos', '/plataformaErrores', '/plataformaLogos', '/plataformaNuevaEscuela'];
@@ -60,8 +61,11 @@ function recordatorio(accion: (s: Storage) => unknown): unknown {
   }
 }
 
-/** `hoy`: cabecera y pie de hoy; `hueco`: aún no se sabe la sesión; `nuevo`: la navegación del panel nuevo. */
-type ModoCabecera = 'hoy' | 'hueco' | 'nuevo';
+/**
+ * `hoy`: cabecera y pie de hoy; `hueco`: aún no se sabe la sesión; `nuevo`: la navegación del panel nuevo;
+ * `plantilla`: la web por plantilla, solo el contenido (fase4-web-plan.md §3.2, punto 6).
+ */
+type ModoCabecera = 'hoy' | 'hueco' | 'nuevo' | 'plantilla';
 
 @Component({
   selector: 'app-skeleton',
@@ -88,6 +92,17 @@ export class SkeletonComponent implements OnInit {
   private readonly injector = inject(Injector);
   private readonly rutaInicial = inject(Location).path();
   private readonly rutaPanel = signal(esRutaDelPanel(this.rutaInicial));
+  /** ¿Se sirvió `index-plantilla.html`? Sin la meta (Moiskimdo) nada de la web por plantilla se mira ni cambia. */
+  private readonly conMetaPlantilla = hayMetaWebPlantilla(this.document);
+  /**
+   * ¿Ruta de la web por plantilla (`data.webPlantilla`)? Con la meta, hasta que acaba la primera navegación se da por
+   * hecho que sí: así no asoma la cabecera de Moiskimdo ni se aplica la decisión de cookies antes de saber la ruta.
+   */
+  private readonly rutaPlantilla = signal(
+    this.conMetaPlantilla && (!this.router.navigated || this.rutaMarcadaComoPlantilla())
+  );
+  /** Con la meta, la decisión de cookies guardada espera a la primera ruta fuera de la plantilla (sin GA4 en ella). */
+  private consentimientoPendiente = false;
   /**
    * Carga directa (F5 o URL pegada) de una URL que solo casa con el comodín: puede acabar en el 404 del panel
    * (`data.panelNuevo`), pero eso no se sabe hasta el primer NavigationEnd. Se apaga al acabar (o fallar) esa navegación.
@@ -107,6 +122,9 @@ export class SkeletonComponent implements OnInit {
    * queda solo para la carga directa de una URL desconocida, que puede acabar en el 404 del panel.
    */
   readonly modo = computed<ModoCabecera>(() => {
+    if (this.rutaPlantilla()) {
+      return 'plantilla';
+    }
     if (!this.rutaPanel()) {
       // Solo aquí cuenta el recordatorio: el hueco hasta saber si es el 404 del panel; sin él, o en una ruta conocida, lo de hoy.
       return this.desconocidaSinResolver() && this.recordado() ? 'hueco' : 'hoy';
@@ -126,6 +144,13 @@ export class SkeletonComponent implements OnInit {
       )
       .subscribe((e) => {
         this.alCambiarDeRuta(e.urlAfterRedirects);
+        if (this.rutaPlantilla()) {
+          return; // web por plantilla: sin GA4, ni `set` ni page_view
+        }
+        if (this.consentimientoPendiente) {
+          this.consentimientoPendiente = false;
+          this.aplicarConsentimientoGuardado();
+        }
         const pagina = urlSinToken(`${globalThis.location?.origin ?? ''}${e.urlAfterRedirects}`);
         this.fijarPagina(pagina);
         if (this.analiticaActiva) {
@@ -144,7 +169,16 @@ export class SkeletonComponent implements OnInit {
     if (this.rutaPanel()) {
       this.evaluarSesionPanel();
     }
-    // La decisión guardada se vuelve a aplicar igual que al pulsar el botón (volver a guardarla no cambia nada).
+    if (this.rutaPlantilla()) {
+      // Web por plantilla: ni aviso ni GA4; la decisión guardada espera a una ruta fuera de ella (login, panel…).
+      this.consentimientoPendiente = true;
+      return;
+    }
+    this.aplicarConsentimientoGuardado();
+  }
+
+  /** La decisión guardada se vuelve a aplicar igual que al pulsar el botón (volver a guardarla no cambia nada). */
+  private aplicarConsentimientoGuardado(): void {
     const stored = this.getStored();
     if (stored === 'accepted') {
       this.acceptCookies();
@@ -166,7 +200,17 @@ export class SkeletonComponent implements OnInit {
     return ruta.data?.['panelNuevo'] === true;
   }
 
+  /** Una ruta de la web por plantilla (`data.webPlantilla`, fase4-web-plan.md §3.2). */
+  private rutaMarcadaComoPlantilla(): boolean {
+    let ruta = this.router.routerState.snapshot.root;
+    while (ruta.firstChild) {
+      ruta = ruta.firstChild;
+    }
+    return ruta.data?.['webPlantilla'] === true;
+  }
+
   private alCambiarDeRuta(url: string): void {
+    this.rutaPlantilla.set(this.conMetaPlantilla && this.rutaMarcadaComoPlantilla());
     this.rutaPanel.set(esRutaDelPanel(url) || this.rutaMarcadaComoPanel());
     if (this.rutaPanel()) {
       this.evaluarSesionPanel();

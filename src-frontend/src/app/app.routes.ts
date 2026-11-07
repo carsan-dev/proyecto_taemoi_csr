@@ -5,6 +5,7 @@ import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
 import { entradaGoogleGuard } from './guards/entrada-google.guard';
+import { esWebPlantilla } from './guards/web-plantilla.guard';
 import { estilosPanelGuard } from './panel-nuevo/estilos-panel.guard';
 import { estilosGestionGuard } from './panel-nuevo/estilos-gestion.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
@@ -80,6 +81,14 @@ export function resolverPortalContexto(url: string): PortalContext {
 }
 
 export const routes: Routes = [
+  {
+    // Web por plantilla (fase4-web-plan.md §3.2): solo casa con la meta de index-plantilla.html, que Moiskimdo no
+    // sirve; sin ella todo sigue como hoy. Sus hijas no llevan comodín: el panel, el login y lo demás caen a las de
+    // siempre. Perezoso y sin import estático hacia web-plantilla/ (§7).
+    path: '',
+    canMatch: [esWebPlantilla],
+    loadChildren: () => import('./web-plantilla/web-plantilla.routes').then((m) => m.WEB_PLANTILLA_ROUTES),
+  },
   {
     path: '',
     data: { seo: SEO_ROUTES.home },

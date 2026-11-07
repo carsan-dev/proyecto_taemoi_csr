@@ -93,6 +93,10 @@ export class SeoService {
 
   private applyRouteSeo(): void {
     const route = this.getDeepestRoute(this.router.routerState.snapshot.root);
+    // Web por plantilla (fase4-web-plan.md §3.2, punto 7): no se toca nada; la plantilla pone su propio SEO.
+    if (route.data?.['webPlantilla'] === true) {
+      return;
+    }
     const seo = (route.data?.['seo'] as SeoMeta | undefined) ?? {};
     const cleanPath = this.getCleanPath(this.router.url);
 
