@@ -263,6 +263,9 @@ public class SecurityConfiguration {
 						// alguno de estos tres roles; la de un administrador de plataforma sin membresía y la solo-profesor
 						// (decisión 180), no.
 						.requestMatchers(HttpMethod.GET, "/api/catalogo/publico").permitAll()
+						// Web por plantilla (fase4-web-plan.md §5, pieza W1): solo lectura, de la escuela activa; 404 sin
+						// web publicada. Solo estas dos rutas y solo GET (y HEAD, que se autoriza como GET).
+						.requestMatchers(HttpMethod.GET, "/api/publico/web", "/api/publico/web/legal").permitAll()
 						.requestMatchers("/api/catalogo", "/api/catalogo/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),
 								Roles.ROLE_USER.toString(), Roles.ROLE_RESPONSABLE_SEDE.toString())
