@@ -1,5 +1,6 @@
 package com.taemoi.project.plataforma;
 
+import java.sql.SQLException;
 import java.text.Normalizer;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import com.taemoi.project.entities.AuditoriaAccion;
@@ -48,7 +50,8 @@ import jakarta.validation.constraints.Email;
  * <p>Concurrencia: dos altas que calculan el mismo slug (mismo nombre, o nombres distintos con el mismo slug) o que crean
  * la misma cuenta de propietario chocan en un índice único: la segunda espera a que la primera confirme y falla, ya
  * deshecha. Entonces se repite el alta UNA vez ({@link #crear}), con otro id reservado: el mismo nombre da 409, otro
- * nombre recibe el slug con sufijo y el propietario, ya con cuenta, solo recibe el rol.
+ * nombre recibe el slug con sufijo y el propietario, ya con cuenta, solo recibe el rol. Si la repetición vuelve a chocar
+ * en un índice único (tres o más altas a la vez), 409 {@value #ALTA_A_LA_VEZ}: no se repite más.
  */
 @Service
 public class AltaEscuelaService {
@@ -57,6 +60,7 @@ public class AltaEscuelaService {
 	static final String MODULO_AUDITORIA = "plataforma";
 
 	static final String NOMBRE_REPETIDO = "Ya hay una escuela con ese nombre.";
+	static final String ALTA_A_LA_VEZ = "Otra alta de escuela ha coincidido con esta. Vuelve a intentarlo.";
 	static final String NOMBRE_OBLIGATORIO = "El nombre de la escuela es obligatorio.";
 	static final String NOMBRE_LARGO = "El nombre de la escuela no puede pasar de 150 caracteres.";
 	static final String EMAIL_ESCUELA_OBLIGATORIO = "El email de la escuela es obligatorio.";
@@ -73,6 +77,8 @@ public class AltaEscuelaService {
 	private static final int MAXIMO_EMAIL_ESCUELA = 180;
 	private static final int MAXIMO_SEDE = 100;
 	private static final int MAXIMO_EMAIL = 255;
+	/** MySQL {@code ER_DUP_ENTRY}: el choque con un índice único ({@code uk_organizacion_slug}, email, id). */
+	private static final int ER_DUP_ENTRY = 1062;
 
 	private final TransaccionEnEscuela enEscuela;
 	private final PlantillaCatalogoLector plantillas;
@@ -116,7 +122,8 @@ public class AltaEscuelaService {
 	 *
 	 * @throws IllegalArgumentException (400) datos que no valen o disciplina que no está en la plantilla
 	 * @throws IllegalStateException    (409) ya hay una escuela con ese nombre (sin distinguir mayúsculas, tildes ni
-	 *                                  espacios de los extremos)
+	 *                                  espacios de los extremos), o la repetición tras un choque con otra alta a la vez
+	 *                                  vuelve a chocar en un índice único
 	 */
 	public AltaEscuelaDTO crear(AltaEscuelaRequest solicitud) {
 		Datos datos = validar(solicitud);
@@ -126,8 +133,33 @@ public class AltaEscuelaService {
 			return intentar(datos, plantilla, seleccion);
 		} catch (DataIntegrityViolationException carrera) {
 			// Choque con otra alta que confirmó mientras tanto (ya deshecho entero, sin correo): se repite UNA vez.
-			return intentar(datos, plantilla, seleccion);
+			try {
+				return intentar(datos, plantilla, seleccion);
+			} catch (DataIntegrityViolationException otraVez) {
+				// La repetición choca otra vez (tres o más altas a la vez con el mismo slug o el mismo propietario
+				// nuevo): 409 en vez de 500, ya deshecha y sin correo. Otro fallo de integridad se propaga como antes.
+				if (esClaveRepetida(otraVez)) {
+					throw new IllegalStateException(ALTA_A_LA_VEZ, otraVez);
+				}
+				throw otraVez;
+			}
 		}
+	}
+
+	/** Si el fallo de integridad es una clave única repetida (y no, por ejemplo, una clave ajena o un dato que no cabe). */
+	private static boolean esClaveRepetida(DataIntegrityViolationException error) {
+		if (error instanceof DuplicateKeyException) {
+			return true;
+		}
+		for (Throwable causa = error; causa != null; causa = causa.getCause()) {
+			if (causa instanceof SQLException sql && sql.getErrorCode() == ER_DUP_ENTRY) {
+				return true;
+			}
+			if (causa.getCause() == causa) {
+				break;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -136,7 +168,7 @@ public class AltaEscuelaService {
 	 * o con el mismo propietario nuevo (índice único de {@code usuario.email}), o un id reservado que ya existe (un
 	 * contador de AUTO_INCREMENT movido entre la reserva y el alta). La repetición vuelve a mirar el nombre (409 solo si de
 	 * verdad existe), recalcula el slug ({@code -2}…) y encuentra la cuenta del propietario (camino de la cuenta existente,
-	 * sin correo). Como {@code AltaDeMiembro}: si la repetición vuelve a chocar, el fallo se propaga.
+	 * sin correo). Si la repetición vuelve a chocar en un índice único, 409 (ver {@link #crear}).
 	 */
 	private AltaEscuelaDTO intentar(Datos datos, PlantillaCatalogo plantilla, PlantillaCatalogo.Seleccion seleccion) {
 		Long id = reservarId();

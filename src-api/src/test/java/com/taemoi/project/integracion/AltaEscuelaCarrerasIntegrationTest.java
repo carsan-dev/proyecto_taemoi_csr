@@ -86,8 +86,12 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 	final String marca = java.util.UUID.randomUUID().toString().substring(0, 8);
 	Cookie cookieSuperadmin;
 	Usuario superadmin;
-	/** Si no es null, cada alta espera aquí (hasta 10 s) a la otra antes de insertar la escuela. */
+	/** Si no es null, cada alta espera aquí (hasta 10 s) a las otras antes de insertar la escuela. */
 	volatile CountDownLatch encuentro;
+	/** Si no es null, cada alta que se repite espera aquí (hasta 10 s) a las otras antes de volver a insertar. */
+	volatile CountDownLatch reencuentro;
+	/** Si el hilo ya pasó por {@link #encuentro}: su siguiente inserción es la de la repetición. */
+	final ThreadLocal<Boolean> yaSeEncontro = ThreadLocal.withInitial(() -> false);
 	/** Si no es null, la próxima alta encuentra su id reservado ya ocupado por una fila con este slug. */
 	volatile String ocupaElId;
 
@@ -113,11 +117,13 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 	@BeforeEach
 	void puntoDeEncuentro() {
 		encuentro = null;
+		reencuentro = null;
 		ocupaElId = null;
 		// El espía se reinicia tras cada test: se vuelve a poner la espera y después se llama al repositorio real.
 		doAnswer(invocacion -> {
-			CountDownLatch punto = encuentro;
+			CountDownLatch punto = yaSeEncontro.get() ? reencuentro : encuentro;
 			if (punto != null) {
+				yaSeEncontro.set(true);
 				punto.countDown();
 				punto.await(10, TimeUnit.SECONDS);
 			}
@@ -254,15 +260,42 @@ class AltaEscuelaCarrerasIntegrationTest extends MySqlIntegrationTest {
 		verify(email, never()).sendEmailConImagen(any(), any(), any(), any(), any(), any(), any());
 	}
 
+	@Test
+	void tresNombresConElMismoSlugALaVez_laQueVuelveAChocar_409() throws Exception {
+		// Nombres distintos con el mismo slug. Una sale a la primera; las otras dos chocan, se repiten a la vez con el
+		// mismo slug con sufijo y vuelven a chocar: una sale y la otra ya no se repite más (409, no 500).
+		String nombreA = "Club IT Tres " + marca;
+		String nombreB = "Club-IT Tres " + marca;
+		String nombreC = "Club IT Tres! " + marca;
+		reencuentro = new CountDownLatch(2);
+
+		List<String> resultados = aLaVez(cuerpo(nombreA, "Eva", "Ficticia", "it-f42c-tres-a-" + marca + "@example.test"),
+				cuerpo(nombreB, "Eva", "Ficticia", "it-f42c-tres-b-" + marca + "@example.test"),
+				cuerpo(nombreC, "Eva", "Ficticia", "it-f42c-tres-c-" + marca + "@example.test"));
+
+		assertEquals(3, resultados.size(), resultados.toString());
+		assertTrue(resultados.get(0).startsWith("201 ") && resultados.get(1).startsWith("201 "), resultados.toString());
+		assertEquals("409 {\"mensaje\":\"Otra alta de escuela ha coincidido con esta. Vuelve a intentarlo.\"}",
+				resultados.get(2));
+		String base = "club-it-tres-" + marca;
+		assertEquals(List.of(base, base + "-2"), jdbc.queryForList(
+				"SELECT slug FROM organizacion WHERE slug LIKE ? ORDER BY slug", String.class, base + "%"));
+		// La que no sale no deja nada: ni escuela, ni cuenta, ni correo.
+		assertEquals(2, contar("SELECT COUNT(*) FROM usuario WHERE email LIKE ?", "it-f42c-tres-%-" + marca + "%"));
+		verify(email, times(2)).sendEmailConImagen(any(), any(), any(), any(), any(), any(), any());
+		assertEquals(0, encuentro.getCount(), "Las tres altas llegaron a la vez a insertar la escuela");
+		assertEquals(0, reencuentro.getCount(), "Las dos repeticiones llegaron a la vez a insertar la escuela");
+	}
+
 	// ------------------------------------------------------------------ apoyo
 
-	/** Las dos altas a la vez; cada resultado como texto («201 invitacion=…», «409 …» o la excepción), ordenados. */
-	private List<String> aLaVez(String primera, String segunda) throws Exception {
-		encuentro = new CountDownLatch(2);
-		ExecutorService hilos = Executors.newFixedThreadPool(2);
+	/** Las altas a la vez; cada resultado como texto («201 invitacion=…», «409 …» o la excepción), ordenados. */
+	private List<String> aLaVez(String... cuerpos) throws Exception {
+		encuentro = new CountDownLatch(cuerpos.length);
+		ExecutorService hilos = Executors.newFixedThreadPool(cuerpos.length);
 		try {
 			List<Future<String>> futuros = new ArrayList<>();
-			for (String cuerpo : List.of(primera, segunda)) {
+			for (String cuerpo : cuerpos) {
 				Callable<String> peticion = () -> {
 					MvcResult r = mvc.perform(alta(cuerpo).cookie(cookieSuperadmin)).andReturn();
 					String contenido = r.getResponse().getContentAsString();
