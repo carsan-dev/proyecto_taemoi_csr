@@ -40,6 +40,11 @@ export interface ClaseAsistencia {
   alumnos: number;
   /** Solo si la clase es festiva y no tiene lista (con lista, manda la lista); entonces `presentes` y `total` son null. */
   festivo: FestivoDeClase | null;
+  /**
+   * Festivo que cubre una clase con lista guardada (decisiones 495-496; entonces `festivo` es null). Opcional: un API
+   * anterior no lo manda; el servicio lo deja en null.
+   */
+  festivoConLista?: FestivoDeClase | null;
 }
 
 export interface ProximaClase {

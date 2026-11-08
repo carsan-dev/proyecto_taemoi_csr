@@ -54,6 +54,11 @@ public interface AsistenciaAlumnoRepository extends JpaRepository<AsistenciaAlum
 	List<Object[]> filasDelAlumno(@Param("alumno") Long alumnoId, @Param("grupo") Long grupoId,
 			@Param("desde") LocalDate desde, @Param("hasta") LocalDate hasta);
 
+	/** Decisiones 495-496: las filas de una clase cuya lista se borra. Devuelve cuántas. */
+	@Modifying(flushAutomatically = true)
+	@Query("DELETE FROM AsistenciaAlumno f WHERE f.claseId = :claseId")
+	int borrarDeLaClase(@Param("claseId") Long claseId);
+
 	/** Al eliminar anonimizando: su asistencia es un dato personal más y no se conserva (ver AlumnoServiceImpl). */
 	@Modifying(flushAutomatically = true)
 	@Query("DELETE FROM AsistenciaAlumno f WHERE f.alumnoId = :alumnoId")

@@ -200,6 +200,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		ASISTENCIA_PROFESOR("PUT", "/api/profesor/grupos/[^/]+/clases/[^/]+/[^/]+"),
 		/** AsistenciaService#guardar (PROFESOR ASISTENCIA_REGISTRADA o ASISTENCIA_CORREGIDA). */
 		ASISTENCIA_GESTION("PUT", "/api/grupos/[^/]+/clases/[^/]+/[^/]+"),
+		/** Decisiones 495-496: AsistenciaService#borrarLista (PROFESOR ASISTENCIA_BORRADA). Solo gestión. */
+		ASISTENCIA_GESTION_BORRAR("DELETE", "/api/grupos/[^/]+/clases/[^/]+/[^/]+/lista"),
 		// Pieza R1: material de examen. MaterialExamenGestionService registra todo 2xx en el módulo materiales.
 		MATERIAL_VIDEO_SUBIR("POST", "/api/material-examen/[^/]+/[^/]+/videos"),
 		MATERIAL_VIDEO_SUSTITUIR("PUT", "/api/material-examen/[^/]+/[^/]+/videos/[^/]+/contenido"),

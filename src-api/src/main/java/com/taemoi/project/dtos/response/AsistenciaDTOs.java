@@ -40,11 +40,13 @@ public final class AsistenciaDTOs {
 	 * Una clase: un turno y una fecha. {@code pasada}: ya terminó. {@code presentes} y {@code total} (filas de la lista
 	 * guardada), {@code null} si no hay lista. {@code alumnos}: tamaño de la lista actual del turno; 0, turno sin alumnos.
 	 * {@code festivo}: solo si el día es festivo en la sede del grupo y la clase no tiene lista guardada (con lista, manda
-	 * la lista); si no, {@code null}.
+	 * la lista); si no, {@code null}. {@code festivoConLista} (decisiones 495-496): el mismo festivo, resuelto igual, pero
+	 * solo cuando la clase SÍ tiene lista guardada (gestión puede borrar esa lista para que la clase quede festiva); si no,
+	 * {@code null}. Nunca salen los dos a la vez.
 	 */
 	public record Clase(Long turnoId, @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") LocalDate fecha,
 			String horaInicio, String horaFin, boolean pasada, Long presentes, Long total, long alumnos,
-			FestivoDeClase festivo) {
+			FestivoDeClase festivo, FestivoDeClase festivoConLista) {
 	}
 
 	/** La primera clase del grupo que aún no ha empezado. */

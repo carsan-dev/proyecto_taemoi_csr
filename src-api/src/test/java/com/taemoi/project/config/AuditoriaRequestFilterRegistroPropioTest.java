@@ -104,6 +104,8 @@ class AuditoriaRequestFilterRegistroPropioTest {
 					new Ejemplo("PUT", "/api/profesor/grupos/3/clases/9/2026-10-26")),
 			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_GESTION,
 					new Ejemplo("PUT", "/api/grupos/3/clases/9/2026-10-26")),
+			Map.entry(EscrituraConRegistroPropio.ASISTENCIA_GESTION_BORRAR,
+					new Ejemplo("DELETE", "/api/grupos/3/clases/9/2026-10-26/lista")),
 			Map.entry(EscrituraConRegistroPropio.MATERIAL_VIDEO_SUBIR, new Ejemplo("POST", MATERIAL + "/videos")),
 			Map.entry(EscrituraConRegistroPropio.MATERIAL_VIDEO_SUSTITUIR,
 					new Ejemplo("PUT", MATERIAL + "/videos/01_saludo.mp4/contenido")),
@@ -152,6 +154,11 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			new Ejemplo("GET", "/api/grupos/3/clases/9/2026-10-26"),
 			new Ejemplo("PUT", "/api/grupos/3/clases/9"),
 			new Ejemplo("PUT", "/api/grupos/3/clases/9/2026-10-26/otra"),
+			// Decisiones 495-496: borrar la lista solo por gestión y solo con /lista.
+			new Ejemplo("DELETE", "/api/grupos/3/clases/9/2026-10-26"),
+			new Ejemplo("GET", "/api/grupos/3/clases/9/2026-10-26/lista"),
+			new Ejemplo("DELETE", "/api/profesor/grupos/3/clases/9/2026-10-26/lista"),
+			new Ejemplo("DELETE", "/api/grupos/3/clases/9/2026-10-26/lista/otra"),
 			// Pieza E8-2: las lecturas de sedes y las rutas vecinas sin manejador.
 			new Ejemplo("GET", "/api/sedes"),
 			new Ejemplo("GET", "/api/sedes/5"),

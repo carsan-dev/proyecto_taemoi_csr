@@ -130,6 +130,8 @@ public class SecurityConfiguration {
 			"/api/alumnos/{id}/deportes/{deporte}", "/api/alumnos/{alumnoId}/tutores/{tutorId}",
 			"/api/grupos/{id}", "/api/grupos/{grupoId}/alumnos/{alumnoId}", "/api/grupos/{grupoId}/turnos/{turnoId}",
 			"/api/turnos/{turnoId}",
+			// Decisiones 495-496: borrar la lista de una clase festiva en los grupos de sus sedes (@acceso.grupoEnSede).
+			"/api/grupos/{grupoId}/clases/{turnoId}/{fecha}/lista",
 			// 6-2 (D6-8): quitar a sus alumnos de una convocatoria. Sin DELETE /api/preinscripciones/{referencia}.
 			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}" };
 	// 6b-2c: sin DELETE /api/productos-alumno/{id}: borrar un cargo a mano es solo del propietario (lo cancela).

@@ -20,7 +20,8 @@ function festivoDeClase(f: FestivoDeClase | null | undefined): FestivoDeClase | 
   return f ? { ...f, fechaDesde: f.fechaDesde ?? null, fechaHasta: f.fechaHasta ?? null, sedes: f.sedes ?? 1 } : null;
 }
 
-const conFestivo = (c: ClaseAsistencia): ClaseAsistencia => ({ ...c, festivo: festivoDeClase(c.festivo) });
+const conFestivo = (c: ClaseAsistencia): ClaseAsistencia =>
+  ({ ...c, festivo: festivoDeClase(c.festivo), festivoConLista: festivoDeClase(c.festivoConLista) });
 
 /**
  * Pasar lista (decisión 324): las cinco rutas de asistencia de un grupo. Las dos familias de rutas
@@ -53,7 +54,7 @@ export class AsistenciaService {
       .pipe(
         map((l) => ({
           ...l,
-          clase: { ...l.clase, festivo: festivoDeClase(l.clase?.festivo) },
+          clase: { ...l.clase, festivo: festivoDeClase(l.clase?.festivo), festivoConLista: festivoDeClase(l.clase?.festivoConLista) },
           sede: l.sede ?? null,
           alumnos: (l.alumnos ?? []).map((a) => ({ ...a, deportes: a.deportes ?? [], motivo: a.motivo ?? null })),
         }))
@@ -76,6 +77,15 @@ export class AsistenciaService {
       cuerpo,
       this.opciones()
     );
+  }
+
+  /**
+   * Borra la lista guardada de una clase festiva (decisiones 495-496). Solo gestión (ADMIN, MANAGER o responsable de la
+   * sede del grupo), así que va siempre por `/grupos/{id}`, también desde «Mis grupos». 204; 404 sin clase y 409 si ese
+   * día no es festivo.
+   */
+  borrarLista(grupoId: number, turnoId: number, fecha: string): Observable<void> {
+    return this.http.delete<void>(`${this.base('gestion', grupoId)}/clases/${turnoId}/${fecha}/lista`, this.opciones());
   }
 
   resumen(prefijo: PrefijoAsistencia, grupoId: number, year: number, month: number): Observable<ResumenAsistenciaAlumno[]> {
