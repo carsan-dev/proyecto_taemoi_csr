@@ -17,6 +17,7 @@ import {
   algunDiaConPlaza,
   diasElegibles,
   encajaEdad,
+  mejorPlazasDeSalida,
   plazasLibres,
   salidasParaEdad,
   sinPlaza,
@@ -128,7 +129,8 @@ export function filasGrupo(sitio: SitioWeb, sede: SedeWeb, edad: number, ahora: 
   const textosPlazas = { lleno: textos.t('horarios.lleno'), espera: textos.t('horarios.espera') };
   const hoy = ahora.getDay();
   return salidasParaEdad(sede, edad).map((salida) => {
-    const plazas = estadoPlazas(salida.plazas);
+    const mejor = mejorPlazasDeSalida(salida);
+    const plazas = estadoPlazas(mejor);
     /** Plazas por día (§4.3): basta un día con plaza para elegir el grupo; la lista de espera, sin ninguno. */
     const libre = algunDiaConPlaza(salida);
     const edades = edadesEnTexto(salida.grupo.rangoEdadMin, salida.grupo.rangoEdadMax);
@@ -142,7 +144,7 @@ export function filasGrupo(sitio: SitioWeb, sede: SedeWeb, edad: number, ahora: 
       dias: DIAS_SEMANA.map((d) => ({ letra: d.letra, si: salida.dias.includes(d.numero), hoy: d.numero === hoy })),
       diasTexto: diasEnTexto(salida.dias),
       plazas,
-      plazasTexto: textoPlazas(salida.plazas, textosPlazas),
+      plazasTexto: textoPlazas(mejor, textosPlazas),
       libre,
       boton,
       etiqueta: `${boton}: ${textoGrupo(salida)}`,

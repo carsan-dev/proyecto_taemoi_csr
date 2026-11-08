@@ -1,4 +1,4 @@
-import { GrupoWeb, SedeWeb, TurnoWeb } from '../../datos/modelos';
+import { GrupoWeb, Plazas, SedeWeb, TurnoWeb } from '../../datos/modelos';
 import { Salida, estadoPlazas, numeroDia, salidasDeSede } from '../horario';
 
 /**
@@ -279,6 +279,19 @@ export function diasDeParametro(valor: string | null | undefined): number[] {
 /** El turno de la salida en ese día; null si no entrena ese día. */
 export function turnoDelDia(salida: Salida, dia: number): TurnoWeb | null {
   return salida.turnos.find((t) => numeroDia(t.diaSemana) === dia) ?? null;
+}
+
+/**
+ * Las plazas del mejor día de la salida (solo en la preinscripción): con plaza en algún día, el que más libres tiene; si
+ * no, lista de espera si algún día la tiene; si no, lleno. Null sin dato.
+ */
+export function mejorPlazasDeSalida(salida: Salida): Plazas | null {
+  const lista = salida.turnos.map((t) => t.plazas).filter((p): p is Plazas => estadoPlazas(p) !== null);
+  const conPlaza = lista.filter((p) => estadoPlazas(p) === 'quedan');
+  if (conPlaza.length) {
+    return conPlaza.reduce((mejor, p) => ((p.quedan ?? 0) > (mejor.quedan ?? 0) ? p : mejor));
+  }
+  return lista.find((p) => estadoPlazas(p) === 'espera') ?? lista[0] ?? null;
 }
 
 /** Plazas por día (§4.3): si algún día de la salida tiene plaza libre. */

@@ -210,7 +210,7 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       await escribir('anio', '2021');
       expect(texto('#edad-estado')).toBe('Este año cumple 5 años: hay 1 grupo de su edad en Estepa.');
       expect(textos('.salida .grupo-nombre')).toEqual(['Peques']);
-      expect(texto('.salida .plazas')).toBe('Quedan 2 plazas');
+      expect(texto('.salida .plazas')).toBe('Quedan 4 plazas');
       raiz().querySelector<HTMLButtonElement>('.salida-accion button')!.click();
       await estable();
       await estable();
@@ -259,7 +259,7 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       );
       borrador(FECHA_PEQUES);
       await abrir(sitio, '/preinscripcion?sede=estepa');
-      expect(texto('.salida .plazas')).toBe('Lista de espera');
+      expect(texto('.salida .plazas')).toBe('Quedan 3 plazas');
       expect(texto('.salida-accion button')).toBe('Elegir este grupo');
       expect(raiz().querySelector('.salida-nota')).toBeNull();
       raiz().querySelector<HTMLButtonElement>('.salida-accion button')!.click();
@@ -284,6 +284,46 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       expect(consulta()['paso']).toBe('3');
       expect(raiz().querySelector('.aviso-espera')).toBeNull();
       normas();
+    });
+
+    it('la fila del grupo muestra el mejor día: más libres, si no lista de espera, si no lleno', async () => {
+      const fila = async (plazas: Array<ReturnType<typeof PLAZAS.quedan>>): Promise<string | null> => {
+        const sitio = seisSedes();
+        const dias = ['Lunes', 'Martes', 'Miércoles'];
+        sitio.sedes[1].grupos[0] = grupoDePrueba(
+          'Peques',
+          plazas.map((p, i) => turnoDePrueba(dias[i], '17:00', '17:45', p)),
+          { id: 70 },
+        );
+        borrador(FECHA_PEQUES);
+        await abrir(sitio, '/preinscripcion?sede=estepa');
+        return texto('.salida .plazas');
+      };
+      expect(await fila([PLAZAS.lleno, PLAZAS.quedan(2), PLAZAS.quedan(5)])).toBe('Quedan 5 plazas');
+    });
+
+    it('la fila del grupo: sin plaza en ningún día, lista de espera si alguien espera en uno', async () => {
+      const sitio = seisSedes();
+      sitio.sedes[1].grupos[0] = grupoDePrueba(
+        'Peques',
+        [turnoDePrueba('Lunes', '17:00', '17:45', PLAZAS.lleno), turnoDePrueba('Miércoles', '17:00', '17:45', PLAZAS.espera)],
+        { id: 70 },
+      );
+      borrador(FECHA_PEQUES);
+      await abrir(sitio, '/preinscripcion?sede=estepa');
+      expect(texto('.salida .plazas')).toBe('Lista de espera');
+    });
+
+    it('la fila del grupo: todos los días llenos, «Lleno»', async () => {
+      const sitio = seisSedes();
+      sitio.sedes[1].grupos[0] = grupoDePrueba(
+        'Peques',
+        [turnoDePrueba('Lunes', '17:00', '17:45', PLAZAS.lleno), turnoDePrueba('Miércoles', '17:00', '17:45', PLAZAS.quedan(0))],
+        { id: 70 },
+      );
+      borrador(FECHA_PEQUES);
+      await abrir(sitio, '/preinscripcion?sede=estepa');
+      expect(texto('.salida .plazas')).toBe('Lleno');
     });
 
     it('prefill con un día lleno en un grupo con plaza: ese día no se marca', async () => {
