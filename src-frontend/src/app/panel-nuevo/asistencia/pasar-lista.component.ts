@@ -478,15 +478,16 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
 
   /**
    * Quién marca, quita festivos y borra la lista de un festivo (decisiones 495-496): la ruta de gestión o, desde «Mis
-   * grupos», ADMIN, MANAGER o el responsable de la sede del grupo. Sin permisos (o si fallan), no.
+   * grupos», propietario, administrador o el responsable de la sede del grupo (roles de membresía de
+   * `/api/auth/permisos`, no `ROLE_*`). Sin permisos (o si fallan), no.
    */
   get gestionaFestivos(): boolean {
     if (this.esGestion) return true;
     const p = this.permisosSesion;
     const roles = p?.roles ?? [];
-    if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) return true;
+    if (roles.includes('PROPIETARIO') || roles.includes('ADMINISTRADOR')) return true;
     const sede = this.sede;
-    return !!sede && roles.includes('ROLE_RESPONSABLE_SEDE') && (p?.sedes ?? []).some((s) => s.id === sede.id);
+    return !!sede && roles.includes('RESPONSABLE_SEDE') && (p?.sedes ?? []).some((s) => s.id === sede.id);
   }
 
   /** Con la sede del grupo conocida y una clase que aún no es festiva (ni festiva con lista). */
@@ -595,6 +596,8 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     if (!r.confirmado) return;
     if (r.error) {
       this.avisos.error(mensajeDelServidor(r.error, this.textos.errorBorrarLista));
+      // Un 404/409 puede venir de otra persona de gestión: se recarga para no dejar la pantalla desfasada.
+      this.recargarTrasFestivo(clase);
       return;
     }
     this.recargarTrasFestivo(clase);

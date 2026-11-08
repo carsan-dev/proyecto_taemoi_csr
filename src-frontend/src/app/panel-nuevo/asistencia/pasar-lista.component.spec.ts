@@ -632,7 +632,7 @@ describe('PasarListaComponent', () => {
       expect(Array.from(izq.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Cambiar clase', 'Marcar festivo']);
       fixture.destroy();
       TestBed.resetTestingModule();
-      crear({ permisos: { roles: ['ROLE_PROFESOR'], sedes: [ESTEPA_VISIBLE] } });
+      crear({ permisos: { roles: ['PROFESOR'], sedes: [ESTEPA_VISIBLE] } });
       arrancar({ hoy: [clase()] }, { clase: clase(), alumnos: ALUMNOS });
       expect(boton('Marcar festivo')).toBeUndefined();
     });
@@ -926,31 +926,41 @@ describe('PasarListaComponent', () => {
       }
 
       describe('quién gestiona los festivos', () => {
-        it('profesor con ROLE_ADMIN: «Marcar festivo» en Mis grupos y «Quitar festivo» en la clase festiva', () => {
-          arrancarProfesor(clase(), { roles: ['ROLE_PROFESOR', 'ROLE_ADMIN'], sedes: [] });
+        it('profesor con PROPIETARIO: «Marcar festivo» en Mis grupos y «Quitar festivo» en la clase festiva', () => {
+          arrancarProfesor(clase(), { roles: ['PROPIETARIO', 'PROFESOR'], sedes: [] });
           expect(boton('Marcar festivo')).toBeTruthy();
           fixture.destroy();
           TestBed.resetTestingModule();
-          arrancarProfesor(clase({ festivo: festivoDia }), { roles: ['ROLE_PROFESOR', 'ROLE_ADMIN'], sedes: [] });
+          arrancarProfesor(clase({ festivo: festivoDia }), { roles: ['PROPIETARIO', 'PROFESOR'], sedes: [] });
           expect(boton('Quitar festivo')).toBeTruthy();
           expect(el().textContent).not.toContain('pide a la escuela que quite el festivo');
         });
 
-        it('profesor con ROLE_MANAGER o responsable de la sede del grupo: sí', () => {
-          arrancarProfesor(clase(), { roles: ['ROLE_PROFESOR', 'ROLE_MANAGER'], sedes: [] });
+        it('profesor con ADMINISTRADOR: sí', () => {
+          arrancarProfesor(clase(), { roles: ['ADMINISTRADOR', 'PROFESOR'], sedes: [] });
           expect(boton('Marcar festivo')).toBeTruthy();
+        });
+
+        it('profesor con ROLE_ADMIN en los roles de permisos: no (no son roles de membresía)', () => {
+          arrancarProfesor(clase(), { roles: ['PROFESOR', 'ROLE_ADMIN', 'ROLE_MANAGER'], sedes: [ESTEPA_VISIBLE] });
+          expect(boton('Marcar festivo')).toBeUndefined();
           fixture.destroy();
           TestBed.resetTestingModule();
-          arrancarProfesor(clase(), { roles: ['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'], sedes: [ESTEPA_VISIBLE] });
+          arrancarProfesor(clase({ festivo: festivoDia }), { roles: ['PROFESOR', 'ROLE_ADMIN'], sedes: [] });
+          expect(boton('Quitar festivo')).toBeUndefined();
+        });
+
+        it('responsable de la sede del grupo: sí', () => {
+          arrancarProfesor(clase(), { roles: ['PROFESOR', 'RESPONSABLE_SEDE'], sedes: [ESTEPA_VISIBLE] });
           expect(boton('Marcar festivo')).toBeTruthy();
         });
 
         it('profesor y responsable de otra sede: no', () => {
-          arrancarProfesor(clase(), { roles: ['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'], sedes: [{ id: 5, nombre: 'Herrera', activa: true }] });
+          arrancarProfesor(clase(), { roles: ['PROFESOR', 'RESPONSABLE_SEDE'], sedes: [{ id: 5, nombre: 'Herrera', activa: true }] });
           expect(boton('Marcar festivo')).toBeUndefined();
           fixture.destroy();
           TestBed.resetTestingModule();
-          arrancarProfesor(clase({ festivo: festivoDia }), { roles: ['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'], sedes: [{ id: 5, nombre: 'Herrera', activa: true }] });
+          arrancarProfesor(clase({ festivo: festivoDia }), { roles: ['PROFESOR', 'RESPONSABLE_SEDE'], sedes: [{ id: 5, nombre: 'Herrera', activa: true }] });
           expect(boton('Quitar festivo')).toBeUndefined();
           expect(el().textContent).toContain('Si ese día hay clase, pide a la escuela que quite el festivo.');
         });
@@ -966,7 +976,7 @@ describe('PasarListaComponent', () => {
         });
 
         it('solo profesor con la clase festiva y lista guardada: ni nota ni «Borrar lista»; la lista como hoy', () => {
-          arrancarProfesor(festivaConLista(), { roles: ['ROLE_PROFESOR'], sedes: [ESTEPA_VISIBLE] });
+          arrancarProfesor(festivaConLista(), { roles: ['PROFESOR'], sedes: [ESTEPA_VISIBLE] });
           expect(dialogoBorrar()).toBeNull();
           expect(boton('Borrar lista')).toBeUndefined();
           expect(boton('Marcar festivo')).toBeUndefined();
@@ -1042,8 +1052,8 @@ describe('PasarListaComponent', () => {
           expect(texto('.pasar-lista__festivo h2')).toBe('Festivo en Estepa · Feria de Estepa');
         });
 
-        it('desde Mis grupos con ROLE_ADMIN, el DELETE va por /api/grupos y la recarga por la ruta del profesor', () => {
-          arrancarProfesor(conLista(), { roles: ['ROLE_PROFESOR', 'ROLE_ADMIN'], sedes: [] });
+        it('desde Mis grupos con PROPIETARIO, el DELETE va por /api/grupos y la recarga por la ruta del profesor', () => {
+          arrancarProfesor(conLista(), { roles: ['PROFESOR', 'PROPIETARIO'], sedes: [] });
           abrirMarcar(1);
           botonDialogo('Marcar festivo y borrar lista')!.click();
           http.expectOne(`${api}/festivos`).flush({ id: 31 }, { status: 201, statusText: 'Created' });
@@ -1132,7 +1142,7 @@ describe('PasarListaComponent', () => {
           http.expectNone(urlBorrar);
         });
 
-        it('si el DELETE falla, avisa y no recarga', async () => {
+        it('si el DELETE falla, avisa y recarga la clase', async () => {
           arrancarGestion(festivaConLista());
           confirmar.and.callFake(async (o: { ejecutar: () => { subscribe: (x: { error: (e: unknown) => void }) => void } }) => {
             let error: unknown;
@@ -1143,7 +1153,9 @@ describe('PasarListaComponent', () => {
           boton('Borrar lista')!.click();
           await fixture.whenStable();
           expect(avisos.error).toHaveBeenCalledWith('No se ha podido borrar la lista. Inténtalo de nuevo.');
-          http.expectNone(`${gestion}/clases`);
+          http.expectOne(`${gestion}/clases`).flush({ hoy: [festivaConLista()], recientes: [], proxima: null });
+          http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: festivaConLista(), alumnos: ALUMNOS, sede: ESTEPA });
+          fixture.detectChanges();
           expect(boton('Borrar lista')).toBeTruthy();
         });
       });
