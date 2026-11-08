@@ -38,11 +38,11 @@ const SITIO = sitioDePrueba({
 });
 
 /**
- * Pantalla técnica de la plantilla (W4): carga los datos de su ruta y pone el SEO de su página. Sin UI: solo
- * `<main id="contenido"></main>` vacío (las demás páginas ya son del tema, W5); sin publicar, la página «Web aún no
- * publicada».
+ * Datos y SEO de las páginas de la plantilla (`paginaWeb`), por sus rutas: una petición compartida, el SEO de cada
+ * página, la vista previa y, sin publicar, la página «Web aún no publicada». La pantalla técnica provisional de W4 ya no
+ * existe: desde W6 todas las páginas son del tema.
  */
-describe('PlantillaPendienteComponent · datos y SEO de cada página', () => {
+describe('paginaWeb · datos y SEO de cada página', () => {
   const url = `${environment.apiUrl}/publico/web`;
   let http: HttpTestingController;
   let harness: RouterTestingHarness;
@@ -92,7 +92,7 @@ describe('PlantillaPendienteComponent · datos y SEO de cada página', () => {
     document.title = tituloAnterior;
   });
 
-  it('una página aún sin tema (preinscripción): una petición, su SEO y la plantilla vacía', async () => {
+  it('preinscripción: una petición y su SEO (indexable, con canonical)', async () => {
     await ir('/preinscripcion');
     expect(document.title).toBe(tituloAnterior);
     http.expectOne(url).flush(SITIO);
@@ -101,10 +101,7 @@ describe('PlantillaPendienteComponent · datos y SEO de cada página', () => {
     expect(document.title).toBe('Preinscripción · Taekwondo Sierra Sur');
     expect(canonical()).toBe(`${location.origin}/preinscripcion`);
     expect(jsonLd()).toEqual([]);
-    const main = harness.routeNativeElement!.querySelector('main#contenido')!;
-    expect(main).not.toBeNull();
-    expect(main.innerHTML).toBe('');
-    expect(harness.routeNativeElement!.textContent).toBe('');
+    expect(robots()).toBeNull();
   });
 
   it('de página en página: los datos se piden una sola vez y el SEO cambia con cada una', async () => {
@@ -158,7 +155,7 @@ describe('PlantillaPendienteComponent · datos y SEO de cada página', () => {
     expect(robots()).toBe('noindex, nofollow');
     expect(canonical()).toBeNull();
     const raiz = harness.routeNativeElement!;
-    expect(raiz.querySelector('main#contenido')).toBeNull();
+    expect(raiz.querySelector('.lc')).toBeNull();
     expect(raiz.querySelector('app-web-sin-publicar .sp-nombre')?.textContent).toBe('Taekwondo Sierra Sur');
     expect(TestBed.inject(Router).url).toBe('/preinscripcion');
   });

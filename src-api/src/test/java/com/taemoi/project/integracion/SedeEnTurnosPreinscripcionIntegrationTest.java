@@ -168,14 +168,26 @@ class SedeEnTurnosPreinscripcionIntegrationTest extends MySqlIntegrationTest {
 		assertFalse(detalle.get("turnosSolicitados").get(0).has("sede"));
 	}
 
+	/**
+	 * Decisión 494: un turno de una sede inactiva no se ofrece a lo anónimo ni se admite en el alta. Decisión 500: la
+	 * gestión (este token) sí lo ve en las listas, con su sede, como antes de la 494.
+	 */
 	@Test
-	void turnoDeSedeInactiva_conVariasSedesActivas_muestraSuSede() throws Exception {
+	void turnoDeSedeInactiva_conVariasSedesActivas_soloLoVeLaGestionYNoSeAdmite() throws Exception {
 		long t = turnoDe(e.gC);
 		String nombreC = jdbc.queryForObject("SELECT nombre FROM sede WHERE id = ?", String.class, e.sC);
-		JsonNode turnos = leer(get("/api/preinscripciones/public/turnos/TAEKWONDO"), token, 200);
-		assertEquals(nombreC, turno(turnos, t).get("sede").asText());
-		assertEquals(e.sC, turno(turnos, t).get("sedeId").asLong());
-		assertTrue(snapshot(alta(t)).endsWith(" · " + nombreC));
+		assertEquals(nombreC, turno(leer(get("/api/preinscripciones/public/turnos/TAEKWONDO"), token, 200), t)
+				.get("sede").asText());
+		boolean grupoC = false;
+		for (JsonNode g : leer(get("/api/preinscripciones/public/grupos/TAEKWONDO"), token, 200)) {
+			grupoC |= g.get("id").asLong() == e.gC;
+		}
+		assertTrue(grupoC, "la gestión ve el grupo de la sede inactiva");
+		// Lo anónimo (por el Host de la escuela) no lo ve: PreinscripcionPublicaPorHostIntegrationTest.
+		long antes = jdbc.queryForObject("SELECT COUNT(*) FROM preinscripcion", Long.class);
+		JsonNode error = altaCon(400, t);
+		assertEquals("Ese horario ya no admite preinscripciones.", error.get("mensaje").asText());
+		assertEquals(antes, jdbc.queryForObject("SELECT COUNT(*) FROM preinscripcion", Long.class));
 	}
 
 	private long turnoDe(long grupo) {
@@ -197,6 +209,10 @@ class SedeEnTurnosPreinscripcionIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	private String alta(long... turnos) throws Exception {
+		return altaCon(201, turnos).get("referencia").asText();
+	}
+
+	private JsonNode altaCon(int esperado, long... turnos) throws Exception {
 		int n = 41_000_000 + (++altas) + (int) (System.nanoTime() % 1_000_000);
 		String dni = n + "" + "TRWAGMYFPDXBNJZSQVHLCKE".charAt(n % 23);
 		Map<String, Object> body = new LinkedHashMap<>();
@@ -220,7 +236,7 @@ class SedeEnTurnosPreinscripcionIntegrationTest extends MySqlIntegrationTest {
 		body.put("firmaBase64", firma());
 		MockHttpServletRequestBuilder peticion = post("/api/preinscripciones").contentType(MediaType.APPLICATION_JSON)
 				.header("X-Forwarded-For", "10.93.0." + (altas % 250 + 1)).content(json.writeValueAsString(body));
-		return leer(peticion, token, 201).get("referencia").asText();
+		return leer(peticion, token, esperado);
 	}
 
 	private static String firma() throws Exception {

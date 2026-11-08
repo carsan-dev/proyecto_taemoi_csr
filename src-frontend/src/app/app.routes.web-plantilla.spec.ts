@@ -10,10 +10,10 @@ import { EscaparatePrincipalComponent } from './componentes/vistas/escaparate-pr
 import { esWebPlantilla } from './guards/web-plantilla.guard';
 import { gestionPanelGuard } from './panel-nuevo/no-encontrada/gestion-panel.guard';
 import { ponerMetaWebPlantilla, quedaMetaWebPlantilla } from './testing/meta-web-plantilla';
-import { PlantillaPendienteComponent } from './web-plantilla/paginas/plantilla-pendiente.component';
 import { EventoLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/evento/evento.component';
 import { EventosLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/eventos/eventos.component';
 import { LegalesLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/legales/legales.component';
+import { PreinscripcionLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/preinscripcion/preinscripcion.component';
 import { SedeLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/sede/sede.component';
 import { TarifasLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/tarifas/tarifas.component';
 import { NoEncontradaLineaComarcalComponent } from './web-plantilla/temas/linea-comarcal/no-encontrada/no-encontrada.component';
@@ -25,10 +25,11 @@ class PantallaFalsaComponent {}
 
 /** Las páginas de la plantilla (fase4-web-plan.md §3.1), en orden. */
 const PAGINAS_PLANTILLA = ['', 'sedes/:slug', 'preinscripcion', 'tarifas', 'eventos', 'eventos/:id', 'legales'];
-/** Las páginas ya construidas del primer tema (W5); el resto, la pantalla provisional. */
+/** Las páginas del primer tema (W5 y W6). */
 const PAGINAS_DEL_TEMA: Record<string, Type<unknown>> = {
   '': PortadaLineaComarcalComponent,
   'sedes/:slug': SedeLineaComarcalComponent,
+  preinscripcion: PreinscripcionLineaComarcalComponent,
   tarifas: TarifasLineaComarcalComponent,
   eventos: EventosLineaComarcalComponent,
   'eventos/:id': EventoLineaComarcalComponent,
@@ -78,7 +79,7 @@ describe('app.routes · grupo de la web por plantilla', () => {
     expect(grupo.redirectTo).toBeUndefined();
   });
 
-  it('las hijas: las siete páginas (del tema; preinscripción, la pantalla provisional), sin comodín', async () => {
+  it('las hijas: las siete páginas del tema, sin comodín', async () => {
     const hijas = (await (grupoPlantilla().loadChildren as () => Promise<Routes>)()) as Routes;
     const paginas = hijas.slice(0, PAGINAS_PLANTILLA.length);
     expect(paginas.map((r) => r.path)).toEqual(PAGINAS_PLANTILLA);
@@ -88,7 +89,7 @@ describe('app.routes · grupo de la web por plantilla', () => {
       expect(hija.canMatch).withContext(hija.path!).toBeUndefined();
       expect(await hija.loadComponent!())
         .withContext(hija.path!)
-        .toBe(PAGINAS_DEL_TEMA[hija.path!] ?? PlantillaPendienteComponent);
+        .toBe(PAGINAS_DEL_TEMA[hija.path!]);
     }
     expect(hijas[0].pathMatch).toBe('full');
   });
@@ -190,7 +191,7 @@ describe('app.routes · grupo de la web por plantilla', () => {
       expect(cargarHijas).not.toHaveBeenCalled();
     });
 
-    it('con la meta: cada página de la plantilla resuelve a la ruta del grupo (pantalla provisional y data.webPlantilla)', async () => {
+    it('con la meta: cada página de la plantilla resuelve a la ruta del grupo (su página del tema y data.webPlantilla)', async () => {
       quitarMeta = ponerMetaWebPlantilla();
       const harness = await montar();
       await harness.navigateByUrl('/');
@@ -202,14 +203,14 @@ describe('app.routes · grupo de la web por plantilla', () => {
         '/eventos': EventosLineaComarcalComponent,
         '/eventos/3': EventoLineaComarcalComponent,
         '/legales': LegalesLineaComarcalComponent,
+        '/preinscripcion': PreinscripcionLineaComarcalComponent,
       };
       for (const url of ['/sedes/casariche', '/tarifas', '/eventos', '/eventos/3', '/legales', '/preinscripcion']) {
         await harness.navigateByUrl(url);
-        expect(hoja().component).withContext(url).toBe(componentes[url] ?? PlantillaPendienteComponent);
+        expect(hoja().component).withContext(url).toBe(componentes[url]);
         expect(hoja().data['webPlantilla']).withContext(url).toBeTrue();
         expect(TestBed.inject(Router).url).withContext(url).toBe(url);
       }
-      expect(harness.routeNativeElement?.querySelector('main#contenido')).not.toBeNull();
     });
 
     it('con la meta: el login, el panel, la plataforma y el selector de escuela siguen en su ruta de siempre', async () => {
