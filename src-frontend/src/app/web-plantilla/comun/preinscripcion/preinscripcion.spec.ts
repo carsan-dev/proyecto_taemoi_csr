@@ -3,7 +3,9 @@ import { borrarBorrador, guardarBorrador, leerBorrador, leerValor, guardarValor 
 import {
   DATOS_VACIOS,
   DatosPreinscripcion,
+  algunDiaConPlaza,
   diasDeParametro,
+  diasElegibles,
   diasElegidos,
   edadTemporada,
   encajaEdad,
@@ -17,6 +19,7 @@ import {
   sedeDeParametro,
   sinPlaza,
   solicitudDe,
+  turnoDelDia,
   turnosElegidos,
   validarDatos,
 } from './preinscripcion';
@@ -199,13 +202,35 @@ describe('preinscripción de la web por plantilla · lógica común', () => {
       expect(salidaDeParametros(sede, 'abc', [])).toBeNull();
     });
 
-    it('días: del parámetro, solo los de la salida; sin ninguno, todos; un turno por día', () => {
-      const salida = salidaDeParametros(sede, String(peques.id), [])!;
+    it('días: del parámetro, solo los de la salida que se pueden elegir; sin ninguno, todos esos; un turno por día', () => {
+      const salida = salidaDeParametros(sede, String(infantil.id), [])!;
+      const dos = grupoDePrueba('Jóvenes', [turnoDePrueba('Lunes', '19:00', '20:00'), turnoDePrueba('Miércoles', '19:00', '20:00')]);
+      const libre = salidaDeParametros(sedeDePrueba(3, 'Mollina', { grupos: [dos] }), String(dos.id), [])!;
       expect(diasDeParametro('3, 1,9,x,1')).toEqual([3, 1]);
-      expect(diasElegidos(salida, [3])).toEqual([3]);
-      expect(diasElegidos(salida, [5])).toEqual([1, 3]);
-      expect(diasElegidos(salida, [3, 1])).toEqual([1, 3]);
-      expect(turnosElegidos(salida, [1, 3]).map((t) => t.id)).toEqual([peques.turnos[0].id, peques.turnos[1].id]);
+      expect(diasElegidos(libre, [3])).toEqual([3]);
+      expect(diasElegidos(libre, [5])).toEqual([1, 3]);
+      expect(diasElegidos(libre, [3, 1])).toEqual([1, 3]);
+      expect(diasElegidos(salida, [])).toEqual([2]);
+      expect(turnosElegidos(libre, [1, 3]).map((t) => t.id)).toEqual([dos.turnos[0].id, dos.turnos[1].id]);
+    });
+
+    it('plazas por día (§4.3): con algún día con plaza, solo esos se eligen; sin ninguno, todos van a la lista', () => {
+      const mixta = salidaDeParametros(sede, String(peques.id), [])!;
+      expect(mixta.dias).toEqual([1, 3]);
+      expect(algunDiaConPlaza(mixta)).toBeTrue();
+      expect(diasElegibles(mixta)).toEqual([1]);
+      expect(diasElegidos(mixta, [3])).toEqual([1]);
+      expect(diasElegidos(mixta, [])).toEqual([1]);
+      expect(diasElegidos(mixta, [1, 3])).toEqual([1]);
+      expect(turnoDelDia(mixta, 3)?.id).toBe(peques.turnos[1].id);
+      expect(turnoDelDia(mixta, 5)).toBeNull();
+
+      const llena = grupoDePrueba('Llena', [turnoDePrueba('Lunes', '20:00', '21:00', PLAZAS.lleno), turnoDePrueba('Jueves', '20:00', '21:00', PLAZAS.espera)]);
+      const sinNinguna = salidaDeParametros(sedeDePrueba(4, 'Lora', { grupos: [llena] }), String(llena.id), [])!;
+      expect(algunDiaConPlaza(sinNinguna)).toBeFalse();
+      expect(diasElegibles(sinNinguna)).toEqual([1, 4]);
+      expect(diasElegidos(sinNinguna, [4])).toEqual([4]);
+      expect(sinPlaza(turnosElegidos(sinNinguna, [1, 4]))).toBeTrue();
     });
 
     it('lista de espera solo si ningún turno elegido tiene plaza; las libres, la menor de los que tienen', () => {

@@ -262,6 +262,8 @@ export const TEXTOS_PREINSCRIPCION_LINEA_COMARCAL = {
   queDias: '¿Qué días vendrá?',
   queDiasEspera: '¿Para qué días te apuntas a la lista?',
   diasPista: 'Vienen marcados todos los días del grupo. Desmarca los que no pueda venir; tiene que quedar al menos uno.',
+  /** Grupo con plaza solo algunos días (§4.3, por día): los llenos no se marcan ni se eligen. */
+  diasPistaConPlaza: 'Vienen marcados los días con plaza. Desmarca los que no pueda venir; tiene que quedar al menos uno.',
   diaUnico: 'Este grupo entrena un día a la semana:',
   elDia: 'el {x}',
   soloEseDia: 'Solo ese día; el grupo también entrena el {x}.',
@@ -325,6 +327,9 @@ export const TEXTOS_PREINSCRIPCION_LINEA_COMARCAL = {
   borrarFirma: 'Borrar firma',
   enviar: 'Enviar preinscripción',
   enviarEspera: 'Enviar y apuntarme a la lista de espera',
+  enviando: 'Enviando…',
+  /** Vista previa del panel: el formulario se usa, pero no se envía. */
+  vistaPreviaNoEnvia: 'Es una vista previa: la preinscripción no se envía.',
   // Errores
   error: 'Error: ',
   revisaUno: 'Revisa este dato',

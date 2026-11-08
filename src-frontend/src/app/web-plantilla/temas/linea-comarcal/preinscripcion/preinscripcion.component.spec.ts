@@ -12,7 +12,11 @@ import { PLAZAS, grupoDePrueba, sedeDePrueba, sitioConSedes, turnoDePrueba } fro
 import { SitioWeb } from '../../../datos/modelos';
 import { WEB_PLANTILLA_ROUTES } from '../../../web-plantilla.routes';
 import { CLAVE_SEDE_RECORDADA, TextosTema, vistaSalidas } from '../contenido';
-import { CLAVE_BORRADOR_PREINSCRIPCION, PreinscripcionLineaComarcalComponent } from './preinscripcion.component';
+import {
+  CLAVE_BORRADOR_PREINSCRIPCION,
+  CLAVE_BORRADOR_PREINSCRIPCION_PREVIA,
+  PreinscripcionLineaComarcalComponent,
+} from './preinscripcion.component';
 
 @Component({ standalone: true, template: '<p class="login">login</p>' })
 class LoginFalsoComponent {}
@@ -68,6 +72,7 @@ describe('PreinscripcionLineaComarcalComponent', () => {
     http.verify();
     localStorage.removeItem(CLAVE_SEDE_RECORDADA);
     sessionStorage.removeItem(CLAVE_BORRADOR_PREINSCRIPCION);
+    sessionStorage.removeItem(CLAVE_BORRADOR_PREINSCRIPCION_PREVIA);
     for (const elemento of Array.from(document.head.querySelectorAll('[data-web-plantilla]'))) {
       elemento.remove();
     }
@@ -210,7 +215,8 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       await estable();
       await estable();
       expect(consulta()).toEqual({ paso: '2', sede: 'estepa', grupo: '70' });
-      expect(textos('.casilla-dia')).toEqual(['Lunes', 'Miércoles']);
+      expect(textos('.casilla-dia .casilla-nombre')).toEqual(['Lunes', 'Miércoles']);
+      expect(textos('.casilla-dia .plazas')).toEqual(['Quedan 2 plazas', 'Quedan 4 plazas']);
       expect(textos('dl .resumen-fila dd:not(.resumen-cambiar)')).toContain('Peques, 4 a 6 años');
       expect(JSON.parse(sessionStorage.getItem(CLAVE_BORRADOR_PREINSCRIPCION)!).anio).toBe('2021');
     });
@@ -237,6 +243,85 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       await estable();
       await enviar();
       expect(textos('.errores li')).toEqual(['Elige un grupo para seguir.']);
+    });
+
+    it('plazas por día: cada día con su estado; con algún día con plaza se elige el grupo y solo esos días', async () => {
+      const sitio = seisSedes();
+      sitio.sedes[1].grupos[0] = grupoDePrueba(
+        'Peques',
+        [
+          turnoDePrueba('Lunes', '17:00', '17:45', PLAZAS.quedan(1)),
+          turnoDePrueba('Martes', '17:00', '17:45', PLAZAS.espera),
+          turnoDePrueba('Miércoles', '17:00', '17:45', PLAZAS.quedan(3)),
+          turnoDePrueba('Jueves', '17:00', '17:45', PLAZAS.quedan(0)),
+        ],
+        { id: 70 },
+      );
+      borrador(FECHA_PEQUES);
+      await abrir(sitio, '/preinscripcion?sede=estepa');
+      expect(texto('.salida .plazas')).toBe('Lista de espera');
+      expect(texto('.salida-accion button')).toBe('Elegir este grupo');
+      expect(raiz().querySelector('.salida-nota')).toBeNull();
+      raiz().querySelector<HTMLButtonElement>('.salida-accion button')!.click();
+      await estable();
+      await estable();
+      expect(consulta()).toEqual({ paso: '2', sede: 'estepa', grupo: '70', dias: '1,3' });
+      expect(texto('.salida-dias legend')).toBe('¿Qué días vendrá?');
+      expect(texto('#dias-pista')).toBe('Vienen marcados los días con plaza. Desmarca los que no pueda venir; tiene que quedar al menos uno.');
+      expect(textos('.casilla-dia .casilla-nombre')).toEqual(['Lunes', 'Martes', 'Miércoles', 'Jueves']);
+      expect(textos('.casilla-dia .plazas')).toEqual(['Queda 1 plaza', 'Lista de espera', 'Quedan 3 plazas', 'Lleno']);
+      expect(Array.from(raiz().querySelectorAll('.casilla-dia .plazas')).map((p) => p.classList.item(1))).toEqual([
+        'plazas--quedan',
+        'plazas--espera',
+        'plazas--quedan',
+        'plazas--lleno',
+      ]);
+      const casillas = Array.from(raiz().querySelectorAll<HTMLInputElement>('.casilla-dia input'));
+      expect(casillas.map((c) => c.checked)).toEqual([true, false, true, false]);
+      expect(casillas.map((c) => c.disabled)).toEqual([false, true, false, true]);
+      expect(textos('.resumen-fila dd')).toContain('Queda 1 plaza');
+      await enviar();
+      expect(consulta()['paso']).toBe('3');
+      expect(raiz().querySelector('.aviso-espera')).toBeNull();
+      normas();
+    });
+
+    it('prefill con un día lleno en un grupo con plaza: ese día no se marca', async () => {
+      const sitio = seisSedes();
+      sitio.sedes[1].grupos[0] = grupoDePrueba(
+        'Peques',
+        [turnoDePrueba('Lunes', '17:00', '17:45', PLAZAS.quedan(2)), turnoDePrueba('Miércoles', '17:00', '17:45', PLAZAS.lleno)],
+        { id: 70 },
+      );
+      borrador(FECHA_PEQUES);
+      await abrir(sitio, '/preinscripcion?sede=estepa&grupo=70&dias=3');
+      const casillas = Array.from(raiz().querySelectorAll<HTMLInputElement>('.casilla-dia input'));
+      expect(casillas.map((c) => c.checked)).toEqual([true, false]);
+      expect(casillas.map((c) => c.disabled)).toEqual([false, true]);
+    });
+
+    it('sin plaza en ningún día: «Ahora no hay plaza» y todos los días se eligen para la lista de espera', async () => {
+      const sitio = seisSedes();
+      sitio.sedes[1].grupos[0] = grupoDePrueba(
+        'Peques',
+        [turnoDePrueba('Lunes', '17:00', '17:45', PLAZAS.lleno), turnoDePrueba('Miércoles', '17:00', '17:45', PLAZAS.espera)],
+        { id: 70 },
+      );
+      borrador(FECHA_PEQUES);
+      await abrir(sitio, '/preinscripcion?sede=estepa');
+      expect(texto('.salida-accion button')).toBe('Apuntarme a la lista de espera');
+      expect(texto('.salida-nota')).toBe(
+        'Ahora no hay plaza. Si te apuntas, entras en la lista de espera de los días que elijas y te avisamos cuando se libere una.',
+      );
+      raiz().querySelector<HTMLButtonElement>('.salida-accion button')!.click();
+      await estable();
+      await estable();
+      expect(texto('.salida-dias legend')).toBe('¿Para qué días te apuntas a la lista?');
+      expect(texto('#dias-pista')).toBe('Vienen marcados todos los días del grupo. Desmarca los que no pueda venir; tiene que quedar al menos uno.');
+      expect(textos('.casilla-dia .plazas')).toEqual(['Lleno', 'Lista de espera']);
+      const casillas = Array.from(raiz().querySelectorAll<HTMLInputElement>('.casilla-dia input'));
+      expect(casillas.map((c) => c.checked)).toEqual([true, true]);
+      expect(casillas.map((c) => c.disabled)).toEqual([false, false]);
     });
 
     it('sin grupo de su edad: otras sedes que lo tienen y el teléfono de la sede', async () => {
@@ -330,6 +415,8 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       expect(raiz().querySelector('a.atras')).toBeNull();
       expect(sessionStorage.getItem(CLAVE_BORRADOR_PREINSCRIPCION)).toBeNull();
       expect(document.title).toBe('Preinscripción enviada · Taekwondo Sierra Sur');
+      // emailEnviado llega siempre false (el correo sale tras guardar): la confirmación no habla de un fallo.
+      expect(raiz().textContent!).not.toMatch(/no se (pudo|ha podido) enviar|fall/i);
     });
 
     it('grupo lleno: aviso de lista de espera y, al enviar, la posición en la lista', async () => {
@@ -350,17 +437,65 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       expect(textos('.ficha-fila dd')[0]).toBe('Lista de espera, sin plaza');
     });
 
-    it('400: el mensaje de la API en el resumen de errores; se puede volver a enviar', async () => {
+    it('enviando: «Enviando…», desactivado y aria-busy; 400: el mensaje junto al botón, que vuelve a su texto', async () => {
       await pasoDatosRelleno();
       await firmar();
       await enviar();
+      const boton = () => raiz().querySelector<HTMLButtonElement>('.enviar button')!;
+      expect(boton().textContent!.trim()).toBe('Enviando…');
+      expect(boton().disabled).toBeTrue();
+      expect(boton().getAttribute('aria-busy')).toBe('true');
       http.expectOne(base).flush({ mensaje: 'Todos los turnos deben ser de la misma sede.' }, { status: 400, statusText: 'Bad Request' });
       await estable();
-      expect(textos('.errores li')).toEqual(['Todos los turnos deben ser de la misma sede.']);
+      expect(raiz().querySelector('.errores')).toBeNull();
+      expect(raiz().querySelector('#envio-error')!.getAttribute('role')).toBe('alert');
+      expect(texto('#envio-error')).toBe('Todos los turnos deben ser de la misma sede.');
       expect(texto('h1.pregunta-titulo')).toBe('Datos y firma');
+      expect(boton().textContent!.trim()).toBe('Enviar preinscripción');
+      expect(boton().disabled).toBeFalse();
+      expect(boton().getAttribute('aria-busy')).toBeNull();
       await enviar();
+      expect(texto('#envio-error')).toBe('');
       http.expectOne(base).flush({ mensaje: 'x' }, { status: 400, statusText: 'Bad Request' });
       await estable();
+      expect(texto('#envio-error')).toBe('x');
+    });
+
+    it('vista previa: no se envía, avisa junto al botón y el borrador no toca la clave real', async () => {
+      const sitio = seisSedes();
+      sitio.vistaPrevia = true;
+      sessionStorage.setItem(CLAVE_BORRADOR_PREINSCRIPCION, JSON.stringify({ ...DATOS_VACIOS, nombre: 'Real' }));
+      sessionStorage.setItem(
+        CLAVE_BORRADOR_PREINSCRIPCION_PREVIA,
+        JSON.stringify({
+          ...DATOS_VACIOS,
+          ...FECHA_PEQUES,
+          nombre: 'Lucía',
+          apellidos: 'García Ruiz',
+          direccion: 'C/ Ejemplo, 1, Estepa',
+          discapacidad: 'no',
+          tutorNombre: 'Ana Ruiz Pérez',
+          tutorDni: 'X1234567L',
+          telefono: '612 345 678',
+          email: 'ana@ejemplo.es',
+          normas: true,
+          firmante: 'Ana Ruiz Pérez',
+        }),
+      );
+      await abrir(sitio, '/preinscripcion?paso=3&sede=estepa&grupo=70&vista-previa=linea-comarcal');
+      normas();
+      await estable();
+      expect(raiz().querySelector<HTMLInputElement>('#nombre')!.value).toBe('Lucía');
+      await escribir('nombre', 'Prueba');
+      expect(JSON.parse(sessionStorage.getItem(CLAVE_BORRADOR_PREINSCRIPCION)!).nombre).toBe('Real');
+      expect(JSON.parse(sessionStorage.getItem(CLAVE_BORRADOR_PREINSCRIPCION_PREVIA)!).nombre).toBe('Prueba');
+      await firmar();
+      await enviar();
+      http.expectNone(base);
+      expect(raiz().querySelector('.errores')).toBeNull();
+      expect(texto('#envio-error')).toBe('Es una vista previa: la preinscripción no se envía.');
+      expect(texto('h1.pregunta-titulo')).toBe('Datos y firma');
+      sessionStorage.removeItem(CLAVE_BORRADOR_PREINSCRIPCION_PREVIA);
     });
 
     it('sin normas cargadas no se envía', async () => {

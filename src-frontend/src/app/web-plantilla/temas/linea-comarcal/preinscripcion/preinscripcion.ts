@@ -13,7 +13,16 @@ import {
   telefonoVisible,
   textoPlazas,
 } from '../../../comun/horario';
-import { encajaEdad, plazasLibres, salidasParaEdad, sinPlaza, turnosElegidos } from '../../../comun/preinscripcion/preinscripcion';
+import {
+  algunDiaConPlaza,
+  diasElegibles,
+  encajaEdad,
+  plazasLibres,
+  salidasParaEdad,
+  sinPlaza,
+  turnoDelDia,
+  turnosElegidos,
+} from '../../../comun/preinscripcion/preinscripcion';
 import { SedeWeb, SitioWeb } from '../../../datos/modelos';
 import { TextosTema, claveSede, tarifaPrincipal } from '../contenido';
 import { TEXTOS_PREINSCRIPCION_LINEA_COMARCAL as T } from '../textos';
@@ -120,7 +129,8 @@ export function filasGrupo(sitio: SitioWeb, sede: SedeWeb, edad: number, ahora: 
   const hoy = ahora.getDay();
   return salidasParaEdad(sede, edad).map((salida) => {
     const plazas = estadoPlazas(salida.plazas);
-    const libre = plazas === 'quedan';
+    /** Plazas por día (§4.3): basta un día con plaza para elegir el grupo; la lista de espera, sin ninguno. */
+    const libre = algunDiaConPlaza(salida);
     const edades = edadesEnTexto(salida.grupo.rangoEdadMin, salida.grupo.rangoEdadMax);
     const boton = libre ? T.elegirGrupo : T.apuntarmeEspera;
     return {
@@ -140,9 +150,33 @@ export function filasGrupo(sitio: SitioWeb, sede: SedeWeb, edad: number, ahora: 
   });
 }
 
-/** Las casillas de días de la salida elegida (con «HOY» en el de hoy). */
-export function casillasDia(salida: Salida, ahora: Date): { numero: number; nombre: string; hoy: boolean }[] {
-  return salida.dias.map((d) => ({ numero: d, nombre: mayuscula(nombreDia(d)), hoy: d === ahora.getDay() }));
+export interface CasillaDia {
+  numero: number;
+  nombre: string;
+  hoy: boolean;
+  /** Las plazas de su turno (§4.3, por día), con las marcas y textos del tema. */
+  plazas: EstadoPlazas | null;
+  plazasTexto: string;
+  /** Con algún día con plaza, los llenos no se eligen (`diasElegibles`). */
+  elegible: boolean;
+}
+
+/** Las casillas de días de la salida elegida: «HOY» en el de hoy y las plazas de cada día. */
+export function casillasDia(sitio: SitioWeb, salida: Salida, ahora: Date): CasillaDia[] {
+  const textos = new TextosTema(sitio);
+  const textosPlazas = { lleno: textos.t('horarios.lleno'), espera: textos.t('horarios.espera') };
+  const elegibles = diasElegibles(salida);
+  return salida.dias.map((d) => {
+    const plazas = turnoDelDia(salida, d)?.plazas;
+    return {
+      numero: d,
+      nombre: mayuscula(nombreDia(d)),
+      hoy: d === ahora.getDay(),
+      plazas: estadoPlazas(plazas),
+      plazasTexto: textoPlazas(plazas, textosPlazas),
+      elegible: elegibles.includes(d),
+    };
+  });
 }
 
 export interface VistaVacio {

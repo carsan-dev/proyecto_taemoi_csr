@@ -109,11 +109,11 @@
                                 @if (casillas().length > 1) {
                                   <fieldset class="salida-dias" id="campo-dias" tabindex="-1" aria-describedby="dias-pista dias-error" [class.campo--error]="error('dias')">
                                     <legend>{{ f.libre ? t.queDias : t.queDiasEspera }}</legend>
-                                    <p class="campo-pista" id="dias-pista">{{ t.diasPista }}</p>
+                                    <p class="campo-pista" id="dias-pista">{{ diasParciales() ? t.diasPistaConPlaza : t.diasPista }}</p>
                                     <div id="dias-error" aria-live="assertive"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'dias' }" /></div>
                                     <div class="casillas-dia">
                                       @for (c of casillas(); track c.numero; let primera = $first) {
-                                        <label class="casilla-dia"><input type="checkbox" name="dia-semana" [value]="c.numero" [id]="primera ? 'd-primero' : null" [checked]="diasMarcados().includes(c.numero)" (change)="marcarDia(c.numero, $any($event.target).checked)" [attr.aria-invalid]="primera ? invalido('d-primero') : null">{{ c.nombre }}@if (c.hoy) {<span class="casilla-hoy">{{ t.hoy }}</span>}</label>
+                                        <label class="casilla-dia" [class.casilla-dia--sin]="!c.elegible"><input type="checkbox" name="dia-semana" [value]="c.numero" [id]="primera ? 'd-primero' : null" [checked]="c.elegible && diasMarcados().includes(c.numero)" [disabled]="!c.elegible" (change)="marcarDia(c.numero, $any($event.target).checked)" [attr.aria-invalid]="primera ? invalido('d-primero') : null"><span class="casilla-texto"><span class="casilla-nombre">{{ c.nombre }}@if (c.hoy) {<span class="casilla-hoy">{{ t.hoy }}</span>}</span>@if (c.plazas) {<span [class]="'plazas plazas--' + c.plazas"><ng-container *ngTemplateOutlet="icono; context: { $implicit: c.plazas }" /><span class="cifras">{{ c.plazasTexto }}</span></span>}</span></label>
                                       }
                                     </div>
                                   </fieldset>
@@ -266,7 +266,10 @@
                     </div>
                   </section>
 
-                  <div class="enviar"><button class="boton" type="submit" [attr.aria-disabled]="enviando() ? true : null" [attr.aria-busy]="enviando() ? true : null">{{ espera() ? t.enviarEspera : t.enviar }}<ng-container *ngTemplateOutlet="flecha" /></button></div>
+                  <div class="enviar">
+                    <button class="boton" type="submit" [disabled]="enviando()" [attr.aria-busy]="enviando() ? true : null" [attr.aria-describedby]="errorEnvio() ? 'envio-error' : null">@if (enviando()) {<span>{{ t.enviando }}</span>} @else {<span>{{ espera() ? t.enviarEspera : t.enviar }}</span><ng-container *ngTemplateOutlet="flecha" />}</button>
+                    <div id="envio-error" role="alert">@if (errorEnvio(); as m) {<p class="campo-error envio-error"><ng-container *ngTemplateOutlet="iconoError" /><span>{{ m }}</span></p>}</div>
+                  </div>
                 </form>
               }
 

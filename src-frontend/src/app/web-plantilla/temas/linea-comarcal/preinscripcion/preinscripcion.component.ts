@@ -26,6 +26,7 @@ import {
   MAX_OBSERVACIONES,
   MENSAJES,
   diasDeParametro,
+  diasElegibles,
   diasElegidos,
   edadTemporada,
   errorFecha,
@@ -69,6 +70,8 @@ import {
 
 /** Borrador de la preinscripción en `sessionStorage` (la clave del boceto). */
 export const CLAVE_BORRADOR_PREINSCRIPCION = 'linea-comarcal:preinscripcion';
+/** El de la vista previa del panel: lo que se prueba ahí nunca pisa el borrador real. */
+export const CLAVE_BORRADOR_PREINSCRIPCION_PREVIA = 'linea-comarcal:preinscripcion:vista-previa';
 
 type Paso = 1 | 2 | 3 | 4;
 type CampoTexto = Exclude<keyof DatosPreinscripcion, 'normas' | 'fotos' | 'discapacidad'>;
@@ -109,7 +112,12 @@ export class PreinscripcionLineaComarcalComponent {
   protected readonly maxObservaciones = MAX_OBSERVACIONES;
   protected readonly pagina = paginaWeb('preinscripcion', () => '/preinscripcion');
 
-  protected readonly datos = signal<DatosPreinscripcion>(leerBorrador(this.almacen('sessionStorage'), CLAVE_BORRADOR_PREINSCRIPCION));
+  /** Vista previa del panel (`?vista-previa=`, o la API la confirma): se usa el formulario, pero no se envía. */
+  private readonly enPrevia = this.consulta().get('vista-previa') !== null;
+  private readonly claveBorrador = this.enPrevia ? CLAVE_BORRADOR_PREINSCRIPCION_PREVIA : CLAVE_BORRADOR_PREINSCRIPCION;
+  protected readonly vistaPrevia = computed(() => this.enPrevia || this.pagina.sitio()?.vistaPrevia === true);
+
+  protected readonly datos = signal<DatosPreinscripcion>(leerBorrador(this.almacen('sessionStorage'), this.claveBorrador));
   protected readonly paso = signal<Paso>(1);
   protected readonly errores = signal<ErrorCampo[]>([]);
   /** Paso 2: ningún día marcado (aviso en el campo, sin resumen, como el boceto). */
@@ -117,6 +125,8 @@ export class PreinscripcionLineaComarcalComponent {
   protected readonly sedeMarcada = signal<string | null>(null);
   protected readonly diasMarcados = signal<number[]>([]);
   protected readonly firmado = signal(false);
+  /** Error general del envío (400 de la API o vista previa): junto al botón, no en el resumen de los campos. */
+  protected readonly errorEnvio = signal<string | null>(null);
   protected readonly fin = signal<(VistaFin & { documento: string }) | null>(null);
 
   protected readonly una = computed(() => this.pagina.sitio()?.sedes.length === 1);
@@ -197,7 +207,13 @@ export class PreinscripcionLineaComarcalComponent {
   });
   protected readonly casillas = computed(() => {
     const salida = this.salida();
-    return salida ? casillasDia(salida, this.reloj()) : [];
+    const sitio = this.pagina.sitio();
+    return sitio && salida ? casillasDia(sitio, salida, this.reloj()) : [];
+  });
+  /** Algún día de la salida elegida no se puede elegir (está lleno y otros tienen plaza). */
+  protected readonly diasParciales = computed(() => {
+    const salida = this.salida();
+    return !!salida && diasElegibles(salida).length < salida.dias.length;
   });
 
   // Paso 3
@@ -270,7 +286,7 @@ export class PreinscripcionLineaComarcalComponent {
         if (estado.estado === 'hecho') {
           this.terminar(estado.respuesta);
         } else if (estado.estado === 'error') {
-          this.mostrarErrores([{ id: '', campo: 'envio', msg: estado.mensaje }]);
+          this.mostrarErrorEnvio(estado.mensaje);
         }
       });
     });
@@ -375,8 +391,9 @@ export class PreinscripcionLineaComarcalComponent {
       return;
     }
     this.limpiarErrores();
-    this.diasMarcados.set([...fila.salida.dias]);
-    this.ir(2, { grupo: String(fila.salida.grupo.id), dias: parametroDias(sede, fila.salida, fila.salida.dias) }, true);
+    const dias = diasElegibles(fila.salida);
+    this.diasMarcados.set(dias);
+    this.ir(2, { grupo: String(fila.salida.grupo.id), dias: parametroDias(sede, fila.salida, dias) }, true);
     this.trasPintar(() => this.enfocar('#campo-dias'));
   }
 
@@ -391,7 +408,7 @@ export class PreinscripcionLineaComarcalComponent {
     if (!salida || !sede) {
       return;
     }
-    const dias = salida.dias.filter((d) => (d === numero ? marcado : this.diasMarcados().includes(d)));
+    const dias = diasElegibles(salida).filter((d) => (d === numero ? marcado : this.diasMarcados().includes(d)));
     this.diasMarcados.set(dias);
     this.sinDias.set(!dias.length);
     if (dias.length) {
@@ -454,7 +471,7 @@ export class PreinscripcionLineaComarcalComponent {
 
   protected actualizar<K extends keyof DatosPreinscripcion>(campo: K, valor: DatosPreinscripcion[K]): void {
     this.datos.update((d) => ({ ...d, [campo]: valor }));
-    guardarBorrador(this.almacen('sessionStorage'), CLAVE_BORRADOR_PREINSCRIPCION, this.datos());
+    guardarBorrador(this.almacen('sessionStorage'), this.claveBorrador, this.datos());
   }
 
   protected escribir(campo: CampoTexto, evento: Event): void {
@@ -487,6 +504,10 @@ export class PreinscripcionLineaComarcalComponent {
       return;
     }
     this.limpiarErrores();
+    if (this.vistaPrevia()) {
+      this.mostrarErrorEnvio(this.t.vistaPreviaNoEnvia);
+      return;
+    }
     this.envio.enviar(
       solicitudDe(this.datos(), {
         deporte: salida.grupo.disciplina,
@@ -582,7 +603,7 @@ export class PreinscripcionLineaComarcalComponent {
       documento: enlaceDocumento({ referencia: respuesta.referencia, tokenDocumento: respuesta.tokenDocumento }),
     });
     this.paso.set(4);
-    borrarBorrador(this.almacen('sessionStorage'), CLAVE_BORRADOR_PREINSCRIPCION);
+    borrarBorrador(this.almacen('sessionStorage'), this.claveBorrador);
     const escuela = this.pagina.sitio()?.escuela.nombre.trim();
     this.titulo.setTitle(escuela ? `${this.fin()!.titulo} · ${escuela}` : this.fin()!.titulo);
     this.trasPintar(() => {
@@ -634,8 +655,15 @@ export class PreinscripcionLineaComarcalComponent {
     });
   }
 
+  /** El error general del envío, junto al botón (`role="alert"`, se anuncia solo). */
+  private mostrarErrorEnvio(mensaje: string): void {
+    this.errorEnvio.set(mensaje);
+    this.trasPintar(() => this.documento.getElementById('envio-error')?.scrollIntoView?.({ block: 'nearest' }));
+  }
+
   private limpiarErrores(): void {
     this.sinDias.set(false);
+    this.errorEnvio.set(null);
     if (this.errores().length) {
       this.errores.set([]);
     }

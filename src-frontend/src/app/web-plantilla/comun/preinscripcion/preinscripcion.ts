@@ -276,17 +276,36 @@ export function diasDeParametro(valor: string | null | undefined): number[] {
   return [...new Set(dias)];
 }
 
-/** Los días elegidos de la salida, en su orden; sin ninguno válido, todos los de la salida. */
+/** El turno de la salida en ese día; null si no entrena ese día. */
+export function turnoDelDia(salida: Salida, dia: number): TurnoWeb | null {
+  return salida.turnos.find((t) => numeroDia(t.diaSemana) === dia) ?? null;
+}
+
+/** Plazas por día (§4.3): si algún día de la salida tiene plaza libre. */
+export function algunDiaConPlaza(salida: Salida): boolean {
+  return salida.dias.some((d) => estadoPlazas(turnoDelDia(salida, d)?.plazas) === 'quedan');
+}
+
+/**
+ * Los días que se pueden elegir: con algún día con plaza, solo esos (un día lleno no se mezcla con uno con plaza: la
+ * API daría la plaza a toda la solicitud); sin ninguno, todos, para apuntarse a la lista de espera (boceto).
+ */
+export function diasElegibles(salida: Salida): number[] {
+  return algunDiaConPlaza(salida)
+    ? salida.dias.filter((d) => estadoPlazas(turnoDelDia(salida, d)?.plazas) === 'quedan')
+    : [...salida.dias];
+}
+
+/** Los días elegidos de la salida, en su orden y entre los que se pueden elegir; sin ninguno válido, todos esos. */
 export function diasElegidos(salida: Salida, pedidos: readonly number[]): number[] {
-  const validos = salida.dias.filter((d) => pedidos.includes(d));
-  return validos.length ? validos : [...salida.dias];
+  const elegibles = diasElegibles(salida);
+  const validos = elegibles.filter((d) => pedidos.includes(d));
+  return validos.length ? validos : elegibles;
 }
 
 /** Un turno por día elegido (la API no admite dos el mismo día). */
 export function turnosElegidos(salida: Salida, dias: readonly number[]): TurnoWeb[] {
-  return dias
-    .map((dia) => salida.turnos.find((t) => numeroDia(t.diaSemana) === dia))
-    .filter((t): t is TurnoWeb => !!t);
+  return dias.map((dia) => turnoDelDia(salida, dia)).filter((t): t is TurnoWeb => !!t);
 }
 
 /** Sin plaza en ninguno de los turnos elegidos: la API la manda a la lista de espera (`algunaPlaza`). */
