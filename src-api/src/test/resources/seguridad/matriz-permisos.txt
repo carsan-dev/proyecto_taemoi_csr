@@ -292,6 +292,7 @@ HEAD     /api/grupos/{grupoId}/clases                                           
 GET      /api/grupos/{grupoId}/clases/{turnoId}/{fecha}                                           DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # GrupoAsistenciaController#lista
 HEAD     /api/grupos/{grupoId}/clases/{turnoId}/{fecha}                                           DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # GrupoAsistenciaController#lista
 PUT      /api/grupos/{grupoId}/clases/{turnoId}/{fecha}                                           DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # GrupoAsistenciaController#guardar
+DELETE   /api/grupos/{grupoId}/clases/{turnoId}/{fecha}/lista                                     DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         ALCANCE          DENIEGA  # GrupoAsistenciaController#borrarLista
 GET      /api/grupos/{grupoId}/profesores                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoProfesoresController#listar
 HEAD     /api/grupos/{grupoId}/profesores                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoProfesoresController#listar
 POST     /api/grupos/{grupoId}/profesores                                                         DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # GrupoProfesoresController#asignar

@@ -1,11 +1,11 @@
 import { ChangeDetectorRef, Component, DestroyRef, ElementRef, HostListener, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable, Subscription, catchError, finalize, forkJoin, map, of } from 'rxjs';
+import { Observable, Subscription, catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 
 import { AlumnoDeLista, ClaseAsistencia, ClasesDelGrupo, FestivoDeClase, MotivoFalta, PrefijoAsistencia, SedeDeClase } from '../../interfaces/asistencia';
 import { DeporteEnLista } from '../../interfaces/profesor';
-import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AsistenciaService } from '../../servicios/endpoints/asistencia.service';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
@@ -53,6 +53,7 @@ export const TEXTOS_PASAR_LISTA = {
   errorMarcarFestivo: 'No se ha podido marcar el festivo. Inténtalo de nuevo.',
   errorQuitarFestivo: 'No se ha podido quitar el festivo. Inténtalo de nuevo.',
   profesorFestivo: 'Si ese día hay clase, pide a la escuela que quite el festivo.',
+  errorBorrarLista: 'No se ha podido borrar la lista. Inténtalo de nuevo.',
 } as const;
 
 /**
@@ -64,6 +65,11 @@ export const TEXTOS_PASAR_LISTA = {
  * marcar lleva «Motivo», un menú con «Sin motivo» y los cuatro motivos; marcar presente lo borra. Desde la ruta de
  * gestión, «Marcar festivo» crea un festivo de un día en la sede del grupo. Una clase festiva sin lista enseña el
  * bloque del festivo en lugar de la lista.
+ *
+ * Festivo sobre una lista guardada (decisiones 495-496): las acciones de festivo son de quien gestiona festivos
+ * (`gestionaFestivos`), también desde «Mis grupos». Marcar festivo en una clase con lista avisa en rojo y, al confirmar,
+ * borra esa lista; una clase con lista que ya cae en festivo (`festivoConLista`) lo dice encima de la lista con
+ * «Borrar lista».
  */
 @Component({
   selector: 'pn-pasar-lista',
@@ -118,6 +124,8 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   /** El menú se abre hacia arriba cuando hacia abajo lo taparía la barra fija. */
   menuArriba = false;
   sede: SedeDeClase | null = null;
+  /** Permisos de la sesión; null hasta que llegan o si fallan (las acciones de festivo fallan cerradas). */
+  private permisosSesion: PermisosSesion | null = null;
   /** La sede se nombra en la línea de la clase solo con dos o más sedes (regla 9-1). */
   variasSedes = false;
   consultandoImpacto = false;
@@ -138,6 +146,7 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     // Falla cerrado: sin permisos, la línea no nombra la sede.
     this.permisos.obtener().pipe(takeUntilDestroyed(this.destruir), catchError(() => of(null))).subscribe((p) => {
       this.variasSedes = !!p?.variasSedes;
+      this.permisosSesion = p;
     });
     this.cargar();
   }
@@ -464,9 +473,45 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   // ------------------------------------------------------------------ festivo
   get festivo(): FestivoDeClase | null { return this.clase?.festivo ?? null; }
 
-  /** Solo desde la ruta de gestión, con la sede del grupo conocida y una clase que aún no es festiva. */
+  /** Festivo que cubre una clase que ya tiene lista guardada (caso B). */
+  get festivoConLista(): FestivoDeClase | null { return this.festivo ? null : this.clase?.festivoConLista ?? null; }
+
+  /**
+   * Quién marca, quita festivos y borra la lista de un festivo (decisiones 495-496): la ruta de gestión o, desde «Mis
+   * grupos», propietario, administrador o el responsable de la sede del grupo (roles de membresía de
+   * `/api/auth/permisos`, no `ROLE_*`). Sin permisos (o si fallan), no.
+   */
+  get gestionaFestivos(): boolean {
+    if (this.esGestion) return true;
+    const p = this.permisosSesion;
+    const roles = p?.roles ?? [];
+    if (roles.includes('PROPIETARIO') || roles.includes('ADMINISTRADOR')) return true;
+    const sede = this.sede;
+    return !!sede && roles.includes('RESPONSABLE_SEDE') && (p?.sedes ?? []).some((s) => s.id === sede.id);
+  }
+
+  /** Con la sede del grupo conocida y una clase que aún no es festiva (ni festiva con lista). */
   get puedeMarcarFestivo(): boolean {
-    return this.esGestion && !!this.sede && !!this.clase && !this.festivo && !this.cargandoLista && !this.error;
+    return this.gestionaFestivos && !!this.sede && !!this.clase && !this.festivo && !this.festivoConLista && !this.cargandoLista && !this.error;
+  }
+
+  /** Caso B: nota encima de la lista con «Borrar lista». */
+  get puedeBorrarLista(): boolean {
+    return this.gestionaFestivos && !!this.sede && !!this.festivoConLista;
+  }
+
+  get textoFestivoConLista(): string {
+    const f = this.festivoConLista;
+    if (!f || !this.sede) return '';
+    const nombre = f.nombre ? ` (${f.nombre})` : '';
+    return `Ese día es festivo en ${this.sede.nombre}${nombre}, pero esta clase tiene lista guardada.`;
+  }
+
+  /** Caso A: la lista de esta clase, que se borra al marcar el festivo; null si no tiene. */
+  get listaQueSeBorra(): { presentes: number; total: number } | null {
+    const c = this.clase;
+    if (!c || c.festivo || c.presentes === null) return null;
+    return { presentes: c.presentes, total: c.total ?? c.alumnos };
   }
 
   get tituloFestivo(): string {
@@ -507,19 +552,55 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     const clase = this.clase;
     const sede = this.sede;
     if (!clase || !sede || this.marcandoFestivo) return;
+    // Caso A: con lista en esta clase, tras crear el festivo se borra esa lista. Si el borrado falla, el festivo ya está
+    // creado: se avisa y se recarga igual (la clase pasa a «festivo con lista»).
+    const borrarLista = !!this.listaQueSeBorra;
     this.marcandoFestivo = true;
     this.festivos.crear(this.cuerpoFestivo(clase, sede, nombre)).pipe(
+      switchMap(() => !borrarLista
+        ? of({ errorBorrar: null })
+        : this.asistencia.borrarLista(this.grupoId, clase.turnoId, clase.fecha).pipe(
+          map(() => ({ errorBorrar: null })),
+          catchError((e: unknown) => of({ errorBorrar: e ?? {} })),
+        )),
       takeUntilDestroyed(this.destruir),
       finalize(() => (this.marcandoFestivo = false)),
     ).subscribe({
-      next: () => {
+      next: ({ errorBorrar }) => {
         this.dialogoFestivo = null;
-        this.avisos.exito('Festivo marcado.');
+        if (errorBorrar) {
+          this.avisos.error(mensajeDelServidor(errorBorrar, this.textos.errorBorrarLista));
+        } else {
+          this.avisos.exito('Festivo marcado.');
+        }
         this.recargarTrasFestivo(clase);
       },
       // El diálogo sigue abierto con lo escrito.
       error: (e) => this.avisos.error(mensajeDelServidor(e, this.textos.errorMarcarFestivo)),
     });
+  }
+
+  /** Caso B: borra la lista guardada de una clase festiva; al acabar, la clase se ve como festivo. */
+  async borrarListaFestiva(): Promise<void> {
+    const clase = this.clase;
+    if (!clase || !this.puedeBorrarLista || this.guardando) return;
+    const n = clase.total ?? clase.alumnos;
+    const r = await this.confirmacion.confirmar<void>({
+      titulo: `¿Borrar la lista del ${fechaClase(clase.fecha)}?`,
+      mensaje: `La clase quedará como festivo y nadie tendrá falta. Se borran las marcas de ${n} ${n === 1 ? 'alumno' : 'alumnos'}. No se puede deshacer.`,
+      accion: 'Borrar lista',
+      destructivo: true,
+      nombre: 'borrar-lista-festivo',
+      ejecutar: () => this.asistencia.borrarLista(this.grupoId, clase.turnoId, clase.fecha),
+    });
+    if (!r.confirmado) return;
+    if (r.error) {
+      this.avisos.error(mensajeDelServidor(r.error, this.textos.errorBorrarLista));
+      // Un 404/409 puede venir de otra persona de gestión: se recarga para no dejar la pantalla desfasada.
+      this.recargarTrasFestivo(clase);
+      return;
+    }
+    this.recargarTrasFestivo(clase);
   }
 
   async quitarFestivo(): Promise<void> {

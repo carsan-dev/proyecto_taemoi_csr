@@ -79,6 +79,14 @@
   .pasar-lista__festivo-accion { grid-column: 2; justify-self: start; margin-top: 10px; }
   .pasar-lista__festivo-enlace { grid-column: 2; justify-self: start; display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; color: var(--pn-acento); font: var(--pn-etiqueta); font-size: 0.875rem; text-decoration: underline; text-underline-offset: 3px; }
 
+  // Festivo sobre una lista guardada (decisiones 495-496): nota encima de la lista, con el icono del festivo en pista
+  // neutra y «Borrar lista»; por debajo de 768 el botón baja bajo el texto.
+  .pasar-lista__festivo-lista { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px 12px; margin: 0 0 12px; padding: 12px 12px 12px 14px; border: 1px solid var(--pn-linea-fuerte); border-radius: var(--pn-radio-m); background: var(--pn-superficie-2); }
+  .pasar-lista__festivo-lista-icono { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--pn-radio-m); background: var(--pn-serie-pista); color: var(--pn-tinta-2); }
+  .pasar-lista__festivo-lista-icono svg { width: 20px; height: 20px; }
+  .pasar-lista__festivo-lista p { margin: 0; font: var(--pn-secundario); color: var(--pn-tinta); max-width: 60ch; }
+  .pasar-lista__festivo-lista .pasar-lista__secundario-boton { min-height: 40px; }
+
   .pasar-lista__esqueleto { display: grid; gap: 8px; padding: 16px; border-bottom: 1px solid var(--pn-linea); }
   .pasar-lista__esqueleto span { width: 55%; height: 16px; background: var(--pn-serie-pista); border-radius: var(--pn-radio-s); }
   .pasar-lista__esqueleto span + span { width: 30%; }
@@ -107,4 +115,6 @@
 
 @media (max-width: 767.98px) {
   .pn.pasar-lista h1 { font-size: 1.375rem; }
+  .pn.pasar-lista .pasar-lista__festivo-lista { grid-template-columns: auto 1fr; align-items: start; }
+  .pn.pasar-lista .pasar-lista__festivo-lista .pasar-lista__secundario-boton { grid-column: 2; justify-self: start; min-height: 44px; }
 }

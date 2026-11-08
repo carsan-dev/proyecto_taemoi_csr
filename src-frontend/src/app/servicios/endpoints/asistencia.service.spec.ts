@@ -74,6 +74,29 @@ describe('AsistenciaService', () => {
     expect(festivo).toEqual({ id: 4, nombre: null, tipo: 'DIA', deUnDiaYUnaSede: true, fechaDesde: null, fechaHasta: null, sedes: 1 });
   });
 
+  it('festivoConLista: en lista y en clases; ausente, null', () => {
+    let lista: unknown;
+    servicio.lista('profesor', 7, 9, '2026-11-05').subscribe((l) => (lista = l.clase.festivoConLista));
+    http.expectOne(`${api}/profesor/grupos/7/clases/9/2026-11-05`).flush({
+      clase: { turnoId: 9, presentes: 11, total: 14, festivo: null, festivoConLista: { id: 5, nombre: 'Feria', tipo: 'DIA', deUnDiaYUnaSede: true } },
+      alumnos: [],
+    });
+    expect(lista).toEqual({ id: 5, nombre: 'Feria', tipo: 'DIA', deUnDiaYUnaSede: true, fechaDesde: null, fechaHasta: null, sedes: 1 });
+    let clases: unknown[] = [];
+    servicio.clases('gestion', 7).subscribe((c) => (clases = c.hoy.map((x) => x.festivoConLista)));
+    http.expectOne(`${api}/grupos/7/clases`).flush({ hoy: [{ turnoId: 9 }], recientes: [] });
+    expect(clases).toEqual([null]);
+  });
+
+  it('borrarLista: DELETE por /grupos/{id}, con errores locales', () => {
+    servicio.borrarLista(7, 9, '2026-11-05').subscribe();
+    const r = http.expectOne(`${api}/grupos/7/clases/9/2026-11-05/lista`);
+    expect(r.request.method).toBe('DELETE');
+    expect(r.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    expect(r.request.withCredentials).toBeTrue();
+    r.flush(null, { status: 204, statusText: 'No Content' });
+  });
+
   it('resumen y de alumno: year y month como parámetros', () => {
     servicio.resumen('profesor', 7, 2026, 10).subscribe();
     const a = http.expectOne((r) => r.url === `${api}/profesor/grupos/7/asistencia/resumen`);

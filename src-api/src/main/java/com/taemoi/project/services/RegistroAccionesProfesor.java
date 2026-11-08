@@ -27,7 +27,9 @@ public class RegistroAccionesProfesor {
 	 * Tipo de acción registrada y su acción de auditoría. Pieza E7-3: grados. Pieza E7-4: asignación de profesores a un
 	 * grupo por propietario y gestor (§7; {@code grupo=#g usuario=#u rol=...}) y la membresía PROFESOR que se crea al
 	 * asignar ({@code usuario=#u}). Decisión 324: pasar lista, por el profesor o por gestión ({@code clase=#c grupo=#g
-	 * turno=#t}; la ruta del registro dice por dónde llegó): la primera vez y cada corrección.
+	 * turno=#t}; la ruta del registro dice por dónde llegó): la primera vez y cada corrección. Decisiones 495-496: borrar
+	 * la lista de una clase festiva, solo por gestión ({@code clase=#c grupo=#g turno=#t marcas=#n}, con {@code marcas} el
+	 * número de filas borradas; la fecha va en la ruta del registro).
 	 */
 	public enum Accion {
 		APTO_CAMBIADO(AuditoriaAccion.UPDATE),
@@ -39,7 +41,8 @@ public class RegistroAccionesProfesor {
 		ASIGNACION_QUITADA(AuditoriaAccion.DELETE),
 		MEMBRESIA_PROFESOR_CREADA(AuditoriaAccion.CREATE),
 		ASISTENCIA_REGISTRADA(AuditoriaAccion.CREATE),
-		ASISTENCIA_CORREGIDA(AuditoriaAccion.UPDATE);
+		ASISTENCIA_CORREGIDA(AuditoriaAccion.UPDATE),
+		ASISTENCIA_BORRADA(AuditoriaAccion.DELETE);
 
 		private final AuditoriaAccion auditoria;
 

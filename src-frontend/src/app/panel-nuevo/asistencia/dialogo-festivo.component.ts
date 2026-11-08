@@ -26,6 +26,10 @@ const clases = (n: number) => `${n} ${n === 1 ? 'clase' : 'clases'}`;
  * no tiene el de confirmación: las clases de esa sede ese día (hora, grupo, «(esta)» y, con lista, «Con lista · 11 de
  * 14»; el API manda 20 como mucho y el resto va en «y N más»), la nota de que las que tienen lista se quedan como están
  * y el nombre opcional con su contador. Primario y no rojo: es reversible. Esc, el velo y la X cancelan, salvo con el envío en vuelo.
+ *
+ * Con lista en esta clase (`listaQueSeBorra`, decisiones 495-496; boceto, estado `festivo-borrar`): confirmar también
+ * borra esa lista, que no se puede deshacer. Entonces es destructivo: nota en peligro en lugar de la de las listas que se
+ * quedan, una frase con las otras clases con lista, «Marcar festivo y borrar lista» en rojo y el foco en «Cancelar».
  */
 @Component({
   selector: 'pn-dialogo-festivo',
@@ -47,6 +51,8 @@ export class DialogoFestivoComponent implements AfterViewInit, OnDestroy {
   @Input() grupo = '';
   @Input() horaInicio = '';
   @Input() horaFin = '';
+  /** Presentes y total de la lista de esta clase si la tiene: al confirmar se borra. */
+  @Input() listaQueSeBorra: { presentes: number; total: number } | null = null;
   @Input() enviando = false;
   @Output() readonly confirmar = new EventEmitter<string>();
   @Output() readonly cerrar = new EventEmitter<void>();
@@ -69,13 +75,29 @@ export class DialogoFestivoComponent implements AfterViewInit, OnDestroy {
     return `¿Marcar festivo ${this.fecha} en ${this.sede}?`;
   }
 
-  /** Las que se quedan sin lista: todas menos las que ya la tienen. */
+  get destructivo(): boolean {
+    return !!this.listaQueSeBorra;
+  }
+
+  /** Las clases con lista que se quedan como están: todas las que la tienen, salvo esta si se borra. */
+  get conListaQueQueda(): number {
+    return Math.max(this.impacto.conLista - (this.destructivo ? 1 : 0), 0);
+  }
+
+  /** Las que se quedan sin lista: todas menos las que la conservan. */
   get afectadas(): number {
-    return Math.max(this.impacto.clases - this.impacto.conLista, 0);
+    return Math.max(this.impacto.clases - this.conListaQueQueda, 0);
   }
 
   get textoAfecta(): string {
-    return this.impacto.conLista ? `${this.afectadas} de sus ${clases(this.impacto.clases)}` : clases(this.impacto.clases);
+    return this.conListaQueQueda ? `${this.afectadas} de sus ${clases(this.impacto.clases)}` : clases(this.impacto.clases);
+  }
+
+  /** Con la lista de esta clase borrándose, la frase de las otras con lista (ninguna: sin frase). */
+  get textoOtras(): string {
+    const n = this.conListaQueQueda;
+    if (!n) return '';
+    return n === 1 ? 'La otra clase con lista se queda como está.' : `Las otras ${n} clases con lista se quedan como están.`;
   }
 
   get textoNota(): string {
@@ -107,7 +129,8 @@ export class DialogoFestivoComponent implements AfterViewInit, OnDestroy {
     const dialogo = this.dialogoRef.nativeElement;
     dialogo.showModal();
     this.pila.abrir(dialogo);
-    dialogo.querySelector<HTMLInputElement>('input')?.focus();
+    // Destructivo: el foco empieza en «Cancelar», como en el diálogo de peligro del panel.
+    (this.destructivo ? dialogo.querySelector<HTMLElement>('.festivo-dialogo__cancelar') : dialogo.querySelector<HTMLInputElement>('input'))?.focus();
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       this.consulta = window.matchMedia(CONSULTA_HOJA);
       this.consulta.addEventListener?.('change', this.alCambiarAncho);

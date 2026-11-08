@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -64,6 +65,19 @@ public class GrupoAsistenciaController {
 		return ResponseEntity
 				.ok(asistencia.guardar(Via.GESTION, grupoId, turnoId, fecha, cuerpo == null ? null : cuerpo.presentes(),
 						cuerpo == null ? null : cuerpo.motivos()));
+	}
+
+	/**
+	 * Decisiones 495-496: borra la lista guardada de una clase festiva para que quede como festivo (solo esa clase). 204;
+	 * 404: turno de otro grupo, fecha no válida o clase sin lista guardada; 409: el día no es festivo en la sede del grupo.
+	 * Mismo acceso que guardar.
+	 */
+	@DeleteMapping("/clases/{turnoId}/{fecha}/lista")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
+	public ResponseEntity<Void> borrarLista(@PathVariable @NonNull Long grupoId, @PathVariable Long turnoId,
+			@PathVariable String fecha) {
+		asistencia.borrarLista(Via.GESTION, grupoId, turnoId, fecha);
+		return ResponseEntity.noContent().build();
 	}
 
 	/** Presentes y clases del mes por alumno. Año o mes no válidos: 400. */
