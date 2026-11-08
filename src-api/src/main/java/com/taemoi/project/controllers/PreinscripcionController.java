@@ -3,6 +3,7 @@ package com.taemoi.project.controllers;
 import java.time.*; import java.util.*; import java.util.concurrent.*;
 import org.springframework.http.*; import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.*;
+import org.springframework.security.authentication.AnonymousAuthenticationToken; import org.springframework.security.core.Authentication; import org.springframework.security.core.GrantedAuthority; import org.springframework.security.core.context.SecurityContextHolder;
 import com.taemoi.project.dtos.request.*; import com.taemoi.project.entities.*; import com.taemoi.project.services.*; import jakarta.servlet.http.HttpServletRequest; import jakarta.validation.Valid;
 
 /**
@@ -12,13 +13,16 @@ import com.taemoi.project.dtos.request.*; import com.taemoi.project.entities.*; 
  */
 @RestController @RequestMapping("/api/preinscripciones")
 public class PreinscripcionController {
+ private static final Set<String> GESTION=Set.of(Roles.ROLE_ADMIN.name(),Roles.ROLE_MANAGER.name(),Roles.ROLE_RESPONSABLE_SEDE.name());
  private final PreinscripcionService service; private final TemporadaService temporadas; private final ConcurrentMap<String,Deque<Instant>> intentos=new ConcurrentHashMap<>();
  public PreinscripcionController(PreinscripcionService s,TemporadaService t){service=s;temporadas=t;}
  @PostMapping public ResponseEntity<?> crear(@Valid @RequestBody PreinscripcionRequest body,@RequestHeader(name="Idempotency-Key",required=false) String idempotencyKey,HttpServletRequest request){limitar(request);return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(body,idempotencyKey));}
  @GetMapping("/public/temporada") public Map<String,String> temporada(){return Map.of("temporada",temporadas.actual());}
  @GetMapping("/public/configuracion/{deporte}") public Map<String,Object> configuracion(@PathVariable String deporte){return service.configuracion(deporte);}
- @GetMapping("/public/grupos/{deporte}") public List<Map<String,Object>> grupos(@PathVariable String deporte){return service.grupos(deporte);}
- @GetMapping("/public/turnos/{deporte}") public List<Map<String,Object>> turnos(@PathVariable String deporte){return service.turnos(deporte);}
+ /** Decisión 500: con sesión de gestión de la escuela activa, también los grupos de sedes inactivas (editor del panel). */
+ @GetMapping("/public/grupos/{deporte}") public List<Map<String,Object>> grupos(@PathVariable String deporte){return service.grupos(deporte,esGestion());}
+ /** Decisión 500: con sesión de gestión de la escuela activa, también los turnos de sedes inactivas (editor del panel). */
+ @GetMapping("/public/turnos/{deporte}") public List<Map<String,Object>> turnos(@PathVariable String deporte){return service.turnos(deporte,esGestion());}
  @GetMapping("/{referencia}/documento") public ResponseEntity<byte[]> documento(@PathVariable String referencia,@RequestParam String token){return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=preinscripcion-"+referencia+".pdf").body(service.documento(referencia,token));}
  @GetMapping("/{referencia}/documento-firmado") @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.preinscripcionEnSede(#referencia,'LEER')") public ResponseEntity<byte[]> documentoFirmado(@PathVariable String referencia){return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=preinscripcion-"+referencia+".pdf").body(service.documentoFirmado(referencia));}
  @GetMapping("/{referencia}/firma") @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.preinscripcionEnSede(#referencia,'LEER')") public ResponseEntity<byte[]> firma(@PathVariable String referencia){return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore()).body(service.firma(referencia));}
@@ -37,5 +41,11 @@ public class PreinscripcionController {
  @PostMapping("/plantillas/{deporte}/{version}/restaurar") @PreAuthorize("hasAuthority('ROLE_ADMIN')") public Map<String,Object> restaurar(@PathVariable String deporte,@PathVariable Integer version){return service.restaurar(deporte,version);}
  /** Campos comunes del listado y del detalle. R2-P7a: sin {@code alumnosCoincidentes} (datos de las fichas compatibles), que solo sirve el detalle. */
  private Map<String,Object> resumen(Preinscripcion p,java.util.function.Function<Preinscripcion,String> grupoVigente){Map<String,Object> m=new LinkedHashMap<>();m.put("referencia",p.getReferencia());m.put("temporada",p.getTemporada());m.put("deporte",p.getDeporte());m.put("estado",p.getEstado());m.put("posicionListaEspera",service.posicionListaEspera(p));m.put("nombre",p.getNombre());m.put("apellidos",p.getApellidos());m.put("dni",p.getDni());m.put("fechaNacimiento",p.getFechaNacimiento());m.put("direccion",p.getDireccion());m.put("telefono",p.getTelefono());m.put("telefono2",p.getTelefono2());m.put("email",p.getEmail());m.put("observaciones",p.getObservaciones());m.put("tieneDiscapacidad",p.getTieneDiscapacidad());m.put("tutorNombre",p.getTutorNombre());m.put("tutorDni",p.getTutorDni());m.put("grupoOriginal",service.grupoOriginal(p));m.put("grupo",grupoVigente.apply(p));m.put("turnosSolicitados",service.turnosSolicitados(p));m.put("creadaEn",p.getCreadaEn());m.put("emailEnviado",p.getEmailEnviado());m.put("emailIntentos",p.getEmailIntentos());m.put("estadoEmailCambioTurnos",p.getEstadoEmailCambioTurnos());m.put("emailCambioTurnosIntentos",p.getEmailCambioTurnosIntentos());m.put("emailCambioTurnosEnviadoEn",p.getEmailCambioTurnosEnviadoEn());m.put("emailCambioTurnosUltimoError",p.getEmailCambioTurnosUltimoError());m.put("turnosModificadosEn",p.getTurnosModificadosEn());m.put("estadoEmailFinalizacion",p.getEstadoEmailFinalizacion());m.put("emailFinalizacionEnviadoEn",p.getEmailFinalizacionEnviadoEn());m.put("emailFinalizacionIntentos",p.getEmailFinalizacionIntentos());m.put("emailFinalizacionUltimoError",p.getEmailFinalizacionUltimoError());m.put("motivoCancelacion",p.getMotivoCancelacion());m.put("estadoEmailCancelacion",p.getEstadoEmailCancelacion());m.put("emailCancelacionIntentos",p.getEmailCancelacionIntentos());m.put("emailCancelacionEnviadoEn",p.getEmailCancelacionEnviadoEn());m.put("emailCancelacionUltimoError",p.getEmailCancelacionUltimoError());return m;}
+ /**
+  * Decisión 500: sesión de gestión de la escuela activa (propietario, administrador o responsable de sede). Las
+  * autoridades las pone {@code JwtAuthenticationFilter} también en las rutas {@code permitAll}, y solo si la sesión es de
+  * la escuela activa (con sesión, la escuela sale de la sesión, no del Host). Anónimo, familia o profesor: no.
+  */
+ private static boolean esGestion(){Authentication a=SecurityContextHolder.getContext().getAuthentication();return a!=null&&!(a instanceof AnonymousAuthenticationToken)&&a.isAuthenticated()&&a.getAuthorities().stream().map(GrantedAuthority::getAuthority).anyMatch(GESTION::contains);}
  private void limitar(HttpServletRequest r){String ip=Optional.ofNullable(r.getHeader("X-Forwarded-For")).orElse(r.getRemoteAddr()).split(",")[0];Instant corte=Instant.now().minus(Duration.ofMinutes(10));Deque<Instant> d=intentos.computeIfAbsent(ip,k->new ConcurrentLinkedDeque<>());while(!d.isEmpty()&&d.peekFirst().isBefore(corte))d.pollFirst();if(d.size()>=5)throw new IllegalStateException("Demasiados intentos. Espera unos minutos.");d.addLast(Instant.now());}
 }
