@@ -1,4 +1,4 @@
-<dialog #dialogo class="festivo-dialogo" [class.festivo-dialogo--hoja]="hoja" [attr.aria-labelledby]="id + '-titulo'"
+<dialog #dialogo class="festivo-dialogo" [class.festivo-dialogo--hoja]="hoja" [class.festivo-dialogo--peligro]="destructivo" [attr.aria-labelledby]="id + '-titulo'"
   [attr.aria-describedby]="id + '-mensaje'" data-dialogo="marcar-festivo" (cancel)="alCancelarNativo($event)"
   (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
   <form class="festivo-dialogo__caja" novalidate (submit)="$event.preventDefault(); aceptar()">
@@ -14,7 +14,7 @@
       </button>
     </div>
     <div class="festivo-dialogo__cuerpo">
-      @if (impacto.conLista) {
+      @if (conListaQueQueda) {
       <p class="festivo-dialogo__mensaje" [id]="id + '-mensaje'">Ese día no habrá lista en las clases de <strong>{{ sede }}</strong>
         que aún no la tienen. Afecta a <strong>{{ textoAfecta }}</strong>{{ cierreMensaje }}</p>
       } @else {
@@ -39,7 +39,16 @@
         }
       </ul>
       }
-      @if (impacto.conLista) {
+      @if (listaQueSeBorra; as lista) {
+      <p class="festivo-dialogo__nota festivo-dialogo__nota--peligro" role="note">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span><strong>Se borrará la lista de esta clase</strong> ({{ lista.presentes }} de {{ lista.total }} presentes). Nadie tendrá falta ese día. No se puede deshacer.</span>
+      </p>
+      @if (textoOtras) {
+      <p class="festivo-dialogo__otras">{{ textoOtras }}</p>
+      }
+      } @else if (impacto.conLista) {
       <p class="festivo-dialogo__nota" role="note">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.5h.01"></path></svg>
@@ -56,7 +65,7 @@
     </div>
     <div class="festivo-dialogo__pie">
       <button type="button" class="festivo-dialogo__cancelar" [disabled]="enviando" (click)="cancelar()">Cancelar</button>
-      <button type="submit" pnOcupado class="festivo-dialogo__accion" [ocupado]="enviando" textoOcupado="Marcando…">Marcar festivo</button>
+      <button type="submit" pnOcupado class="festivo-dialogo__accion" [ocupado]="enviando" textoOcupado="Marcando…">{{ destructivo ? 'Marcar festivo y borrar lista' : 'Marcar festivo' }}</button>
     </div>
   </form>
 </dialog>

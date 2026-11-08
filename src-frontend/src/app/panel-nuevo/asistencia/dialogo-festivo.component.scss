@@ -127,6 +127,13 @@
   color: var(--pn-tinta-2);
 }
 
+// La frase de las otras clases con lista cuando se borra la de esta (caso A).
+.festivo-dialogo__otras {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--pn-tinta-2);
+}
+
 // Como la nota de Sedes: superficie con filete e icono en acento.
 .festivo-dialogo__nota {
   display: flex;
@@ -149,6 +156,16 @@
 
   strong {
     font-weight: 600;
+  }
+}
+
+// Se borra la lista de esta clase: filete y fondo tintados de peligro, icono de aviso en peligro y texto en tinta.
+.festivo-dialogo__nota--peligro {
+  border-color: color-mix(in srgb, var(--pn-peligro) 45%, var(--pn-linea-fuerte));
+  background: color-mix(in srgb, var(--pn-peligro) 5%, var(--pn-superficie));
+
+  svg {
+    color: var(--pn-peligro);
   }
 }
 
@@ -207,6 +224,25 @@
 
 .festivo-dialogo__accion {
   @include c.boton-primario;
+}
+
+// Decisión 273, como .pn-dialogo--peligro: el diálogo rojo no lleva el color de la escuela; «Cancelar», su hover y el
+// foco siguen en los neutros de #1A2230. La acción va en peligro.
+.festivo-dialogo--peligro {
+  --pn-marca-primario-tinta: var(--pn-marca-por-defecto);
+  --pn-marca-primario-suave: var(--pn-marca-suave-por-defecto);
+  --pn-acento: var(--pn-marca-primario-tinta);
+  --pn-acento-suave: var(--pn-marca-primario-suave);
+  --pn-acento-borde: var(--pn-linea-fuerte);
+
+  button:focus-visible,
+  input:focus-visible {
+    outline: 2px solid var(--pn-marca-primario-tinta);
+  }
+
+  .festivo-dialogo__accion {
+    @include c.boton-peligro;
+  }
 }
 
 // Hoja inferior (por debajo de 768 px): pegada abajo, radio 14, asa y botones de 44 px a lo ancho con la acción arriba.

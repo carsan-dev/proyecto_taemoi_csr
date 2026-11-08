@@ -2,18 +2,18 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { AlumnoDeLista, ClaseAsistencia } from '../../interfaces/asistencia';
-import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
+import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { PasarListaComponent } from './pasar-lista.component';
 
 const clase = (cambios: Partial<ClaseAsistencia> = {}): ClaseAsistencia => ({
-  turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 3, festivo: null, ...cambios,
+  turnoId: 9, fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', pasada: false, presentes: null, total: null, alumnos: 3, festivo: null, festivoConLista: null, ...cambios,
 });
 
 const alumno = (id: number, nombre: string, presente = false): AlumnoDeLista => ({
@@ -37,16 +37,23 @@ describe('PasarListaComponent', () => {
   const filas = () => Array.from(el().querySelectorAll<HTMLButtonElement>('.pasar-lista__fila'));
   const boton = (t: string) => Array.from(el().querySelectorAll<HTMLElement>('button, a')).find((b) => b.textContent?.replace(/\s+/g, ' ').trim() === t) as HTMLElement | undefined;
 
-  function crear(opciones: { prefijo?: 'profesor' | 'gestion'; consulta?: Record<string, string>; variasSedes?: boolean } = {}): void {
+  function crear(opciones: {
+    prefijo?: 'profesor' | 'gestion'; consulta?: Record<string, string>; variasSedes?: boolean;
+    /** Permisos de la sesión; 'error' hace fallar la petición. */
+    permisos?: Partial<PermisosSesion> | 'error';
+  } = {}): void {
     avisos = jasmine.createSpyObj<AvisosService>('AvisosService', ['exito', 'error']);
     confirmar = jasmine.createSpy('confirmar').and.resolveTo({ confirmado: true, valor: null });
+    const permisos = opciones.permisos === 'error'
+      ? throwError(() => new Error('sin permisos'))
+      : of({ variasSedes: opciones.variasSedes ?? false, ...opciones.permisos });
     TestBed.configureTestingModule({
       imports: [PasarListaComponent],
       providers: [
         provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
         { provide: AvisosService, useValue: avisos },
         { provide: ConfirmacionService, useValue: { confirmar } },
-        { provide: PermisosSesionService, useValue: { obtener: () => of({ variasSedes: opciones.variasSedes ?? false }) } },
+        { provide: PermisosSesionService, useValue: { obtener: () => permisos } },
         { provide: EndpointsService, useValue: { obtenerGrupoPorId: () => of({ nombre: 'Taekwondo gestión' }) } },
         {
           provide: ActivatedRoute,
@@ -605,6 +612,7 @@ describe('PasarListaComponent', () => {
   describe('festivos (decisiones 456-460)', () => {
     const gestion = `${api}/grupos/7`;
     const ESTEPA = { id: 2, nombre: 'Estepa' };
+    const ESTEPA_VISIBLE = { ...ESTEPA, activa: true };
     const festivoDia = {
       id: 31, nombre: 'Feria de Estepa', tipo: 'DIA' as const, deUnDiaYUnaSede: true, fechaDesde: '2026-10-28', fechaHasta: '2026-10-28', sedes: 1,
     };
@@ -618,13 +626,13 @@ describe('PasarListaComponent', () => {
 
     const dialogo = () => el().querySelector<HTMLDialogElement>('dialog[data-dialogo="marcar-festivo"]');
 
-    it('gestión ve «Marcar festivo» junto a «Cambiar clase»; el profesor no', () => {
+    it('gestión ve «Marcar festivo» junto a «Cambiar clase»; el profesor (solo profesor) no', () => {
       arrancarGestion(clase());
       const izq = el().querySelector('.pasar-lista__acciones-izq')!;
       expect(Array.from(izq.querySelectorAll('button')).map((b) => b.textContent?.trim())).toEqual(['Cambiar clase', 'Marcar festivo']);
       fixture.destroy();
       TestBed.resetTestingModule();
-      crear();
+      crear({ permisos: { roles: ['ROLE_PROFESOR'], sedes: [ESTEPA_VISIBLE] } });
       arrancar({ hoy: [clase()] }, { clase: clase(), alumnos: ALUMNOS });
       expect(boton('Marcar festivo')).toBeUndefined();
     });
@@ -887,6 +895,258 @@ describe('PasarListaComponent', () => {
       expect(avisos.error).toHaveBeenCalledWith('Otra persona ha cambiado este dato a la vez; vuelve a intentarlo');
       http.expectOne(`${gestion}/clases`).flush({ hoy: [clase()], recientes: [], proxima: null });
       http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: clase(), alumnos: ALUMNOS, sede: ESTEPA });
+    });
+
+    describe('festivo sobre una lista guardada (decisiones 495-496)', () => {
+      const urlBorrar = `${gestion}/clases/9/2026-10-28/lista`;
+      const conLista = (cambios: Partial<ClaseAsistencia> = {}) => clase({ presentes: 11, total: 14, ...cambios });
+      const festivaConLista = (nombre: string | null = 'Feria de Estepa', cambios: Partial<ClaseAsistencia> = {}) =>
+        conLista({ festivoConLista: { ...festivoDia, nombre }, ...cambios });
+      const dialogoBorrar = () => el().querySelector('.pasar-lista__festivo-lista');
+      const botonDialogo = (t: string) => Array.from(dialogo()!.querySelectorAll('button')).find((b) => b.textContent?.trim() === t);
+
+      /** Ruta del profesor («Mis grupos») con los permisos dados. */
+      function arrancarProfesor(c: ClaseAsistencia, permisos: Partial<PermisosSesion>): void {
+        crear({ permisos });
+        http.expectOne(`${api}/profesor/grupos`).flush([{ id: 7, nombre: 'Infantil', sede: null, rol: 'TITULAR', alumnosActivos: 18, disciplina: null, turnos: [] }]);
+        http.expectOne(`${base()}/clases`).flush({ hoy: [c], recientes: [], proxima: null });
+        http.expectOne(`${base()}/clases/${c.turnoId}/${c.fecha}`).flush({ clase: c, alumnos: ALUMNOS, sede: ESTEPA });
+        fixture.detectChanges();
+      }
+
+      function abrirMarcar(conListaTotal: number): void {
+        boton('Marcar festivo')!.click();
+        http.expectOne(`${api}/festivos/impacto`).flush({
+          clases: 4, conLista: conListaTotal, conListaDetalle: [],
+          clasesDetalle: [
+            { sedeId: 2, sede: 'Estepa', fecha: '2026-10-28', horaInicio: '18:00', horaFin: '19:00', grupo: 'Taekwondo gestión', conLista: true, presentes: 11, total: 14 },
+          ],
+        });
+        fixture.detectChanges();
+      }
+
+      describe('quién gestiona los festivos', () => {
+        it('profesor con ROLE_ADMIN: «Marcar festivo» en Mis grupos y «Quitar festivo» en la clase festiva', () => {
+          arrancarProfesor(clase(), { roles: ['ROLE_PROFESOR', 'ROLE_ADMIN'], sedes: [] });
+          expect(boton('Marcar festivo')).toBeTruthy();
+          fixture.destroy();
+          TestBed.resetTestingModule();
+          arrancarProfesor(clase({ festivo: festivoDia }), { roles: ['ROLE_PROFESOR', 'ROLE_ADMIN'], sedes: [] });
+          expect(boton('Quitar festivo')).toBeTruthy();
+          expect(el().textContent).not.toContain('pide a la escuela que quite el festivo');
+        });
+
+        it('profesor con ROLE_MANAGER o responsable de la sede del grupo: sí', () => {
+          arrancarProfesor(clase(), { roles: ['ROLE_PROFESOR', 'ROLE_MANAGER'], sedes: [] });
+          expect(boton('Marcar festivo')).toBeTruthy();
+          fixture.destroy();
+          TestBed.resetTestingModule();
+          arrancarProfesor(clase(), { roles: ['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'], sedes: [ESTEPA_VISIBLE] });
+          expect(boton('Marcar festivo')).toBeTruthy();
+        });
+
+        it('profesor y responsable de otra sede: no', () => {
+          arrancarProfesor(clase(), { roles: ['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'], sedes: [{ id: 5, nombre: 'Herrera', activa: true }] });
+          expect(boton('Marcar festivo')).toBeUndefined();
+          fixture.destroy();
+          TestBed.resetTestingModule();
+          arrancarProfesor(clase({ festivo: festivoDia }), { roles: ['ROLE_PROFESOR', 'ROLE_RESPONSABLE_SEDE'], sedes: [{ id: 5, nombre: 'Herrera', activa: true }] });
+          expect(boton('Quitar festivo')).toBeUndefined();
+          expect(el().textContent).toContain('Si ese día hay clase, pide a la escuela que quite el festivo.');
+        });
+
+        it('si los permisos fallan, falla cerrado', () => {
+          crear({ permisos: 'error' });
+          http.expectOne(`${api}/profesor/grupos`).flush([]);
+          http.expectOne(`${base()}/clases`).flush({ hoy: [festivaConLista()], recientes: [], proxima: null });
+          http.expectOne(`${base()}/clases/9/2026-10-28`).flush({ clase: festivaConLista(), alumnos: ALUMNOS, sede: ESTEPA });
+          fixture.detectChanges();
+          expect(boton('Marcar festivo')).toBeUndefined();
+          expect(dialogoBorrar()).toBeNull();
+        });
+
+        it('solo profesor con la clase festiva y lista guardada: ni nota ni «Borrar lista»; la lista como hoy', () => {
+          arrancarProfesor(festivaConLista(), { roles: ['ROLE_PROFESOR'], sedes: [ESTEPA_VISIBLE] });
+          expect(dialogoBorrar()).toBeNull();
+          expect(boton('Borrar lista')).toBeUndefined();
+          expect(boton('Marcar festivo')).toBeUndefined();
+          expect(el().querySelector('.pasar-lista__lista')).not.toBeNull();
+        });
+      });
+
+      describe('caso A: marcar festivo con lista en esta clase', () => {
+        it('nota en peligro con las cifras de esta lista, «La otra clase…» y «Marcar festivo y borrar lista»', () => {
+          arrancarGestion(conLista());
+          abrirMarcar(2);
+          const d = dialogo()!;
+          expect(d.classList).toContain('festivo-dialogo--peligro');
+          const nota = d.querySelector('.festivo-dialogo__nota--peligro')!;
+          expect(nota.textContent!.replace(/\s+/g, ' ').trim())
+            .toBe('Se borrará la lista de esta clase (11 de 14 presentes). Nadie tendrá falta ese día. No se puede deshacer.');
+          expect(nota.querySelector('strong')?.textContent?.trim()).toBe('Se borrará la lista de esta clase');
+          expect(d.textContent).not.toContain('ya tienen lista');
+          expect(d.textContent).not.toContain('ya tiene lista');
+          expect(d.querySelector('.festivo-dialogo__otras')?.textContent?.trim()).toBe('La otra clase con lista se queda como está.');
+          expect(d.querySelector('.festivo-dialogo__mensaje')!.textContent!.replace(/\s+/g, ' ').trim())
+            .toBe('Ese día no habrá lista en las clases de Estepa que aún no la tienen. Afecta a 3 de sus 4 clases:');
+          expect(Array.from(d.querySelectorAll('.festivo-dialogo__pie button')).map((b) => b.textContent?.trim()))
+            .toEqual(['Cancelar', 'Marcar festivo y borrar lista']);
+          expect(document.activeElement).toBe(botonDialogo('Cancelar')!);
+        });
+
+        it('varias con lista: «Las otras n clases con lista se quedan como están.»; sola: sin frase', () => {
+          arrancarGestion(conLista());
+          abrirMarcar(3);
+          expect(dialogo()!.querySelector('.festivo-dialogo__otras')?.textContent?.trim()).toBe('Las otras 2 clases con lista se quedan como están.');
+          botonDialogo('Cancelar')!.click();
+          fixture.detectChanges();
+          abrirMarcar(1);
+          expect(dialogo()!.querySelector('.festivo-dialogo__otras')).toBeNull();
+          expect(dialogo()!.querySelector('.festivo-dialogo__mensaje')!.textContent!.replace(/\s+/g, ' ').trim())
+            .toBe('Ese día no habrá lista en ninguna clase de Estepa. Afecta a 4 clases:');
+        });
+
+        it('sin lista en esta clase el diálogo es el de siempre', () => {
+          arrancarGestion(clase());
+          abrirMarcar(1);
+          const d = dialogo()!;
+          expect(d.classList).not.toContain('festivo-dialogo--peligro');
+          expect(d.querySelector('.festivo-dialogo__nota--peligro')).toBeNull();
+          expect(d.querySelector('.festivo-dialogo__nota')?.textContent).toContain('1 clase ya tiene lista y se queda como está.');
+          expect(botonDialogo('Marcar festivo')).toBeTruthy();
+        });
+
+        it('confirmar: crea el festivo, luego DELETE de esta lista y recarga', () => {
+          arrancarGestion(conLista());
+          abrirMarcar(1);
+          botonDialogo('Marcar festivo y borrar lista')!.click();
+          fixture.detectChanges();
+          http.expectNone(urlBorrar);
+          const post = http.expectOne(`${api}/festivos`);
+          expect(post.request.method).toBe('POST');
+          expect(post.request.body).toEqual({ tipo: 'DIA', fechaDesde: '2026-10-28', fechaHasta: '2026-10-28', sedeIds: [2] });
+          post.flush({ id: 31 }, { status: 201, statusText: 'Created' });
+          fixture.detectChanges();
+          http.expectNone(`${gestion}/clases`);
+          const borrar = http.expectOne(urlBorrar);
+          expect(borrar.request.method).toBe('DELETE');
+          expect(dialogo()).not.toBeNull();
+          borrar.flush(null, { status: 204, statusText: 'No Content' });
+          fixture.detectChanges();
+          expect(avisos.exito).toHaveBeenCalledWith('Festivo marcado.');
+          expect(dialogo()).toBeNull();
+          const festiva = clase({ festivo: festivoDia });
+          http.expectOne(`${gestion}/clases`).flush({ hoy: [festiva], recientes: [], proxima: null });
+          http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: festiva, alumnos: ALUMNOS, sede: ESTEPA });
+          fixture.detectChanges();
+          expect(texto('.pasar-lista__festivo h2')).toBe('Festivo en Estepa · Feria de Estepa');
+        });
+
+        it('desde Mis grupos con ROLE_ADMIN, el DELETE va por /api/grupos y la recarga por la ruta del profesor', () => {
+          arrancarProfesor(conLista(), { roles: ['ROLE_PROFESOR', 'ROLE_ADMIN'], sedes: [] });
+          abrirMarcar(1);
+          botonDialogo('Marcar festivo y borrar lista')!.click();
+          http.expectOne(`${api}/festivos`).flush({ id: 31 }, { status: 201, statusText: 'Created' });
+          http.expectOne(urlBorrar).flush(null, { status: 204, statusText: 'No Content' });
+          http.expectOne(`${base()}/clases`).flush({ hoy: [], recientes: [], proxima: null });
+          http.expectOne(`${base()}/clases/9/2026-10-28`).flush({ clase: clase({ festivo: festivoDia }), alumnos: ALUMNOS, sede: ESTEPA });
+        });
+
+        it('si crear falla: el error de hoy, sin DELETE y el diálogo sigue abierto', () => {
+          arrancarGestion(conLista());
+          abrirMarcar(1);
+          botonDialogo('Marcar festivo y borrar lista')!.click();
+          http.expectOne(`${api}/festivos`).flush({}, { status: 500, statusText: 'Error' });
+          fixture.detectChanges();
+          http.expectNone(urlBorrar);
+          expect(avisos.error).toHaveBeenCalledWith('No se ha podido marcar el festivo. Inténtalo de nuevo.');
+          expect(dialogo()).not.toBeNull();
+        });
+
+        it('si el DELETE falla: avisa y recarga igualmente (la clase pasa al caso B)', () => {
+          arrancarGestion(conLista());
+          abrirMarcar(1);
+          botonDialogo('Marcar festivo y borrar lista')!.click();
+          http.expectOne(`${api}/festivos`).flush({ id: 31 }, { status: 201, statusText: 'Created' });
+          http.expectOne(urlBorrar).flush({}, { status: 500, statusText: 'Error' });
+          fixture.detectChanges();
+          expect(avisos.error).toHaveBeenCalledWith('No se ha podido borrar la lista. Inténtalo de nuevo.');
+          expect(avisos.exito).not.toHaveBeenCalled();
+          expect(dialogo()).toBeNull();
+          http.expectOne(`${gestion}/clases`).flush({ hoy: [festivaConLista()], recientes: [], proxima: null });
+          http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: festivaConLista(), alumnos: ALUMNOS, sede: ESTEPA });
+          fixture.detectChanges();
+          expect(boton('Borrar lista')).toBeTruthy();
+        });
+      });
+
+      describe('caso B: festivo sobre una lista guardada', () => {
+        it('nota con sede y nombre, «Borrar lista» y sin «Marcar festivo»; la lista sigue', () => {
+          arrancarGestion(festivaConLista());
+          expect(dialogoBorrar()!.querySelector('p')!.textContent!.replace(/\s+/g, ' ').trim())
+            .toBe('Ese día es festivo en Estepa (Feria de Estepa), pero esta clase tiene lista guardada.');
+          expect(dialogoBorrar()!.querySelector('button')?.textContent?.trim()).toBe('Borrar lista');
+          expect(boton('Marcar festivo')).toBeUndefined();
+          expect(boton('Cambiar clase')).toBeTruthy();
+          expect(el().querySelector('.pasar-lista__lista')).not.toBeNull();
+          expect(el().querySelector('.pasar-lista__festivo')).toBeNull();
+        });
+
+        it('sin nombre: «Ese día es festivo en Estepa, pero…»', () => {
+          arrancarGestion(festivaConLista(null));
+          expect(dialogoBorrar()!.querySelector('p')!.textContent!.replace(/\s+/g, ' ').trim())
+            .toBe('Ese día es festivo en Estepa, pero esta clase tiene lista guardada.');
+        });
+
+        it('«Borrar lista»: confirmación en peligro, DELETE de esta clase y recarga', async () => {
+          arrancarGestion(festivaConLista());
+          confirmar.and.callFake(async (o: { ejecutar: () => { subscribe: (x: object) => void } }) => {
+            o.ejecutar().subscribe({});
+            return { confirmado: true, valor: null };
+          });
+          boton('Borrar lista')!.click();
+          await fixture.whenStable();
+          const opciones = confirmar.calls.mostRecent().args[0];
+          expect(opciones.titulo).toBe('¿Borrar la lista del miércoles 28 de octubre?');
+          expect(opciones.mensaje).toBe('La clase quedará como festivo y nadie tendrá falta. Se borran las marcas de 14 alumnos. No se puede deshacer.');
+          expect(opciones.accion).toBe('Borrar lista');
+          expect(opciones.destructivo).toBeTrue();
+          const borrar = http.expectOne(urlBorrar);
+          expect(borrar.request.method).toBe('DELETE');
+          borrar.flush(null, { status: 204, statusText: 'No Content' });
+          const festiva = clase({ festivo: festivoDia });
+          http.expectOne(`${gestion}/clases`).flush({ hoy: [festiva], recientes: [], proxima: null });
+          http.expectOne(`${gestion}/clases/9/2026-10-28`).flush({ clase: festiva, alumnos: ALUMNOS, sede: ESTEPA });
+          fixture.detectChanges();
+          expect(texto('.pasar-lista__festivo h2')).toBe('Festivo en Estepa · Feria de Estepa');
+          expect(dialogoBorrar()).toBeNull();
+        });
+
+        it('un alumno: «de 1 alumno»', async () => {
+          arrancarGestion(festivaConLista('Feria de Estepa', { presentes: 1, total: 1, alumnos: 1 }), [alumno(1, 'Ana', true)]);
+          confirmar.and.resolveTo({ confirmado: false, valor: null });
+          boton('Borrar lista')!.click();
+          await fixture.whenStable();
+          expect(confirmar.calls.mostRecent().args[0].mensaje)
+            .toBe('La clase quedará como festivo y nadie tendrá falta. Se borran las marcas de 1 alumno. No se puede deshacer.');
+          http.expectNone(urlBorrar);
+        });
+
+        it('si el DELETE falla, avisa y no recarga', async () => {
+          arrancarGestion(festivaConLista());
+          confirmar.and.callFake(async (o: { ejecutar: () => { subscribe: (x: { error: (e: unknown) => void }) => void } }) => {
+            let error: unknown;
+            o.ejecutar().subscribe({ error: (e) => (error = e) });
+            http.expectOne(urlBorrar).flush({}, { status: 500, statusText: 'Error' });
+            return { confirmado: true, valor: null, error };
+          });
+          boton('Borrar lista')!.click();
+          await fixture.whenStable();
+          expect(avisos.error).toHaveBeenCalledWith('No se ha podido borrar la lista. Inténtalo de nuevo.');
+          http.expectNone(`${gestion}/clases`);
+          expect(boton('Borrar lista')).toBeTruthy();
+        });
+      });
     });
   });
 });
