@@ -1,0 +1,57 @@
+export const SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 1254 1254" role="img" aria-labelledby="maki-esperar-motion-source-title maki-esperar-motion-source-desc" class="maki-esperar-motion-animated">
+<title id="maki-esperar-motion-source-title">Maki: Esperar · Animación</title>
+<desc id="maki-esperar-motion-source-desc">Silba con la boca lateral, marca suavemente el ritmo con el pie y deja flotar dos notas. Sin audio. Ritmo revisado; respiración de reposo conservada.</desc>
+<style>.maki-esperar-motion-animated { --maki-idle-count: 1; }
+.maki-esperar-motion-animated.modo-vivo { --maki-idle-count: infinite; }
+.maki-esperar-motion-animated .maki-esperar-motion-torso { transform-origin: 625px 1008px; animation: maki-esperar-motion-torso 1.8s cubic-bezier(.35,0,.2,1) 1,maki-esperar-motion-torso-idle 7s cubic-bezier(.35,0,.2,1) 1.8s var(--maki-idle-count); }
+@keyframes maki-esperar-motion-torso{0.0000%,100.0000%,100.0000%{transform: none;}14.2857%{transform: translate(0px, -3px) scale(1.018, 1.008);}32.8571%{transform: translate(-7px, 3px) rotate(-1deg);}51.4286%{transform: translate(7px, 1px) rotate(1deg);}70.0000%{transform: translate(-5px, 2px) rotate(-0.7deg);}85.7143%{transform: translate(2px, 0px) rotate(0.25deg);}}
+@keyframes maki-esperar-motion-torso-idle { 
+  0%, 100% { transform: none; }
+  40% { transform: scale(1.008, 1.012); }
+  73% { transform: scale(1.001, 1.002); }
+}
+.maki-esperar-motion-animated .maki-esperar-motion-flame { transform-origin: 625px 1008px; animation: 1.8s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-esperar-motion-flame; }
+@keyframes maki-esperar-motion-flame{0.0000%,94.2857%,100.0000%{transform: none;}21.4286%{transform: skewX(0.35deg);}41.4286%{transform: skewX(-0.45deg);}64.2857%{transform: skewX(0.2deg);}}
+.maki-esperar-motion-animated .maki-esperar-motion-attention { transform-origin: 628px 620px; animation: 1.8s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-esperar-motion-attention; }
+@keyframes maki-esperar-motion-attention{0.0000%,92.8571%,100.0000%{transform: none;}28.5714%,52.8571%{transform: translate(-1px, -4px);}71.4286%{transform: translate(1px, 1px);}}
+.maki-esperar-motion-animated .maki-esperar-motion-arm-left { transform-origin: 345px 800px; animation: 1.8s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-esperar-motion-arm-left; }
+@keyframes maki-esperar-motion-arm-left{0.0000%,97.1429%,100.0000%{transform: none;}34.2857%{transform: rotate(-2deg);}55.7143%{transform: rotate(2deg);}74.2857%{transform: rotate(-1deg);}}
+.maki-esperar-motion-animated .maki-esperar-motion-arm-right { transform-origin: 890px 815px; animation: 1.8s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-esperar-motion-arm-right; }
+@keyframes maki-esperar-motion-arm-right{0.0000%,97.1429%,100.0000%{transform: none;}37.1429%{transform: rotate(-2deg);}58.5714%{transform: rotate(2deg);}77.1429%{transform: rotate(-1deg);}}
+.maki-esperar-motion-animated .maki-esperar-motion-blink { transform-origin: 625px 592px; animation: maki-esperar-motion-blink 1.8s cubic-bezier(.35,0,.2,1) 1,maki-esperar-motion-blink-idle 8.6s cubic-bezier(.35,0,.2,1) 1.8s var(--maki-idle-count); }
+@keyframes maki-esperar-motion-blink{0%,70.1111%,77.8889%,100%{transform:scaleY(1)}72.6111%,75.3889%{transform:scaleY(.1)}}
+@keyframes maki-esperar-motion-blink-idle { 
+  0%, 37%, 40%, 100% { transform: scaleY(1); }
+  38%, 38.7% { transform: scaleY(0.12); }
+}
+.maki-esperar-motion-animated .maki-esperar-motion-mouth { transform-origin: 628px 682px; animation: 1.8s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-esperar-motion-mouth; }
+@keyframes maki-esperar-motion-mouth{0.0000%,17.1429%,98.5714%,100.0000%{transform: scale(1);}32.8571%,60.0000%{transform: scale(0.78, 1.12);}45.7143%,77.1429%{transform: scale(1.05, 0.9);}}
+.maki-esperar-motion-animated .maki-esperar-motion-foot-left { transform-origin: 390px 1130px; animation: 1.8s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-esperar-motion-foot-left; }
+@keyframes maki-esperar-motion-foot-left{0.0000%,92.8571%,100.0000%{transform: none;}31.4286%,54.2857%{transform: scale(1.015, 0.986);}}
+.maki-esperar-motion-animated .maki-esperar-motion-foot-right { transform-origin: 770px 1135px; animation: 1.8s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-esperar-motion-foot-right; }
+@keyframes maki-esperar-motion-foot-right{0.0000%,17.1429%,37.1429%,57.1429%,80.0000%,100.0000%{transform: none;}27.1429%,47.1429%,67.1429%{transform: translate(0px, -9px) rotate(-3.5deg);}}
+.maki-esperar-motion-animated .maki-esperar-motion-note-one { transform-origin: 1045px 690px; animation: maki-esperar-motion-note-one 1.8s cubic-bezier(.35,0,.2,1) 1,maki-esperar-motion-note-one-idle 7.4s cubic-bezier(.35,0,.2,1) 1.8s var(--maki-idle-count); }
+@keyframes maki-esperar-motion-note-one{0.0000%,91.4286%,100.0000%{transform: none; opacity: 1;}28.5714%{transform: translate(10px, -14px); opacity: 0.8;}50.0000%{transform: translate(22px, -27px); opacity: 0.25;}64.2857%{transform: translate(-3px, 4px); opacity: 0.2;}77.1429%{transform: translate(3px, -4px); opacity: 1;}}
+@keyframes maki-esperar-motion-note-one-idle { 
+  0%, 100% { transform: none; opacity: 1; }
+  45% { transform: translate(12px, -18px); opacity: 0.5; }
+  75% { transform: translate(-3px, 3px); opacity: 0.8; }
+}
+.maki-esperar-motion-animated .maki-esperar-motion-note-two { transform-origin: 1135px 605px; animation: maki-esperar-motion-note-two 1.8s cubic-bezier(.35,0,.2,1) 1,maki-esperar-motion-note-two-idle 8.1s cubic-bezier(.35,0,.2,1) 1.8s var(--maki-idle-count); }
+@keyframes maki-esperar-motion-note-two{0.0000%,20.0000%,100.0000%,100.0000%{transform: none; opacity: 1;}44.2857%{transform: translate(8px, -12px); opacity: 0.8;}65.7143%{transform: translate(18px, -24px); opacity: 0.25;}78.5714%{transform: translate(-2px, 3px); opacity: 0.2;}88.5714%{transform: translate(2px, -3px); opacity: 1;}}
+@keyframes maki-esperar-motion-note-two-idle { 
+  0%, 100% { transform: none; opacity: 1; }
+  50% { transform: translate(10px, -16px); opacity: 0.45; }
+  80% { transform: translate(-2px, 3px); opacity: 0.8; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .maki-esperar-motion-animated * { animation: auto ease 0s 1 normal none running none !important; }
+}</style><g><g id="maki-esperar-motion-source-back"><g class="maki-esperar-motion-foot-left"><path d="M382 926 C362 975 350 1018 346 1047 C318 1056 295 1078 302 1103 C308 1133 348 1138 399 1130 C443 1124 473 1110 477 1083 C482 1048 495 1007 509 977Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g><g class="maki-esperar-motion-foot-right"><g transform="rotate(-22 710 1000)"><path d="M657 974 C668 1019 680 1050 678 1084 C675 1115 706 1134 754 1135 C813 1137 869 1125 870 1097 C872 1070 847 1052 818 1046 C814 1011 804 978 789 947Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g></g><g class="maki-esperar-motion-torso"><g class="maki-esperar-motion-arm-left"><path d="M322 725 C275 744 257 793 270 841 C278 875 305 899 337 903 L370 830Z" fill="#e3130a" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g></g><g class="maki-esperar-motion-torso"><g class="maki-esperar-motion-arm-right"><path d="M916 754 C957 780 963 827 944 863 C929 894 902 910 875 914 L847 838Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g><g class="maki-esperar-motion-torso"><g class="maki-esperar-motion-flame"><g id="maki-esperar-motion-source-body">
+<defs><clipPath id="maki-esperar-motion-source-clip"><path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z"></path></clipPath></defs>
+<path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z" fill="#e3130a"></path>
+<g clip-path="url(#maki-esperar-motion-source-clip)"><path d="M762 159 C821 199 856 284 849 364 C844 416 818 465 819 492 C843 525 921 508 960 440 C991 557 972 660 922 721 C870 777 796 809 700 835 C635 857 540 885 519 925 C501 961 534 1000 590 1008 C501 993 456 945 434 886 C409 826 419 754 474 709 C434 708 396 744 377 789 C350 719 341 655 357 586 C374 507 440 458 529 424 C607 390 719 373 764 311 C798 262 788 201 762 159Z" fill="#f6e001"></path><path d="M978 507 C980 600 964 670 922 721 C870 777 796 809 700 835 C635 857 540 885 519 925 C501 961 534 1000 590 1008 C738 1054 893 952 978 803 C1040 690 1056 608 1018 596 C1000 556 980 535 978 507Z" fill="#2e75b9"></path></g>
+<path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z" fill="none" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path>
+</g></g></g>
+<g class="maki-esperar-motion-torso"><g class="maki-esperar-motion-attention"><g id="maki-esperar-motion-source-face"><g class="maki-esperar-motion-blink" style="transform-origin: 518.334px 590.149px;"><path d="M467 611 C463 581 482 550 510 548 C543 546 564 572 569 604 C574 629 563 638 543 629 C524 620 514 621 494 628 C476 634 468 627 467 611Z" fill="#302e26"></path></g><g class="maki-esperar-motion-blink" style="transform-origin: 735.598px 590.102px;"><path d="M686 612 C681 582 700 552 728 549 C760 544 782 570 785 602 C789 628 781 637 760 629 C742 621 731 620 712 628 C695 635 688 630 686 612Z" fill="#302e26"></path></g><g class="maki-esperar-motion-mouth" style="transform-origin: 704px 690px;"><ellipse cx="704" cy="690" rx="20" ry="29" fill="#302e26" stroke="#302e26" stroke-width="0"></ellipse></g></g></g></g><g id="maki-esperar-motion-source-front"><g class="maki-esperar-motion-note-one"><g id="maki-esperar-motion-source-note-1"><ellipse cx="1045" cy="690" rx="18" ry="13" fill="#302e26" stroke="#302e26" stroke-width="0" transform="rotate(-18 1045 690)"></ellipse><path d="M1060 688 L1060 630 C1067 642 1087 639 1085 657" fill="none" stroke="#302e26" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path></g></g><g class="maki-esperar-motion-note-two"><g id="maki-esperar-motion-source-note-2"><ellipse cx="1135" cy="605" rx="18" ry="13" fill="#302e26" stroke="#302e26" stroke-width="0" transform="rotate(-18 1135 605)"></ellipse><path d="M1150 603 L1150 545 C1157 557 1177 554 1175 572" fill="none" stroke="#302e26" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g></g>
+</svg>
+`;

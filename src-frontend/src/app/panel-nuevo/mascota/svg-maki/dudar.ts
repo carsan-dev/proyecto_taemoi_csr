@@ -1,0 +1,51 @@
+export const SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 1254 1254" class="maki-dudar-motion-animated" role="img" aria-labelledby="maki-dudar-motion-title maki-dudar-motion-desc">
+<title id="maki-dudar-motion-title">Maki: Dudar · Animación</title>
+<desc id="maki-dudar-motion-desc">Inclina el cuerpo y se rasca suavemente la sien dos veces, mira hacia el gesto y recupera su postura curiosa sin cambiar la sonrisa. Ritmo revisado; respiración de reposo conservada.</desc>
+<style>.maki-dudar-motion-animated { --maki-idle-count: 1; }
+.maki-dudar-motion-animated.modo-vivo { --maki-idle-count: infinite; }
+.maki-dudar-motion-animated .maki-dudar-motion-torso { transform-origin: 625px 1008px; animation: maki-dudar-motion-act 1.4s cubic-bezier(.35,0,.2,1) 1,maki-dudar-motion-idle 7.1s cubic-bezier(.35,0,.2,1) 1.4s var(--maki-idle-count); }
+.maki-dudar-motion-animated .maki-dudar-motion-arm-left { transform-origin: 300px 700px; animation: 1.4s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-dudar-motion-arm-left; }
+.maki-dudar-motion-animated .maki-dudar-motion-arm-right { transform-origin: 892px 804px; animation: 1.4s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-dudar-motion-arm-right; }
+.maki-dudar-motion-animated .maki-dudar-motion-face { animation: 1.4s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-dudar-motion-attention; }
+.maki-dudar-motion-animated .maki-dudar-motion-flame { transform-origin: 625px 1008px; animation: 1.4s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-dudar-motion-follow; }
+.maki-dudar-motion-animated .maki-dudar-motion-blink { transform-origin: 625px 624px; animation: maki-dudar-motion-blink 1.4s linear 1,maki-dudar-motion-idle-blink 8.3s linear 1.4s var(--maki-idle-count); }
+@keyframes maki-dudar-motion-act{0.0000%,91.6667%,100.0000%{transform: translate(0px, 0px) rotate(0deg) scale(1);}13.3333%{transform: translate(3px, 5px) rotate(0.6deg) scale(1.005, 0.995);}31.6667%,56.6667%{transform: translate(-9px, 0px) rotate(-2.8deg);}73.3333%{transform: translate(2px, 2px) rotate(0.7deg);}}
+@keyframes maki-dudar-motion-arm-left{0.0000%,78.3333%,100.0000%{transform: translate(0px, 0px) rotate(0deg);}20.0000%{transform: translate(0px, -3px) rotate(-1deg);}31.6667%{transform: translate(2px, 7px) rotate(1.8deg);}43.3333%{transform: translate(-1px, -3px) rotate(-1deg);}55.0000%{transform: translate(2px, 6px) rotate(1.6deg);}66.6667%{transform: translate(0px, -1px) rotate(-0.4deg);}}
+@keyframes maki-dudar-motion-arm-right{0.0000%,88.3333%,100.0000%{transform: rotate(0deg);}36.6667%,58.3333%{transform: rotate(3deg);}75.0000%{transform: rotate(-1deg);}}
+@keyframes maki-dudar-motion-attention{0.0000%,16.6667%,88.3333%,100.0000%{transform: translate(0px, 0px);}31.6667%,58.3333%{transform: translate(-7px, -2px);}73.3333%{transform: translate(0px, 4px);}}
+@keyframes maki-dudar-motion-blink{0%,69.0000%,79.0000%,100%{transform:scaleY(1)}72.2143%,75.7857%{transform:scaleY(.1)}}
+@keyframes maki-dudar-motion-follow{0.0000%,98.3333%,100.0000%{transform: skewX(0deg);}16.6667%{transform: skewX(0.35deg);}40.0000%{transform: skewX(-0.6deg);}63.3333%{transform: skewX(-0.2deg);}78.3333%{transform: skewX(0.25deg);}}
+@keyframes maki-dudar-motion-idle { 
+  0%, 100% { transform: scale(1); }
+  39% { transform: scale(1.009, 1.014); }
+  68% { transform: scale(1.002, 1.003); }
+  85% { transform: scale(1.003, 1.005); }
+}
+@keyframes maki-dudar-motion-idle-blink { 
+  0%, 32%, 35%, 100% { transform: scaleY(1); }
+  33%, 33.7% { transform: scaleY(0.1); }
+}
+.maki-dudar-motion-animated .maki-dudar-motion-foot-left { transform-origin: 390px 1130px; animation: 1.4s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-dudar-motion-weight-left; }
+.maki-dudar-motion-animated .maki-dudar-motion-foot-right { transform-origin: 770px 1135px; animation: 1.4s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-dudar-motion-weight-right; }
+@keyframes maki-dudar-motion-weight-left{0.0000%,90.0000%,100.0000%{transform: scale(1);}30.0000%,58.3333%{transform: scale(1.015, 0.982);}}
+@keyframes maki-dudar-motion-weight-right{0.0000%,90.0000%,100.0000%{transform: scale(1);}30.0000%,58.3333%{transform: scale(0.997, 1.004);}}
+.maki-dudar-motion-animated .maki-dudar-motion-scratch-0 { animation: 1.4s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-dudar-motion-scratch-0; }
+@keyframes maki-dudar-motion-scratch-0{0.0000%,20.0000%,41.6667%,65.0000%,100.0000%{d: path("M 298 767 C 250 746 213 708 207 661 C 196 617 212 565 248 531 C 275 501 314 481 346 474 C 365 470 377 482 371 498 C 365 515 347 519 328 522 C 350 525 357 540 348 554 C 354 575 338 591 323 589 C 300 627 291 671 299 714 C 302 736 306 754 298 767 Z");}31.6667%,55.0000%{d: path("M 298 767 C 250 746 213 708 207 661 C 196 618.65 212 569.25 248 536.95 C 275 508.45 314 489 346 482 C 365 478 377 490 371 505.6 C 365 521.75 347 525.55 328 528.4 C 350 531.25 357 545.5 348 558.8 C 354 578.75 338 593.95 323 592.05 C 300 628.15 291 671 299 714 C 302 736 306 754 298 767 Z");}}
+.maki-dudar-motion-animated .maki-dudar-motion-scratch-1 { animation: 1.4s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-dudar-motion-scratch-1; }
+@keyframes maki-dudar-motion-scratch-1{0.0000%,20.0000%,41.6667%,65.0000%,100.0000%{d: path("M 282 541 C 305 533 330 537 341 548");}31.6667%,55.0000%{d: path("M 282 546.45 C 305 538.85 330 542.65 341 553.1");}}
+@media (prefers-reduced-motion: reduce) {
+  .maki-dudar-motion-animated * { animation: auto ease 0s 1 normal none running none !important; }
+}</style>
+<g class="maki-dudar-motion-scene">
+<g id="maki-dudar-motion-back"><g class="maki-dudar-motion-foot-left"><path d="M382 926 C362 975 350 1018 346 1047 C318 1056 295 1078 302 1103 C308 1133 348 1138 399 1130 C443 1124 473 1110 477 1083 C482 1048 495 1007 509 977Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g><g class="maki-dudar-motion-foot-right"><path d="M657 974 C668 1019 680 1050 678 1084 C675 1115 706 1134 754 1135 C813 1137 869 1125 870 1097 C872 1070 847 1052 818 1046 C814 1011 804 978 789 947Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g><g class="maki-dudar-motion-torso"><g class="maki-dudar-motion-arm-right"><path d="M897 721 C942 734 982 763 992 795 C1010 842 975 866 929 881 C923 911 900 928 875 923 C845 922 824 904 833 880 C846 851 869 825 902 810 C884 802 866 796 853 791Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g>
+<g class="maki-dudar-motion-torso"><g class="maki-dudar-motion-flame"><g id="maki-dudar-motion-source-body">
+<defs><clipPath id="maki-dudar-motion-source-clip"><path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z"></path></clipPath></defs>
+<path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z" fill="#e3130a"></path>
+<g clip-path="url(#maki-dudar-motion-source-clip)"><path d="M762 159 C821 199 856 284 849 364 C844 416 818 465 819 492 C843 525 921 508 960 440 C991 557 972 660 922 721 C870 777 796 809 700 835 C635 857 540 885 519 925 C501 961 534 1000 590 1008 C501 993 456 945 434 886 C409 826 419 754 474 709 C434 708 396 744 377 789 C350 719 341 655 357 586 C374 507 440 458 529 424 C607 390 719 373 764 311 C798 262 788 201 762 159Z" fill="#f6e001"></path><path d="M978 507 C980 600 964 670 922 721 C870 777 796 809 700 835 C635 857 540 885 519 925 C501 961 534 1000 590 1008 C738 1054 893 952 978 803 C1040 690 1056 608 1018 596 C1000 556 980 535 978 507Z" fill="#2e75b9"></path></g>
+<path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z" fill="none" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path>
+</g></g></g>
+<g class="maki-dudar-motion-torso"><g class="maki-dudar-motion-face"><g id="maki-dudar-motion-source-face"><g class="maki-dudar-motion-blink"><path d="M456 614 C450 583 465 542 496 538 C532 533 551 563 553 601 C556 632 549 640 530 635 C510 628 499 629 481 636 C463 642 459 632 456 614Z" fill="#302e26"></path></g><g class="maki-dudar-motion-blink"><path d="M663 603 C659 574 683 547 710 545 C741 541 766 562 771 589 C775 611 765 620 746 614 C725 607 709 607 690 614 C673 621 665 618 663 603Z" fill="#302e26"></path></g><path d="M589 681 C618 681 638 671 653 651 C660 642 672 643 670 656 C666 681 642 699 613 700 C595 701 582 697 580 690 C578 685 582 681 589 681Z" fill="#302e26"></path></g></g></g>
+<g id="maki-dudar-motion-front"><g class="maki-dudar-motion-torso"><g class="maki-dudar-motion-arm-left"><path class="maki-dudar-motion-scratch-0" d="M298 767 C250 746 213 708 207 661 C196 617 212 565 248 531 C275 501 314 481 346 474 C365 470 377 482 371 498 C365 515 347 519 328 522 C350 525 357 540 348 554 C354 575 338 591 323 589 C300 627 291 671 299 714 C302 736 306 754 298 767Z" fill="#e3130a" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path><path class="maki-dudar-motion-scratch-1" d="M282 541 C305 533 330 537 341 548" fill="none" stroke="#293b3f" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g>
+</g>
+</svg>
+`;

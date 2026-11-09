@@ -18,6 +18,8 @@ export interface MarcaPanel {
   /** Id de la imagen del logo subido (va en su URL para no servir uno viejo de la caché); null sin él. */
   logoVersion: number | null;
   tema: TemaMarca;
+  /** Mascota del panel: Maki en Moiskimdo, Tami en las demás; ausente o desconocida se trata como TAMI. */
+  mascota?: 'TAMI' | 'MAKI';
 }
 
 /** Logo de siempre de Moiskimdo (`LEGADO`), el mismo que la cabecera de hoy. */

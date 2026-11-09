@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { SeoService } from '../../servicios/generales/seo.service';
 import { MascotaComponent } from '../mascota/mascota.component';
 import { NoEncontradaPanelComponent, RUTA_INICIO_GESTION } from './no-encontrada.component';
+import { of } from 'rxjs';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 
 describe('NoEncontradaPanelComponent (8b-M2b)', () => {
   let fixture: ComponentFixture<NoEncontradaPanelComponent>;
@@ -17,6 +19,7 @@ describe('NoEncontradaPanelComponent (8b-M2b)', () => {
     await TestBed.configureTestingModule({
       imports: [NoEncontradaPanelComponent],
       providers: [
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         { provide: Router, useValue: { navigateByUrl: navegar } },
         { provide: SeoService, useValue: seo },
       ],

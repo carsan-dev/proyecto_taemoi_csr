@@ -6,6 +6,8 @@ import { BloqueErrorComponent } from './bloque-error.component';
 import { BloqueVacioComponent } from './bloque-vacio.component';
 import { BotonOcupadoComponent } from './boton-ocupado.component';
 import { EsqueletoComponent, RETRASO_ESQUELETO } from './esqueleto.component';
+import { of } from 'rxjs';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 
 @Component({
   standalone: true,
@@ -54,7 +56,7 @@ describe('Carga del panel nuevo (8b-D1): esqueleto, botÃ³n ocupado, error y vacÃ
 
   beforeEach(() => {
     quitarTokens = ponerTokensDePrueba();
-    TestBed.configureTestingModule({ imports: [Anfitrion] });
+    TestBed.configureTestingModule({ imports: [Anfitrion], providers: [{ provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } }] });
   });
 
   afterEach(() => {
@@ -181,7 +183,7 @@ describe('Carga del panel nuevo con mascota (8b-M)', () => {
 
   beforeEach(() => {
     quitarTokens = ponerTokensDePrueba();
-    TestBed.configureTestingModule({ imports: [AnfitrionConMascota, Anfitrion] });
+    TestBed.configureTestingModule({ imports: [AnfitrionConMascota, Anfitrion], providers: [{ provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } }] });
   });
 
   afterEach(() => {

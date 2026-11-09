@@ -14,6 +14,7 @@ import { LoadingService } from '../../../servicios/generales/loading.service';
 import { AvisosService } from '../../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../../capas/tokens-prueba';
 import { GESTION_UNA_SEDE, GESTION_VARIAS_SEDES, RESPONSABLE_VARIAS_SEDES } from '../../filtro-sede/filtro-sede-prueba';
+import { MarcaEscuelaPanelService } from '../../marca-escuela-panel.service';
 import { HerramientaAlumnos, HerramientaPanelComponent } from './herramienta-panel.component';
 import { InformePdfPanelService } from './informe-pdf-panel.service';
 import { itSinReloj } from '../../../testing/reloj-prueba';
@@ -136,6 +137,7 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         InformePdfService,
         { provide: LoadingService, useValue: jasmine.createSpyObj('LoadingService', ['show', 'hide']) },
         { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of(permisosSesion) } },

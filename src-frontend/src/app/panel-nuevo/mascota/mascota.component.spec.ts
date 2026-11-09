@@ -1,8 +1,12 @@
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, flush } from '@angular/core/testing';
 
-import { MASCOTA_CARGADORES, MascotaComponent } from './mascota.component';
-import { CARGADORES_MASCOTA, CargadoresMascota, POSES_MASCOTA } from './poses';
+import { Observable, Subject, defer, of, shareReplay, throwError } from 'rxjs';
+
+import { MarcaEscuelaPanelService, MarcaPanel } from '../marca-escuela-panel.service';
+import { MASCOTA_CARGADORES, MASCOTA_CARGADORES_MAKI, MascotaComponent } from './mascota.component';
+import { identificarSvg } from './identificar-svg';
+import { CARGADORES_MASCOTA, CARGADORES_MASCOTA_MAKI, CargadoresMascota, POSES_MASCOTA } from './poses';
 
 @Component({
   standalone: true,
@@ -19,10 +23,10 @@ class Anfitrion {
 }
 
 /** Cargadores falsos y síncronos: `<svg data-pose="…">`; la pose «rota» rechaza como un chunk que no llega. */
-function cargadoresFalsos(): CargadoresMascota {
+function cargadoresFalsos(mascota = 'tami'): CargadoresMascota {
   const falsos = {} as Record<string, () => Promise<string>>;
   for (const pose of [...POSES_MASCOTA, 'compacta']) {
-    falsos[pose] = () => Promise.resolve(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="prueba-mascota modo-vivo" data-pose="${pose}" viewBox="0 0 320 320" aria-labelledby="titulo"><title id="titulo">Mascota</title><style>.prueba-mascota.modo-vivo{--gota-idle-count:infinite}.prueba-mascota path{animation:prueba-mascota 1s var(--gota-idle-count)}@keyframes prueba-mascota{to{opacity:.5}}</style><defs><linearGradient id="tinta"/><path id="trazo" d="M0 0"/></defs><path fill="url(#tinta)" d="M0 0"/><use href="#trazo"/><use xlink:href="#trazo"/></svg>`);
+    falsos[pose] = () => Promise.resolve(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="prueba-mascota modo-vivo" data-pose="${pose}" data-origen="${mascota}" viewBox="0 0 320 320" aria-labelledby="titulo"><title id="titulo">Mascota</title><style>.prueba-mascota.modo-vivo{--gota-idle-count:infinite}.prueba-mascota path{animation:prueba-mascota 1s var(--gota-idle-count)}@keyframes prueba-mascota{to{opacity:.5}}</style><defs><linearGradient id="tinta"/><path id="trazo" d="M0 0"/></defs><path fill="url(#tinta)" d="M0 0"/><use href="#trazo"/><use xlink:href="#trazo"/></svg>`);
   }
   falsos['leer'] = () => Promise.reject(new Error('chunk perdido'));
   return falsos as CargadoresMascota;
@@ -32,6 +36,16 @@ describe('MascotaComponent (8b-M)', () => {
   let fixture: ComponentFixture<Anfitrion>;
   let anfitrion: Anfitrion;
   let reducido: boolean;
+  let marca$: Observable<Partial<MarcaPanel>>;
+  let peticiones: number;
+
+  /** Como el servicio real: una sola petición que comparten todos los que la piden. */
+  function compartida(fuente: Observable<Partial<MarcaPanel>>): Observable<Partial<MarcaPanel>> {
+    return defer(() => {
+      peticiones++;
+      return fuente;
+    }).pipe(shareReplay(1));
+  }
 
   function el(): HTMLElement {
     return fixture.nativeElement as HTMLElement;
@@ -51,12 +65,23 @@ describe('MascotaComponent (8b-M)', () => {
 
   beforeEach(() => {
     reducido = false;
+    peticiones = 0;
+    marca$ = compartida(of({ mascota: 'TAMI' }));
     spyOn(window, 'matchMedia').and.callFake(
       (consulta: string) => ({ matches: reducido && consulta.includes('prefers-reduced-motion'), media: consulta }) as MediaQueryList,
     );
     TestBed.configureTestingModule({
       imports: [Anfitrion],
-      providers: [{ provide: MASCOTA_CARGADORES, useValue: cargadoresFalsos() }],
+      providers: [
+        { provide: MASCOTA_CARGADORES, useValue: cargadoresFalsos() },
+        { provide: MASCOTA_CARGADORES_MAKI, useValue: cargadoresFalsos('maki') },
+        {
+          provide: MarcaEscuelaPanelService,
+          useValue: {
+            marca: () => marca$,
+          },
+        },
+      ],
     });
   });
 
@@ -98,6 +123,154 @@ describe('MascotaComponent (8b-M)', () => {
     pintar();
     expect(mascota().querySelector('svg')!.getAttribute('data-pose')).toBe('compacta');
   }));
+
+  describe('Tami o Maki según la marca de la escuela', () => {
+    const origen = () => mascota().querySelector('svg')?.getAttribute('data-origen') ?? null;
+
+    it('MAKI usa los cargadores de Maki y la etiqueta Maki, la mascota', fakeAsync(() => {
+      marca$ = of({ mascota: 'MAKI' });
+      montar();
+      anfitrion.decorativa = false;
+      pintar();
+      expect(origen()).toBe('maki');
+      expect(mascota().getAttribute('aria-label')).toBe('Maki, la mascota');
+    }));
+
+    it('TAMI usa Tami y su etiqueta de siempre', fakeAsync(() => {
+      montar();
+      anfitrion.decorativa = false;
+      pintar();
+      expect(origen()).toBe('tami');
+      expect(mascota().getAttribute('aria-label')).toBe('Gota de esfuerzo, la mascota');
+    }));
+
+    it('sin campo mascota o con un valor desconocido, Tami', fakeAsync(() => {
+      marca$ = of({});
+      montar();
+      pintar();
+      expect(origen()).toBe('tami');
+      marca$ = of({ mascota: 'OTRA' as 'TAMI' });
+      anfitrion.segunda = true;
+      pintar();
+      expect(Array.from(el().querySelectorAll('pn-mascota svg'), (n) => n.getAttribute('data-origen'))).toEqual(['tami', 'tami']);
+    }));
+
+    it('si la marca falla no pinta nada (hueco del mismo tamaño) y el siguiente intento que acierta pinta la mascota buena', fakeAsync(() => {
+      marca$ = throwError(() => new Error('sin red'));
+      montar();
+      pintar();
+      expect(mascota().querySelector('svg')).toBeNull();
+      expect(mascota().classList).toContain('pn-mascota--md');
+      marca$ = of({ mascota: 'MAKI' });
+      anfitrion.pose = 'dudar';
+      pintar();
+      expect(origen()).toBe('maki');
+      expect(mascota().querySelector('svg')!.getAttribute('data-pose')).toBe('dudar');
+    }));
+
+    it('una instancia nueva reintenta tras un fallo', fakeAsync(() => {
+      marca$ = throwError(() => new Error('sin red'));
+      montar();
+      pintar();
+      expect(mascota().querySelector('svg')).toBeNull();
+      marca$ = of({ mascota: 'MAKI' });
+      anfitrion.segunda = true;
+      pintar();
+      const dibujos = Array.from(el().querySelectorAll('pn-mascota svg'));
+      expect(dibujos.map((n) => n.getAttribute('data-origen'))).toEqual(['maki']);
+    }));
+
+    it('varias instancias con éxito comparten una sola petición de marca', fakeAsync(() => {
+      marca$ = compartida(of({ mascota: 'MAKI' }));
+      peticiones = 0;
+      montar();
+      anfitrion.segunda = true;
+      pintar();
+      expect(el().querySelectorAll('pn-mascota svg').length).toBe(2);
+      expect(peticiones).toBe(1);
+    }));
+
+    it('si cambian pose y tamaño con la marca pendiente, solo se pinta lo último, una vez', fakeAsync(() => {
+      const espera = new Subject<Partial<MarcaPanel>>();
+      marca$ = compartida(espera);
+      montar();
+      anfitrion.pose = 'esperar';
+      fixture.detectChanges();
+      anfitrion.pose = 'invitar';
+      fixture.detectChanges();
+      anfitrion.pose = 'celebrar';
+      anfitrion.tamano = 'lg';
+      fixture.detectChanges();
+      expect(mascota().querySelector('svg')).toBeNull();
+      espera.next({ mascota: 'MAKI' });
+      espera.complete();
+      pintar();
+      const dibujos = mascota().querySelectorAll('svg');
+      expect(dibujos.length).toBe(1);
+      expect(dibujos[0].getAttribute('data-pose')).toBe('celebrar');
+      expect(dibujos[0].getAttribute('data-origen')).toBe('maki');
+      expect(peticiones).toBe(1);
+    }));
+
+    it('mientras la marca no llega no pinta nada y guarda el hueco; luego pinta Maki', fakeAsync(() => {
+      const espera = new Subject<Partial<MarcaPanel>>();
+      marca$ = espera;
+      montar();
+      pintar();
+      expect(mascota().querySelector('svg')).toBeNull();
+      expect(mascota().classList).toContain('pn-mascota--md');
+      espera.next({ mascota: 'MAKI' });
+      espera.complete();
+      pintar();
+      expect(origen()).toBe('maki');
+    }));
+
+    it('con sm usa la compacta de la mascota de la escuela', fakeAsync(() => {
+      marca$ = of({ mascota: 'MAKI' });
+      montar();
+      anfitrion.tamano = 'sm';
+      pintar();
+      expect(mascota().querySelector('svg')!.getAttribute('data-pose')).toBe('compacta');
+      expect(origen()).toBe('maki');
+    }));
+
+    it('con sm y Tami usa la compacta de Tami', fakeAsync(() => {
+      marca$ = of({ mascota: 'TAMI' });
+      montar();
+      anfitrion.tamano = 'sm';
+      anfitrion.pose = 'celebrar';
+      pintar();
+      expect(mascota().querySelector('svg')!.getAttribute('data-pose')).toBe('compacta');
+      expect(origen()).toBe('tami');
+    }));
+
+    it('una etiqueta explícita gana a la de Maki', fakeAsync(() => {
+      marca$ = of({ mascota: 'MAKI' });
+      montar();
+      anfitrion.decorativa = false;
+      anfitrion.etiqueta = 'Mes cobrado';
+      pintar();
+      expect(mascota().getAttribute('aria-label')).toBe('Mes cobrado');
+    }));
+
+    it('con decorativa sigue aria-hidden con Maki', fakeAsync(() => {
+      marca$ = of({ mascota: 'MAKI' });
+      montar();
+      pintar();
+      expect(mascota().getAttribute('aria-hidden')).toBe('true');
+      expect(mascota().getAttribute('aria-label')).toBeNull();
+    }));
+
+    it('Maki mide lo mismo que Tami y su reposo queda limitado a 1', fakeAsync(() => {
+      marca$ = of({ mascota: 'MAKI' });
+      montar();
+      document.body.appendChild(el());
+      pintar();
+      expect(mascota().getBoundingClientRect().width).toBe(96);
+      expect(getComputedStyle(mascota().querySelector('svg')!).getPropertyValue('--maki-idle-count').trim()).toBe('1');
+      el().remove();
+    }));
+  });
 
   it('es decorativa por defecto: aria-hidden y sin role', fakeAsync(() => {
     montar();
@@ -258,6 +431,75 @@ describe('MascotaComponent (8b-M)', () => {
         trazos.forEach((nodo) => expect(getComputedStyle(nodo).animationName).toBe('none'));
         el().remove();
       }));
+    }
+  });
+});
+
+describe('identificarSvg con los SVG de verdad (Tami y Maki)', () => {
+  const conjuntos = [
+    ['Tami', CARGADORES_MASCOTA],
+    ['Maki', CARGADORES_MASCOTA_MAKI],
+  ] as const;
+
+  for (const [nombre, cargadores] of conjuntos) {
+    it(nombre + ': tras identificar, cada #id del style y cada url(#), href y aria-labelledby apuntan a un id local', async () => {
+      for (const clave of [...POSES_MASCOTA, 'compacta'] as const) {
+        const prefijo = 'pn-mascota-9-';
+        const svg = identificarSvg(await cargadores[clave](), prefijo);
+        const documento = new DOMParser().parseFromString(svg, 'image/svg+xml');
+        expect(documento.querySelector('parsererror')).withContext(clave).toBeNull();
+        const ids = new Set(Array.from(documento.querySelectorAll('[id]'), (n) => n.id));
+        ids.forEach((id) => expect(id.startsWith(prefijo)).withContext(clave + ' ' + id).toBeTrue());
+        const referencias: string[] = [];
+        for (const estilo of Array.from(documento.querySelectorAll('style'))) {
+          // Un selector #id lleva el prefijo; los colores (#e3130a) no son ids del SVG y se excluyen por no llevarlo.
+          for (const m of (estilo.textContent ?? '').matchAll(/#([A-Za-z_][\w-]*)/g)) {
+            if (/^(maki|gota|pn-mascota)/.test(m[1]) || m[1].startsWith(prefijo)) {
+              referencias.push(m[1]);
+            }
+          }
+        }
+        for (const m of svg.matchAll(/url\(#([^)]+)\)|(?:href|xlink:href)="#([^"]+)"/g)) {
+          referencias.push(m[1] || m[2]);
+        }
+        for (const lista of svg.matchAll(/aria-(?:labelledby|describedby)="([^"]+)"/g)) {
+          referencias.push(...lista[1].split(/\s+/));
+        }
+        referencias.forEach((id) => expect(ids.has(id)).withContext(clave + ' ' + id).toBeTrue());
+      }
+    });
+  }
+
+  it('los selectores #id del style de Maki invitar se reescriben con el prefijo', async () => {
+    const svg = identificarSvg(await CARGADORES_MASCOTA_MAKI['invitar'](), 'pn-mascota-3-');
+    expect(svg).toContain('#pn-mascota-3-maki-invitar-v2-animated-back');
+    expect(svg).not.toMatch(/#maki-invitar-v2-animated-back/);
+  });
+
+  it('no toca colores hexadecimales ni ids que se llaman parecido', () => {
+    const svg = identificarSvg('<svg><style>#a{fill:#e3130a}#ab{x:1}</style><g id="a"/><g id="ab"/></svg>', 'p-');
+    expect(svg).toContain('#p-a{fill:#e3130a}#p-ab{x:1}');
+  });
+});
+
+describe('Poses de Maki (chunks de verdad)', () => {
+  it('cada pose y la compacta cargan un SVG inline propio, con ids locales', async () => {
+    expect(Object.keys(CARGADORES_MASCOTA_MAKI).sort()).toEqual([...POSES_MASCOTA, 'compacta'].sort());
+    for (const clave of [...POSES_MASCOTA, 'compacta'] as const) {
+      const svg = await CARGADORES_MASCOTA_MAKI[clave]();
+      expect(svg.startsWith('<svg')).withContext(clave).toBeTrue();
+      expect(svg).withContext(clave).toContain('viewBox="0 0 1254 1254"');
+      expect(svg).withContext(clave).not.toMatch(/<(script|image|foreignObject)\b|\bon\w+=/i);
+      const documento = new DOMParser().parseFromString(svg, 'image/svg+xml');
+      expect(documento.querySelector('parsererror')).withContext(clave).toBeNull();
+      const ids = new Set(Array.from(documento.querySelectorAll('[id]'), (nodo) => nodo.id));
+      for (const ref of (documento.documentElement.getAttribute('aria-labelledby') ?? '').split(' ')) {
+        expect(ids.has(ref)).withContext(clave + ' ' + ref).toBeTrue();
+      }
+      if (clave !== 'compacta') {
+        expect(svg).withContext(clave).toContain('@keyframes');
+        expect(svg).withContext(clave).toContain('--maki-idle-count');
+      }
     }
   });
 });

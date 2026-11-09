@@ -19,6 +19,7 @@ import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { PreinscripcionesPanelComponent } from './preinscripciones.component';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 
 const BASE = `${environment.apiUrl}/preinscripciones`;
 
@@ -196,6 +197,7 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
     await TestBed.configureTestingModule({
       imports: [PreinscripcionesPanelComponent],
       providers: [
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         { provide: MASCOTA_CARGADORES, useValue: {
           explicar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
           compacta: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
