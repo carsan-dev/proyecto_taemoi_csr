@@ -47,8 +47,6 @@
   .pasar-lista__oculto { @include c.oculto; }
   .pasar-lista__presente { flex: none; font: var(--pn-etiqueta); color: var(--pn-bien); }
   .pasar-lista__grado-presente { display: none; font: var(--pn-etiqueta); color: var(--pn-bien); }
->>>>
-
 
   // Columna del cinturón: botón aparte de la fila (abre la hoja) o, sin permiso o sin rallas, solo la punta.
   .pasar-lista__cinto { grid-area: cinto; display: flex; flex: none; align-items: center; justify-content: center; min-width: 44px; padding: 0 10px 0 2px; border: 0; background: none; }

@@ -108,6 +108,28 @@ describe('HojaRallasComponent (hoja de rallas, decisiones 510-513)', () => {
     expect(texto(dialogo().querySelector('[data-apto]'))).toBe('Marcar apto para examen');
   });
 
+  it('la fila de pasos no se mueve entre cuentas cortas y largas', () => {
+    crear(0);
+    const arriba = (): number => paso(1).getBoundingClientRect().top;
+    const sinRallas = arriba();
+    cambiarMedias(5);
+    expect(arriba()).toBe(sinRallas);
+    cambiarMedias(1);
+    expect(arriba()).toBe(sinRallas);
+    cambiarMedias(9);
+    expect(arriba()).toBe(sinRallas);
+  });
+
+  it('un paso deshabilitado sigue apagado con el foco puesto', () => {
+    crear(0);
+    const css = getComputedStyle(paso(-2));
+    const antes = [css.backgroundColor, css.color, css.borderTopColor, css.cursor];
+    paso(-2).focus();
+    expect(document.activeElement).toBe(paso(-2));
+    expect([css.backgroundColor, css.color, css.borderTopColor, css.cursor]).toEqual(antes);
+    expect(css.cursor).toBe('not-allowed');
+  });
+
   it('Esc y la X cierran', () => {
     crear(3);
     dialogo().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));

@@ -10,8 +10,10 @@
 .rallas-hoja {
   width: 440px;
   max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
-  margin: auto;
+  max-height: calc(100dvh - var(--rallas-arriba) - 16px);
+  // Anclado arriba, no centrado: si crece o encoge por debajo (nota, aviso de «completa»), los pasos no se mueven.
+  --rallas-arriba: clamp(16px, 12dvh, 96px);
+  margin: var(--rallas-arriba) auto auto;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -35,7 +37,7 @@
 .rallas-hoja__caja {
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 32px);
+  max-height: calc(100dvh - var(--rallas-arriba) - 16px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -77,11 +79,13 @@
   padding: 8px 24px 24px;
 }
 
+// Maquetación estable: la punta y la cuenta van siempre una sobre otra (en fila, el texto largo bajaba y movía los
+// pasos), y la cuenta reserva sus dos líneas, así que la fila de pasos no se mueve entre toques.
 .rallas-hoja__muestra {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 20px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   padding: 16px 0;
   border-top: 1px solid var(--pn-linea);
   border-bottom: 1px solid var(--pn-linea);
@@ -90,8 +94,10 @@
 .rallas-hoja__cuenta {
   display: flex;
   flex-direction: column;
+  align-self: stretch;
   gap: 2px;
   min-width: 0;
+  min-height: 3rem;
 
   strong {
     font: 700 1.125rem / 1.25 var(--pn-fuente-titulo);
@@ -121,10 +127,22 @@
     border-color: var(--pn-linea);
     background: var(--pn-superficie-2);
     color: var(--pn-tinta-3);
+    cursor: not-allowed;
+  }
+
+  // Con ratón o teclado encima sigue apagado; el anillo de foco (button:focus-visible) es lo único que cambia.
+  &[aria-disabled='true']:hover,
+  &[aria-disabled='true']:focus,
+  &[aria-disabled='true']:focus-visible {
+    border-color: var(--pn-linea);
+    background: var(--pn-superficie-2);
+    color: var(--pn-tinta-3);
   }
 }
 
+// Reserva su línea aunque no haya nota: la hoja inferior crece hacia arriba y, sin ella, los pasos saltarían.
 .rallas-hoja__nota {
+  min-height: 1.25rem;
   margin: -8px 0 0;
   font: var(--pn-secundario);
   font-size: 0.8125rem;

@@ -115,6 +115,18 @@ describe('PasarListaComponent · rallas hacia el examen (decisiones 510-513)', (
     expect(texto(items()[0].querySelector('.pasar-lista__grado'))).toContain(', 2 y media de 5 rallas');
   });
 
+  it('la punta es un botón sin el aspecto nativo: sin relieve ni fondo gris, objetivo de 44 px y marco fino', () => {
+    crear();
+    arrancar({ alumnos: [alumno(1, 'Adrián', { medias: 5 })] });
+    const b = cinto(0);
+    const css = getComputedStyle(b);
+    expect(css.borderTopWidth).toBe('0px');
+    expect(css.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(b.getBoundingClientRect().width).toBeGreaterThanOrEqual(44);
+    expect(b.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    expect(getComputedStyle(b.querySelector('.pasar-lista__cinto-marco')!).borderTopWidth).toBe('1px');
+  });
+
   it('ayudante: ve las rallas sin botón y la frase del boceto', () => {
     crear();
     arrancar({ puedeCambiarRallas: false, alumnos: [alumno(1, 'Adrián', { medias: 4, puede: false })] });
