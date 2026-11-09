@@ -1,5 +1,5 @@
 ﻿import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Inject, Injectable, PLATFORM_ID } from '@angular/core';
+import { Inject, Injectable, Injector, inject, PLATFORM_ID } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -20,6 +20,9 @@ export class SeoService {
   private readonly defaultRobots =
     'index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1';
   private readonly baseUrl = 'https://moiskimdo.es';
+  private readonly injector = inject(Injector);
+  private nombreEscuela: string | null = null;
+  private pidiendoNombre = false;
 
   private readonly routeBreadcrumbs: Record<string, BreadcrumbItem[]> = {
     '/': [{ name: 'Inicio', url: '/' }],
@@ -101,10 +104,11 @@ export class SeoService {
   }
 
   private applyRouteSeo(): void {
+    const route = this.getDeepestRoute(this.router.routerState.snapshot.root);
     if (this.enHostDePlantilla()) {
+      this.aplicarFueraDeLaWebPlantilla(route.data?.['webPlantilla'] === true);
       return;
     }
-    const route = this.getDeepestRoute(this.router.routerState.snapshot.root);
     // Web por plantilla (fase4-web-plan.md §3.2, punto 7): no se toca nada; la plantilla pone su propio SEO.
     if (route.data?.['webPlantilla'] === true) {
       return;
@@ -138,6 +142,45 @@ export class SeoService {
     this.setHreflang(canonical);
     this.updateBreadcrumbSchema(cleanPath);
     this.updateRouteSchemas(cleanPath);
+  }
+
+  /**
+   * Host de plantilla, rutas que NO son de la web pública (login, panel, familias…; decisión 509): título = nombre de
+   * la escuela (vacío mientras no se sabe; nunca el de Moiskimdo) y `noindex, nofollow` marcado con `data-web-plantilla`
+   * (valor `fuera`). En las rutas de la web pública se quita solo esa meta: manda el SEO de la plantilla.
+   */
+  private aplicarFueraDeLaWebPlantilla(rutaPublica: boolean): void {
+    this.document.head.querySelectorAll('meta[name="robots"][data-web-plantilla="fuera"]').forEach((e) => e.remove());
+    if (rutaPublica) {
+      return;
+    }
+    const meta = this.document.createElement('meta');
+    meta.setAttribute('name', 'robots');
+    meta.setAttribute('content', 'noindex, nofollow');
+    meta.setAttribute('data-web-plantilla', 'fuera');
+    this.document.head.appendChild(meta);
+    this.title.setTitle(this.nombreEscuela ?? '');
+    if (this.nombreEscuela === null && !this.pidiendoNombre) {
+      this.pidiendoNombre = true;
+      // Carga perezosa: el servicio de la marca vive en el chunk del login y no entra en el bundle inicial.
+      import('../../componentes/vistas/vista-login/marca-escuela-login.service')
+        .then(({ MarcaEscuelaLoginService }) => this.injector.get(MarcaEscuelaLoginService).escuela().subscribe({
+          next: (escuela) => {
+            this.nombreEscuela = escuela?.nombre?.trim() || null;
+            this.pidiendoNombre = false;
+            this.reaplicarTituloFuera();
+          },
+          error: () => (this.pidiendoNombre = false),
+        }))
+        .catch(() => (this.pidiendoNombre = false));
+    }
+  }
+
+  /** Llega el nombre: lo pone solo si seguimos fuera de la web pública (la meta nuestra sigue en la cabeza). */
+  private reaplicarTituloFuera(): void {
+    if (this.nombreEscuela && this.document.head.querySelector('meta[name="robots"][data-web-plantilla="fuera"]')) {
+      this.title.setTitle(this.nombreEscuela);
+    }
   }
 
   updateDynamicSeo(config: {

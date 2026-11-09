@@ -75,7 +75,10 @@ test('la plantilla generada: cabeza neutra con la meta y los bundles en su sitio
     assert.equal(m[2].trim(), '');
   }
   // Lo de la plantilla, intacto.
-  assert.equal(html.replace(/<style>[\s\S]*?<\/style>|<noscript>[\s\S]*?<\/noscript>|<link\b[^>]*>|<script\b[^>]*><\/script>/g, ''), PLANTILLA);
+  // (el favicon neutro es de la propia plantilla, no del build: se compara sin él por ambos lados).
+  const sinBuild = (t) =>
+    t.replace(/<style>[\s\S]*?<\/style>|<noscript>[\s\S]*?<\/noscript>|<link\b[^>]*>|<script\b[^>]*><\/script>/g, '');
+  assert.equal(sinBuild(html), sinBuild(PLANTILLA));
 });
 
 test('sin el script principal: error', () => {
@@ -111,4 +114,10 @@ test('por línea de órdenes: escribe index-plantilla.html; sin script principal
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('la plantilla generada lleva un favicon neutro (data:,) y ningún icono de Moiskimdo', () => {
+  const html = generarIndexPlantilla(compilado(), PLANTILLA);
+  assert.deepEqual(html.match(/<link\b[^>]*rel="(?:shortcut )?icon"[^>]*>/gi), ['<link rel="icon" href="data:,">']);
+  assert.ok(!/apple-touch-icon|favicon\.(?:ico|svg|png)/i.test(html));
 });
