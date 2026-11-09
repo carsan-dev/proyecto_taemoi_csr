@@ -170,19 +170,26 @@ class SedeEnTurnosPreinscripcionIntegrationTest extends MySqlIntegrationTest {
 
 	/**
 	 * Decisión 494: un turno de una sede inactiva no se ofrece a lo anónimo ni se admite en el alta. Decisión 500: la
-	 * gestión (este token) sí lo ve en las listas, con su sede, como antes de la 494.
+	 * gestión (este token) lo ve en las listas, con su sede, solo si lo pide ({@code conSedesInactivas=true}); sin el
+	 * parámetro (el formulario público abierto con su sesión), no.
 	 */
 	@Test
-	void turnoDeSedeInactiva_conVariasSedesActivas_soloLoVeLaGestionYNoSeAdmite() throws Exception {
+	void turnoDeSedeInactiva_conVariasSedesActivas_soloLoVeLaGestionQueLoPideYNoSeAdmite() throws Exception {
 		long t = turnoDe(e.gC);
 		String nombreC = jdbc.queryForObject("SELECT nombre FROM sede WHERE id = ?", String.class, e.sC);
-		assertEquals(nombreC, turno(leer(get("/api/preinscripciones/public/turnos/TAEKWONDO"), token, 200), t)
-				.get("sede").asText());
+		assertEquals(nombreC, turno(leer(get("/api/preinscripciones/public/turnos/TAEKWONDO?conSedesInactivas=true"),
+				token, 200), t).get("sede").asText());
 		boolean grupoC = false;
-		for (JsonNode g : leer(get("/api/preinscripciones/public/grupos/TAEKWONDO"), token, 200)) {
+		for (JsonNode g : leer(get("/api/preinscripciones/public/grupos/TAEKWONDO?conSedesInactivas=true"), token, 200)) {
 			grupoC |= g.get("id").asLong() == e.gC;
 		}
-		assertTrue(grupoC, "la gestión ve el grupo de la sede inactiva");
+		assertTrue(grupoC, "la gestión que lo pide ve el grupo de la sede inactiva");
+		for (JsonNode turno : leer(get("/api/preinscripciones/public/turnos/TAEKWONDO"), token, 200)) {
+			assertNotEquals(t, turno.get("id").asLong(), "sin el parámetro, la gestión no ve la sede inactiva");
+		}
+		for (JsonNode g : leer(get("/api/preinscripciones/public/grupos/TAEKWONDO"), token, 200)) {
+			assertNotEquals(e.gC, g.get("id").asLong(), "sin el parámetro, la gestión no ve la sede inactiva");
+		}
 		// Lo anónimo (por el Host de la escuela) no lo ve: PreinscripcionPublicaPorHostIntegrationTest.
 		long antes = jdbc.queryForObject("SELECT COUNT(*) FROM preinscripcion", Long.class);
 		JsonNode error = altaCon(400, t);

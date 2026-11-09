@@ -58,10 +58,12 @@ import jakarta.servlet.http.Cookie;
  * <li>Decisión 494: los grupos y turnos de una sede inactiva no salen en las listas y su alta da 400 sin escribir nada,
  * con varias sedes activas (B) y con una sola (U).</li>
  * <li>Moiskimdo (la 1, una sola sede activa): las listas públicas sin claves nuevas y el alta, como siempre.</li>
- * <li>Decisión 500: con sesión de gestión de la escuela (propietario, administrador o responsable de sede) las listas
- * vuelven a incluir las sedes inactivas, como antes de la 494 (el editor del panel «Cambiar la asignación» las usa); con
- * sesión de familia o de profesor, como lo anónimo. Una sesión de otra escuela con el Host de B ve su escuela (manda la
- * sesión), nada de B. El alta sigue rechazando la sede inactiva también con sesión de gestión.</li>
+ * <li>Decisión 500: con sesión de gestión de la escuela (propietario, administrador o responsable de sede) y pidiéndolo
+ * ({@code ?conSedesInactivas=true}, el editor del panel «Cambiar la asignación») las listas vuelven a incluir las sedes
+ * inactivas, como antes de la 494. Sin el parámetro, la gestión ve solo las activas (el formulario público abierto con
+ * sesión de gestión). Anónimo, familia o profesor: solo las activas, con o sin el parámetro. Una sesión de otra escuela
+ * con el Host de B ve su escuela (manda la sesión), nada de B. El alta sigue rechazando la sede inactiva también con
+ * sesión de gestión.</li>
  * </ul>
  * Datos inventados.
  */
@@ -72,6 +74,8 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 
 	private static final String GRUPOS = "/api/preinscripciones/public/grupos/TAEKWONDO";
 	private static final String TURNOS = "/api/preinscripciones/public/turnos/TAEKWONDO";
+	/** Decisión 500: lo que piden las pantallas de gestión (el formulario público no lo envía). */
+	private static final String CON_INACTIVAS = "?conSedesInactivas=true";
 	private static final String MISMA_SEDE = "Todos los turnos deben ser de la misma sede.";
 	private static final String SEDE_INACTIVA = "Ese horario ya no admite preinscripciones.";
 
@@ -342,24 +346,52 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 
 	// ------------------------------------------------------------------ sesión de gestión (decisión 500)
 
-	/** Propietario, administrador y responsable de sede (solo de A) de B: las listas llevan la sede inactiva C. */
+	/** Propietario, administrador y responsable de sede (solo de A) de B, pidiéndolo: las listas llevan la sede inactiva C. */
 	@Test
-	void gestionDeB_conSuHost_listasConLaSedeInactiva() throws Exception {
+	void gestionDeB_conSuHostYElParametro_listasConLaSedeInactiva() throws Exception {
 		for (String jwt : List.of(jwtPropietarioB, jwtAdministradorB, jwtResponsableB)) {
-			Set<Long> turnos = idsTurnos(conSesion(get(TURNOS).header("Host", hostB), jwt));
+			Set<Long> turnos = idsTurnos(conSesion(get(TURNOS + CON_INACTIVAS).header("Host", hostB), jwt));
 			assertTrue(turnos.containsAll(List.of(b.tA, b.tB, tMartesSedeB, tMartesSedeA, tSedeLlena, tSedeInactiva)),
 					turnos.toString());
 			assertFalse(turnos.contains(otra.tA) || turnos.contains(otra.tB), "turnos de la otra escuela");
-			Set<Long> grupos = idsGrupos(conSesion(get(GRUPOS).header("Host", hostB), jwt));
+			Set<Long> grupos = idsGrupos(conSesion(get(GRUPOS + CON_INACTIVAS).header("Host", hostB), jwt));
 			assertTrue(grupos.containsAll(List.of(b.gA, b.gA2, b.gB, b.gC, b.gSin, gSinTurnos)), grupos.toString());
 			assertFalse(grupos.contains(otra.gA) || grupos.contains(otra.gB), "grupos de la otra escuela");
 		}
 	}
 
+	/**
+	 * La gestión de B en el formulario público (sin el parámetro): solo las sedes activas, como lo anónimo. Antes veía la
+	 * sede inactiva y el alta con ella daba 400 «Ese horario ya no admite preinscripciones».
+	 */
+	@Test
+	void gestionDeB_sinElParametro_listasSinLaSedeInactiva() throws Exception {
+		for (String jwt : List.of(jwtPropietarioB, jwtAdministradorB, jwtResponsableB)) {
+			Set<Long> turnos = idsTurnos(conSesion(get(TURNOS).header("Host", hostB), jwt));
+			assertTrue(turnos.containsAll(List.of(b.tA, b.tB, tMartesSedeB, tMartesSedeA, tSedeLlena)),
+					turnos.toString());
+			assertFalse(turnos.contains(tSedeInactiva), "sede inactiva sin pedirla");
+			Set<Long> grupos = idsGrupos(conSesion(get(GRUPOS).header("Host", hostB), jwt));
+			assertTrue(grupos.containsAll(List.of(b.gA, b.gA2, b.gB, b.gSin, gSinTurnos)), grupos.toString());
+			assertFalse(grupos.contains(b.gC), "sede inactiva sin pedirla");
+		}
+	}
+
+	/** Anónimo con el parámetro: se ignora, solo las sedes activas. */
+	@Test
+	void anonimoConElParametro_listasSinLaSedeInactiva() throws Exception {
+		Set<Long> turnos = idsTurnos(get(TURNOS + CON_INACTIVAS).header("Host", hostB));
+		assertTrue(turnos.containsAll(List.of(b.tA, b.tB, tMartesSedeB, tMartesSedeA, tSedeLlena)), turnos.toString());
+		assertFalse(turnos.contains(tSedeInactiva), "sede inactiva sin sesión de gestión");
+		Set<Long> grupos = idsGrupos(get(GRUPOS + CON_INACTIVAS).header("Host", hostB));
+		assertTrue(grupos.containsAll(List.of(b.gA, b.gA2, b.gB, b.gSin, gSinTurnos)), grupos.toString());
+		assertFalse(grupos.contains(b.gC), "sede inactiva sin sesión de gestión");
+	}
+
 	/** El turno de la sede inactiva, en la lista de gestión, lleva su sede como los demás (con varias sedes activas). */
 	@Test
 	void gestionDeB_elTurnoDeLaSedeInactivaLlevaSuSede() throws Exception {
-		JsonNode lista = leer(conSesion(get(TURNOS).header("Host", hostB), jwtAdministradorB), 200);
+		JsonNode lista = leer(conSesion(get(TURNOS + CON_INACTIVAS).header("Host", hostB), jwtAdministradorB), 200);
 		JsonNode inactivo = null;
 		for (JsonNode t : lista) {
 			if (t.get("id").asLong() == tSedeInactiva) {
@@ -372,29 +404,33 @@ class PreinscripcionPublicaPorHostIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(clavesCon(CLAVES_TURNO), claves(inactivo));
 	}
 
-	/** Familia y profesor de B: como lo anónimo, sin la sede inactiva. */
+	/** Familia y profesor de B, con o sin el parámetro: como lo anónimo, sin la sede inactiva. */
 	@Test
 	void familiaOProfesorDeB_listasSinLaSedeInactiva() throws Exception {
 		for (String jwt : List.of(jwtFamiliaB, jwtProfesorB)) {
-			Set<Long> turnos = idsTurnos(conSesion(get(TURNOS).header("Host", hostB), jwt));
-			assertTrue(turnos.containsAll(List.of(b.tA, b.tB, tMartesSedeB, tMartesSedeA, tSedeLlena)),
-					turnos.toString());
-			assertFalse(turnos.contains(tSedeInactiva), "sede inactiva con sesión sin gestión");
-			Set<Long> grupos = idsGrupos(conSesion(get(GRUPOS).header("Host", hostB), jwt));
-			assertTrue(grupos.containsAll(List.of(b.gA, b.gA2, b.gB, b.gSin, gSinTurnos)), grupos.toString());
-			assertFalse(grupos.contains(b.gC), "sede inactiva con sesión sin gestión");
+			for (String parametro : List.of("", CON_INACTIVAS)) {
+				Set<Long> turnos = idsTurnos(conSesion(get(TURNOS + parametro).header("Host", hostB), jwt));
+				assertTrue(turnos.containsAll(List.of(b.tA, b.tB, tMartesSedeB, tMartesSedeA, tSedeLlena)),
+						turnos.toString());
+				assertFalse(turnos.contains(tSedeInactiva), "sede inactiva con sesión sin gestión");
+				Set<Long> grupos = idsGrupos(conSesion(get(GRUPOS + parametro).header("Host", hostB), jwt));
+				assertTrue(grupos.containsAll(List.of(b.gA, b.gA2, b.gB, b.gSin, gSinTurnos)), grupos.toString());
+				assertFalse(grupos.contains(b.gC), "sede inactiva con sesión sin gestión");
+			}
 		}
 	}
 
-	/** Administrador de la otra escuela con el Host de B: manda su sesión (su escuela), nada de B. */
+	/** Administrador de la otra escuela con el Host de B, pidiendo las inactivas: manda su sesión, nada de B. */
 	@Test
 	void gestionDeOtraEscuela_conElHostDeB_nadaDeB() throws Exception {
-		Set<Long> turnos = idsTurnos(conSesion(get(TURNOS).header("Host", hostB), jwtAdministradorOtra));
+		Set<Long> turnos = idsTurnos(
+				conSesion(get(TURNOS + CON_INACTIVAS).header("Host", hostB), jwtAdministradorOtra));
 		assertFalse(turnos.contains(tSedeInactiva), turnos.toString());
 		for (long id : turnos) {
 			assertEquals(otra.org, organizacionDelTurno(id), "turno " + id + " de otra escuela");
 		}
-		Set<Long> grupos = idsGrupos(conSesion(get(GRUPOS).header("Host", hostB), jwtAdministradorOtra));
+		Set<Long> grupos = idsGrupos(
+				conSesion(get(GRUPOS + CON_INACTIVAS).header("Host", hostB), jwtAdministradorOtra));
 		assertFalse(grupos.contains(b.gC), grupos.toString());
 		for (long id : grupos) {
 			assertEquals(otra.org, jdbc.queryForObject("SELECT organizacion_id FROM grupo WHERE id = ?", Long.class, id));

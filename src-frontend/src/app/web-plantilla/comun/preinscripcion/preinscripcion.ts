@@ -65,6 +65,15 @@ export const PATRON_DNI = /^[0-9XYZ][0-9]{7}[A-Z]$/i;
 export const PATRON_TELEFONO = /^(?:(?:\+|00)34[ ]*)?[6789](?:[ ]*\d){8}$/;
 const PATRON_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const MAX_OBSERVACIONES = 1000;
+/** Longitudes máximas de `PreinscripcionRequest.java` (`@Size`): con más, la API daría un 400. */
+export const MAX_NOMBRE = 100;
+export const MAX_APELLIDOS = 160;
+export const MAX_DIRECCION = 255;
+export const MAX_TUTOR_NOMBRE = 180;
+export const MAX_TELEFONO = 20;
+export const MAX_EMAIL = 180;
+/** El de `firmanteNombre`. */
+export const MAX_FIRMANTE = 180;
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
@@ -185,9 +194,13 @@ export function validarDatos(
   const menor = esMenor(d, opciones.ahora);
   if (!texto(d.nombre)) {
     add('nombre', 'Escribe el nombre del alumno.');
+  } else if (texto(d.nombre).length > MAX_NOMBRE) {
+    add('nombre', `El nombre no puede superar los ${MAX_NOMBRE} caracteres.`);
   }
   if (!texto(d.apellidos)) {
     add('apellidos', 'Escribe los apellidos del alumno.');
+  } else if (texto(d.apellidos).length > MAX_APELLIDOS) {
+    add('apellidos', `Los apellidos no pueden superar los ${MAX_APELLIDOS} caracteres.`);
   }
   const fecha = errorFecha(d, opciones.ahora);
   if (fecha) {
@@ -199,23 +212,33 @@ export function validarDatos(
   }
   if (!texto(d.direccion)) {
     add('direccion', 'Escribe la dirección.');
+  } else if (texto(d.direccion).length > MAX_DIRECCION) {
+    add('direccion', `La dirección no puede superar los ${MAX_DIRECCION} caracteres.`);
   }
   if (d.discapacidad !== 'si' && d.discapacidad !== 'no') {
     add('discapacidad', 'Indica si el alumno tiene discapacidad.');
   }
   if (menor && !texto(d.tutorNombre)) {
     add('tutorNombre', 'Escribe el nombre y apellidos del responsable legal.');
+  } else if (menor && texto(d.tutorNombre).length > MAX_TUTOR_NOMBRE) {
+    add('tutorNombre', `El nombre del responsable legal no puede superar los ${MAX_TUTOR_NOMBRE} caracteres.`);
   }
   if (menor && !PATRON_DNI.test(texto(d.tutorDni))) {
     add('tutorDni', 'Introduce un DNI/NIE válido del responsable legal.');
   }
-  if (!PATRON_TELEFONO.test(texto(d.telefono))) {
+  if (texto(d.telefono).length > MAX_TELEFONO) {
+    add('telefono', `El teléfono no puede superar los ${MAX_TELEFONO} caracteres.`);
+  } else if (!PATRON_TELEFONO.test(texto(d.telefono))) {
     add('telefono', 'Introduce un teléfono de nueve dígitos; puedes añadir el prefijo +34.');
   }
-  if (texto(d.telefono2) && !PATRON_TELEFONO.test(texto(d.telefono2))) {
+  if (texto(d.telefono2).length > MAX_TELEFONO) {
+    add('telefono2', `El teléfono secundario no puede superar los ${MAX_TELEFONO} caracteres.`);
+  } else if (texto(d.telefono2) && !PATRON_TELEFONO.test(texto(d.telefono2))) {
     add('telefono2', 'Introduce un teléfono secundario de nueve dígitos, o déjalo vacío.');
   }
-  if (!PATRON_EMAIL.test(texto(d.email))) {
+  if (texto(d.email).length > MAX_EMAIL) {
+    add('email', `El email no puede superar los ${MAX_EMAIL} caracteres.`);
+  } else if (!PATRON_EMAIL.test(texto(d.email)) || texto(d.email).split('@')[0].length > 64) {
     add('email', 'Escribe un email válido, como nombre@ejemplo.es.');
   }
   if (texto(d.observaciones).length > MAX_OBSERVACIONES) {
@@ -228,6 +251,8 @@ export function validarDatos(
   }
   if (!texto(d.firmante)) {
     add('firmante', 'Escribe el nombre y apellidos de quien firma.');
+  } else if (texto(d.firmante).length > MAX_FIRMANTE) {
+    add('firmante', `El nombre de quien firma no puede superar los ${MAX_FIRMANTE} caracteres.`);
   }
   if (!opciones.firmado) {
     add('firma', 'Firma en el recuadro.');

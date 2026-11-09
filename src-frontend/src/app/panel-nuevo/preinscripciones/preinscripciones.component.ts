@@ -540,7 +540,9 @@ export class PreinscripcionesPanelComponent implements OnInit, OnDestroy {
     const editor: Editor = { cargando: true, turnos: [], ids: (s['turnosSolicitados'] || []).map((t: any) => t.id), guardando: false };
     this.editor = editor;
     this.turnosSub?.unsubscribe();
-    this.turnosSub = this.api.turnos(s['deporte']).subscribe({
+    // Decisión 500: la gestión pide también los turnos de sedes inactivas, para poder desmarcar los de una solicitud
+    // cuya sede se desactivó (el formulario público no lo pide).
+    this.turnosSub = this.api.turnos(s['deporte'], true).subscribe({
       next: (turnos) => {
         if (this.editor === editor && this.seleccion?.['referencia'] === referencia) {
           editor.turnos = ordenarTurnos(turnos || []);

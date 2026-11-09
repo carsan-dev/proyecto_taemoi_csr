@@ -735,11 +735,26 @@ describe('PreinscripcionesPanelComponent (8b-3h, Preinscripciones del panel nuev
       abrir('PRE-1');
       boton(detalle(), 'Cambiar la asignación').click();
       fixture.detectChanges();
-      const r = http.expectOne(`${environment.apiUrl}/preinscripciones/public/turnos/TAEKWONDO`);
+      // Decisión 500: la gestión pide expresamente las sedes inactivas (el formulario público no).
+      const r = http.expectOne(`${environment.apiUrl}/preinscripciones/public/turnos/TAEKWONDO?conSedesInactivas=true`);
       r.flush(turnos);
       fixture.detectChanges();
       return detalle().querySelector<HTMLElement>('.preins__asignacion')!;
     }
+
+    it('decisión 500: el servicio solo añade conSedesInactivas si se pide (el formulario público no lo envía)', () => {
+      const api = TestBed.inject(PreinscripcionService);
+      const http = TestBed.inject(HttpTestingController);
+      const base = `${environment.apiUrl}/preinscripciones/public`;
+      api.turnos('TAEKWONDO').subscribe();
+      api.grupos('TAEKWONDO').subscribe();
+      api.turnos('TAEKWONDO', true).subscribe();
+      api.grupos('TAEKWONDO', true).subscribe();
+      http.expectOne((r) => r.urlWithParams === `${base}/turnos/TAEKWONDO`).flush([]);
+      http.expectOne((r) => r.urlWithParams === `${base}/grupos/TAEKWONDO`).flush([]);
+      http.expectOne((r) => r.urlWithParams === `${base}/turnos/TAEKWONDO?conSedesInactivas=true`).flush([]);
+      http.expectOne((r) => r.urlWithParams === `${base}/grupos/TAEKWONDO?conSedesInactivas=true`).flush([]);
+    });
 
     const casilla = (editor: HTMLElement, id: number) => editor.querySelector<HTMLInputElement>(`input[data-turno="${id}"]`)!;
 

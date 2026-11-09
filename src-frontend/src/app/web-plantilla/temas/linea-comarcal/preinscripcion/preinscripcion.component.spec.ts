@@ -340,6 +340,63 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       expect(casillas.map((c) => c.disabled)).toEqual([false, true]);
     });
 
+    /** Peques con el lunes lleno y el miércoles y el jueves con plaza. */
+    function lunesLleno(): SitioWeb {
+      const sitio = seisSedes();
+      sitio.sedes[1].grupos[0] = grupoDePrueba(
+        'Peques',
+        [
+          turnoDePrueba('Lunes', '17:00', '17:45', PLAZAS.lleno),
+          turnoDePrueba('Miércoles', '17:00', '17:45', PLAZAS.quedan(2)),
+          turnoDePrueba('Jueves', '17:00', '17:45', PLAZAS.quedan(3)),
+        ],
+        { id: 70 },
+      );
+      return sitio;
+    }
+
+    it('el ancla d-primero (foco y error) va en el primer día que se puede elegir, no en uno lleno', async () => {
+      borrador(FECHA_PEQUES);
+      await abrir(lunesLleno(), '/preinscripcion?sede=estepa&grupo=70');
+      const casillas = () => Array.from(raiz().querySelectorAll<HTMLInputElement>('.casilla-dia input'));
+      expect(casillas().map((c) => c.id)).toEqual(['', 'd-primero', '']);
+      expect(raiz().querySelector<HTMLInputElement>('#d-primero')!.disabled).toBeFalse();
+      expect(raiz().querySelector<HTMLInputElement>('#d-primero')!.value).toBe('3');
+      await marcar('.casilla-dia:nth-child(2) input');
+      await marcar('.casilla-dia:nth-child(3) input');
+      await enviar();
+      expect(textos('.errores li')).toEqual(['Marca al menos un día. Si no puede venir ninguno, elige otro grupo.']);
+      expect(raiz().querySelector('.errores a')!.getAttribute('href')).toContain('#d-primero');
+      expect(casillas().map((c) => c.getAttribute('aria-invalid'))).toEqual([null, 'true', null]);
+    });
+
+    it('?dias= con un día lleno: se queda con los que tienen plaza; si no queda ninguno, todos los que se pueden elegir', async () => {
+      borrador(FECHA_PEQUES);
+      await abrir(lunesLleno(), '/preinscripcion?sede=estepa&grupo=70&dias=1,4');
+      const marcadas = () => Array.from(raiz().querySelectorAll<HTMLInputElement>('.casilla-dia input')).map((c) => c.checked);
+      expect(marcadas()).toEqual([false, false, true]);
+      expect(textos('.resumen-fila dd')).not.toContain('Lleno');
+
+      await harness.navigateByUrl('/preinscripcion?sede=estepa&grupo=70&dias=1');
+      await estable();
+      expect(marcadas()).toEqual([false, true, true]);
+    });
+
+    it('sin plaza en ningún día: todos se pueden elegir y el ancla sigue en el primero', async () => {
+      const sitio = seisSedes();
+      sitio.sedes[1].grupos[0] = grupoDePrueba(
+        'Peques',
+        [turnoDePrueba('Lunes', '17:00', '17:45', PLAZAS.lleno), turnoDePrueba('Miércoles', '17:00', '17:45', PLAZAS.espera)],
+        { id: 70 },
+      );
+      borrador(FECHA_PEQUES);
+      await abrir(sitio, '/preinscripcion?sede=estepa&grupo=70&dias=1');
+      const casillas = Array.from(raiz().querySelectorAll<HTMLInputElement>('.casilla-dia input'));
+      expect(casillas.map((c) => c.id)).toEqual(['d-primero', '']);
+      expect(casillas.map((c) => c.checked)).toEqual([true, false]);
+      expect(casillas.map((c) => c.disabled)).toEqual([false, false]);
+    });
+
     it('sin plaza en ningún día: «Ahora no hay plaza» y todos los días se eligen para la lista de espera', async () => {
       const sitio = seisSedes();
       sitio.sedes[1].grupos[0] = grupoDePrueba(
@@ -457,6 +514,169 @@ describe('PreinscripcionLineaComarcalComponent', () => {
       expect(document.title).toBe('Preinscripción enviada · Taekwondo Sierra Sur');
       // emailEnviado llega siempre false (el correo sale tras guardar): la confirmación no habla de un fallo.
       expect(raiz().textContent!).not.toMatch(/no se (pudo|ha podido) enviar|fall/i);
+    });
+
+    it('cada campo de texto con el maxlength de la API; un valor pegado más largo da error en el campo, sin enviar', async () => {
+      await pasoDatosRelleno();
+      const max = (id: string) => raiz().querySelector(`#${id}`)!.getAttribute('maxlength');
+      expect(['nombre', 'apellidos', 'dni', 'direccion', 'tutorNombre', 'tutorDni', 'telefono', 'telefono2', 'email', 'firmante', 'observaciones'].map(max)).toEqual([
+        '100',
+        '160',
+        '9',
+        '255',
+        '180',
+        '9',
+        '20',
+        '20',
+        '180',
+        '180',
+        '1000',
+      ]);
+      // El valor programático (como un pegado que el navegador no corte) salta el maxlength: lo para la validación.
+      await escribir('apellidos', 'x'.repeat(161));
+      await firmar();
+      await enviar();
+      expect(textos('.errores li')).toEqual(['Los apellidos no pueden superar los 160 caracteres.']);
+      expect(texto('#apellidos-error')).toBe('Error: Los apellidos no pueden superar los 160 caracteres.');
+      expect(raiz().querySelector('#apellidos')!.getAttribute('aria-invalid')).toBe('true');
+      http.expectNone(base);
+    });
+
+    describe('lienzo de la firma', () => {
+      let observadores: { callback: ResizeObserverCallback; desconectado: boolean }[];
+      let originalRO: typeof ResizeObserver;
+      let originalDpr: PropertyDescriptor | undefined;
+
+      class ResizeObserverFalso {
+        private readonly registro: { callback: ResizeObserverCallback; desconectado: boolean };
+        constructor(callback: ResizeObserverCallback) {
+          this.registro = { callback, desconectado: false };
+          observadores.push(this.registro);
+        }
+        observe(): void {}
+        unobserve(): void {}
+        disconnect(): void {
+          this.registro.desconectado = true;
+        }
+      }
+
+      beforeEach(() => {
+        observadores = [];
+        originalRO = window.ResizeObserver;
+        originalDpr = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
+        (window as { ResizeObserver: unknown }).ResizeObserver = ResizeObserverFalso;
+      });
+
+      afterEach(() => {
+        window.ResizeObserver = originalRO;
+        if (originalDpr) {
+          Object.defineProperty(window, 'devicePixelRatio', originalDpr);
+        } else {
+          delete (window as { devicePixelRatio?: number }).devicePixelRatio;
+        }
+      });
+
+      const densidad = (valor: number) => Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: () => valor });
+      const lienzo = () => raiz().querySelector<HTMLCanvasElement>('canvas.firma')!;
+      const redimensionar = async (ancho: string) => {
+        lienzo().style.width = ancho;
+        const activo = observadores.filter((o) => !o.desconectado).at(-1)!;
+        activo.callback([], {} as ResizeObserver);
+        await estable();
+      };
+      /** Píxeles oscuros (de trazo) del mapa de bits. */
+      const oscuros = (x0 = 0, y0 = 0, ancho = lienzo().width, alto = lienzo().height) => {
+        const datos = lienzo().getContext('2d')!.getImageData(x0, y0, ancho, alto).data;
+        let n = 0;
+        for (let i = 0; i < datos.length; i += 4) {
+          if (datos[i] < 128) {
+            n++;
+          }
+        }
+        return n;
+      };
+
+      it('la densidad se limita a 2 y el ancho del mapa de bits a 1600 px; el PNG queda bajo el tope de la API', async () => {
+        densidad(3);
+        await pasoDatosRelleno();
+        lienzo().style.width = '400px';
+        raiz().querySelector<HTMLButtonElement>('#borrar-firma')!.click();
+        await estable();
+        let r = lienzo().getBoundingClientRect();
+        expect(lienzo().width).toBe(Math.round(r.width * 2));
+        expect(lienzo().height).toBe(Math.round(r.height * 2));
+
+        await redimensionar('1200px');
+        r = lienzo().getBoundingClientRect();
+        expect(r.width).toBe(1200);
+        expect(lienzo().width).toBe(1600);
+        expect(lienzo().height).toBe(Math.round((r.height * 1600) / 1200));
+        await firmar();
+        expect(lienzo().toDataURL('image/png').length).toBeLessThan(700000);
+      });
+
+      it('al cambiar de ancho, la firma se repinta a escala y sigue firmada; los trazos nuevos caen bajo el puntero', async () => {
+        densidad(1);
+        await pasoDatosRelleno();
+        lienzo().style.width = '600px';
+        raiz().querySelector<HTMLButtonElement>('#borrar-firma')!.click();
+        await estable();
+        await firmar();
+        expect(texto('#firma-estado')).toBe('Firmado');
+
+        await redimensionar('300px');
+        expect(lienzo().width).toBe(300);
+        expect(texto('#firma-estado')).toBe('Firmado');
+        // El vértice (80, 60) del trazo, a la mitad de ancho, cae en (40, 60); nada más allá de la mitad del trazo (x > 72).
+        expect(oscuros(38, 58, 5, 5)).toBeGreaterThan(0);
+        expect(oscuros(73, 0, 227, lienzo().height)).toBe(0);
+
+        // Un trazo nuevo, en píxeles del lienzo nuevo.
+        const r = lienzo().getBoundingClientRect();
+        const en = (tipo: string, x: number, y: number) =>
+          lienzo().dispatchEvent(new PointerEvent(tipo, { clientX: r.left + x, clientY: r.top + y, pointerId: 2, bubbles: true }));
+        en('pointerdown', 200, 100);
+        en('pointermove', 260, 100);
+        en('pointerup', 260, 100);
+        await estable();
+        expect(oscuros(228, 98, 5, 5)).toBeGreaterThan(0);
+
+        // Y al volver a ensanchar, los dos trazos se repintan.
+        await redimensionar('600px');
+        expect(lienzo().width).toBe(600);
+        expect(oscuros(78, 58, 5, 5)).toBeGreaterThan(0);
+        expect(oscuros(458, 98, 5, 5)).toBeGreaterThan(0);
+      });
+
+      it('borrar quita los trazos guardados: tras redimensionar sigue en blanco y sin firmar', async () => {
+        densidad(1);
+        await pasoDatosRelleno();
+        await firmar();
+        raiz().querySelector<HTMLButtonElement>('#borrar-firma')!.click();
+        await estable();
+        expect(texto('#firma-estado')).toBe('Sin firmar');
+        expect(oscuros()).toBe(0);
+        await redimensionar('320px');
+        expect(lienzo().width).toBe(320);
+        expect(texto('#firma-estado')).toBe('Sin firmar');
+        expect(oscuros()).toBe(0);
+      });
+
+      it('se deja de observar al destruir el componente', async () => {
+        await pasoDatosRelleno();
+        expect(observadores.length).toBe(1);
+        expect(observadores[0].desconectado).toBeFalse();
+        harness.fixture.destroy();
+        expect(observadores[0].desconectado).toBeTrue();
+      });
+
+      it('sin ResizeObserver en el navegador, la firma funciona igual', async () => {
+        (window as { ResizeObserver?: unknown }).ResizeObserver = undefined;
+        await pasoDatosRelleno();
+        await firmar();
+        expect(texto('#firma-estado')).toBe('Firmado');
+        expect(oscuros()).toBeGreaterThan(0);
+      });
     });
 
     it('grupo lleno: aviso de lista de espera y, al enviar, la posición en la lista', async () => {
