@@ -247,6 +247,99 @@ class WebPublicaIntegrationTest extends MySqlIntegrationTest {
 		porHost.recargar();
 	}
 
+	@Test
+	void rastreo_robotsPublicadoYSinPublicar() throws Exception {
+		MvcResult r = anonimo(x, WEB + "/robots.txt");
+		assertEquals(200, r.getResponse().getStatus());
+		assertEquals("text/plain;charset=UTF-8", r.getResponse().getContentType());
+		assertEquals("User-agent: *\nAllow: /\nSitemap: https://" + hosts.get(x) + "/sitemap.xml\n",
+				r.getResponse().getContentAsString());
+		assertTrue(r.getResponse().getHeader("Cache-Control").contains("public"));
+		assertTrue(r.getResponse().getHeader("Cache-Control").contains("max-age=60"));
+		assertVaria(r);
+		for (long org : List.of(z, w)) {
+			MvcResult cerrado = anonimo(org, WEB + "/robots.txt");
+			assertEquals(200, cerrado.getResponse().getStatus());
+			assertEquals("User-agent: *\nDisallow: /\n", cerrado.getResponse().getContentAsString());
+			assertEquals(404, anonimo(org, WEB + "/sitemap.xml").getResponse().getStatus());
+		}
+	}
+
+	@Test
+	void rastreo_sitemapPublicadoYAisladoPorHost() throws Exception {
+		jdbc.update("UPDATE sede SET slug = 'cerrada' WHERE id = ?", sedeInactiva);
+		try {
+			for (long org : List.of(x, y)) {
+				MvcResult r = anonimo(org, WEB + "/sitemap.xml");
+				assertEquals(200, r.getResponse().getStatus());
+				assertEquals("application/xml;charset=UTF-8", r.getResponse().getContentType());
+				assertTrue(r.getResponse().getHeader("Cache-Control").contains("public"));
+				var fabrica = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+				fabrica.setNamespaceAware(true);
+				var documento = fabrica.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(
+						r.getResponse().getContentAsByteArray()));
+				assertEquals("http://www.sitemaps.org/schemas/sitemap/0.9", documento.getDocumentElement().getNamespaceURI());
+				List<String> esperadas = new ArrayList<>();
+				for (String ruta : List.of("/", "/tarifas", "/eventos", "/legales", "/preinscripcion")) {
+					esperadas.add("https://" + hosts.get(org) + ruta);
+				}
+				JsonNode web = cuerpo(anonimo(org, WEB));
+				web.get("sedes").forEach(sede -> {
+					if (!sede.get("slug").isNull() && !sede.get("slug").asText().isBlank()) {
+						esperadas.add("https://" + hosts.get(org) + "/sedes/" + sede.get("slug").asText());
+					}
+				});
+				web.get("proximosEventos").forEach(evento -> esperadas.add(
+						"https://" + hosts.get(org) + "/eventos/" + evento.get("id").asLong()));
+				var ubicaciones = documento.getElementsByTagNameNS("*", "loc");
+				List<String> reales = new ArrayList<>();
+				for (int i = 0; i < ubicaciones.getLength(); i++) {
+					reales.add(ubicaciones.item(i).getTextContent());
+				}
+				assertEquals(esperadas, reales);
+				assertFalse(r.getResponse().getContentAsString().contains("/sedes/cerrada"));
+				assertFalse(r.getResponse().getContentAsString().contains(hosts.get(org == x ? y : x)));
+				if (org == x) assertTrue(reales.contains("https://" + hosts.get(x) + "/sedes/herrera"));
+			}
+		} finally {
+			jdbc.update("UPDATE sede SET slug = NULL WHERE id = ?", sedeInactiva);
+		}
+	}
+
+	@Test
+	void rastreo_hostAliasEnlazaAlPrincipal() throws Exception {
+		String alias = "alias-" + marca + ".test";
+		jdbc.update("INSERT INTO organizacion_dominio (organizacion_id, host, principal) VALUES (?, ?, FALSE)", x, alias);
+		porHost.recargar();
+		try {
+			for (String ruta : List.of("/robots.txt", "/sitemap.xml")) {
+				MvcResult r = mvc.perform(get(WEB + ruta).header("Host", alias)).andReturn();
+				assertEquals(200, r.getResponse().getStatus());
+				assertTrue(r.getResponse().getContentAsString().contains("https://" + hosts.get(x) + "/"));
+				assertFalse(r.getResponse().getContentAsString().contains(alias));
+			}
+		} finally {
+			jdbc.update("DELETE FROM organizacion_dominio WHERE host = ?", alias);
+			porHost.recargar();
+		}
+	}
+
+	@Test
+	void rastreo_legadoSin404EInactivaSoloDisallow() throws Exception {
+		for (String ruta : List.of("/robots.txt", "/sitemap.xml")) {
+			assertEquals(404, mvc.perform(get(WEB + ruta)).andReturn().getResponse().getStatus());
+		}
+		jdbc.update("UPDATE organizacion SET activa = FALSE WHERE id = ?", w);
+		try {
+			MvcResult robots = anonimo(w, WEB + "/robots.txt");
+			assertEquals(200, robots.getResponse().getStatus());
+			assertEquals("User-agent: *\nDisallow: /\n", robots.getResponse().getContentAsString());
+			assertEquals(404, anonimo(w, WEB + "/sitemap.xml").getResponse().getStatus());
+		} finally {
+			jdbc.update("UPDATE organizacion SET activa = TRUE WHERE id = ?", w);
+		}
+	}
+
 	// ------------------------------------------------------------------ Moiskimdo
 
 	/** La 1 no tiene fila en web_escuela: 404 en las dos rutas, anónimo (su web de siempre no cambia). */

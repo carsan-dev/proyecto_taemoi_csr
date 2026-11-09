@@ -36,6 +36,7 @@ import com.taemoi.project.entities.Turno;
 import com.taemoi.project.entities.WebBloque;
 import com.taemoi.project.entities.WebEscuela;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.organizacion.UrlsEscuela;
 import com.taemoi.project.repositories.OrganizacionRepository;
 import com.taemoi.project.repositories.PreinscripcionRepository;
 import com.taemoi.project.repositories.SedeRepository;
@@ -74,11 +75,12 @@ public class WebPublicaService {
 	private final TarifaSedeRepository tarifasSede;
 	private final TemporadaService temporadas;
 	private final ObjectMapper json;
+	private final UrlsEscuela urlsEscuela;
 
 	public WebPublicaService(WebEscuelaRepository webs, OrganizacionRepository organizaciones,
 			WebPublicaConsultas consultas, SedeRepository sedes, TurnoRepository turnos,
 			AforoPreinscripcionService aforo, PreinscripcionRepository preinscripciones,
-			TarifaSedeRepository tarifasSede, TemporadaService temporadas, ObjectMapper json) {
+			TarifaSedeRepository tarifasSede, TemporadaService temporadas, ObjectMapper json, UrlsEscuela urlsEscuela) {
 		this.webs = webs;
 		this.organizaciones = organizaciones;
 		this.consultas = consultas;
@@ -89,6 +91,49 @@ public class WebPublicaService {
 		this.tarifasSede = tarifasSede;
 		this.temporadas = temporadas;
 		this.json = json;
+		this.urlsEscuela = urlsEscuela;
+	}
+
+	/**
+	 * Sin publicar, o con la escuela inactiva, se impide el rastreo; las escuelas de legado conservan sus ficheros
+	 * propios (404) y una organización inexistente tampoco tiene robots.
+	 */
+	@Transactional(readOnly = true)
+	public Optional<String> robots() {
+		Long id = TenantContext.get();
+		Organizacion organizacion = id == null ? null : organizaciones.findById(id).orElse(null);
+		if (organizacion == null || Boolean.TRUE.equals(organizacion.getComportamientoLegadoTaemoi())) {
+			return Optional.empty();
+		}
+		WebEscuela web = Boolean.TRUE.equals(organizacion.getActiva()) ? webs.findById(id).orElse(null) : null;
+		return Optional.of(web != null && web.isPublicada()
+				? "User-agent: *\nAllow: /\nSitemap: " + baseFrontend() + "/sitemap.xml\n"
+				: "User-agent: *\nDisallow: /\n");
+	}
+
+	/** Reutiliza exactamente las sedes y los próximos eventos de la respuesta pública, nunca la vista previa. */
+	@Transactional(readOnly = true)
+	public Optional<String> sitemap() {
+		return web(false, null).map(datos -> {
+			String base = baseFrontend();
+			List<String> rutas = new ArrayList<>(List.of("/", "/tarifas", "/eventos", "/legales", "/preinscripcion"));
+			datos.sedes().stream().map(WebPublicaDTO.Sede::slug).filter(s -> s != null && !s.isBlank())
+					.forEach(s -> rutas.add("/sedes/" + s));
+			datos.proximosEventos().forEach(e -> rutas.add("/eventos/" + e.id()));
+			StringBuilder xml = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+					+ "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
+			rutas.forEach(ruta -> xml.append("  <url><loc>").append(escaparXml(base + ruta)).append("</loc></url>\n"));
+			return xml.append("</urlset>\n").toString();
+		});
+	}
+
+	private String baseFrontend() {
+		return urlsEscuela.baseFrontend(TenantContext.get()).replaceAll("/+$", "");
+	}
+
+	private static String escaparXml(String valor) {
+		return valor.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+				.replace("\"", "&quot;").replace("'", "&apos;");
 	}
 
 	/**

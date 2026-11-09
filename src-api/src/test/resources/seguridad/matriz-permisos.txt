@@ -498,6 +498,10 @@ GET      /api/publico/web/eventos/{id}                                          
 HEAD     /api/publico/web/eventos/{id}                                                            PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#evento
 GET      /api/publico/web/legal                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#legal
 HEAD     /api/publico/web/legal                                                                   PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#legal
+GET      /api/publico/web/robots.txt                                                             PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#robots
+HEAD     /api/publico/web/robots.txt                                                             PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#robots
+GET      /api/publico/web/sitemap.xml                                                            PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#sitemap
+HEAD     /api/publico/web/sitemap.xml                                                            PERMITE PERMITE PERMITE PERMITE     PERMITE         PERMITE          PERMITE  # WebPublicaController#sitemap
 GET      /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#listar
 HEAD     /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#listar
 POST     /api/sedes                                                                               DENIEGA DENIEGA PERMITE PERMITE     DENIEGA         DENIEGA          DENIEGA  # SedeController#crear
