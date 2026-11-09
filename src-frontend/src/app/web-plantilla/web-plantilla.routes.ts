@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { RedirectFunction, Router, Routes } from '@angular/router';
 
+import { PARAMETRO_VISTA_PREVIA, conVistaPrevia } from './comun/vista-previa';
 import type { PaginaWeb } from './comun/seo-escuela.service';
 
 /**
@@ -34,8 +35,13 @@ export const DATOS_NO_ENCONTRADA = { webPlantilla: true } as const;
 /** Redirige a una página de la plantilla con su ancla (`/legales#privacidad`). */
 const conAncla =
   (ruta: string, fragmento: string): RedirectFunction =>
-  () =>
-    inject(Router).createUrlTree([ruta], { fragment: fragmento });
+  (origen) => {
+    const previa = origen.queryParams[PARAMETRO_VISTA_PREVIA];
+    return inject(Router).createUrlTree([ruta], {
+      fragment: fragmento,
+      queryParams: conVistaPrevia(null, typeof previa === 'string' ? previa : null),
+    });
+  };
 
 /**
  * Rutas públicas solo de Moiskimdo (las de `app.routes.ts`) que no tienen equivalente en la plantilla: en un host de

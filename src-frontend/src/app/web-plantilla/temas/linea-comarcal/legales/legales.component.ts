@@ -15,6 +15,7 @@ import {
 import { RouterLink } from '@angular/router';
 
 import { irAlAncla } from '../../../comun/ancla';
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { WebPublicaService } from '../../../datos/web-publica.service';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
@@ -32,7 +33,7 @@ import { vistaLegales } from './legales';
 @Component({
   selector: 'app-lc-legales',
   standalone: true,
-  imports: [MarcoLineaComarcalComponent, RouterLink, SinPublicarComponent],
+  imports: [VistaPreviaPipe, MarcoLineaComarcalComponent, RouterLink, SinPublicarComponent],
   templateUrl: './legales.component.html',
   styleUrl: './legales.component.css',
   encapsulation: ViewEncapsulation.None,

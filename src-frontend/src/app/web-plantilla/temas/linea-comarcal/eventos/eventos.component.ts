@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, inject
 import { RouterLink } from '@angular/router';
 
 import { irAlAncla } from '../../../comun/ancla';
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { WebPublicaService } from '../../../datos/web-publica.service';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
@@ -19,7 +20,7 @@ import { vistaEventos } from './eventos';
 @Component({
   selector: 'app-lc-eventos',
   standalone: true,
-  imports: [MarcoLineaComarcalComponent, NgTemplateOutlet, RouterLink, SinPublicarComponent],
+  imports: [VistaPreviaPipe, MarcoLineaComarcalComponent, NgTemplateOutlet, RouterLink, SinPublicarComponent],
   templateUrl: './eventos.component.html',
   styleUrl: './eventos.component.css',
   encapsulation: ViewEncapsulation.None,

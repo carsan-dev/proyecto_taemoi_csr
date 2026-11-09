@@ -32,7 +32,7 @@
                   @if (d.descripcion) {
                     <p class="destacado-desc">{{ d.descripcion }}</p>
                   }
-                  <a class="boton boton--secundario" [routerLink]="['/eventos', d.id]">{{ textos.verEvento }}<span class="oculto">: {{ d.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
+                  <a class="boton boton--secundario" [routerLink]="['/eventos', d.id]" [queryParams]="null | vistaPrevia">{{ textos.verEvento }}<span class="oculto">: {{ d.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
                 </div>
               </div>
             </article>
@@ -51,7 +51,7 @@
                         <p class="ev-desc">{{ e.descripcion }}</p>
                       }
                     </div>
-                    <a class="enlace-flecha" [routerLink]="['/eventos', e.id]">{{ textos.verEvento }}<span class="oculto">: {{ e.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
+                    <a class="enlace-flecha" [routerLink]="['/eventos', e.id]" [queryParams]="null | vistaPrevia">{{ textos.verEvento }}<span class="oculto">: {{ e.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
                   </li>
                 }
               </ol>
@@ -61,7 +61,7 @@
               <h3>{{ textos.sinProximosTitular }}</h3>
               <p>{{ textos.sinProximosTexto }}</p>
               @if (v.anios.length) {
-                <a class="enlace-flecha" routerLink="/eventos" fragment="anteriores">{{ textos.verAnteriores }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                <a class="enlace-flecha" routerLink="/eventos" fragment="anteriores" [queryParams]="null | vistaPrevia">{{ textos.verAnteriores }}<ng-container *ngTemplateOutlet="flecha" /></a>
               }
             </div>
           }
@@ -78,7 +78,7 @@
                 <ul class="ev-rejilla">
                   @for (e of a.eventos; track e.id) {
                     <li class="ev-mini">
-                      <a [routerLink]="['/eventos', e.id]">
+                      <a [routerLink]="['/eventos', e.id]" [queryParams]="null | vistaPrevia">
                         @if (e.imagenUrl) {
                           <figure class="foto ev-mini-foto"><img [src]="e.imagenUrl" width="1600" height="1200" loading="lazy" alt=""></figure>
                         }

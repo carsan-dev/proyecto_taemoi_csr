@@ -13,6 +13,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
+
 import { CLAVE_SEDE_RECORDADA, VistaHorarios, VistaSede } from '../contenido';
 
 export { CLAVE_SEDE_RECORDADA } from '../contenido';
@@ -30,7 +32,7 @@ const ESCRITORIO = '(min-width: 900px)';
 @Component({
   selector: 'app-lc-linea-sedes',
   standalone: true,
-  imports: [NgTemplateOutlet, RouterLink],
+  imports: [VistaPreviaPipe, NgTemplateOutlet, RouterLink],
   templateUrl: './linea-sedes.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -36,9 +36,9 @@
               }
               <div class="acciones">
                 @if (v.preinscribirme) {
-                  <a class="boton" routerLink="/preinscripcion" [queryParams]="v.consulta" [attr.aria-label]="v.preinscribirmeEtiqueta">{{ v.preinscribirme }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                  <a class="boton" routerLink="/preinscripcion" [queryParams]="v.consulta | vistaPrevia" [attr.aria-label]="v.preinscribirmeEtiqueta">{{ v.preinscribirme }}<ng-container *ngTemplateOutlet="flecha" /></a>
                 }
-                <a class="enlace-flecha" [routerLink]="[]" fragment="horarios">{{ textos.verGrupos }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                <a class="enlace-flecha" [routerLink]="[]" fragment="horarios" [queryParams]="null | vistaPrevia">{{ textos.verGrupos }}<ng-container *ngTemplateOutlet="flecha" /></a>
               </div>
             </div>
             @if (v.foto) {
@@ -92,7 +92,7 @@
                       </div>
                       @if (salida.accion.texto) {
                         <div class="salida-accion">
-                          <a class="boton" [class.boton--secundario]="salida.accion.secundaria" routerLink="/preinscripcion" [queryParams]="salida.accion.consulta" [attr.aria-label]="salida.accion.etiqueta">{{ salida.accion.texto }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                          <a class="boton" [class.boton--secundario]="salida.accion.secundaria" routerLink="/preinscripcion" [queryParams]="salida.accion.consulta | vistaPrevia" [attr.aria-label]="salida.accion.etiqueta">{{ salida.accion.texto }}<ng-container *ngTemplateOutlet="flecha" /></a>
                         </div>
                       }
                     </li>
@@ -157,7 +157,7 @@
                   </ul>
                 }
                 @if (tf.boton) {
-                  <a class="boton boton--blanco" routerLink="/preinscripcion" [queryParams]="v.consulta">{{ tf.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                  <a class="boton boton--blanco" routerLink="/preinscripcion" [queryParams]="v.consulta | vistaPrevia">{{ tf.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>
                 }
               </div>
             </div>
@@ -178,7 +178,7 @@
                     @if (parada.actual) {
                       <span class="ruta-nombre">{{ parada.nombre }}</span><span class="ruta-aqui">{{ textos.estasAqui }}</span>
                     } @else if (parada.enlace) {
-                      <a class="ruta-nombre" [routerLink]="parada.enlace">{{ parada.nombre }}</a>
+                      <a class="ruta-nombre" [routerLink]="parada.enlace" [queryParams]="null | vistaPrevia">{{ parada.nombre }}</a>
                     } @else {
                       <span class="ruta-nombre">{{ parada.nombre }}</span>
                     }
@@ -199,7 +199,7 @@
 <ng-template #vecina let-s let-sentido="sentido">
   @if (s) {
     @if (s.enlace) {
-      <a class="tramo-parada" [routerLink]="s.enlace">
+      <a class="tramo-parada" [routerLink]="s.enlace" [queryParams]="null | vistaPrevia">
         <ng-container *ngTemplateOutlet="vecinaContenido; context: { $implicit: s, sentido }" />
       </a>
     } @else {

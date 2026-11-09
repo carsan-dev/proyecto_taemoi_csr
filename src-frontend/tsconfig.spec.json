@@ -137,6 +137,8 @@
     "src/app/web-plantilla/datos/web-publica.service.spec.ts",
     "src/app/web-plantilla/comun/seo-escuela.service.spec.ts",
     "src/app/web-plantilla/comun/pagina-web.spec.ts",
+    "src/app/web-plantilla/comun/vista-previa.spec.ts",
+    "src/app/web-plantilla/temas/linea-comarcal/enlaces-vista-previa.spec.ts",
     "src/app/web-plantilla/comun/colores.spec.ts",
     "src/app/web-plantilla/comun/horario.spec.ts",
     "src/app/web-plantilla/comun/bloques.spec.ts",

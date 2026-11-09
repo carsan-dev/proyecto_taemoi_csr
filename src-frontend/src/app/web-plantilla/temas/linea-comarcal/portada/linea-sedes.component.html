@@ -40,7 +40,7 @@
             @if ((sede.enlaceSede && h.verSede) || (sede.mapa && h.comoLlegar)) {
               <p class="tablero-enlaces">
                 @if (sede.enlaceSede && h.verSede) {
-                  <a class="enlace-flecha" [routerLink]="sede.enlaceSede">{{ h.verSede }}<span class="oculto"> de {{ sede.nombre }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
+                  <a class="enlace-flecha" [routerLink]="sede.enlaceSede" [queryParams]="null | vistaPrevia">{{ h.verSede }}<span class="oculto"> de {{ sede.nombre }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
                 }
                 @if (sede.mapa && h.comoLlegar) {
                   <a class="enlace-flecha" [href]="sede.mapa" target="_blank" rel="noopener">{{ h.comoLlegar }}<span class="oculto"> a {{ sede.nombre }} (abre en otra pestaña)</span><ng-container *ngTemplateOutlet="flecha" /></a>
@@ -84,7 +84,7 @@
                 </div>
                 @if (salida.accion.texto) {
                   <div class="salida-accion">
-                    <a class="boton" [class.boton--secundario]="salida.accion.secundaria" routerLink="/preinscripcion" [queryParams]="salida.accion.consulta" [attr.aria-label]="salida.accion.etiqueta">{{ salida.accion.texto }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                    <a class="boton" [class.boton--secundario]="salida.accion.secundaria" routerLink="/preinscripcion" [queryParams]="salida.accion.consulta | vistaPrevia" [attr.aria-label]="salida.accion.etiqueta">{{ salida.accion.texto }}<ng-container *ngTemplateOutlet="flecha" /></a>
                   </div>
                 }
               </li>
