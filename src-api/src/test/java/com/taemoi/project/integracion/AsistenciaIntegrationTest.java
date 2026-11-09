@@ -75,8 +75,9 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 	private static final String LUNES = "2026-10-26";
 	private static final Set<String> CLAVES_CLASE = Set.of("turnoId", "fecha", "horaInicio", "horaFin", "pasada",
 			"presentes", "total", "alumnos", "festivo", "festivoConLista");
+	/** Rallas (decisiones 510-513): {@code genero} y {@code puedeCambiarRallas}; ninguno es salud ni contacto. */
 	private static final Set<String> CLAVES_ALUMNO = Set.of("id", "nombre", "apellidos", "presente", "deportes",
-			"motivo");
+			"motivo", "genero", "puedeCambiarRallas");
 
 	@Autowired MockMvc mvc;
 	@Autowired ObjectMapper json;
@@ -547,7 +548,7 @@ class AsistenciaIntegrationTest extends MySqlIntegrationTest {
 	void lista_formaJson_sinSaludNiContacto_yDeportesComoElListado() throws Exception {
 		Fijo f = grupoConDosAlumnos(e.sA, profA);
 		JsonNode lista = leer(get("/api/profesor/grupos/" + f.grupo + "/clases/" + f.turno + "/" + LUNES), tProfA, 200);
-		assertEquals(Set.of("clase", "sede", "alumnos"), campos(lista));
+		assertEquals(Set.of("clase", "sede", "alumnos", "puedeCambiarRallas"), campos(lista));
 		assertEquals(Set.of("id", "nombre"), campos(lista.get("sede")));
 		assertEquals(e.sA, lista.get("sede").get("id").asLong(), "la sede del grupo");
 		assertEquals(jdbc.queryForObject("SELECT nombre FROM sede WHERE id = ?", String.class, e.sA),

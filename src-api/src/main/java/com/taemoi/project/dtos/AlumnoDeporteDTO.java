@@ -17,6 +17,9 @@ public class AlumnoDeporteDTO {
 	private String grado; // TipoGrado como String
 	private Date fechaGrado;
 	private Boolean aptoParaExamen;
+	// Rallas hacia el examen (V32_8): medias de 0 a 10 si se usan; null si no (disciplina apagada, sin grado, PUM o DAN)
+	private Integer mediasRallas;
+	private Boolean aplicaRallas;
 
 	// Status and dates
 	private Boolean activo;
@@ -73,6 +76,8 @@ public class AlumnoDeporteDTO {
 		dto.setGrado(alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getCodigo() : null);
 		dto.setFechaGrado(alumnoDeporte.getFechaGrado());
 		dto.setAptoParaExamen(alumnoDeporte.getAptoParaExamen());
+		dto.setAplicaRallas(alumnoDeporte.aplicaRallas());
+		dto.setMediasRallas(alumnoDeporte.mediasRallasVisibles());
 
 		// Status and dates
 		dto.setActivo(alumnoDeporte.getActivo());
@@ -367,5 +372,23 @@ public class AlumnoDeporteDTO {
 
 	public void setFechaLicencia(Date fechaLicencia) {
 		this.fechaLicencia = fechaLicencia;
+	}
+
+	/** Medias rallas hacia el examen (0 a 10), solo lectura; {@code null} si las rallas no se usan. */
+	public Integer getMediasRallas() {
+		return mediasRallas;
+	}
+
+	public void setMediasRallas(Integer mediasRallas) {
+		this.mediasRallas = mediasRallas;
+	}
+
+	/** Las rallas se usan: disciplina con rallas activas, con grado y que no es PUM ni DAN. */
+	public Boolean getAplicaRallas() {
+		return aplicaRallas;
+	}
+
+	public void setAplicaRallas(Boolean aplicaRallas) {
+		this.aplicaRallas = aplicaRallas;
 	}
 }

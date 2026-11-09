@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,9 +16,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.GuardarAsistenciaRequest;
+import com.taemoi.project.dtos.request.PasoRallasRequest;
 import com.taemoi.project.dtos.response.AsistenciaDTOs;
+import com.taemoi.project.dtos.response.RallasDTOs;
 import com.taemoi.project.services.AsistenciaService;
 import com.taemoi.project.services.AsistenciaService.Via;
+import com.taemoi.project.services.RallasService;
 
 /**
  * Pasar lista desde gestión (decisión 324, fase3-pasar-lista.md): las mismas rutas y el mismo servicio que el profesor
@@ -34,9 +38,11 @@ import com.taemoi.project.services.AsistenciaService.Via;
 public class GrupoAsistenciaController {
 
 	private final AsistenciaService asistencia;
+	private final RallasService rallas;
 
-	public GrupoAsistenciaController(AsistenciaService asistencia) {
+	public GrupoAsistenciaController(AsistenciaService asistencia, RallasService rallas) {
 		this.asistencia = asistencia;
+		this.rallas = rallas;
 	}
 
 	/** Clases de hoy, recientes y próxima del grupo. */
@@ -94,5 +100,25 @@ public class GrupoAsistenciaController {
 	public ResponseEntity<AsistenciaDTOs.AsistenciaDeAlumno> asistenciaDeAlumno(@PathVariable @NonNull Long grupoId,
 			@PathVariable Long alumnoId, @RequestParam int year, @RequestParam int month) {
 		return ResponseEntity.ok(asistencia.asistenciaDeAlumno(Via.GESTION, grupoId, alumnoId, year, month));
+	}
+
+	// ------------------------------------------------------------------ rallas hacia el examen (decisiones 510-513)
+	// Mismo acceso que guardar la lista. El servicio no pide más: propietario, gestor y responsable de la sede del grupo
+	// pueden cambiar rallas. Códigos en RallasService#paso.
+
+	/** Un paso de la hoja ({@code {"paso": -2|-1|1|2}}), guardado al momento. Devuelve cómo queda. */
+	@PostMapping("/alumnos/{alumnoId}/rallas")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
+	public ResponseEntity<RallasDTOs.Estado> pasoRallas(@PathVariable @NonNull Long grupoId, @PathVariable Long alumnoId,
+			@RequestBody(required = false) PasoRallasRequest cuerpo) {
+		return ResponseEntity.ok(rallas.paso(Via.GESTION, grupoId, alumnoId, cuerpo == null ? null : cuerpo.paso()));
+	}
+
+	/** «Marcar apto para examen» desde la hoja: solo con las 5 rallas; apto y rallas a 0 a la vez. */
+	@PostMapping("/alumnos/{alumnoId}/rallas/apto")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
+	public ResponseEntity<RallasDTOs.Estado> aptoDesdeRallas(@PathVariable @NonNull Long grupoId,
+			@PathVariable Long alumnoId) {
+		return ResponseEntity.ok(rallas.marcarApto(Via.GESTION, grupoId, alumnoId));
 	}
 }

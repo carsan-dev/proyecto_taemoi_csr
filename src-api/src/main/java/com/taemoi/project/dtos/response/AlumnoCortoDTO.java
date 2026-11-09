@@ -8,6 +8,11 @@ import com.taemoi.project.entities.Imagen;
 /**
  * Alumno en los listados cortos (grupos). {@code grado} es el nombre del grado en el catálogo de su escuela
  * ({@code grado.nombre}; en Taemoi, desde V30, «BLANCO-AMARILLO», «MARRÓN» en kickboxing…).
+ *
+ * <p>De la misma inscripción que da el grado (la de la disciplina del grupo o, sin ella, la principal):
+ * {@code codigoGrado} (código del grado en el catálogo, {@code null} sin grado), {@code deporte} (código de la
+ * disciplina; {@code null} sin inscripción) y las rallas hacia el examen en solo lectura (V32_8): {@code aplicaRallas} y
+ * {@code mediasRallas} (0 a 10, o {@code null} si no se usan).
  */
 public class AlumnoCortoDTO {
 	private Long id;
@@ -17,6 +22,10 @@ public class AlumnoCortoDTO {
 	private Integer numeroExpediente;
 	private String grado;
 	private Boolean activo;
+	private String codigoGrado;
+	private String deporte;
+	private Integer mediasRallas;
+	private boolean aplicaRallas;
 
 	public AlumnoCortoDTO(Long id, String nombre, String apellidos, Imagen fotoAlumno, Integer numeroExpediente, String grado, Boolean activo) {
 		super();
@@ -95,7 +104,7 @@ public class AlumnoCortoDTO {
 		if (principal != null && principal.getGrado() != null) {
 			grado = principal.getGrado().getNombre();
 		}
-		return new AlumnoCortoDTO(
+		AlumnoCortoDTO dto = new AlumnoCortoDTO(
 			alumno.getId(),
 			alumno.getNombre(),
 			alumno.getApellidos(),
@@ -104,6 +113,7 @@ public class AlumnoCortoDTO {
 			grado,
 			alumno.getActivo()
 		);
+		return dto.conInscripcion(principal);
 	}
 
 	public static AlumnoCortoDTO deAlumnoDeporte(AlumnoDeporte alumnoDeporte) {
@@ -114,7 +124,7 @@ public class AlumnoCortoDTO {
 		Alumno alumno = alumnoDeporte.getAlumno();
 		String grado = alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getNombre() : null;
 
-		return new AlumnoCortoDTO(
+		AlumnoCortoDTO dto = new AlumnoCortoDTO(
 			alumno.getId(),
 			alumno.getNombre(),
 			alumno.getApellidos(),
@@ -123,5 +133,33 @@ public class AlumnoCortoDTO {
 			grado,
 			alumno.getActivo()
 		);
+		return dto.conInscripcion(alumnoDeporte);
+	}
+
+	/** Código del grado, disciplina y rallas de la inscripción que da el grado ({@code null}: sin inscripción). */
+	private AlumnoCortoDTO conInscripcion(AlumnoDeporte inscripcion) {
+		if (inscripcion != null) {
+			this.codigoGrado = inscripcion.getGrado() != null ? inscripcion.getGrado().getCodigo() : null;
+			this.deporte = inscripcion.getDeporte();
+			this.aplicaRallas = inscripcion.aplicaRallas();
+			this.mediasRallas = inscripcion.mediasRallasVisibles();
+		}
+		return this;
+	}
+
+	public String getCodigoGrado() {
+		return codigoGrado;
+	}
+
+	public String getDeporte() {
+		return deporte;
+	}
+
+	public Integer getMediasRallas() {
+		return mediasRallas;
+	}
+
+	public boolean isAplicaRallas() {
+		return aplicaRallas;
 	}
 }

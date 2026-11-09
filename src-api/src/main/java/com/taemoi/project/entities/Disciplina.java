@@ -52,6 +52,14 @@ public class Disciplina extends EntidadOrganizacion {
 	@Column(nullable = false)
 	private Boolean activa = Boolean.TRUE;
 
+	/**
+	 * La escuela usa las rallas hacia el examen en esta disciplina (V32_8, decisión 510). Apagado por defecto; apagarlo
+	 * no borra las medias rallas de nadie ({@link AlumnoDeporte#getMediasRallas()}): dejan de verse hasta reactivarlo.
+	 */
+	@com.fasterxml.jackson.annotation.JsonIgnore
+	@Column(name = "rallas_activas", nullable = false)
+	private Boolean rallasActivas = Boolean.FALSE;
+
 	/** Producto de licencia de la disciplina (V24). NULL en Taemoi: sus licencias tienen variantes. */
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "producto_licencia_id")
@@ -132,6 +140,15 @@ public class Disciplina extends EntidadOrganizacion {
 
 	public void setActiva(Boolean activa) {
 		this.activa = activa;
+	}
+
+	@com.fasterxml.jackson.annotation.JsonIgnore
+	public Boolean getRallasActivas() {
+		return rallasActivas;
+	}
+
+	public void setRallasActivas(Boolean rallasActivas) {
+		this.rallasActivas = rallasActivas;
 	}
 
 	public Producto getProductoLicencia() {

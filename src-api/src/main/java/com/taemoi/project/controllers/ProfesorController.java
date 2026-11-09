@@ -19,13 +19,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.taemoi.project.dtos.request.GuardarAsistenciaRequest;
+import com.taemoi.project.dtos.request.PasoRallasRequest;
 import com.taemoi.project.dtos.request.ProfesorRequests;
 import com.taemoi.project.dtos.response.AlumnoSaludDTO;
 import com.taemoi.project.dtos.response.AsistenciaDTOs;
 import com.taemoi.project.dtos.response.ProfesorDTOs;
+import com.taemoi.project.dtos.response.RallasDTOs;
 import com.taemoi.project.services.AsistenciaService;
 import com.taemoi.project.services.AsistenciaService.Via;
 import com.taemoi.project.services.ProfesorService;
+import com.taemoi.project.services.RallasService;
 
 /**
  * Rutas propias del profesor (entrega 7, fase3-e7-profesor.md §6.2; E7-1 y E7-2: lectura; E7-3: apto, fecha de grado
@@ -47,11 +50,14 @@ public class ProfesorController {
 	private final ProfesorService profesor;
 	private final AsistenciaService asistencia;
 	private final RespuestaFotoAlumno fotos;
+	private final RallasService rallas;
 
-	public ProfesorController(ProfesorService profesor, AsistenciaService asistencia, RespuestaFotoAlumno fotos) {
+	public ProfesorController(ProfesorService profesor, AsistenciaService asistencia, RespuestaFotoAlumno fotos,
+			RallasService rallas) {
 		this.profesor = profesor;
 		this.asistencia = asistencia;
 		this.fotos = fotos;
+		this.rallas = rallas;
 	}
 
 	/** Sus grupos (§5.1). */
@@ -159,6 +165,25 @@ public class ProfesorController {
 	public ResponseEntity<AsistenciaDTOs.AsistenciaDeAlumno> asistenciaDeAlumno(@PathVariable Long grupoId,
 			@PathVariable Long alumnoId, @RequestParam int year, @RequestParam int month) {
 		return ResponseEntity.ok(asistencia.asistenciaDeAlumno(Via.PROFESOR, grupoId, alumnoId, year, month));
+	}
+
+	// ------------------------------------------------------------------ rallas hacia el examen (decisiones 510-513)
+	// Solo el TITULAR del grupo (o quien además es propietario, gestor o responsable de la sede del grupo); el ayudante,
+	// 403. Grupo ajeno: 403, como pasar lista. Códigos en RallasService#paso.
+
+	/** Un paso de la hoja ({@code {"paso": -2|-1|1|2}}), guardado al momento. Devuelve cómo queda. */
+	@PostMapping("/grupos/{grupoId}/alumnos/{alumnoId}/rallas")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<RallasDTOs.Estado> pasoRallas(@PathVariable Long grupoId, @PathVariable Long alumnoId,
+			@RequestBody(required = false) PasoRallasRequest cuerpo) {
+		return ResponseEntity.ok(rallas.paso(Via.PROFESOR, grupoId, alumnoId, cuerpo == null ? null : cuerpo.paso()));
+	}
+
+	/** «Marcar apto para examen» desde la hoja: solo con las 5 rallas; apto y rallas a 0 a la vez. */
+	@PostMapping("/grupos/{grupoId}/alumnos/{alumnoId}/rallas/apto")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<RallasDTOs.Estado> aptoDesdeRallas(@PathVariable Long grupoId, @PathVariable Long alumnoId) {
+		return ResponseEntity.ok(rallas.marcarApto(Via.PROFESOR, grupoId, alumnoId));
 	}
 
 	// ------------------------------------------------------------------ grados (E7-3, decisión 207)

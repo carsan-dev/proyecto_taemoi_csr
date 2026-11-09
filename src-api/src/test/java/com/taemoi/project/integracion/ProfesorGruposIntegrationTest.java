@@ -257,7 +257,8 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		JsonNode deportes = lucia.get("deportes");
 		assertEquals(2, deportes.size(), "taekwondo y kickboxing activos: " + deportes);
 		JsonNode tkd = fila(deportes, "deporte", "TAEKWONDO");
-		assertEquals(Set.of("deporte", "deporteNombre", "grado", "fechaGrado", "apto", "delGrupo"), campos(tkd));
+		assertEquals(Set.of("deporte", "deporteNombre", "grado", "fechaGrado", "apto", "delGrupo", "mediasRallas",
+				"aplicaRallas"), campos(tkd));
 		assertEquals("AMARILLO", tkd.get("grado").get("codigo").asText());
 		assertEquals("Amarillo IT", tkd.get("grado").get("nombre").asText());
 		assertEquals("2026-03-12", tkd.get("fechaGrado").asText());
@@ -356,9 +357,9 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		}
 		for (JsonNode d : ficha.get("deportes")) {
 			assertEquals(Set.of("deporte", "deporteNombre", "grado", "fechaGrado", "apto", "deMisGrupos", "admitePases",
-					"siguienteGrado", "pideRojoBordado"), campos(d));
+					"siguienteGrado", "pideRojoBordado", "mediasRallas", "aplicaRallas"), campos(d));
 		}
-		assertEquals(Set.of("codigo", "nombre"),
+		assertEquals(Set.of("codigo", "nombre", "color1", "color2"),
 				campos(fila(ficha.get("deportes"), "deporte", "TAEKWONDO").get("grado")));
 		assertSinSensibles(ficha);
 	}

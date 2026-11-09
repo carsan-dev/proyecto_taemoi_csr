@@ -56,6 +56,10 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 	@Autowired
 	private CatalogoCategoriasService categorias;
 
+	/** Rallas hacia el examen: a 0 al cambiar el grado (V32_8). */
+	@Autowired
+	private com.taemoi.project.services.RallasService rallas;
+
 	/** Entrega 6: alcance del responsable de sede (sin efecto para la gestión). */
 	@Autowired
 	private com.taemoi.project.acceso.GestionPorSede gestionPorSede;
@@ -394,8 +398,11 @@ public class AlumnoDeporteServiceImpl implements AlumnoDeporteService {
 		Grado grado = resolverGrado(deporte, nuevoGrado);
 
 		// Actualizar grado y fecha
+		Long gradoAnterior = alumnoDeporte.getGrado() == null ? null : alumnoDeporte.getGrado().getId();
 		alumnoDeporte.setGrado(grado);
 		alumnoDeporte.setFechaGrado(new Date());
+		// Rallas hacia el examen (decisión 510): con otro grado vuelven a 0, por cualquier ruta que llegue aquí.
+		rallas.ponerACeroPorCambioDeGrado(alumnoDeporte, gradoAnterior, grado == null ? null : grado.getId());
 
 		// Recalcular aptitud para examen
 		boolean aptoParaExamen = esAptoParaExamen(alumnoDeporte);

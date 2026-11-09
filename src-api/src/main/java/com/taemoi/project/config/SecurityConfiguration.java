@@ -79,6 +79,8 @@ public class SecurityConfiguration {
 			"/api/alumnos/{alumnoId}/tutores", "/api/alumnos/{alumnoId}/consentimientos",
 			"/api/grupos", "/api/grupos/{grupoId}/alumnos", "/api/grupos/{grupoId}/alumnos/{alumnoId}",
 			"/api/grupos/{grupoId}/turnos/{turnoId}",
+			// Rallas hacia el examen (decisiones 510-513): en los grupos de sus sedes (@acceso.grupoEnSede).
+			"/api/grupos/{grupoId}/alumnos/{alumnoId}/rallas", "/api/grupos/{grupoId}/alumnos/{alumnoId}/rallas/apto",
 			"/api/turnos/crear-asignando-grupo",
 			// 6-2 (D6-8): apuntar a sus alumnos a una convocatoria.
 			"/api/alumnos/{convocatoriaId}/alumno/{alumnoId}",

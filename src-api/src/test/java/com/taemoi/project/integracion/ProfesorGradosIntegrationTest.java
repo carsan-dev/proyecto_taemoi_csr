@@ -338,7 +338,8 @@ class ProfesorGradosIntegrationTest extends MySqlIntegrationTest {
 		JsonNode apto = leer(put(base(a, "TAEKWONDO") + "/apto").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"aptoParaExamen\":false}"), tProfA, 200);
 		assertEquals(Set.of("deporte", "deporteNombre", "grado", "fechaGrado", "apto", "deMisGrupos", "admitePases",
-				"siguienteGrado", "pideRojoBordado"), campos(apto), "el DeporteDelAlumno de la ficha");
+				"siguienteGrado", "pideRojoBordado", "mediasRallas", "aplicaRallas"), campos(apto),
+				"el DeporteDelAlumno de la ficha");
 		assertFalse(apto.get("apto").asBoolean());
 		assertEquals("AMARILLO", apto.get("grado").get("codigo").asText());
 		assertFalse(aptoDe(a));

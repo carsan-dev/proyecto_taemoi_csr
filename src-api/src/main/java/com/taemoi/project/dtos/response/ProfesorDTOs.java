@@ -28,7 +28,11 @@ public final class ProfesorDTOs {
 	public record Disciplina(String codigo, String nombre) {
 	}
 
-	public record Grado(String codigo, String nombre) {
+	/**
+	 * Grado con su nombre visible y sus colores del catálogo (V30): {@code color1} el color base (mitad de abajo),
+	 * {@code color2} el de arriba o {@code null} si es de un solo color. Los dos nulos si la escuela no los ha rellenado.
+	 */
+	public record Grado(String codigo, String nombre, String color1, String color2) {
 	}
 
 	/**
@@ -47,11 +51,13 @@ public final class ProfesorDTOs {
 
 	/**
 	 * Un deporte activo del alumno en la lista del grupo. {@code grado} nulo si no tiene; {@code delGrupo}: es la
-	 * disciplina del grupo.
+	 * disciplina del grupo. Rallas hacia el examen (decisión 510), solo lectura: {@code aplicaRallas} si se usan (la
+	 * disciplina las tiene activas, hay grado y no es PUM ni DAN) y {@code mediasRallas} de 0 a 10, o {@code null} si no
+	 * se usan.
 	 */
 	public record DeporteEnLista(String deporte, String deporteNombre, Grado grado,
 			@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") LocalDate fechaGrado, boolean apto,
-			boolean delGrupo) {
+			boolean delGrupo, Integer mediasRallas, boolean aplicaRallas) {
 	}
 
 	/**
@@ -76,11 +82,13 @@ public final class ProfesorDTOs {
 	 * Un deporte activo del alumno en la ficha. {@code deMisGrupos}: la disciplina es la de algún grupo que comparte con
 	 * el profesor (§11, pregunta 2). {@code admitePases}: además la disciplina tiene grados, hay grado actual y siguiente
 	 * grado (el apto va aparte). {@code siguienteGrado} nulo si no lo hay. {@code pideRojoBordado}: el pase pide elegir
-	 * «Rojo» o «Rojo bordado», como en gestión.
+	 * «Rojo» o «Rojo bordado», como en gestión. {@code mediasRallas} y {@code aplicaRallas}: como en
+	 * {@link DeporteEnLista}, solo lectura.
 	 */
 	public record DeporteDelAlumno(String deporte, String deporteNombre, Grado grado,
 			@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") LocalDate fechaGrado, boolean apto,
-			boolean deMisGrupos, boolean admitePases, Grado siguienteGrado, boolean pideRojoBordado) {
+			boolean deMisGrupos, boolean admitePases, Grado siguienteGrado, boolean pideRojoBordado,
+			Integer mediasRallas, boolean aplicaRallas) {
 	}
 
 	/**

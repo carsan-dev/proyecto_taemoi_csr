@@ -30,6 +30,7 @@ import com.taemoi.project.dtos.response.AsistenciaDTOs.EstadoDia;
 import com.taemoi.project.dtos.response.ProfesorDTOs;
 import com.taemoi.project.entities.AsistenciaAlumno;
 import com.taemoi.project.entities.ClaseAsistencia;
+import com.taemoi.project.entities.Genero;
 import com.taemoi.project.entities.MotivoFalta;
 import com.taemoi.project.entities.Turno;
 import com.taemoi.project.organizacion.AlcanceActual;
@@ -118,10 +119,11 @@ public class AsistenciaService {
 	private final FestivoService festivos;
 	private final SedeRepository sedes;
 	private final Clock reloj;
+	private final RallasService rallas;
 
 	public AsistenciaService(EntityManager em, AlcanceActual alcanceActual, ClaseAsistenciaRepository clases,
 			AsistenciaAlumnoRepository filas, TurnoRepository turnos, ProfesorService profesor,
-			RegistroAccionesProfesor registro, FestivoService festivos, SedeRepository sedes, Clock reloj) {
+			RegistroAccionesProfesor registro, FestivoService festivos, SedeRepository sedes, Clock reloj, RallasService rallas) {
 		this.em = em;
 		this.alcanceActual = alcanceActual;
 		this.clases = clases;
@@ -132,6 +134,7 @@ public class AsistenciaService {
 		this.festivos = festivos;
 		this.sedes = sedes;
 		this.reloj = reloj;
+		this.rallas = rallas;
 	}
 
 	// ------------------------------------------------------------------ lectura
@@ -210,11 +213,15 @@ public class AsistenciaService {
 		union.addAll(presente.keySet());
 
 		Map<Long, List<ProfesorDTOs.DeporteEnLista>> deportes = profesor.deportesEnLista(union, disciplina);
+		boolean puedeCambiarRallas = rallas.puedeCambiar(grupoId, grupo.sedeId());
 		List<AsistenciaDTOs.AlumnoDeLista> alumnos = new ArrayList<>();
 		for (Object[] f : alumnosPorNombre(union)) {
 			Long id = (Long) f[0];
+			List<ProfesorDTOs.DeporteEnLista> suyos = deportes.getOrDefault(id, List.of());
+			boolean conRallas = suyos.stream().anyMatch(d -> d.delGrupo() && d.aplicaRallas());
 			alumnos.add(new AsistenciaDTOs.AlumnoDeLista(id, (String) f[1], (String) f[2],
-					Boolean.TRUE.equals(presente.get(id)), deportes.getOrDefault(id, List.of()), nombre(motivo.get(id))));
+					Boolean.TRUE.equals(presente.get(id)), suyos, nombre(motivo.get(id)),
+					f[3] == null ? null : ((Genero) f[3]).name(), puedeCambiarRallas && conRallas));
 		}
 		Map<Long, long[]> cuentas = guardada == null ? Map.of() : cuentasPorClase(List.of(guardada.getId()));
 		DiaFestivo festivo = festivosDeLaSede(grupo.sedeId(), fecha, fecha).get(new SedeYFecha(grupo.sedeId(), fecha));
@@ -223,7 +230,7 @@ public class AsistenciaService {
 		AsistenciaDTOs.SedeDeLista sede = grupo.sedeId() == null ? null
 				: sedes.buscarEnEscuelaActiva(grupo.sedeId())
 						.map(s -> new AsistenciaDTOs.SedeDeLista(s.getId(), s.getNombre())).orElse(null);
-		return new AsistenciaDTOs.ListaDeClase(clase, sede, alumnos);
+		return new AsistenciaDTOs.ListaDeClase(clase, sede, alumnos, puedeCambiarRallas);
 	}
 
 	/** {@code GET /asistencia/resumen}: los alumnos con alguna fila en clases del grupo ese mes. Una consulta. */
@@ -623,13 +630,13 @@ public class AsistenciaService {
 		return cuentas;
 	}
 
-	/** Id, nombre y apellidos, sin los anonimizados (sus filas se borran al anonimizar; esto cubre una carrera). */
+	/** Id, nombre, apellidos y género, sin los anonimizados (sus filas se borran al anonimizar; esto cubre una carrera). */
 	private List<Object[]> alumnosPorNombre(Collection<Long> ids) {
 		if (ids.isEmpty()) {
 			return List.of();
 		}
 		return em.createQuery("""
-				SELECT a.id, a.nombre, a.apellidos FROM Alumno a
+				SELECT a.id, a.nombre, a.apellidos, a.genero FROM Alumno a
 				WHERE a.id IN :ids AND a.anonimizadoEn IS NULL ORDER BY a.nombre, a.apellidos, a.id""", Object[].class)
 				.setParameter("ids", ids).getResultList();
 	}
