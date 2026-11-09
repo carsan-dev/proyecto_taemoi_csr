@@ -7,6 +7,8 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -99,6 +101,14 @@ public class Organizacion {
 	@JdbcTypeCode(SqlTypes.TINYINT)
 	@Column(name = "dia_limite_mensualidad", nullable = false)
 	private Integer diaLimiteMensualidad = DIA_LIMITE_MENSUALIDAD_POR_DEFECTO;
+
+	/**
+	 * V32_7: mascota del panel de gestión. TAMI por defecto (también en la base de datos, para el alta nativa); MAKI para
+	 * Moiskimdo (organización 1). Hoy no se cambia desde la aplicación.
+	 */
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 16)
+	private Mascota mascota = Mascota.TAMI;
 
 	@Column(name = "creada_en", nullable = false, insertable = false, updatable = false)
 	private LocalDateTime creadaEn;
@@ -273,6 +283,14 @@ public class Organizacion {
 
 	public void setDiaLimiteMensualidad(Integer diaLimiteMensualidad) {
 		this.diaLimiteMensualidad = diaLimiteMensualidad;
+	}
+
+	public Mascota getMascota() {
+		return mascota;
+	}
+
+	public void setMascota(Mascota mascota) {
+		this.mascota = mascota;
 	}
 
 	public LocalDateTime getCreadaEn() {

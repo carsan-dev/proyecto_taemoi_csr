@@ -1,5 +1,6 @@
 package com.taemoi.project.dtos.response;
 
+import com.taemoi.project.entities.Mascota;
 import com.taemoi.project.marca.TemaEscuela;
 
 /**
@@ -11,8 +12,9 @@ import com.taemoi.project.marca.TemaEscuela;
  * @param logoVersion id de la imagen del logo subido (para la URL de {@code GET /api/escuela/logo} y su caché);
  *                    {@code null} sin logo subido.
  * @param tema        colores del panel derivados del color guardado ({@code #1A2230} sin color).
+ * @param mascota     mascota del panel ({@code TAMI} o {@code MAKI}, V32_7). No pasa a la marca pública.
  */
-public record MarcaPanelDTO(String nombre, Logo logo, Long logoVersion, TemaEscuela tema) {
+public record MarcaPanelDTO(String nombre, Logo logo, Long logoVersion, TemaEscuela tema, Mascota mascota) {
 
 	public enum Logo {
 		/** Logo subido por el superadmin: {@code GET /api/escuela/logo}. */
