@@ -166,13 +166,6 @@
   color: var(--pn-tinta);
 }
 
-.deportes__cinto {
-  @include b.cinto;
-  flex: none;
-  width: 28px;
-  height: 10px;
-}
-
 .deportes__campo {
   display: flex;
   flex-direction: column;

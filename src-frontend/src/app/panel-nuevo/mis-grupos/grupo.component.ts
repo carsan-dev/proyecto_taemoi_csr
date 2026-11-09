@@ -24,6 +24,7 @@ import { PluralPipe } from '../formato/plural.pipe';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
 import { VisorPdfComponent } from '../visor-pdf/visor-pdf.component';
 import { FichaProfesorPanelComponent } from './ficha-profesor-panel.component';
+import { CinturonComponent } from '../cinturon/cinturon.component';
 
 const FILTROS = { todos: 'todos', aptos: 'aptos' } as const;
 type Filtro = typeof FILTROS[keyof typeof FILTROS];
@@ -38,7 +39,7 @@ function esApto(alumno: AlumnoDeGrupo): boolean { return alumno.deportes.some(d 
 @Component({
   selector: 'pn-grupo-profesor',
   standalone: true,
-  imports: [FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, BloqueVacioComponent,
+  imports: [CinturonComponent, FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, BloqueVacioComponent,
     EsqueletoComponent, BotonOcupadoComponent, PluralPipe, VisorPdfComponent, PanelLateralComponent, FichaProfesorPanelComponent],
   templateUrl: './grupo.component.html',
   styleUrl: './grupo.component.scss',
@@ -133,10 +134,10 @@ export class GrupoPanelComponent implements OnInit {
   }
 
   /** Grado con el nombre del catálogo («Blanco-amarillo») y su muestra de color; nulo si no tiene grado. */
-  gradoDe(deporte: DeporteEnLista): { texto: string; fondo: string } | null {
+  gradoDe(deporte: DeporteEnLista): { texto: string; color1: string; color2: string | null } | null {
     if (!deporte.grado) return null;
     const grado = gradoFila(deporte.grado.codigo, deporte.deporte);
-    return { texto: gradoParaFrase(grado), fondo: grado.fondo };
+    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2 };
   }
 
   /** La foto del avatar; nula sin foto o si no cargó (quedan las iniciales). */

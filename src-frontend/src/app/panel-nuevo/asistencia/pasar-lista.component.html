@@ -84,7 +84,7 @@
                 <span class="pasar-lista__nombre">{{ nombreCompleto(alumno.nombre, alumno.apellidos) }}</span>
                 <span class="pasar-lista__grado">
                   @let grado = gradoDe(alumno);
-                  @if (grado.fondo) { <span class="pasar-lista__cinto" [style.background]="grado.fondo" aria-hidden="true"></span> }
+                  @if (grado.color1) { <pn-cinturon class="pasar-lista__cinto" [color1]="grado.color1" [color2]="grado.color2" /> }
                   {{ grado.texto }}
                 </span>
               </span>

@@ -66,7 +66,7 @@
                 @for (deporte of alumno.deportes; track deporte.deporte) {
                   <span class="grupo-profesor__deporte">
                     @if (gradoDe(deporte); as grado) {
-                      @if (grado.fondo) { <span class="grupo-profesor__cinto" [style.background]="grado.fondo" aria-hidden="true"></span> }
+                      <pn-cinturon class="grupo-profesor__cinto" [color1]="grado.color1" [color2]="grado.color2" />
                       {{ deporte.deporteNombre }} · {{ grado.texto }}
                     } @else {
                       {{ deporte.deporteNombre }} · Sin grado

@@ -465,8 +465,9 @@ describe('ConvocatoriasComponent (8b-3e, Convocatorias del panel nuevo)', () => 
     expect(grados.map(texto)).toEqual(['amarillo', 'naranja']);
     const cintos = Array.from(f.querySelectorAll<HTMLElement>('.convocatorias__cinto'));
     expect(cintos.length).toBe(2);
-    expect(cintos[0].style.background).toContain('rgb(255, 255, 0)');
-    expect(cintos[1].style.background).toContain('rgb(255, 165, 0)');
+    const relleno = (c: HTMLElement) => c.querySelector('[data-franja]')!.getAttribute('fill')!.toUpperCase();
+    expect(relleno(cintos[0])).toBe('#FFFF00');
+    expect(relleno(cintos[1])).toBe('#FFA500');
     expect(texto(f.querySelector('.convocatorias__paso'))).toContain('pasa a');
     expect(f.querySelector<HTMLInputElement>('.convocatorias__cuantia input')!.value).toBe('30,00');
     const conmutador = f.querySelector('[role="group"]')!;

@@ -444,14 +444,6 @@ $columnas-fila: $col-avatar minmax(0, 1fr) $col-cuantia $col-pago $col-quitar;
   color: var(--pn-tinta-2);
 }
 
-.convocatorias__cinto {
-  flex: none;
-  width: 16px;
-  height: 8px;
-  border: 1px solid var(--pn-cinto-borde);
-  border-radius: 2px;
-}
-
 .convocatorias__flecha {
   width: 14px;
   height: 14px;

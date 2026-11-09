@@ -150,10 +150,10 @@ export function estadoLicencia(
     : { clave: 'caducada', texto: 'Caducada' };
 }
 
-/** Fondo de la muestra del cinturón: su color o, si es de dos colores, las dos mitades. */
-export function fondoCinturon(codigo: string, deporte: string): string {
+/** Colores del cinturón para `<pn-cinturon>`: `color1` (mitad de abajo) y `color2` (mitad de arriba, o `null`). */
+export function coloresCinturon(codigo: string, deporte: string): { color1: string; color2: string | null } {
   const { colors, isSplit } = getGradoColors(codigo, deporte);
-  return isSplit && colors.length > 1 ? `linear-gradient(to right, ${colors[0]} 50%, ${colors[1]} 50%)` : colors[0];
+  return { color1: colors[0], color2: isSplit && colors.length > 1 ? colors[1] : null };
 }
 
 /** Grado de una disciplina para las pantallas nuevas (listado y carnet). */
@@ -161,15 +161,16 @@ export interface GradoFila {
   /** En la línea 2, en minúscula («naranja-verde»); en el detalle, el texto de hoy («NARANJA-VERDE», «NEGRO 1º DAN»). */
   nombre: string;
   nombreDetalle: string;
-  /** Fondo del cinturón: un color o las dos mitades. */
-  fondo: string;
+  /** Colores del cinturón (`<pn-cinturon>`): `color1` abajo, `color2` arriba o `null`. */
+  color1: string;
+  color2: string | null;
 }
 
 export function gradoFila(codigo: string, deporte: string): GradoFila {
-  const fondo = fondoCinturon(codigo, deporte);
+  const { color1, color2 } = coloresCinturon(codigo, deporte);
   // El texto de hoy: el nombre del catálogo o, si el código no está en él, el código sin guiones bajos.
   const nombreDetalle = getGradoNombreParaDeporte(codigo, deporte).replace(/_+/g, ' ');
-  return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, fondo };
+  return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, color1, color2 };
 }
 
 /** El grado dentro de una frase, con mayúscula inicial: «Blanco», «Naranja-verde», «Negro 1º dan». */
