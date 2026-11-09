@@ -143,6 +143,43 @@ describe('SeoEscuelaService', () => {
     expect(enlace('icon')).toBeNull();
   });
 
+  describe('favicon del index', () => {
+    let neutro: HTMLLinkElement;
+
+    beforeEach(() => {
+      neutro = document.createElement('link');
+      neutro.setAttribute('rel', 'icon');
+      neutro.setAttribute('href', 'data:,');
+      document.head.appendChild(neutro);
+    });
+
+    afterEach(() => {
+      seo.limpiar();
+      neutro.remove();
+    });
+
+    it('con logo: sustituye el icono neutro en vez de añadir un segundo', () => {
+      aplicar({ pagina: 'portada' });
+      expect(document.head.querySelectorAll('link[rel="icon"]').length).toBe(1);
+      expect(neutro.getAttribute('href')).toBe(logo);
+      expect(enlace('icon')).toBe(logo);
+    });
+
+    it('al limpiar, devuelve el icono neutro', () => {
+      aplicar({ pagina: 'portada' });
+      seo.limpiar();
+      expect(document.head.querySelectorAll('link[rel="icon"]').length).toBe(1);
+      expect(neutro.getAttribute('href')).toBe('data:,');
+      expect(neutro.hasAttribute('data-web-plantilla')).toBeFalse();
+    });
+
+    it('sin logo: deja el icono neutro', () => {
+      aplicar({ pagina: 'tarifas', ruta: '/tarifas', sitio: sitio({ escuela: { nombre: 'Club', colorPrimario: null, logoVersion: null } }) });
+      expect(document.head.querySelectorAll('link[rel="icon"]').length).toBe(1);
+      expect(neutro.getAttribute('href')).toBe('data:,');
+    });
+  });
+
   it('sede: su título, su canonical, su foto y solo su SportsActivityLocation', () => {
     aplicar({ pagina: 'sede', ruta: '/sedes/estepa', slug: 'estepa' });
 

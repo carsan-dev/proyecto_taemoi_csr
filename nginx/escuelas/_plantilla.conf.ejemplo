@@ -1,0 +1,140 @@
+# Plantilla del host de una escuela con web por plantilla (W11, pieza 6 del plan de dominio).
+#
+# Alta: copiar a nginx/escuelas/<dominio>.conf (el nombre del fichero ES el dominio principal, sin www) y sustituir
+# __DOMINIO__ por ese dominio, p. ej.: sed 's/__DOMINIO__/club.example/g' _plantilla.conf.ejemplo > club.example.conf
+# Procedimiento completo (DNS, certificado, Google): docs/operacion/procedimiento-produccion.md, sección 7.
+#
+# Solo se carga si existe /etc/letsencrypt/live/<dominio>/{fullchain,privkey,chain}.pem y nginx -t lo acepta
+# (lo decide nginx-cert-reloader al arrancar y en cada cambio de certificados). Sin certificado, nginx arranca igual
+# y este host no se sirve (cae en el default_server de 443: handshake rechazado).
+#
+# El certificado lleva los dos nombres: certbot ... -d __DOMINIO__ -d www.__DOMINIO__ --cert-name __DOMINIO__
+# El 80 no necesita nada: el server _ de nginx-production.conf sirve el reto ACME y redirige a https a cualquier host.
+# Este fichero no casa con el glob *.conf: no se carga nunca.
+
+# www → dominio principal (301), como www.moiskimdo.es.
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name www.__DOMINIO__;
+
+    ssl_certificate /etc/letsencrypt/live/__DOMINIO__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMINIO__/privkey.pem;
+
+    include /etc/nginx/cabeceras-seguridad.conf;
+
+    return 301 https://__DOMINIO__$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name __DOMINIO__;
+
+    ssl_certificate /etc/letsencrypt/live/__DOMINIO__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMINIO__/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/__DOMINIO__/chain.pem;
+    include /etc/nginx/ssl-comun.conf;
+
+    # Mismas cabeceras de seguridad que moiskimdo.es. Cada location con add_header propio vuelve a incluirlo.
+    include /etc/nginx/cabeceras-seguridad.conf;
+
+    root /usr/share/nginx/html;
+    # index-plantilla.html y no index.html: con index.html, "/" casaría en $uri/ y serviría la entrada de Moiskimdo.
+    index index-plantilla.html;
+
+    # Nunca la entrada de Moiskimdo (su SEO, GA4 y JSON-LD) en este host.
+    location = /index.html {
+        return 301 /;
+    }
+
+    # Ni el favicon ni el apple-touch-icon de Moiskimdo: la escuela pone el suyo desde la web (logo) o el neutro del
+    # index. Coincidencias exactas (=): ganan a cualquier regex, incluida la de estáticos anidada en location /.
+    location = /favicon.ico {
+        return 404;
+    }
+
+    location = /apple-touch-icon.png {
+        return 404;
+    }
+
+    location = /apple-touch-icon-precomposed.png {
+        return 404;
+    }
+
+    # robots.txt y sitemap.xml de la escuela los genera la API por Host (los estáticos son de Moiskimdo).
+    location = /robots.txt {
+        limit_req zone=api_limit burst=60 nodelay;
+
+        proxy_pass http://backend/api/publico/web/robots.txt;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header Forwarded "";
+        proxy_set_header X-Forwarded-Prefix "";
+        proxy_set_header X-Forwarded-Port $server_port;
+    }
+
+    location = /sitemap.xml {
+        limit_req zone=api_limit burst=60 nodelay;
+
+        proxy_pass http://backend/api/publico/web/sitemap.xml;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header Forwarded "";
+        proxy_set_header X-Forwarded-Prefix "";
+        proxy_set_header X-Forwarded-Port $server_port;
+    }
+
+    # API, OAuth2, imágenes, documentos, ficheros ocultos y /health: igual que moiskimdo.es.
+    include /etc/nginx/app-locations.conf;
+
+    # Web por plantilla y panel: todo lo que no es fichero cae en index-plantilla.html.
+    location / {
+        try_files $uri $uri/ /index-plantilla.html;
+
+        location ~* \.mjs$ {
+            try_files $uri =404;
+            default_type application/javascript;
+            include /etc/nginx/cabeceras-seguridad.conf;
+            add_header Cache-Control "public, max-age=3600";
+            access_log off;
+        }
+
+        location = /panel-nuevo.css {
+            try_files $uri =404;
+            include /etc/nginx/cabeceras-seguridad.conf;
+            add_header Cache-Control "no-cache";
+        }
+
+        location = /gestion-compartida.css {
+            try_files $uri =404;
+            include /etc/nginx/cabeceras-seguridad.conf;
+            add_header Cache-Control "no-cache";
+        }
+
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|webm|mp4|avif)$ {
+            try_files $uri =404;
+            include /etc/nginx/cabeceras-seguridad.conf;
+            add_header Cache-Control "public, max-age=31536000, immutable";
+            access_log off;
+        }
+
+        # Como index.html en moiskimdo.es: sin caché.
+        location = /index-plantilla.html {
+            include /etc/nginx/cabeceras-seguridad.conf;
+            add_header Cache-Control "no-cache, must-revalidate, max-age=0";
+        }
+    }
+}

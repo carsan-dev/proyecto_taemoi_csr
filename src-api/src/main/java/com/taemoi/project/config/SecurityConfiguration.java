@@ -275,8 +275,10 @@ public class SecurityConfiguration {
 						// Web por plantilla (fase4-web-plan.md §5, pieza W1): solo lectura, de la escuela activa; 404 sin
 						// web publicada. Solo estas rutas y solo GET (y HEAD, que se autoriza como GET). Pieza W5: la lista
 						// de eventos y un evento ({id}: un solo tramo; lo de debajo sigue cerrado).
+						// Rastreo: sitemap solo publicado; robots también sin publicar, con Disallow: /.
 						.requestMatchers(HttpMethod.GET, "/api/publico/web", "/api/publico/web/legal",
-								"/api/publico/web/eventos", "/api/publico/web/eventos/{id}")
+								"/api/publico/web/eventos", "/api/publico/web/eventos/{id}",
+								"/api/publico/web/robots.txt", "/api/publico/web/sitemap.xml")
 						.permitAll()
 						.requestMatchers("/api/catalogo", "/api/catalogo/**")
 						.hasAnyAuthority(Roles.ROLE_ADMIN.toString(), Roles.ROLE_MANAGER.toString(),

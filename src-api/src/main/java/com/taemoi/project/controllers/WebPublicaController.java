@@ -108,6 +108,16 @@ public class WebPublicaController {
 				.cacheControl(esAnonimo() && !vistaPrevia ? CACHE_PUBLICA : CACHE_CON_SESION).body(cuerpo.get());
 	}
 
+	@GetMapping(value = "/robots.txt", produces = "text/plain;charset=UTF-8")
+	public ResponseEntity<String> robots() {
+		return responder(web.robots(), false);
+	}
+
+	@GetMapping(value = "/sitemap.xml", produces = "application/xml;charset=UTF-8")
+	public ResponseEntity<String> sitemap() {
+		return responder(web.sitemap(), false);
+	}
+
 	/** Huella del JSON: Spring responde 304 si {@code If-None-Match} coincide. */
 	private String etiqueta(Object cuerpo) {
 		try {

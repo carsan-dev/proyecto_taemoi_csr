@@ -29,6 +29,8 @@ type JsonLd = Record<string, unknown>;
 
 /** Marca de las etiquetas de la plantilla: solo se tocan las que la llevan. */
 const MARCA = 'data-web-plantilla';
+/** El `<link rel="icon">` del index (el neutro) que la plantilla reutiliza: guarda su `href` original para devolverlo. */
+const ICONO_ORIGINAL = 'data-web-plantilla-icono-original';
 const NOINDEX = 'noindex, nofollow';
 
 /**
@@ -128,7 +130,7 @@ export class SeoEscuelaService {
       this.meta('property', 'og:image', imagen);
     }
     if (logo) {
-      this.enlace('icon', logo);
+      this.icono(logo);
     }
     for (const dato of datos) {
       const script = this.document.createElement('script');
@@ -154,6 +156,11 @@ export class SeoEscuelaService {
 
   /** Quita todas las etiquetas de la plantilla (al salir de sus rutas). */
   limpiar(): void {
+    for (const icono of Array.from(this.document.head.querySelectorAll(`link[${ICONO_ORIGINAL}]`))) {
+      icono.setAttribute('href', icono.getAttribute(ICONO_ORIGINAL) ?? '');
+      icono.removeAttribute(ICONO_ORIGINAL);
+      icono.removeAttribute(MARCA);
+    }
     for (const elemento of Array.from(this.document.head.querySelectorAll(`[${MARCA}]`))) {
       elemento.remove();
     }
@@ -231,6 +238,18 @@ export class SeoEscuelaService {
     meta.setAttribute('content', contenido);
     meta.setAttribute(MARCA, '');
     this.document.head.appendChild(meta);
+  }
+
+  /** Sustituye el `<link rel="icon">` del index (el neutro) por el logo; si no hay, añade uno. */
+  private icono(href: string): void {
+    const existente = this.document.head.querySelector(`link[rel="icon"]:not([${MARCA}])`);
+    if (!existente) {
+      this.enlace('icon', href);
+      return;
+    }
+    existente.setAttribute(ICONO_ORIGINAL, existente.getAttribute('href') ?? '');
+    existente.setAttribute('href', href);
+    existente.setAttribute(MARCA, '');
   }
 
   private enlace(rel: string, href: string): void {
