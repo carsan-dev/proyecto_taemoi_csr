@@ -81,13 +81,14 @@ public class ProfesorService {
 	private final ProductosCatalogoService productosCatalogo;
 	private final RegistroAccionesProfesor registro;
 	private final TurnoRepository turnos;
+	private final RallasService rallas;
 
 	public ProfesorService(EntityManager em, AlcanceActual alcanceActual, AsignacionProfesorRepository asignaciones,
 			TutorRepository tutores, ProgresionGradosService progresionGrados,
 			CatalogoDisciplinasService catalogoDisciplinas, ComportamientoLegadoService comportamientoLegado,
 			AlumnoSaludService alumnoSalud, PDFService pdf, AlumnoDeporteService alumnoDeportes, AlumnoService alumnos,
 			AlumnoDeporteRepository inscripciones, ProductosCatalogoService productosCatalogo,
-			RegistroAccionesProfesor registro, TurnoRepository turnos) {
+			RegistroAccionesProfesor registro, TurnoRepository turnos, RallasService rallas) {
 		this.em = em;
 		this.alcanceActual = alcanceActual;
 		this.asignaciones = asignaciones;
@@ -103,6 +104,7 @@ public class ProfesorService {
 		this.productosCatalogo = productosCatalogo;
 		this.registro = registro;
 		this.turnos = turnos;
+		this.rallas = rallas;
 	}
 
 	/**
@@ -144,9 +146,10 @@ public class ProfesorService {
 	}
 
 	/**
-	 * Alumnos ACTIVOS de un grupo suyo (§5.2), por apellidos, nombre e id, cada uno con el id de su foto y sus deportes
-	 * activos (grado con nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no es suyo → 403. La condición
-	 * del {@code LEFT JOIN} solo quita el id de la foto de un anonimizado: no cambia quién sale en la lista.
+	 * Alumnos ACTIVOS de un grupo suyo (§5.2), por nombre, apellidos e id (el orden de Pasar lista), cada uno con el id
+	 * de su foto y sus deportes activos (grado con nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no
+	 * es suyo → 403. La condición del {@code LEFT JOIN} solo quita el id de la foto de un anonimizado: no cambia quién
+	 * sale en la lista.
 	 */
 	@Transactional(readOnly = true)
 	public List<ProfesorDTOs.AlumnoDeGrupo> alumnosDelGrupo(Long grupoId) {
@@ -164,7 +167,7 @@ public class ProfesorService {
 		for (Object[] f : em.createQuery("""
 				SELECT a.id, a.nombre, a.apellidos, foto.id, a.genero FROM Grupo g JOIN g.alumnos a
 				LEFT JOIN a.fotoAlumno foto ON a.anonimizadoEn IS NULL
-				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.apellidos, a.nombre, a.id""", Object[].class)
+				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.nombre, a.apellidos, a.id""", Object[].class)
 				.setParameter("grupo", grupoId).getResultList()) {
 			porAlumno.put((Long) f[0], new ProfesorDTOs.AlumnoDeGrupo((Long) f[0], (String) f[1], (String) f[2],
 					(Long) f[3], new ArrayList<>(), genero(f[4])));
@@ -218,7 +221,8 @@ public class ProfesorService {
 				FROM Grupo g JOIN g.alumnos a LEFT JOIN g.disciplina d LEFT JOIN Sede s ON s.id = g.sedeId
 				WHERE a.id = :alumno AND g.id IN :grupos ORDER BY g.nombre, g.id""", Object[].class)
 				.setParameter("alumno", alumnoId).setParameter("grupos", grupos).getResultList()) {
-			compartidos.add(new ProfesorDTOs.GrupoCompartido((Long) f[0], (String) f[1], sede((Long) f[2], (String) f[3])));
+			compartidos.add(new ProfesorDTOs.GrupoCompartido((Long) f[0], (String) f[1], sede((Long) f[2], (String) f[3]),
+					(String) f[4], rallas.puedeCambiar((Long) f[0], (Long) f[2])));
 			if (f[4] != null) {
 				disciplinasCompartidas.add((String) f[4]);
 			}

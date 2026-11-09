@@ -358,6 +358,46 @@
   margin-right: 4px;
 }
 
+// Punta del cinturón que abre la hoja de rallas (decisión 514): el mismo botón que `.pasar-lista__cinto`, sin estilo
+// nativo, con el marco blanco y un objetivo de 44 px.
+.ficha__punta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ficha__punta:focus-visible {
+  outline-offset: 2px;
+}
+
+.ficha__punta-marco {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  border-color: var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-superficie);
+  transition: background-color var(--pn-transicion), border-color var(--pn-transicion);
+}
+
+.ficha__punta:hover .ficha__punta-marco,
+.ficha__punta[aria-expanded='true'] .ficha__punta-marco {
+  border-color: var(--pn-acento-borde);
+  background: var(--pn-acento-suave);
+}
+
 .ficha__flecha {
   width: 18px;
   height: 18px;

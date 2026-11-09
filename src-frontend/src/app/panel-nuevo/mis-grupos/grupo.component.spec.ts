@@ -259,6 +259,35 @@ describe('GrupoPanelComponent', () => {
       expect(anterior[1].deportes[0].apto).toBeFalse();
     });
 
+    it('las rallas dadas en la ficha (decisión 514) ponen al día el cinturón, el distintivo y «Apto» de la fila', () => {
+      const conRallas: AlumnoDeGrupo[] = [alumnos[0], { id: 22, nombre: 'Hugo', apellidos: 'Martín', deportes: [
+        { deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'AMARILLO', nombre: 'Amarillo' }, fechaGrado: null, apto: false, delGrupo: true, mediasRallas: 9, aplicaRallas: true },
+      ] }];
+      cargar(conRallas);
+      spyOn(fixture.componentInstance, 'esEscritorio').and.returnValue(true);
+      consulta.next(convertToParamMap({ alumno: '22' }));
+      fixture.detectChanges();
+      http.expectOne(`${api}/alumnos/22`).flush({ ...ficha, id: 22 });
+      fixture.detectChanges();
+      const fila = () => elemento().querySelectorAll<HTMLElement>('.grupo-profesor__fila')[1];
+      const aptos = () => elemento().querySelector('[data-filtro="aptos"]')!.textContent!.replace(/\s+/g, ' ').trim();
+      const fichaHija = fixture.debugElement.query(By.directive(FichaProfesorPanelComponent)).componentInstance as FichaProfesorPanelComponent;
+      expect(fila().querySelector('[data-listo]')).toBeNull();
+      expect(fila().querySelectorAll('pn-cinturon [data-ralla]').length).toBe(5);
+
+      fichaHija.rallasCambiadas.emit({ alumnoId: 22, deporte: 'TAEKWONDO', medias: 10, apto: false });
+      fixture.detectChanges();
+      expect(fila().querySelector('[data-listo]')?.textContent?.trim()).toBe('Listo para examen');
+      expect(aptos()).toBe('Aptos 1');
+
+      fichaHija.rallasCambiadas.emit({ alumnoId: 22, deporte: 'TAEKWONDO', medias: 0, apto: true });
+      fixture.detectChanges();
+      expect(fila().querySelector('[data-listo]')).toBeNull();
+      expect(fila().querySelectorAll('pn-cinturon [data-ralla]').length).toBe(0);
+      expect(fila().querySelector('.grupo-profesor__apto')).not.toBeNull();
+      expect(aptos()).toBe('Aptos 2');
+    });
+
     it('el panel no es modal: sin velo, la lista sigue activa, la fila abierta queda marcada y el contenido se estrecha', () => {
       cargar();
       spyOn(fixture.componentInstance, 'esEscritorio').and.returnValue(true);
@@ -308,6 +337,40 @@ describe('GrupoPanelComponent', () => {
       expect(elemento().querySelector('pn-panel-lateral')).toBeNull();
       expect(document.activeElement).toBe(elemento().querySelector('[data-alumno="22"]'));
     }));
+
+    it('con la hoja de rallas abierta, Esc cierra solo la hoja y el foco vuelve a la punta; otro Esc cierra el panel', () => {
+      cargar();
+      spyOn(fixture.componentInstance, 'esEscritorio').and.returnValue(true);
+      consulta.next(convertToParamMap({ alumno: '22' }));
+      fixture.detectChanges();
+      http.expectOne(`${api}/alumnos/22`).flush({
+        ...ficha, id: 22, nombre: 'Hugo', apellidos: 'Martín',
+        grupos: [{ id: 7, nombre: 'Infantil', sede: null, deporte: 'TAEKWONDO', puedeCambiarRallas: true }],
+        deportes: [{
+          deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'AMARILLO', nombre: 'Amarillo' }, fechaGrado: null,
+          apto: false, deMisGrupos: true, admitePases: false, siguienteGrado: null, pideRojoBordado: false, mediasRallas: 4, aplicaRallas: true,
+        }],
+      });
+      fixture.detectChanges();
+      const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      const punta = () => elemento().querySelector<HTMLButtonElement>('pn-panel-lateral button.ficha__punta');
+      punta()!.focus();
+      punta()!.click();
+      fixture.detectChanges();
+      const hoja = () => document.querySelector<HTMLDialogElement>('dialog[data-dialogo="rallas"]');
+      expect(hoja()).not.toBeNull();
+
+      hoja()!.querySelector<HTMLElement>('[data-paso="1"]')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(hoja()).toBeNull();
+      expect(navegar).not.toHaveBeenCalled();
+      expect(elemento().querySelector('pn-panel-lateral')).not.toBeNull();
+      expect(document.activeElement).toBe(punta());
+
+      punta()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      expect(navegar).toHaveBeenCalledWith([], jasmine.objectContaining({ queryParams: { alumno: null } }));
+    });
 
     it('cerrar quita ?alumno= de la URL', () => {
       cargar();

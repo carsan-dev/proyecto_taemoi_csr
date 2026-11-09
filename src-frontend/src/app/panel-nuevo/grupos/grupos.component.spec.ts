@@ -569,12 +569,17 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
   it('alumnos por tipo: el fallo se enseña dentro del panel con «Reintentar» (sin SweetAlert2)', fakeAsync(() => {
     crear();
     responder();
+    // Un toast de otro spec (Swal real con temporizador) que cae en este tiempo no es de Grupos: se limpia antes y se
+    // vigila que el componente no abra ninguno (Toast hereda `fire` de Swal).
+    document.querySelectorAll('.swal2-container').forEach((e) => e.remove());
+    const fire = spyOn(Swal, 'fire');
     el().querySelector<HTMLButtonElement>('.grupos__tipo')!.click();
     fixture.detectChanges();
     http.expectOne(`${API}/grupos/tipo/Taekwondo/alumnos`).flush({}, { status: 500, statusText: 'Error' });
     fixture.detectChanges();
     const panel = el().querySelector<HTMLDialogElement>('dialog.pn-panel')!;
     expect(texto(panel.querySelector('pn-bloque-error'))).toContain('No hemos podido obtener los alumnos del grupo');
+    expect(fire).not.toHaveBeenCalled();
     expect(document.querySelector('.swal2-container')).toBeNull();
     boton(panel, 'Reintentar').click();
     fixture.detectChanges();

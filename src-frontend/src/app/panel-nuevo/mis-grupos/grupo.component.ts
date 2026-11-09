@@ -234,6 +234,15 @@ export class GrupoPanelComponent implements OnInit {
     });
   }
 
+  /** Las rallas dadas desde la ficha (decisión 514): cinturón, distintivo, «Apto» y contador, sin recargar. */
+  alCambiarRallas(cambio: { alumnoId: number; deporte: string; medias: number; apto?: boolean }): void {
+    this.alumnos = this.alumnos.map(a => a.id !== cambio.alumnoId ? a : {
+      ...a,
+      deportes: a.deportes.map(d => d.deporte !== cambio.deporte ? d
+        : { ...d, mediasRallas: cambio.medias, ...(cambio.apto === undefined ? {} : { apto: cambio.apto }) }),
+    });
+  }
+
   get numeroAptos(): number { return this.alumnos.filter(esApto).length; }
   get visibles(): AlumnoDeGrupo[] { return this.filtro === FILTROS.aptos ? this.alumnos.filter(esApto) : this.alumnos; }
 

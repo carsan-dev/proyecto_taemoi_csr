@@ -73,7 +73,12 @@ public final class ProfesorDTOs {
 			List<Contacto> contacto, List<DeporteDelAlumno> deportes, String genero) {
 	}
 
-	public record GrupoCompartido(Long id, String nombre, Sede sede) {
+	/**
+	 * Un grupo que comparte con el profesor. {@code deporte}: código de la disciplina del grupo (nulo si no tiene);
+	 * {@code puedeCambiarRallas}: quien pide puede dar rallas en ese grupo (decisión 514), con la misma regla que Pasar
+	 * lista (propietario, gestión, responsable de la sede o titular; el ayudante, no).
+	 */
+	public record GrupoCompartido(Long id, String nombre, Sede sede, String deporte, boolean puedeCambiarRallas) {
 	}
 
 	/**
