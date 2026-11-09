@@ -11,6 +11,7 @@ import { fecha, numero, plural } from '../../formato/formato-es';
 import { variablesDelTema } from '../../tema-escuela';
 import type { FichaAlumnoComponent } from '../ficha-alumno.component';
 import { CinturonComponent } from '../../cinturon/cinturon.component';
+import { mediasVisibles } from '../../cinturon/rallas-textos';
 
 /**
  * Pestaña «Deportes» de la ficha nueva (8b-3b): un bloque por disciplina con su marca y las cajas Grado, Tarifa, Alta y
@@ -30,6 +31,7 @@ export class FichaDeportesComponent {
   readonly fecha = fecha;
   readonly numero = numero;
   readonly plural = plural;
+  readonly mediasVisibles = mediasVisibles;
 
   private readonly temaActual = inject(AcentoEscuelaActual);
   /** 8b-C: las listas flotantes van en el body, fuera del `.pn` de la ficha: llevan copiado el tema de la escuela. */

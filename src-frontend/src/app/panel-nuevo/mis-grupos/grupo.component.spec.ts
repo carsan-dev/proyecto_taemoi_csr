@@ -108,6 +108,35 @@ describe('GrupoPanelComponent', () => {
     expect(fila.querySelector('.grupo-profesor__avatar')?.textContent?.trim()).toBe('LR');
   });
 
+  it('rallas (solo lectura): el cinturón con sus rallas, el texto oculto y «Listo para examen» con las 5; sin grado, punta vacía', () => {
+    cargar([
+      { id: 21, nombre: 'Lucía', apellidos: 'Romero', deportes: [
+        { deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'VERDE', nombre: 'Verde' }, fechaGrado: null, apto: false, delGrupo: true, mediasRallas: 10, aplicaRallas: true },
+      ] },
+      { id: 22, nombre: 'Carla', apellidos: 'Núñez', deportes: [
+        { deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'AMARILLO', nombre: 'Amarillo' }, fechaGrado: null, apto: false, delGrupo: true, mediasRallas: 5, aplicaRallas: true },
+      ] },
+      { id: 23, nombre: 'Raúl', apellidos: 'Medina', deportes: [
+        { deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'NEGRO_1_DAN', nombre: 'Negro 1º DAN' }, fechaGrado: null, apto: false, delGrupo: true, mediasRallas: null, aplicaRallas: false },
+      ] },
+      { id: 24, nombre: 'Nora', apellidos: 'Esteban', deportes: [
+        { deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: null, fechaGrado: null, apto: false, delGrupo: true, mediasRallas: null, aplicaRallas: false },
+      ] },
+    ]);
+    const filas = Array.from(elemento().querySelectorAll('.grupo-profesor__fila'));
+    const rallas = (i: number) => filas[i].querySelectorAll('pn-cinturon [data-ralla]').length;
+    expect(rallas(0)).toBe(5);
+    expect(filas[0].querySelector('[data-listo]')?.textContent?.trim()).toBe('Listo para examen');
+    expect(rallas(1)).toBe(3);
+    expect(filas[1].querySelector('.grupo-profesor__deporte')?.textContent).toContain(', 2 y media de 5 rallas');
+    expect(filas[1].querySelector('[data-listo]')).toBeNull();
+    expect(rallas(2)).toBe(0);
+    expect(filas[2].querySelector('.grupo-profesor__deporte')?.textContent).not.toContain('rallas');
+    expect(filas[3].querySelector('pn-cinturon rect[stroke-dasharray]')).not.toBeNull();
+    // Solo lectura: ninguna punta es un botón.
+    expect(elemento().querySelector('button pn-cinturon')).toBeNull();
+  });
+
   it('muestra error y permite reintentar las mismas lecturas', () => {
     http.expectOne(`${api}/grupos`).flush([]);
     http.expectOne(`${api}/grupos/7/alumnos`).flush({}, { status: 500, statusText: 'Error' });

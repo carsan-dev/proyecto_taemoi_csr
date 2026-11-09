@@ -65,10 +65,13 @@
                   [attr.aria-current]="alumnoAbierto?.id === alumno.id ? 'true' : null" (click)="abrirAlumno($event, alumno)">{{ nombreCompleto(alumno.nombre, alumno.apellidos) }}</a>
                 @for (deporte of alumno.deportes; track deporte.deporte) {
                   <span class="grupo-profesor__deporte">
+                    @let medias = mediasVisibles(deporte);
                     @if (gradoDe(deporte); as grado) {
-                      <pn-cinturon class="grupo-profesor__cinto" [color1]="grado.color1" [color2]="grado.color2" />
-                      {{ deporte.deporteNombre }} · {{ grado.texto }}
+                      <pn-cinturon class="grupo-profesor__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" />
+                      {{ deporte.deporteNombre }} · {{ grado.texto }}@if (medias !== null) {<span class="grupo-profesor__oculto">, {{ textoOcultoRallas(medias) }}</span>}
+                      @if (medias === 10) { <pn-distintivo-examen data-listo /> }
                     } @else {
+                      <pn-cinturon class="grupo-profesor__cinto" [sinGrado]="true" />
                       {{ deporte.deporteNombre }} · Sin grado
                     }
                   </span>

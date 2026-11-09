@@ -39,6 +39,8 @@ import { CampoDialogo } from '../dialogo/dialogo.component';
 import { diaCorto, diaLargo, letraMotivo, textoMotivo } from '../asistencia/asistencia-textos';
 import { eur } from '../formato/formato-es';
 import { CinturonComponent } from '../cinturon/cinturon.component';
+import { DistintivoExamenComponent } from '../cinturon/distintivo-examen.component';
+import { mediasVisibles, textoCuentaRallas } from '../cinturon/rallas-textos';
 
 /** Texto de la confirmación de un pase (D7-6). Igual que en la ficha de hoy. */
 export const NOTA_PASE = 'Crea el cargo; el grado sube al cobrarlo en Mi caja.';
@@ -90,7 +92,7 @@ interface EdicionFecha {
 @Component({
   selector: 'pn-ficha-profesor',
   standalone: true,
-  imports: [CinturonComponent, FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, EsqueletoComponent],
+  imports: [CinturonComponent, DistintivoExamenComponent, FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, EsqueletoComponent],
   templateUrl: './ficha-profesor-panel.component.html',
   styleUrl: './ficha-profesor-panel.component.scss',
 })
@@ -116,6 +118,8 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   @Output() readonly aptoCambiado = new EventEmitter<{ alumnoId: number; deporte: string; apto: boolean }>();
 
   readonly fechaCorta = fechaCorta;
+  readonly mediasVisibles = mediasVisibles;
+  readonly textoCuentaRallas = textoCuentaRallas;
   readonly enlaceTelefono = enlaceTelefono;
   readonly etiquetaContacto = etiquetaContacto;
   readonly hoy = hoyIso();

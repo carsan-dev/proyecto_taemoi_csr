@@ -13,6 +13,8 @@ import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { frasePlural, numero } from '../formato/formato-es';
 import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component';
 import { CinturonComponent } from '../cinturon/cinturon.component';
+import { DistintivoExamenComponent } from '../cinturon/distintivo-examen.component';
+import { mediasVisibles, textoOcultoRallas } from '../cinturon/rallas-textos';
 
 /**
  * «Alumnos por tipo de grupo» de Grupos (8b-3c) en el panel lateral (hoja inferior por debajo de 768 px). Hereda la
@@ -23,7 +25,7 @@ import { CinturonComponent } from '../cinturon/cinturon.component';
 @Component({
   selector: 'pn-alumnos-tipo',
   standalone: true,
-  imports: [CinturonComponent, PanelLateralComponent, EsqueletoComponent, BloqueErrorComponent, BloqueVacioComponent],
+  imports: [CinturonComponent, DistintivoExamenComponent, PanelLateralComponent, EsqueletoComponent, BloqueErrorComponent, BloqueVacioComponent],
   templateUrl: './alumnos-tipo-panel.component.html',
   styleUrls: ['./alumnos-tipo-panel.component.scss'],
 })
@@ -35,6 +37,7 @@ export class AlumnosTipoPanelComponent extends GrupoAlumnosModalComponent implem
 
   error = false;
   readonly iniciales = iniciales;
+  readonly textoOcultoRallas = textoOcultoRallas;
   private carga?: Subscription;
 
   constructor() {
@@ -94,29 +97,24 @@ export class AlumnosTipoPanelComponent extends GrupoAlumnosModalComponent implem
   }
 
   /**
-   * Colores del cinturón de `alumno.grado`. El API de este listado (`AlumnoCortoDTO`) solo da el NOMBRE del grado, no su
-   * código ni la disciplina. La disciplina se toma del tipo de grupo abierto (su código o nombre dentro del nombre del
-   * tipo, como hace el API) y en su sistema de grados se busca el grado por código o por nombre. Si el tipo no deja una
-   * disciplina con grados, se busca en todos los sistemas, como antes.
+   * Colores del cinturón de un alumno del listado (`AlumnoCortoDTO`): búsqueda exacta por `codigoGrado` en el sistema de
+   * grados de su disciplina (`deporte`, la de la inscripción del tipo). Sin grado, disciplina sin grados o código que no
+   * está en el catálogo: null.
    */
-  cinturon(grado: string | null | undefined): { color1: string; color2: string | null } | null {
-    const buscado = (grado ?? '').trim().toUpperCase();
+  cinturon(alumno: { codigoGrado?: string | null; deporte?: string | null } | null | undefined): { color1: string; color2: string | null } | null {
+    const codigo = alumno?.codigoGrado;
     const catalogo = this.catalogo.catalogo();
-    if (!buscado || !catalogo) {
+    if (!codigo || !alumno?.deporte || !catalogo) {
       return null;
     }
-    const tipo = (this.grupoNombre ?? '').toUpperCase();
-    const disciplinas = (catalogo.disciplinas ?? []).filter(
-      (d) =>
-        d.sistemaGradosId !== null &&
-        (tipo.includes(d.codigo.toUpperCase().replace(/_/g, ' ')) || tipo.includes(d.codigo.toUpperCase()) || tipo.includes(d.nombre.toUpperCase()))
-    );
-    const delTipo = disciplinas.flatMap((d) => gradosDeDisciplina(catalogo.sistemasGrados, d));
-    const candidatos = delTipo.length ? delTipo : catalogo.sistemasGrados.flatMap((sistema) => sistema.grados);
-    const encontrado = candidatos.find(
-      (g) => g.color1 && (g.codigo.trim().toUpperCase() === buscado || g.nombre.trim().toUpperCase() === buscado)
-    );
-    return encontrado ? { color1: encontrado.color1 as string, color2: encontrado.color2 ?? null } : null;
+    const disciplina = (catalogo.disciplinas ?? []).find((d) => d.codigo === alumno.deporte);
+    const encontrado = gradosDeDisciplina(catalogo.sistemasGrados, disciplina).find((g) => g.codigo === codigo);
+    return encontrado?.color1 ? { color1: encontrado.color1, color2: encontrado.color2 ?? null } : null;
+  }
+
+  /** Medias rallas hacia el examen del alumno; null si no se usan. */
+  medias(alumno: { mediasRallas?: number | null; aplicaRallas?: boolean | null } | null | undefined): number | null {
+    return mediasVisibles(alumno);
   }
 
   foto(alumno: any): string | null {

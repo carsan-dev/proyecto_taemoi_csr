@@ -114,7 +114,7 @@
           @for (d of disciplinas; track d.codigo) {
           <li class="ficha__disciplina">
             @if (d.color1) {
-            <pn-cinturon class="ficha__cinto" [color1]="d.color1" [color2]="d.color2" />
+            <pn-cinturon class="ficha__cinto" [color1]="d.color1" [color2]="d.color2" [medias]="d.medias" />
             } @else {
             <span class="ficha__cinto ficha__cinto--sin" [class]="d.clase" aria-hidden="true"></span>
             }
@@ -125,6 +125,10 @@
               }
               @if (d.linea) {
               <span class="ficha__grado-linea" data-cifras>{{ d.linea }}</span>
+              }
+              @if (d.medias !== null) {
+              <span class="ficha__grado-linea" data-rallas>{{ textoCuentaRallas(d.medias) }}</span>
+              @if (d.medias === 10) {<span class="ficha__listo"><pn-distintivo-examen data-listo [genero]="alumno?.genero" /></span>}
               }
             </span>
           </li>

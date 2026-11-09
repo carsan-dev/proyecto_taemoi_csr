@@ -162,6 +162,26 @@ describe('FichaProfesorPanelComponent', () => {
     expect(bloqueDe('Taekwondo').textContent).not.toContain('BLANCO-AMARILLO');
   });
 
+  it('rallas (solo lectura): el cinturón con sus rallas y «2 y media de 5 rallas»', () => {
+    crear(ficha([deporte({ mediasRallas: 5, aplicaRallas: true })]));
+    const bloque = bloqueDe('Taekwondo');
+    expect(bloque.querySelectorAll('pn-cinturon.ficha__cinto [data-ralla]').length).toBe(3);
+    expect(bloque.querySelector('[data-rallas]')?.textContent?.trim()).toBe('2 y media de 5 rallas');
+    expect(bloque.querySelector('[data-listo]')).toBeNull();
+  });
+
+  it('rallas: con las 5, «5 de 5 rallas» y «Listo para examen»', () => {
+    crear(ficha([deporte({ mediasRallas: 10, aplicaRallas: true })]));
+    expect(bloqueDe('Taekwondo').querySelector('[data-rallas]')?.textContent?.trim()).toBe('5 de 5 rallas');
+    expect(bloqueDe('Taekwondo').querySelector('[data-listo]')?.textContent?.trim()).toBe('Listo para examen');
+  });
+
+  it('rallas: sin usarse (PUM/DAN o disciplina apagada), ni rallas ni texto', () => {
+    crear(ficha([deporte({ mediasRallas: null, aplicaRallas: false })]));
+    expect(bloqueDe('Taekwondo').querySelectorAll('[data-ralla]').length).toBe(0);
+    expect(bloqueDe('Taekwondo').querySelector('[data-rallas]')).toBeNull();
+  });
+
   describe('apto', () => {
     it('el interruptor, a la izquierda de la etiqueta, es role=switch y envía el cambio; al fallar avisa con un aviso de error', () => {
       crear();

@@ -29,6 +29,8 @@ import { FichaDocumentosComponent } from './documentos/ficha-documentos.componen
 import { fechaParaCampo, lineaGrado, resumenPendiente } from './ficha-vista';
 import { FichaPagosComponent } from './pagos/ficha-pagos.component';
 import { CinturonComponent } from '../cinturon/cinturon.component';
+import { DistintivoExamenComponent } from '../cinturon/distintivo-examen.component';
+import { mediasVisibles, textoCuentaRallas } from '../cinturon/rallas-textos';
 
 export type Pestana = 'deportes' | 'pagos' | 'datos' | 'documentos';
 
@@ -49,6 +51,8 @@ export interface DisciplinaCarnet {
   color1: string | null;
   color2: string | null;
   linea: string;
+  /** Medias rallas hacia el examen (0-10); null si no se usan (decisiones 510-513). */
+  medias: number | null;
 }
 
 type Estado = 'cargando' | 'listo' | 'error';
@@ -87,6 +91,7 @@ class CobrosEnVuelo extends Set<number> {
   standalone: true,
   imports: [
     CinturonComponent,
+    DistintivoExamenComponent,
     RouterLink,
     FichaDeportesComponent,
     FichaPagosComponent,
@@ -122,6 +127,7 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
   readonly fecha = fecha;
   readonly numero = numero;
   readonly plural = plural;
+  readonly textoCuentaRallas = textoCuentaRallas;
 
   @ViewChild('menuMas') private menuMas?: ElementRef<HTMLElement>;
   @ViewChild('botonMas') private botonMas?: ElementRef<HTMLButtonElement>;
@@ -399,6 +405,7 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
       color1: vista ? vista.color1 : null,
       color2: vista ? vista.color2 : null,
       linea: lineaGrado(grado, conGrados && d.grado ? tiempoConGrado(d.fechaGrado, hoy) : ''),
+      medias: vista ? mediasVisibles(d) : null,
     };
   }
 

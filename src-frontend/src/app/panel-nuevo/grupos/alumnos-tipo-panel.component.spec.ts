@@ -37,36 +37,36 @@ describe('AlumnosTipoPanelComponent cinturon', () => {
     componente = TestBed.createComponent(AlumnosTipoPanelComponent).componentInstance;
   });
 
-  it('grado de un color: color1 y sin color2', () => {
-    componente.grupoNombre = 'Taekwondo infantil';
-    expect(componente.cinturon('amarillo')).toEqual({ color1: '#FFD700', color2: null });
+  it('grado de un color: color1 y sin color2, por código y disciplina exactos', () => {
+    expect(componente.cinturon({ codigoGrado: 'AMARILLO', deporte: 'TAEKWONDO' })).toEqual({ color1: '#FFD700', color2: null });
   });
 
   it('medio grado: color1 y color2 (arriba)', () => {
-    componente.grupoNombre = 'Taekwondo infantil';
-    expect(componente.cinturon('BLANCO-AMARILLO')).toEqual({ color1: '#FFFFFF', color2: '#FFD700' });
+    expect(componente.cinturon({ codigoGrado: 'BLANCO_AMARILLO', deporte: 'TAEKWONDO' })).toEqual({ color1: '#FFFFFF', color2: '#FFD700' });
   });
 
-  it('por código del grado además de por nombre', () => {
-    componente.grupoNombre = 'Taekwondo infantil';
-    expect(componente.cinturon('BLANCO_AMARILLO')).toEqual({ color1: '#FFFFFF', color2: '#FFD700' });
-  });
-
-  it('el mismo grado en otra disciplina: el de la disciplina del tipo de grupo', () => {
-    componente.grupoNombre = 'Kickboxing adultos';
-    expect(componente.cinturon('Amarillo')).toEqual({ color1: '#AAAAAA', color2: null });
+  it('el mismo código en otra disciplina: el de la disciplina de la inscripción, no la del nombre del tipo', () => {
     componente.grupoNombre = 'Taekwondo adultos';
-    expect(componente.cinturon('Amarillo')).toEqual({ color1: '#FFD700', color2: null });
+    expect(componente.cinturon({ codigoGrado: 'AMARILLO', deporte: 'KICKBOXING' })).toEqual({ color1: '#AAAAAA', color2: null });
+    expect(componente.cinturon({ codigoGrado: 'AMARILLO', deporte: 'TAEKWONDO' })).toEqual({ color1: '#FFD700', color2: null });
   });
 
-  it('tipo sin disciplina con grados: se busca en todos los sistemas', () => {
-    componente.grupoNombre = 'Pilates';
-    expect(componente.cinturon('Amarillo')).toEqual({ color1: '#FFD700', color2: null });
+  it('ya no se deduce por el nombre del grado ni del tipo de grupo', () => {
+    componente.grupoNombre = 'Taekwondo infantil';
+    expect(componente.cinturon({ codigoGrado: null, deporte: null })).toBeNull();
+    expect(componente.cinturon({ codigoGrado: 'Amarillo', deporte: 'TAEKWONDO' })).toBeNull();
   });
 
-  it('sin grado o desconocido: null', () => {
+  it('sin grado, desconocido o disciplina sin grados: null', () => {
+    expect(componente.cinturon({ codigoGrado: null, deporte: 'TAEKWONDO' })).toBeNull();
+    expect(componente.cinturon({ codigoGrado: 'NO_EXISTE', deporte: 'TAEKWONDO' })).toBeNull();
+    expect(componente.cinturon({ codigoGrado: 'AMARILLO', deporte: 'PILATES' })).toBeNull();
     expect(componente.cinturon(null)).toBeNull();
-    expect(componente.cinturon('')).toBeNull();
-    expect(componente.cinturon('NO EXISTE')).toBeNull();
+  });
+
+  it('rallas: las medias solo si se usan', () => {
+    expect(componente.medias({ mediasRallas: 5, aplicaRallas: true })).toBe(5);
+    expect(componente.medias({ mediasRallas: 5, aplicaRallas: false })).toBeNull();
+    expect(componente.medias({ mediasRallas: null, aplicaRallas: false })).toBeNull();
   });
 });

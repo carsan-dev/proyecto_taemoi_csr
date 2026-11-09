@@ -118,7 +118,10 @@
             <dt>Grado actual</dt>
             <dd>
               @if (gradoDe(d); as grado) {
-                <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" />{{ grado.texto }}
+                @let medias = mediasVisibles(d);
+                <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" />{{ grado.texto }}
+                @if (medias === 10) { <pn-distintivo-examen data-listo /> }
+                @if (medias !== null) { <span class="ficha__detalle" data-rallas>{{ textoCuentaRallas(medias) }}</span> }
               } @else {
                 Sin grado
               }
@@ -231,7 +234,10 @@
             <dt>Grado actual</dt>
             <dd>
               @if (gradoDe(d); as grado) {
-                <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" />{{ grado.texto }}
+                @let medias = mediasVisibles(d);
+                <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" />{{ grado.texto }}
+                @if (medias === 10) { <pn-distintivo-examen data-listo /> }
+                @if (medias !== null) { <span class="ficha__detalle" data-rallas>{{ textoCuentaRallas(medias) }}</span> }
               } @else {
                 Sin grado
               }

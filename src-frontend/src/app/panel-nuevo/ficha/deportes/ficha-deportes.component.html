@@ -82,7 +82,7 @@
         <p class="deportes__etiqueta">Grado actual</p>
         <p class="deportes__grado">
           @if (colores(d); as c) {
-          <pn-cinturon [color1]="c.color1" [color2]="c.color2" />
+          <pn-cinturon [color1]="c.color1" [color2]="c.color2" [medias]="mediasVisibles(d)" />
           }
           <strong>{{ ficha.getGradoNombre(d.grado, d.deporte) || 'Sin grado asignado' }}</strong>
         </p>

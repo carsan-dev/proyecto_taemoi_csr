@@ -25,6 +25,8 @@ import { PanelLateralComponent } from '../panel-lateral/panel-lateral.component'
 import { VisorPdfComponent } from '../visor-pdf/visor-pdf.component';
 import { FichaProfesorPanelComponent } from './ficha-profesor-panel.component';
 import { CinturonComponent } from '../cinturon/cinturon.component';
+import { DistintivoExamenComponent } from '../cinturon/distintivo-examen.component';
+import { mediasVisibles, textoOcultoRallas } from '../cinturon/rallas-textos';
 
 const FILTROS = { todos: 'todos', aptos: 'aptos' } as const;
 type Filtro = typeof FILTROS[keyof typeof FILTROS];
@@ -39,7 +41,7 @@ function esApto(alumno: AlumnoDeGrupo): boolean { return alumno.deportes.some(d 
 @Component({
   selector: 'pn-grupo-profesor',
   standalone: true,
-  imports: [CinturonComponent, FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, BloqueVacioComponent,
+  imports: [CinturonComponent, DistintivoExamenComponent, FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, BloqueVacioComponent,
     EsqueletoComponent, BotonOcupadoComponent, PluralPipe, VisorPdfComponent, PanelLateralComponent, FichaProfesorPanelComponent],
   templateUrl: './grupo.component.html',
   styleUrl: './grupo.component.scss',
@@ -60,6 +62,8 @@ export class GrupoPanelComponent implements OnInit {
 
   readonly etiquetaRol = etiquetaRol;
   readonly nombreCompleto = nombreCompleto;
+  readonly mediasVisibles = mediasVisibles;
+  readonly textoOcultoRallas = textoOcultoRallas;
   readonly iniciales = iniciales;
   readonly numero = numero;
   readonly meses = mesesAsistencia();
