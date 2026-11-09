@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, input } from '@a
 import { RouterLink } from '@angular/router';
 
 import { paginaWeb } from '../../../comun/pagina-web';
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { SitioWeb } from '../../../datos/modelos';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
@@ -13,7 +14,7 @@ import { MarcoLineaComarcalComponent } from '../marco/marco.component';
 @Component({
   selector: 'app-lc-no-encontrada-contenido',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, VistaPreviaPipe],
   template: `
     <div class="error">
       <div class="envoltura">
@@ -25,9 +26,9 @@ import { MarcoLineaComarcalComponent } from '../marco/marco.component';
         <p class="error-texto">Puede que el enlace esté mal escrito o que la página ya no exista.</p>
         <p class="error-codigo">Error 404</p>
         <div class="acciones">
-          <a class="boton" routerLink="/">Ir al inicio</a>
+          <a class="boton" routerLink="/" [queryParams]="null | vistaPrevia">Ir al inicio</a>
           @if (sitio().sedes.length) {
-            <a class="boton boton--secundario" routerLink="/" fragment="linea">Ver horarios</a>
+            <a class="boton boton--secundario" routerLink="/" fragment="linea" [queryParams]="null | vistaPrevia">Ver horarios</a>
           }
         </div>
       </div>

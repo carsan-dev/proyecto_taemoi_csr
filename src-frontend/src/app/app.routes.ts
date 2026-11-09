@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { roleGuard } from './guards/role.guard';
 import { adminOnlyGuard } from './guards/admin-only.guard';
+import { sinLegadoTaemoiGuard } from './guards/sin-legado-taemoi.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
 import { misGruposGuard } from './guards/mis-grupos.guard';
@@ -547,6 +548,16 @@ export const routes: Routes = [
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
     loadComponent: () => import('./panel-nuevo/escuela/datos/datos-escuela.component').then(m => m.DatosEscuelaComponent),
     canActivate: [roleGuard, adminOnlyGuard],
+    canDeactivate: [salirSinGuardarGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
+    // Escuela → Web → Tema (W7): elegir, previsualizar y publicar el tema de la web; solo el propietario y nunca Moiskimdo.
+    path: 'web-tema',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
+    loadComponent: () => import('./panel-nuevo/web/tema/web-tema.component').then(m => m.WebTemaComponent),
+    canActivate: [roleGuard, adminOnlyGuard, sinLegadoTaemoiGuard],
     canDeactivate: [salirSinGuardarGuard],
     resolve: CATALOGO_RESOLVE,
   },

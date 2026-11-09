@@ -12,7 +12,7 @@
   <app-lc-marco [sitio]="s" pagina="eventos">
     <article class="p-evento" aria-labelledby="evento-titulo">
       <div class="envoltura evento-cabeza">
-        <a class="atras" routerLink="/eventos"><ng-container *ngTemplateOutlet="flechaIzq" />{{ textos.volverEventos }}</a>
+        <a class="atras" routerLink="/eventos" [queryParams]="null | vistaPrevia"><ng-container *ngTemplateOutlet="flechaIzq" />{{ textos.volverEventos }}</a>
         <div class="evento-rejilla-cabeza">
           @if (v.fecha || v.cuando || v.lugar) {
             <div class="evento-rotulo">
@@ -72,7 +72,7 @@
                 </li>
               }
             </ol>
-            <p class="volver-pie"><a class="atras" routerLink="/eventos"><ng-container *ngTemplateOutlet="flechaIzq" />{{ textos.volverEventos }}</a></p>
+            <p class="volver-pie"><a class="atras" routerLink="/eventos" [queryParams]="null | vistaPrevia"><ng-container *ngTemplateOutlet="flechaIzq" />{{ textos.volverEventos }}</a></p>
           </div>
         </section>
       }

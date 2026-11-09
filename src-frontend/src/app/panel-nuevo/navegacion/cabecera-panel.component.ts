@@ -19,6 +19,8 @@ import { NavigationEnd, NavigationStart, Router, RouterLink } from '@angular/rou
 import { catchError, filter, map, of, startWith, switchMap, take } from 'rxjs';
 
 import { contraste } from '../../componentes/endpoints/plataforma-logos/regla-contraste';
+import { CatalogoService } from '../../features/catalogo/catalogo.service';
+import { catalogoEsLegadoTaemoi } from '../../features/catalogo/legado-taemoi';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { Capacidad, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
@@ -125,6 +127,8 @@ export class CabeceraPanelComponent implements OnInit {
 
   private readonly auth = inject(AuthenticationService);
   private readonly permisos = inject(PermisosSesionService);
+  /** Solo para saber si la escuela es Moiskimdo (menú «Web · Tema», W7): el catálogo lo carga `catalogoResolver`. */
+  private readonly catalogo = inject(CatalogoService);
   private readonly marcaServicio = inject(MarcaEscuelaPanelService);
   private readonly contadorSolicitudes = inject(SolicitudesContadorService);
   private readonly router = inject(Router);
@@ -169,6 +173,7 @@ export class CabeceraPanelComponent implements OnInit {
   readonly contexto = computed<ContextoMenu>(() => {
     const roles = this.roles();
     const profesor = roles.includes('ROLE_PROFESOR');
+    const catalogo = this.catalogo.catalogo();
     return {
       propietario: roles.includes('ROLE_ADMIN'),
       soloProfesor: this.soloProfesor(),
@@ -179,6 +184,7 @@ export class CabeceraPanelComponent implements OnInit {
       sedes: this.capacidades().includes('SEDES'),
       miembros: this.capacidades().includes('MIEMBROS'),
       plataforma: this.plataforma(),
+      legado: catalogo ? catalogoEsLegadoTaemoi(catalogo) : undefined,
     };
   });
 

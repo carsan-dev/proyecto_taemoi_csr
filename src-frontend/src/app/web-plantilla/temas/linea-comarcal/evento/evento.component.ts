@@ -15,6 +15,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 
 import { paginaWeb } from '../../../comun/pagina-web';
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { EstadoRecurso, EventoDetalleWeb } from '../../../datos/modelos';
 import { WebPublicaService } from '../../../datos/web-publica.service';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
@@ -36,7 +37,7 @@ const NO_ENCONTRADO: EstadoRecurso<EventoDetalleWeb> = { estado: 'no-encontrado'
 @Component({
   selector: 'app-lc-evento',
   standalone: true,
-  imports: [
+  imports: [VistaPreviaPipe, 
     MarcoLineaComarcalComponent,
     ContenidoNoEncontradaLineaComarcalComponent,
     NgTemplateOutlet,

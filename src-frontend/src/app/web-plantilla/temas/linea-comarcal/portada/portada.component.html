@@ -16,12 +16,12 @@
           @if (v.botonHorarios || v.enlaceTarifas) {
             <div class="acciones">
               @if (v.botonHorarios) {
-                <a class="boton" routerLink="/" fragment="linea">{{ v.botonHorarios }}
+                <a class="boton" routerLink="/" fragment="linea" [queryParams]="null | vistaPrevia">{{ v.botonHorarios }}
                   <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 3v11M4.5 9.5 9 14l4.5-4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </a>
               }
               @if (v.enlaceTarifas) {
-                <a class="enlace-flecha" routerLink="/" fragment="tarifas">{{ v.enlaceTarifas }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                <a class="enlace-flecha" routerLink="/" fragment="tarifas" [queryParams]="null | vistaPrevia">{{ v.enlaceTarifas }}<ng-container *ngTemplateOutlet="flecha" /></a>
               }
             </div>
           }
@@ -157,7 +157,7 @@
                     }
                   </div>
                   @if (seccion.enlace) {
-                    <a class="enlace-flecha" [routerLink]="['/eventos', evento.id]">{{ seccion.enlace }}<span class="oculto">: {{ evento.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
+                    <a class="enlace-flecha" [routerLink]="['/eventos', evento.id]" [queryParams]="null | vistaPrevia">{{ seccion.enlace }}<span class="oculto">: {{ evento.titulo }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
                   }
                 </li>
               }
@@ -178,7 +178,7 @@
                 </ul>
               }
               @if (seccion.boton) {
-                <a class="boton boton--blanco" routerLink="/preinscripcion">{{ seccion.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>
+                <a class="boton boton--blanco" routerLink="/preinscripcion" [queryParams]="null | vistaPrevia">{{ seccion.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>
               }
             </div>
           </div>
@@ -210,7 +210,7 @@
                   @for (sede of seccion.sedes; track sede.clave) {
                     <li class="ruta-sede">
                       @if (sede.enlace) {
-                        <a class="ruta-nombre" [routerLink]="sede.enlace">{{ sede.nombre }}</a>
+                        <a class="ruta-nombre" [routerLink]="sede.enlace" [queryParams]="null | vistaPrevia">{{ sede.nombre }}</a>
                       } @else {
                         <span class="ruta-nombre">{{ sede.nombre }}</span>
                       }

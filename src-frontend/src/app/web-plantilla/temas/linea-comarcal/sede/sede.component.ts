@@ -15,6 +15,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 
 import { paginaWeb } from '../../../comun/pagina-web';
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { RELOJ_WEB } from '../../../comun/reloj';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
 import { CLAVE_SEDE_RECORDADA, claveSede } from '../contenido';
@@ -32,7 +33,7 @@ import { sedeDelSlug, vistaPaginaSede } from './sede';
 @Component({
   selector: 'app-lc-sede',
   standalone: true,
-  imports: [
+  imports: [VistaPreviaPipe, 
     MarcoLineaComarcalComponent,
     ContenidoNoEncontradaLineaComarcalComponent,
     NgTemplateOutlet,

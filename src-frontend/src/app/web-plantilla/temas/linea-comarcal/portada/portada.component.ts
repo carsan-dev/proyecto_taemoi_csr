@@ -14,6 +14,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { paginaWeb } from '../../../comun/pagina-web';
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
 import { RELOJ_WEB } from '../../../comun/reloj';
 import { vistaPortada } from '../contenido';
@@ -31,7 +32,7 @@ import { LineaSedesComponent } from './linea-sedes.component';
 @Component({
   selector: 'app-lc-portada',
   standalone: true,
-  imports: [MarcoLineaComarcalComponent, LineaSedesComponent, NgTemplateOutlet, RouterLink, SinPublicarComponent],
+  imports: [VistaPreviaPipe, MarcoLineaComarcalComponent, LineaSedesComponent, NgTemplateOutlet, RouterLink, SinPublicarComponent],
   templateUrl: './portada.component.html',
   styleUrl: './portada.component.css',
   encapsulation: ViewEncapsulation.None,

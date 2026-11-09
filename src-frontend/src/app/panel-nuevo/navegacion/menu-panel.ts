@@ -17,17 +17,30 @@ export type IdSeccion = 'inicio' | 'alumnos' | 'grupos' | 'tesoreria' | 'solicit
  * - `sedes`: la capacidad SEDES de `GET /api/auth/permisos` (E9-3); falla cerrado si el contexto no la trae.
  * - `miembros`: la capacidad MIEMBROS de `GET /api/auth/permisos` (E9-4); falla cerrado si el contexto no la trae.
  * - `cuenta`: `gestion` o `profesor` («Mi perfil», decisión 419); falla cerrado si el contexto no trae ninguno.
+ * - `webPlantilla`: `propietario` y una escuela de la web por plantilla, no Moiskimdo (W7; fase4-web-plan.md §9 n.º 8);
+ *   falla cerrado si el contexto no sabe aún si es la organización legado.
  */
-export type Condicion = 'propietario' | 'profesor' | 'misGrupos' | 'plataforma' | 'gestion' | 'sedes' | 'miembros' | 'cuenta';
+export type Condicion =
+  | 'propietario'
+  | 'profesor'
+  | 'misGrupos'
+  | 'plataforma'
+  | 'gestion'
+  | 'sedes'
+  | 'miembros'
+  | 'cuenta'
+  | 'webPlantilla';
 
 export type ContextoMenu = Readonly<
-  Record<Exclude<Condicion, 'gestion' | 'sedes' | 'miembros' | 'cuenta'>, boolean> & {
+  Record<Exclude<Condicion, 'gestion' | 'sedes' | 'miembros' | 'cuenta' | 'webPlantilla'>, boolean> & {
     soloProfesor?: boolean;
     /** La capacidad PANEL_SEDE de `GET /api/auth/permisos`: el menú de la decisión 370. */
     panelSede?: boolean;
     gestion?: boolean;
     sedes?: boolean;
     miembros?: boolean;
+    /** La escuela es Moiskimdo (`comportamientoLegadoTaemoi` del catálogo); sin catálogo, sin definir. */
+    legado?: boolean;
   }
 >;
 
@@ -145,6 +158,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       { etiqueta: 'Configuración', ruta: '/configuracion-sistema', icono: 'bi-sliders', condicion: 'propietario' },
       { etiqueta: 'Registro de acciones', ruta: '/auditoriaSistema', icono: 'bi-journal-text', condicion: 'propietario' },
       { etiqueta: 'Ver la web', ruta: '/', icono: 'bi-globe2', grupo: 'Web', verWeb: true },
+      { etiqueta: 'Tema', ruta: '/web-tema', icono: 'bi-palette2', condicion: 'webPlantilla' },
       {
         etiqueta: 'Errores de plataforma',
         ruta: '/plataformaErrores',
@@ -165,6 +179,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       '/datos-escuela',
       '/configuracion-sistema',
       '/auditoriaSistema',
+      '/web-tema',
       '/plataformaErrores',
       '/plataformaLogos',
       '/plataformaNuevaEscuela',
@@ -227,6 +242,9 @@ export function visible(entrada: EntradaMenu, contexto: ContextoMenu): boolean {
   }
   if (entrada.condicion === 'cuenta') {
     return contexto.gestion === true || contexto.panelSede === true || contexto.profesor === true;
+  }
+  if (entrada.condicion === 'webPlantilla') {
+    return contexto.propietario === true && contexto.legado === false;
   }
   return !entrada.condicion || contexto[entrada.condicion] === true;
 }

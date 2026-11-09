@@ -20,7 +20,7 @@
           <h2 class="rotulo indice-titulo" id="indice-titulo">{{ textos.enEstaPagina }}</h2>
           <ol class="indice-lista">
             @for (x of indice(); track x.id) {
-              <li><a routerLink="/legales" [fragment]="x.id" queryParamsHandling="preserve" [attr.aria-current]="seccionActual() === x.id ? 'true' : null">{{ x.texto }}</a></li>
+              <li><a routerLink="/legales" [fragment]="x.id" [attr.aria-current]="seccionActual() === x.id ? 'true' : null" queryParamsHandling="preserve">{{ x.texto }}</a></li>
             }
           </ol>
         </nav>
@@ -95,7 +95,7 @@
           @if (v.normas.length) {
             <section class="legal-seccion" id="normas" aria-labelledby="t-normas">
               <h2 class="legal-h2" id="t-normas">{{ textos.normas }}</h2>
-              <p>Son las normas de la actividad que se aceptan al preinscribirse. Las cuotas están en <a routerLink="/tarifas">Tarifas</a>.</p>
+              <p>Son las normas de la actividad que se aceptan al preinscribirse. Las cuotas están en <a routerLink="/tarifas" [queryParams]="null | vistaPrevia">Tarifas</a>.</p>
               @for (n of v.normas; track $index) {
                 @if (n.disciplina) {
                   <h3 class="legal-h3">{{ n.disciplina }}</h3>

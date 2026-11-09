@@ -73,7 +73,7 @@ describe('Arranque en una pantalla del panel con un fallo de red en el primer /r
         provideHttpClient(withInterceptors([errorInterceptor])),
         provideHttpClientTesting(),
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
-        { provide: CatalogoService, useValue: { cargar: () => of(void 0), cargado: () => true, notificarFallo: () => {} } },
+        { provide: CatalogoService, useValue: { cargar: () => of(void 0), cargado: () => true, catalogo: () => null, notificarFallo: () => {} } },
       ],
     });
     const http = TestBed.inject(HttpTestingController);

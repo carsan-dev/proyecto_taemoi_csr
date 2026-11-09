@@ -14,6 +14,7 @@ import {
 import { RouterLink } from '@angular/router';
 
 import { RELOJ_WEB } from '../../../comun/reloj';
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { SitioWeb } from '../../../datos/modelos';
 import { PaginaMarco, vistaMarco } from '../contenido';
 import { TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS } from '../textos';
@@ -29,7 +30,7 @@ import { TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS } from '../textos';
 @Component({
   selector: 'app-lc-marco',
   standalone: true,
-  imports: [RouterLink],
+  imports: [VistaPreviaPipe, RouterLink],
   templateUrl: './marco.component.html',
   styleUrl: './linea-comarcal.css',
   encapsulation: ViewEncapsulation.None,

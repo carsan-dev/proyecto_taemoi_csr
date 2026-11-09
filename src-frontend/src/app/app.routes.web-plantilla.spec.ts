@@ -234,6 +234,10 @@ describe('app.routes · grupo de la web por plantilla', () => {
         expect(router.url).withContext(desde).toBe(hasta);
         expect(hoja().data['webPlantilla']).withContext(desde).toBeTrue();
       }
+      await harness.navigateByUrl('/aviso-legal?vista-previa=x');
+      expect(router.url).toBe('/legales?vista-previa=x#aviso-legal');
+      await harness.navigateByUrl('/aviso-legal');
+      expect(router.url).toBe('/legales#aviso-legal');
       for (const path of RUTAS_SOLO_MOISKIMDO) {
         await harness.navigateByUrl(`/${path}`);
         expect(hoja().component).withContext(path).toBe(NoEncontradaLineaComarcalComponent);

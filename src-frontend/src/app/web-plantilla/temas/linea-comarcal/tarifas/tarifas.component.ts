@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, inject
 import { RouterLink } from '@angular/router';
 
 import { paginaWeb } from '../../../comun/pagina-web';
+import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { RELOJ_WEB } from '../../../comun/reloj';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
@@ -17,7 +18,7 @@ import { vistaTarifas } from './tarifas';
 @Component({
   selector: 'app-lc-tarifas',
   standalone: true,
-  imports: [MarcoLineaComarcalComponent, NgTemplateOutlet, RouterLink, SinPublicarComponent],
+  imports: [VistaPreviaPipe, MarcoLineaComarcalComponent, NgTemplateOutlet, RouterLink, SinPublicarComponent],
   templateUrl: './tarifas.component.html',
   styleUrl: './tarifas.component.css',
   encapsulation: ViewEncapsulation.None,
