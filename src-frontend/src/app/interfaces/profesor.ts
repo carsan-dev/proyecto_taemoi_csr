@@ -62,7 +62,7 @@ export interface AlumnoDeGrupo {
   apellidos: string;
   /** Id de su foto; nulo si no tiene. */
   fotoId?: number | null;
-  /** MASCULINO, FEMENINO o nulo: decide «Listo»/«Lista» para examen. */
+  /** MASCULINO, FEMENINO o nulo: decide Â«ListoÂ»/Â«ListaÂ» para examen. */
   genero?: string | null;
   deportes: DeporteEnLista[];
 }
