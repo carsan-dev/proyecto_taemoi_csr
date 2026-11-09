@@ -45,8 +45,13 @@ public final class ProfesorDTOs {
 			Disciplina disciplina, List<TurnoDeGrupoResumenDTO> turnos) {
 	}
 
-	/** Un alumno activo del grupo (§5.2), con sus deportes activos. {@code fotoId} nulo si no tiene foto. */
-	public record AlumnoDeGrupo(Long id, String nombre, String apellidos, Long fotoId, List<DeporteEnLista> deportes) {
+	/**
+	 * Un alumno activo del grupo (§5.2), con sus deportes activos. {@code fotoId} nulo si no tiene foto. {@code genero}:
+	 * {@code "FEMENINO"}, {@code "MASCULINO"} o {@code null}, como en Pasar lista (decisión 513 d: «listo/lista para
+	 * examen»).
+	 */
+	public record AlumnoDeGrupo(Long id, String nombre, String apellidos, Long fotoId, List<DeporteEnLista> deportes,
+			String genero) {
 	}
 
 	/**
@@ -62,10 +67,10 @@ public final class ProfesorDTOs {
 
 	/**
 	 * Ficha reducida (§5.3). {@code edad} en años cumplidos (nula sin fecha de nacimiento); {@code grupos}: solo los que
-	 * comparte con el profesor.
+	 * comparte con el profesor. {@code genero}: como en {@link AlumnoDeGrupo}.
 	 */
 	public record Ficha(Long id, String nombre, String apellidos, Integer edad, List<GrupoCompartido> grupos,
-			List<Contacto> contacto, List<DeporteDelAlumno> deportes) {
+			List<Contacto> contacto, List<DeporteDelAlumno> deportes, String genero) {
 	}
 
 	public record GrupoCompartido(Long id, String nombre, Sede sede) {

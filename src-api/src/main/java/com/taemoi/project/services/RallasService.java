@@ -246,8 +246,9 @@ public class RallasService {
 	}
 
 	/**
-	 * Profesor: el grupo es de {@code alcance.grupos()} (403). El grupo existe en la escuela activa (404). Quien llama
-	 * puede cambiar las rallas en él ({@link #puedeCambiar}; si no, 403).
+	 * Profesor: el grupo es de {@code alcance.grupos()} (403 de Spring Security). El grupo existe en la escuela activa
+	 * (404). Quien llama puede cambiar las rallas en él ({@link #puedeCambiar}; si no, 403 con {@code {"mensaje"}}
+	 * {@value #SOLO_TITULAR}: {@link SecurityException}, como el resto de errores del contrato).
 	 */
 	private GrupoDeLasRallas exigirGrupoQuePuedeCambiar(Via via, Long grupoId) {
 		AlcanceSesion alcance = alcanceActual.obtener();
@@ -263,7 +264,7 @@ public class RallasService {
 		}
 		GrupoDeLasRallas grupo = new GrupoDeLasRallas((String) filas.get(0)[0], (Long) filas.get(0)[1]);
 		if (!puedeCambiar(grupoId, grupo.sedeId())) {
-			throw new AccessDeniedException(SOLO_TITULAR);
+			throw new SecurityException(SOLO_TITULAR);
 		}
 		return grupo;
 	}

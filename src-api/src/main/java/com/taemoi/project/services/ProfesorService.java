@@ -162,12 +162,12 @@ public class ProfesorService {
 		String disciplina = disciplinaDelGrupo.get(0);
 		Map<Long, ProfesorDTOs.AlumnoDeGrupo> porAlumno = new LinkedHashMap<>();
 		for (Object[] f : em.createQuery("""
-				SELECT a.id, a.nombre, a.apellidos, foto.id FROM Grupo g JOIN g.alumnos a
+				SELECT a.id, a.nombre, a.apellidos, foto.id, a.genero FROM Grupo g JOIN g.alumnos a
 				LEFT JOIN a.fotoAlumno foto ON a.anonimizadoEn IS NULL
 				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.apellidos, a.nombre, a.id""", Object[].class)
 				.setParameter("grupo", grupoId).getResultList()) {
 			porAlumno.put((Long) f[0], new ProfesorDTOs.AlumnoDeGrupo((Long) f[0], (String) f[1], (String) f[2],
-					(Long) f[3], new ArrayList<>()));
+					(Long) f[3], new ArrayList<>(), genero(f[4])));
 		}
 		for (FilaDeporte d : deportesActivos(porAlumno.keySet())) {
 			porAlumno.get(d.alumnoId()).deportes().add(new ProfesorDTOs.DeporteEnLista(d.codigo(), d.nombre(),
@@ -175,7 +175,7 @@ public class ProfesorService {
 					d.aplicaRallas()));
 		}
 		return porAlumno.values().stream().map(a -> new ProfesorDTOs.AlumnoDeGrupo(a.id(), a.nombre(), a.apellidos(),
-				a.fotoId(), List.copyOf(a.deportes()))).toList();
+				a.fotoId(), List.copyOf(a.deportes()), a.genero())).toList();
 	}
 
 	/**
@@ -227,7 +227,7 @@ public class ProfesorService {
 			throw new AccessDeniedException("Acceso denegado.");
 		}
 		List<Object[]> datos = em.createQuery("""
-				SELECT a.nombre, a.apellidos, a.fechaNacimiento, a.telefono, a.telefono2
+				SELECT a.nombre, a.apellidos, a.fechaNacimiento, a.telefono, a.telefono2, a.genero
 				FROM Alumno a WHERE a.id = :alumno AND a.activo = TRUE""", Object[].class)
 				.setParameter("alumno", alumnoId).getResultList();
 		if (datos.isEmpty()) {
@@ -264,7 +264,12 @@ public class ProfesorService {
 					d.aplicaRallas()));
 		}
 		return new ProfesorDTOs.Ficha(alumnoId, nombre, apellidos, edad(aLocalDate(nacimiento)), List.copyOf(compartidos),
-				List.copyOf(contacto), List.copyOf(deportes));
+				List.copyOf(contacto), List.copyOf(deportes), genero(alumno[5]));
+	}
+
+	/** {@code "FEMENINO"}, {@code "MASCULINO"} o {@code null} (decisión 513 d), como en Pasar lista. */
+	private static String genero(Object genero) {
+		return genero instanceof Enum<?> valor ? valor.name() : null;
 	}
 
 	/**

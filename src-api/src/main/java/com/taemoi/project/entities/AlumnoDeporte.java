@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -30,7 +31,16 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 
+/**
+ * Inscripción de un alumno en una disciplina.
+ *
+ * <p>{@code @DynamicUpdate} (rallas hacia el examen, V32_8): el {@code UPDATE} de la entidad solo lleva las columnas que
+ * cambió quien la guarda. «Apto desde la hoja» es una sentencia aparte ({@code AlumnoDeporteRepository
+ * #marcarAptoConRallasCompletas}); sin esto, otra ruta que hubiera cargado la inscripción antes y la guardara por otro
+ * campo (tarifa, licencia, fecha de grado…) devolvería {@code apto_para_examen} al valor leído.
+ */
 @Entity
+@DynamicUpdate
 @Table(name = "alumno_deporte",
 	uniqueConstraints = @UniqueConstraint(name = "uk_alumno_deporte_alumno_disciplina",
 		columnNames = {"alumno_id", "disciplina_id"}),

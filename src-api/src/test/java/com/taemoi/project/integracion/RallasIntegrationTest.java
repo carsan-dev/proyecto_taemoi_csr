@@ -40,12 +40,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.taemoi.project.config.ValidacionRelojConfig;
 import com.taemoi.project.dtos.response.GrupoConAlumnosDTO;
+import com.taemoi.project.entities.AlumnoDeporte;
 import com.taemoi.project.organizacion.TenantContext;
+import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.GrupoService;
 import com.taemoi.project.services.JwtService;
@@ -76,6 +79,8 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JwtService jwtService;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired GrupoService grupoService;
+	@Autowired AlumnoDeporteRepository inscripciones;
+	@Autowired TransactionTemplate tx;
 
 	@MockitoBean JavaMailSender mailSender;
 	@MockitoBean Clock reloj;
@@ -83,8 +88,9 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	EscuelaConSedesDePrueba e;
 	EscuelaConSedesDePrueba otra;
 	long gBlanco, gAmarillo, gRojo, gPum, gDan, kickboxing, grupoKb;
-	long titular, ayudante, titularB, propietario, propietarioOtra, titularOtra;
-	String tTitular, tAyudante, tTitularB, tGestor, tPropietario, tResp, tPropietarioOtra, tGestorOtra, tTitularOtra;
+	long titular, ayudante, titularB, propietario, propietarioOtra, titularOtra, familia;
+	String tTitular, tAyudante, tTitularB, tGestor, tPropietario, tResp, tPropietarioOtra, tGestorOtra, tTitularOtra,
+			tFamilia, tRespA;
 
 	@BeforeAll
 	void preparar() throws Exception {
@@ -113,6 +119,7 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 		membresia(otra, propietarioOtra, "PROPIETARIO");
 		titularOtra = soloProfesor(otra, "titular");
 		asignar(otra, titularOtra, otra.gA, "TITULAR");
+		familia = e.cuentaFamilia(usuarios, "familia");
 
 		tTitular = e.token(jwtService, usuarios, titular);
 		tAyudante = e.token(jwtService, usuarios, ayudante);
@@ -123,6 +130,8 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 		tPropietarioOtra = otra.token(jwtService, usuarios, propietarioOtra);
 		tGestorOtra = otra.token(jwtService, usuarios, otra.gestor);
 		tTitularOtra = otra.token(jwtService, usuarios, titularOtra);
+		tFamilia = e.token(jwtService, usuarios, familia);
+		tRespA = e.token(jwtService, usuarios, e.respA);
 
 		// Taekwondo con rallas en las dos escuelas (por la ruta del propietario); kickboxing, apagado.
 		leer(configurar("{\"TAEKWONDO\":true}"), tPropietario, 200);
@@ -243,8 +252,11 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 		fijar(a, 10);
 		MvcResult r = peticion(paso(prof(e.gA, a), 1), tAyudante);
 		assertEquals(403, r.getResponse().getStatus());
+		assertEquals(RallasService.SOLO_TITULAR, mensaje(r));
 		assertEquals(403, estado(paso(prof(e.gA, a), -1), tAyudante));
-		assertEquals(403, estado(post(prof(e.gA, a) + "/apto"), tAyudante));
+		r = peticion(post(prof(e.gA, a) + "/apto"), tAyudante);
+		assertEquals(403, r.getResponse().getStatus());
+		assertEquals(RallasService.SOLO_TITULAR, mensaje(r));
 		assertEquals(10, medias(a));
 		assertFalse(apto(a));
 		assertTrue(registroDe(a).isEmpty());
@@ -388,10 +400,90 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON).content("{\"aptoParaExamen\":true}"), tTitular));
 		assertTrue(apto(a));
 		assertEquals(6, medias(a));
-		// Guardar la inscripción por otra ruta no pisa las rallas (la columna no se escribe desde la entidad).
-		assertEquals(200, estado(put("/api/alumnos/" + a + "/deportes/TAEKWONDO/fecha-grado")
-				.contentType(MediaType.APPLICATION_JSON).content("{\"fechaGrado\":\"2024-02-01\"}"), tGestor));
-		assertEquals(6, medias(a));
+	}
+
+	/**
+	 * Otra ruta carga la inscripción, a la vez cambia un paso (aquí por jdbc) y luego guarda la entidad que tenía
+	 * cargada, incluso con otras medias en memoria: queda el valor de la sentencia, porque la columna no se escribe
+	 * desde la entidad ({@code updatable = false}).
+	 */
+	@Test
+	void guardarLaInscripcionCargadaAntes_noPisaUnPasoDadoALaVez() {
+		long a = alumno("PASOALAVEZ", e.gA, gAmarillo);
+		fijar(a, 6);
+		long ad = alumnoDeporte(a, e.disciplina);
+		TenantContext.ejecutarCon(e.org, () -> tx.executeWithoutResult(s -> {
+			AlumnoDeporte cargada = inscripciones.findById(ad).orElseThrow();
+			assertEquals(6, cargada.getMediasRallas());
+			jdbc.update("UPDATE alumno_deporte SET medias_rallas = 3 WHERE id = ?", ad);
+			cargada.reflejarMediasRallas(0);
+			cargada.setCuantiaTarifa(41.5);
+			inscripciones.saveAndFlush(cargada);
+		}));
+		assertEquals(3, medias(a));
+		assertEquals(41.5, cuantia(ad), "la otra ruta sí guarda lo suyo");
+	}
+
+	/**
+	 * «Apto desde la hoja» mientras otra ruta tiene la inscripción cargada (apto = false) y después la guarda por otro
+	 * campo: el apto de la hoja no se pierde (la entidad solo escribe las columnas que cambió, {@code @DynamicUpdate}).
+	 */
+	@Test
+	void aptoDesdeLaHoja_noLoPisaGuardarLaInscripcionCargadaAntes() {
+		long a = alumno("APTOALAVEZ", e.gA, gAmarillo);
+		fijar(a, 10);
+		long ad = alumnoDeporte(a, e.disciplina);
+		TenantContext.ejecutarCon(e.org, () -> tx.executeWithoutResult(s -> {
+			AlumnoDeporte cargada = inscripciones.findById(ad).orElseThrow();
+			assertFalse(cargada.getAptoParaExamen());
+			// La misma sentencia que POST .../rallas/apto.
+			assertEquals(1, inscripciones.marcarAptoConRallasCompletas(ad, e.org, gAmarillo));
+			cargada.setCuantiaTarifa(42.5);
+			inscripciones.saveAndFlush(cargada);
+		}));
+		assertTrue(apto(a), "el apto de la hoja sigue");
+		assertEquals(0, medias(a));
+		assertEquals(42.5, cuantia(ad), "la otra ruta sí guarda lo suyo");
+	}
+
+	/**
+	 * Decisión 513 j: el área de familias no expone las rallas, tampoco en el JSON. Una cuenta familia (y una cuenta
+	 * familia + responsable de sede con un alumno propio fuera de sus sedes) no recibe {@code mediasRallas} ni
+	 * {@code aplicaRallas} en {@code GET /api/alumnos/{id}/deportes}; el panel (gestión y responsable de la sede), sí.
+	 */
+	@Test
+	void familia_noRecibeLasRallas_elPanelSi() throws Exception {
+		long a = alumno("FAMILIA", e.gA, gAmarillo);
+		fijar(a, 3);
+		jdbc.update("""
+				INSERT INTO usuario_alumno (usuario_id, alumno_id, organizacion_id, relacion, origen)
+				VALUES (?, ?, ?, 'TUTOR', 'MANUAL')""", familia, a, e.org);
+
+		JsonNode comoFamilia = leer(get("/api/alumnos/" + a + "/deportes"), tFamilia, 200);
+		assertEquals(1, comoFamilia.size());
+		assertFalse(comoFamilia.get(0).has("mediasRallas"), comoFamilia.toString());
+		assertFalse(comoFamilia.get(0).has("aplicaRallas"), comoFamilia.toString());
+		assertEquals("TAEKWONDO", comoFamilia.get(0).get("deporte").asText(), "el resto sigue igual");
+		assertEquals("AMARILLO", comoFamilia.get(0).get("grado").asText());
+
+		// Cuenta mixta familia + responsable de sede: su alumno propio (sin sede) lo ve como familia.
+		inscribir(e.propioA, gAmarillo, e.disciplina);
+		jdbc.update("UPDATE alumno_deporte SET medias_rallas = 4 WHERE alumno_id = ?", e.propioA);
+		JsonNode propio = leer(get("/api/alumnos/" + e.propioA + "/deportes"), tRespA, 200);
+		assertFalse(propio.get(0).has("mediasRallas"), propio.toString());
+		assertFalse(propio.get(0).has("aplicaRallas"), propio.toString());
+
+		for (String token : List.of(tGestor, tPropietario, tResp, tRespA)) {
+			JsonNode panel = leer(get("/api/alumnos/" + a + "/deportes"), token, 200);
+			assertEquals(3, panel.get(0).get("mediasRallas").asInt());
+			assertTrue(panel.get(0).get("aplicaRallas").asBoolean());
+		}
+		// En el panel, null cuando no se usan (se sigue enviando la clave).
+		long dan = alumno("FAMILIADAN", e.gA, gDan);
+		JsonNode panelDan = leer(get("/api/alumnos/" + dan + "/deportes"), tGestor, 200);
+		assertTrue(panelDan.get(0).has("mediasRallas"));
+		assertTrue(panelDan.get(0).get("mediasRallas").isNull());
+		assertFalse(panelDan.get(0).get("aplicaRallas").asBoolean());
 	}
 
 	// ------------------------------------------------------------------ cambio de grado
@@ -520,12 +612,15 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	void misGruposFichaYListados_llevanLasRallasEnLectura() throws Exception {
 		long a = alumno("LECTURA", e.gA, gAmarillo);
 		fijar(a, 3);
+		jdbc.update("UPDATE alumno SET genero = 'FEMENINO' WHERE id = ?", a);
 		JsonNode grupo = leer(get("/api/profesor/grupos/" + e.gA + "/alumnos"), tAyudante, 200);
 		JsonNode enGrupo = deporteDe(grupo, a, "TAEKWONDO");
 		assertEquals(3, enGrupo.get("mediasRallas").asInt());
 		assertTrue(enGrupo.get("aplicaRallas").asBoolean());
+		assertEquals("FEMENINO", buscar(grupo, a).get("genero").asText(), "listo/lista (decisión 513 d)");
 
 		JsonNode ficha = leer(get("/api/profesor/alumnos/" + a), tTitular, 200);
+		assertEquals("FEMENINO", ficha.get("genero").asText());
 		JsonNode enFicha = deporte(ficha, "TAEKWONDO");
 		assertEquals(3, enFicha.get("mediasRallas").asInt());
 		assertTrue(enFicha.get("aplicaRallas").asBoolean());
@@ -546,6 +641,7 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("TAEKWONDO", corto.get("deporte").asText());
 		assertEquals(3, corto.get("mediasRallas").asInt());
 		assertTrue(corto.get("aplicaRallas").asBoolean());
+		assertEquals("FEMENINO", corto.get("genero").asText());
 
 		long sinGrado = alumno("LECTURASIN", e.gA, null);
 		JsonNode sin = deporteDe(leer(get("/api/profesor/grupos/" + e.gA + "/alumnos"), tTitular, 200), sinGrado,
@@ -553,6 +649,8 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(sin.get("mediasRallas").isNull());
 		assertFalse(sin.get("aplicaRallas").asBoolean());
 		assertNull(jsonNulo(sin.get("grado")));
+		JsonNode sinGenero = buscar(leer(get("/api/profesor/grupos/" + e.gA + "/alumnos"), tTitular, 200), sinGrado);
+		assertTrue(sinGenero.has("genero") && sinGenero.get("genero").isNull(), "sin género: null");
 	}
 
 	// ------------------------------------------------------------------ utilidades
@@ -602,11 +700,7 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	private long alumno(String prefijo, long grupo, Long grado, long disciplina) {
 		long id = e.alumno("RALLAS" + prefijo + e.marca, e.sA, true);
 		jdbc.update("INSERT INTO alumno_grupo (grupo_id, alumno_id) VALUES (?, ?)", grupo, id);
-		jdbc.update("""
-				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor, principal, tiene_licencia,
-				  organizacion_id, fecha_alta, fecha_alta_inicial, disciplina_id, grado_id, fecha_grado)
-				VALUES (TRUE, FALSE, ?, 0, 1, 0, ?, '2023-09-01', '2023-09-01', ?, ?, '2025-01-10')""", id, e.org,
-				disciplina, grado);
+		inscribir(id, grado, disciplina);
 		return id;
 	}
 
@@ -624,6 +718,19 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	private void fijar(long alumno, long disciplina, int medias) {
 		jdbc.update("UPDATE alumno_deporte SET medias_rallas = ? WHERE alumno_id = ? AND disciplina_id = ?", medias,
 				alumno, disciplina);
+	}
+
+	private double cuantia(long alumnoDeporte) {
+		return jdbc.queryForObject("SELECT cuantia_tarifa FROM alumno_deporte WHERE id = ?", Double.class, alumnoDeporte);
+	}
+
+	/** Inscripción activa del alumno en esa disciplina y ese grado (como {@link #alumno}, para un alumno ya creado). */
+	private void inscribir(long alumno, Long grado, long disciplina) {
+		jdbc.update("""
+				INSERT INTO alumno_deporte (activo, apto_para_examen, alumno_id, competidor, principal, tiene_licencia,
+				  organizacion_id, fecha_alta, fecha_alta_inicial, disciplina_id, grado_id, fecha_grado)
+				VALUES (TRUE, FALSE, ?, 0, 1, 0, ?, '2023-09-01', '2023-09-01', ?, ?, '2025-01-10')""", alumno, e.org,
+				disciplina, grado);
 	}
 
 	private int medias(long alumno) {

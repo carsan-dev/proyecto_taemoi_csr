@@ -5,9 +5,18 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.taemoi.project.entities.AlumnoDeporte;
 
 public class AlumnoDeporteDTO {
+
+	/**
+	 * El mismo DTO para el área de familias (decisión 513 j): sin las rallas hacia el examen, tampoco en el JSON
+	 * ({@code mediasRallas} y {@code aplicaRallas} no salen). Ver {@link #deAlumnoDeporteParaFamilia}.
+	 */
+	@JsonIgnoreProperties({ "mediasRallas", "aplicaRallas" })
+	public static class ParaFamilia extends AlumnoDeporteDTO {
+	}
 
 	// Identity and sport
 	private Long id;
@@ -65,8 +74,24 @@ public class AlumnoDeporteDTO {
 		if (alumnoDeporte == null) {
 			return null;
 		}
+		return rellenar(new AlumnoDeporteDTO(), alumnoDeporte);
+	}
 
-		AlumnoDeporteDTO dto = new AlumnoDeporteDTO();
+	/**
+	 * Para quien lee la inscripción solo como familia (decisión 513 j): todo lo de {@link #deAlumnoDeporte} salvo las
+	 * rallas: quedan a {@code null} en el objeto y no salen en el JSON ({@link ParaFamilia}).
+	 */
+	public static AlumnoDeporteDTO deAlumnoDeporteParaFamilia(AlumnoDeporte alumnoDeporte) {
+		if (alumnoDeporte == null) {
+			return null;
+		}
+		AlumnoDeporteDTO dto = rellenar(new ParaFamilia(), alumnoDeporte);
+		dto.setMediasRallas(null);
+		dto.setAplicaRallas(null);
+		return dto;
+	}
+
+	private static AlumnoDeporteDTO rellenar(AlumnoDeporteDTO dto, AlumnoDeporte alumnoDeporte) {
 
 		// Identity and sport
 		dto.setId(alumnoDeporte.getId());

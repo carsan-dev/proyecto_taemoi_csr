@@ -12,7 +12,8 @@ import com.taemoi.project.entities.Imagen;
  * <p>De la misma inscripción que da el grado (la de la disciplina del grupo o, sin ella, la principal):
  * {@code codigoGrado} (código del grado en el catálogo, {@code null} sin grado), {@code deporte} (código de la
  * disciplina; {@code null} sin inscripción) y las rallas hacia el examen en solo lectura (V32_8): {@code aplicaRallas} y
- * {@code mediasRallas} (0 a 10, o {@code null} si no se usan).
+ * {@code mediasRallas} (0 a 10, o {@code null} si no se usan). {@code genero} del alumno ({@code "FEMENINO"},
+ * {@code "MASCULINO"} o {@code null}, como en Pasar lista; decisión 513 d: «listo/lista para examen»).
  */
 public class AlumnoCortoDTO {
 	private Long id;
@@ -26,6 +27,7 @@ public class AlumnoCortoDTO {
 	private String deporte;
 	private Integer mediasRallas;
 	private boolean aplicaRallas;
+	private String genero;
 
 	public AlumnoCortoDTO(Long id, String nombre, String apellidos, Imagen fotoAlumno, Integer numeroExpediente, String grado, Boolean activo) {
 		super();
@@ -113,6 +115,7 @@ public class AlumnoCortoDTO {
 			grado,
 			alumno.getActivo()
 		);
+		dto.genero = alumno.getGenero() == null ? null : alumno.getGenero().name();
 		return dto.conInscripcion(principal);
 	}
 
@@ -133,6 +136,7 @@ public class AlumnoCortoDTO {
 			grado,
 			alumno.getActivo()
 		);
+		dto.genero = alumno.getGenero() == null ? null : alumno.getGenero().name();
 		return dto.conInscripcion(alumnoDeporte);
 	}
 
@@ -161,5 +165,9 @@ public class AlumnoCortoDTO {
 
 	public boolean isAplicaRallas() {
 		return aplicaRallas;
+	}
+
+	public String getGenero() {
+		return genero;
 	}
 }
