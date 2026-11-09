@@ -156,9 +156,9 @@ describe('FichaProfesorPanelComponent', () => {
 
   it('el grado sale formateado y con la muestra de color del cinturón', () => {
     crear(ficha([deporte({ grado: { codigo: 'BLANCO_AMARILLO', nombre: 'BLANCO-AMARILLO' } })]));
-    const cinto = bloqueDe('Taekwondo').querySelector<HTMLElement>('.ficha__cinto')!;
+    const cinto = bloqueDe('Taekwondo').querySelector<HTMLElement>('pn-cinturon.ficha__cinto')!;
     expect(cinto).not.toBeNull();
-    expect(cinto.style.background).not.toBe('');
+    expect(cinto.querySelectorAll('[data-franja]').length).toBe(2);
     expect(bloqueDe('Taekwondo').textContent).not.toContain('BLANCO-AMARILLO');
   });
 

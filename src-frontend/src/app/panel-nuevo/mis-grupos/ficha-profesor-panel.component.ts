@@ -38,6 +38,7 @@ import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { CampoDialogo } from '../dialogo/dialogo.component';
 import { diaCorto, diaLargo, letraMotivo, textoMotivo } from '../asistencia/asistencia-textos';
 import { eur } from '../formato/formato-es';
+import { CinturonComponent } from '../cinturon/cinturon.component';
 
 /** Texto de la confirmación de un pase (D7-6). Igual que en la ficha de hoy. */
 export const NOTA_PASE = 'Crea el cargo; el grado sube al cobrarlo en Mi caja.';
@@ -89,7 +90,7 @@ interface EdicionFecha {
 @Component({
   selector: 'pn-ficha-profesor',
   standalone: true,
-  imports: [FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, EsqueletoComponent],
+  imports: [CinturonComponent, FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, EsqueletoComponent],
   templateUrl: './ficha-profesor-panel.component.html',
   styleUrl: './ficha-profesor-panel.component.scss',
 })
@@ -210,12 +211,12 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   }
 
   /** Grado con el nombre del catálogo («Blanco-amarillo») y su muestra de color; nulo sin grado. */
-  gradoDe(d: DeporteDelAlumno): { texto: string; fondo: string } | null {
+  gradoDe(d: DeporteDelAlumno): { texto: string; color1: string; color2: string | null } | null {
     if (!d.grado) {
       return null;
     }
     const grado = gradoFila(d.grado.codigo, d.deporte);
-    return { texto: gradoParaFrase(grado), fondo: grado.fondo };
+    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2 };
   }
 
   /** Miga al grupo de origen: su nombre si la ficha ya lo trae; si no, «Mis grupos». */

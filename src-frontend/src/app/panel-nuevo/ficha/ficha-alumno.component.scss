@@ -151,8 +151,14 @@
 
 .ficha__franja-tramo {
   @include b.cinto;
+  display: flex;
   flex: 1 1 0;
+  flex-direction: column;
   border-radius: 0;
+
+  > i {
+    flex: 1;
+  }
 
   & + & {
     border-left-width: 0;
@@ -322,17 +328,16 @@
   gap: 14px;
 }
 
-// Muestra del cinturón: 56 × 12 px con su borde.
+// Cinturón común (`pn-cinturon`, fila de 56 × 14 px).
 .ficha__cinto {
-  @include b.cinto;
   flex: none;
-  width: 56px;
-  height: 12px;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 
 // Disciplina sin grados: un punto con su color fijo en lugar del cinturón.
 .ficha__cinto--sin {
+  @include b.cinto;
+  margin-top: 5px;
   width: 12px;
   height: 12px;
   margin-left: 22px;

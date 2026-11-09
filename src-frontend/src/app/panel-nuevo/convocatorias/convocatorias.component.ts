@@ -46,6 +46,7 @@ import {
   textoCifra,
   totalPaginas,
 } from './convocatorias-vista';
+import { CinturonComponent } from '../cinturon/cinturon.component';
 
 type Estado = 'cargando' | 'listo' | 'error';
 
@@ -79,6 +80,7 @@ const CLAVE_ESTADO = 'listadoConvocatoriasEstado';
   selector: 'app-convocatorias',
   standalone: true,
   imports: [
+    CinturonComponent,
     RouterLink,
     AcentoEscuelaDirective,
     SearchableSelectDirective,

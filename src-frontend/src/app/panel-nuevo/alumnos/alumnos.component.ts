@@ -39,6 +39,7 @@ import { GenerarInformePanelComponent } from './herramientas/generar-informe-pan
 import { HerramientaPanelComponent } from './herramientas/herramienta-panel.component';
 import { InformePdfPanelService } from './herramientas/informe-pdf-panel.service';
 import { CargoPendiente, PendienteAlumno, PendientesAlumnoService } from './pendientes-alumno.service';
+import { CinturonComponent } from '../cinturon/cinturon.component';
 
 /** Clave de localStorage de «Filas | Tarjetas». */
 export const CLAVE_VISTA = 'panelAlumnosVista';
@@ -117,6 +118,7 @@ const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqu
   selector: 'app-alumnos',
   standalone: true,
   imports: [
+    CinturonComponent,
     RouterLink,
     GenerarInformePanelComponent,
     VisorPdfComponent,

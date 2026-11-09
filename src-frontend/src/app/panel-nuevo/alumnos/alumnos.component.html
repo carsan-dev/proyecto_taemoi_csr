@@ -135,7 +135,7 @@
                 <span class="alumnos__punto" [class]="d.claseDisciplina" aria-hidden="true"></span>
                 <span>{{ d.nombre }}</span>
                 @if (d.grado) {
-                <span class="alumnos__cinto" [style.background]="d.grado.fondo" aria-hidden="true"></span>
+                <pn-cinturon class="alumnos__cinto" [color1]="d.grado.color1" [color2]="d.grado.color2" />
                 <span class="alumnos__grado">{{ d.grado.nombre }}</span>
                 } @else if (d.sinGrado) {
                 <span class="alumnos__grado">sin grado</span>
@@ -239,7 +239,7 @@
               </span>
               @if (d.grado) {
               <span class="alumnos__dato">
-                <span class="alumnos__cinto" [style.background]="d.grado.fondo" aria-hidden="true"></span>
+                <pn-cinturon class="alumnos__cinto" [color1]="d.grado.color1" [color2]="d.grado.color2" />
                 <strong class="alumnos__grado-detalle">{{ d.grado.nombreDetalle }}</strong>
                 @if (d.tiempoConGrado) {<span class="alumnos__etiqueta" data-cifras>{{ d.tiempoConGrado === 'Desde hoy' ? 'desde hoy' : d.tiempoConGrado + ' con el grado' }}</span>}
               </span>

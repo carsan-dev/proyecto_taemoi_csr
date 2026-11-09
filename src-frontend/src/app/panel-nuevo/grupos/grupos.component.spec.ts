@@ -183,7 +183,7 @@ describe('GruposComponent (8b-3c, Grupos del panel nuevo)', () => {
               { codigo: 'PILATES', nombre: 'Pilates' },
             ],
             etiquetaDisciplina: (c: string) => c,
-            catalogo: () => ({ sistemasGrados: [{ grados: [{ nombre: 'Naranja', color1: '#F28C28' }] }] }),
+            catalogo: () => ({ sistemasGrados: [{ grados: [{ codigo: 'NARANJA', nombre: 'Naranja', color1: '#F28C28' }] }] }),
           },
         },
       ],

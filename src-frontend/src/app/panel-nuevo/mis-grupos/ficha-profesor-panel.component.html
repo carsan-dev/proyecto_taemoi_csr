@@ -118,7 +118,7 @@
             <dt>Grado actual</dt>
             <dd>
               @if (gradoDe(d); as grado) {
-                <span class="ficha__cinto" [style.background]="grado.fondo" aria-hidden="true"></span>{{ grado.texto }}
+                <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" />{{ grado.texto }}
               } @else {
                 Sin grado
               }
@@ -231,7 +231,7 @@
             <dt>Grado actual</dt>
             <dd>
               @if (gradoDe(d); as grado) {
-                <span class="ficha__cinto" [style.background]="grado.fondo" aria-hidden="true"></span>{{ grado.texto }}
+                <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" />{{ grado.texto }}
               } @else {
                 Sin grado
               }

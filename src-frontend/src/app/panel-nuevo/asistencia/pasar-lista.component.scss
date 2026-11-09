@@ -42,7 +42,6 @@
   .pasar-lista__identidad { flex: 1; min-width: 0; }
   .pasar-lista__nombre { display: block; font: var(--pn-cuerpo); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
   .pasar-lista__grado { display: flex; align-items: center; gap: 6px; font: var(--pn-secundario); color: var(--pn-tinta-2); }
-  .pasar-lista__cinto { display: inline-block; flex: none; width: 14px; height: 8px; border-radius: 2px; border: 1px solid var(--pn-cinto-borde); }
   .pasar-lista__presente { flex: none; font: var(--pn-etiqueta); color: var(--pn-bien); }
 
   // Motivo de la falta: botón hermano de la fila (no anidado), texto en acento; elegido, pastilla acento-suave.

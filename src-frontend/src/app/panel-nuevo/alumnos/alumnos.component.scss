@@ -458,12 +458,7 @@
 
 // Cinturón de 16 × 8 px con su borde (WCAG 1.4.11: el blanco y el amarillo claro se ven).
 .alumnos__cinto {
-  flex: none;
-  width: 16px;
-  height: 8px;
   margin-left: 4px;
-  border: 1px solid var(--pn-cinto-borde);
-  border-radius: 2px;
 }
 
 .alumnos__grado {

@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { MascotaComponent } from '../../mascota/mascota.component';
 import { SearchableSelectDirective } from '../../../directives/searchable-select.directive';
 import { AlumnoDeporteDTO } from '../../../interfaces/alumno-deporte-dto';
-import { fondoCinturon, tiempoConGrado } from '../../alumnos/alumno-vista';
+import { coloresCinturon, tiempoConGrado } from '../../alumnos/alumno-vista';
 import { AcentoEscuelaActual } from '../../acento-escuela.directive';
 import { fecha, numero, plural } from '../../formato/formato-es';
 import { variablesDelTema } from '../../tema-escuela';
 import type { FichaAlumnoComponent } from '../ficha-alumno.component';
+import { CinturonComponent } from '../../cinturon/cinturon.component';
 
 /**
  * Pestaña «Deportes» de la ficha nueva (8b-3b): un bloque por disciplina con su marca y las cajas Grado, Tarifa, Alta y
@@ -19,7 +20,7 @@ import type { FichaAlumnoComponent } from '../ficha-alumno.component';
 @Component({
   selector: 'app-ficha-deportes',
   standalone: true,
-  imports: [MascotaComponent, CommonModule, FormsModule, SearchableSelectDirective],
+  imports: [CinturonComponent, MascotaComponent, CommonModule, FormsModule, SearchableSelectDirective],
   templateUrl: './ficha-deportes.component.html',
   styleUrls: ['./ficha-deportes.component.scss'],
 })
@@ -34,9 +35,9 @@ export class FichaDeportesComponent {
   /** 8b-C: las listas flotantes van en el body, fuera del `.pn` de la ficha: llevan copiado el tema de la escuela. */
   readonly variablesDesplegable = computed(() => variablesDelTema(this.temaActual.aplicado()));
 
-  /** Fondo del cinturón del grado actual, o nulo sin grado. */
-  fondo(d: AlumnoDeporteDTO): string | null {
-    return d.grado ? fondoCinturon(d.grado, d.deporte) : null;
+  /** Colores del cinturón del grado actual, o nulo sin grado. */
+  colores(d: AlumnoDeporteDTO): { color1: string; color2: string | null } | null {
+    return d.grado ? coloresCinturon(d.grado, d.deporte) : null;
   }
 
   /** «3 años y 6 meses con el grado» o «Desde hoy». Vacío sin fecha. */

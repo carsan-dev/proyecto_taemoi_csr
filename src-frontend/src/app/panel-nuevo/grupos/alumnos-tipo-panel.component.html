@@ -47,7 +47,7 @@
               @if (a.numeroExpediente) {<span data-cifras>Exp. {{ a.numeroExpediente }}</span>}
               @if (a.grado) {
               <span class="tipo__grado">
-                @if (colorGrado(a.grado); as c) {<span class="tipo__cinto" [style.background]="c" aria-hidden="true"></span>}
+                @if (cinturon(a.grado); as c) {<pn-cinturon [color1]="c.color1" [color2]="c.color2" />}
                 <span>{{ a.grado }}</span>
               </span>
               }

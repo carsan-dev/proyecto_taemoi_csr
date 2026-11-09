@@ -102,9 +102,9 @@ describe('GrupoPanelComponent', () => {
     const fila = elemento().querySelector('.grupo-profesor__fila')!;
     expect(fila.querySelector('a.grupo-profesor__alumno')?.textContent?.trim()).toBe('Lucía Romero');
     expect(fila.textContent).not.toContain('BLANCO-AMARILLO');
-    expect(fila.querySelector<HTMLElement>('.grupo-profesor__cinto')?.style.background).not.toBe('');
+    expect(fila.querySelector('pn-cinturon.grupo-profesor__cinto svg [data-franja]')).not.toBeNull();
     expect(fila.querySelector('.grupo-profesor__apto')?.textContent?.trim()).toBe('Apto');
-    expect(fila.querySelector('svg')).toBeNull();
+    expect(fila.querySelector('svg:not([data-tamano])')).toBeNull(); // el único SVG es el cinturón, no hay chevron
     expect(fila.querySelector('.grupo-profesor__avatar')?.textContent?.trim()).toBe('LR');
   });
 

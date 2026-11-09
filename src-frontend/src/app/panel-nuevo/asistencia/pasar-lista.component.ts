@@ -37,6 +37,7 @@ import {
   MOTIVOS_FALTA, cuenta, estadoClase, fechaClase, fechaClaseCapital, franja, mismaClase, textoFaltas, textoMotivo, tieneLista,
 } from './asistencia-textos';
 import { DialogoFestivoComponent } from './dialogo-festivo.component';
+import { CinturonComponent } from '../cinturon/cinturon.component';
 
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
 /** Menú de motivo: aire sobre la barra fija, solape con su fila (el `6px` del CSS) y lo que tapa la cabecera fija. */
@@ -75,6 +76,7 @@ export const TEXTOS_PASAR_LISTA = {
   selector: 'pn-pasar-lista',
   standalone: true,
   imports: [
+    CinturonComponent,
     RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, BloqueVacioComponent, BotonOcupadoComponent, DialogoFestivoComponent,
     EsqueletoComponent, PanelLateralComponent,
   ],
@@ -393,11 +395,11 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     return alumno.deportes.find((d) => d.delGrupo) ?? alumno.deportes[0] ?? null;
   }
 
-  gradoDe(alumno: AlumnoDeLista): { texto: string; fondo: string } {
+  gradoDe(alumno: AlumnoDeLista): { texto: string; color1: string | null; color2: string | null } {
     const deporte = this.deporteDe(alumno);
-    if (!deporte?.grado) return { texto: 'Sin grado', fondo: '' };
+    if (!deporte?.grado) return { texto: 'Sin grado', color1: null, color2: null };
     const grado = gradoFila(deporte.grado.codigo, deporte.deporte);
-    return { texto: gradoParaFrase(grado), fondo: grado.fondo };
+    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2 };
   }
 
   // ------------------------------------------------------------------ guardar
