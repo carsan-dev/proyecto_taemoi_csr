@@ -24,8 +24,13 @@ export class PreinscripcionService {
  constructor(private readonly http:HttpClient){}
  temporada(){return this.http.get<{temporada:string}>(`${this.base}/public/temporada`);}
  configuracion(deporte:string){return this.http.get<ConfiguracionPreinscripcion>(`${this.base}/public/configuracion/${deporte}`);}
- grupos(deporte:string){return this.http.get<any[]>(`${this.base}/public/grupos/${deporte}`);}
- turnos(deporte:string){return this.http.get<any[]>(`${this.base}/public/turnos/${deporte}`);}
+ /**
+  * Decisión 500: `conSedesInactivas` solo lo envían las pantallas de gestión (el backend lo atiende con sesión de
+  * gestión). El formulario público no lo envía: así solo ve las sedes activas aunque haya una sesión de gestión abierta.
+  */
+ grupos(deporte:string,conSedesInactivas=false){return this.http.get<any[]>(`${this.base}/public/grupos/${deporte}`,{params:this.paramSedesInactivas(conSedesInactivas)});}
+ /** Como {@link grupos}: el editor «Cambiar la asignación» del panel pide también las sedes inactivas. */
+ turnos(deporte:string,conSedesInactivas=false){return this.http.get<any[]>(`${this.base}/public/turnos/${deporte}`,{params:this.paramSedesInactivas(conSedesInactivas)});}
  crear(data:any,idempotencyKey?:string){const headers=idempotencyKey?new HttpHeaders({'Idempotency-Key':idempotencyKey}):undefined;return this.http.post<any>(this.base,data,{headers});}
  listar(filtros:Record<string,string>={},page=0,size=25){let params=new HttpParams().set('page',page).set('size',size);Object.entries(filtros).filter(([,v])=>v).forEach(([k,v])=>params=params.set(k,v));return this.http.get<{content:any[];page:number;size:number;totalElements:number;totalPages:number;first:boolean;last:boolean}>(this.base,{params});}
  /** `motivo` vacío o en blanco: el backend aplica {@link MOTIVO_CANCELACION_POR_DEFECTO}. */
@@ -44,4 +49,5 @@ export class PreinscripcionService {
  publicarPlantilla(deporte:string,data:any){return this.http.post<any>(`${this.base}/plantillas/${deporte}`,data);}
  previewPlantilla(deporte:string,data:any){return this.http.post(`${this.base}/plantillas/${deporte}/preview`,data,{responseType:'blob'});}
  restaurarPlantilla(deporte:string,version:number){return this.http.post<any>(`${this.base}/plantillas/${deporte}/${version}/restaurar`,{});}
+ private paramSedesInactivas(conSedesInactivas:boolean){return conSedesInactivas?new HttpParams().set('conSedesInactivas','true'):new HttpParams();}
 }

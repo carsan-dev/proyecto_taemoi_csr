@@ -19,10 +19,14 @@ public class PreinscripcionController {
  @PostMapping public ResponseEntity<?> crear(@Valid @RequestBody PreinscripcionRequest body,@RequestHeader(name="Idempotency-Key",required=false) String idempotencyKey,HttpServletRequest request){limitar(request);return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(body,idempotencyKey));}
  @GetMapping("/public/temporada") public Map<String,String> temporada(){return Map.of("temporada",temporadas.actual());}
  @GetMapping("/public/configuracion/{deporte}") public Map<String,Object> configuracion(@PathVariable String deporte){return service.configuracion(deporte);}
- /** Decisión 500: con sesión de gestión de la escuela activa, también los grupos de sedes inactivas (editor del panel). */
- @GetMapping("/public/grupos/{deporte}") public List<Map<String,Object>> grupos(@PathVariable String deporte){return service.grupos(deporte,esGestion());}
- /** Decisión 500: con sesión de gestión de la escuela activa, también los turnos de sedes inactivas (editor del panel). */
- @GetMapping("/public/turnos/{deporte}") public List<Map<String,Object>> turnos(@PathVariable String deporte){return service.turnos(deporte,esGestion());}
+ /**
+  * Decisión 500: también los grupos de sedes inactivas solo si se piden ({@code conSedesInactivas=true}, pantallas de
+  * gestión) y hay sesión de gestión de la escuela activa. Sin el parámetro, solo las activas para todos (también una
+  * sesión de gestión abierta en el formulario público). Sin gestión, el parámetro se ignora.
+  */
+ @GetMapping("/public/grupos/{deporte}") public List<Map<String,Object>> grupos(@PathVariable String deporte,@RequestParam(defaultValue="false") boolean conSedesInactivas){return service.grupos(deporte,conSedesInactivas&&esGestion());}
+ /** Decisión 500: como {@link #grupos}, para los turnos (editor del panel «Cambiar la asignación»). */
+ @GetMapping("/public/turnos/{deporte}") public List<Map<String,Object>> turnos(@PathVariable String deporte,@RequestParam(defaultValue="false") boolean conSedesInactivas){return service.turnos(deporte,conSedesInactivas&&esGestion());}
  @GetMapping("/{referencia}/documento") public ResponseEntity<byte[]> documento(@PathVariable String referencia,@RequestParam String token){return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=preinscripcion-"+referencia+".pdf").body(service.documento(referencia,token));}
  @GetMapping("/{referencia}/documento-firmado") @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.preinscripcionEnSede(#referencia,'LEER')") public ResponseEntity<byte[]> documentoFirmado(@PathVariable String referencia){return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=preinscripcion-"+referencia+".pdf").body(service.documentoFirmado(referencia));}
  @GetMapping("/{referencia}/firma") @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.preinscripcionEnSede(#referencia,'LEER')") public ResponseEntity<byte[]> firma(@PathVariable String referencia){return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore()).body(service.firma(referencia));}

@@ -60,6 +60,27 @@ class PreinscripcionRequestValidationTest {
 				.anyMatch(v -> v.getPropertyPath().toString().equals("observaciones")));
 	}
 
+	/** La columna es de 20: el patrón admite espacios sin tope, así que la longitud se valida aparte. */
+	@Test
+	void limitaLosTelefonosAVeinteCaracteres() {
+		String largo = "6" + " ".repeat(5) + "1 2 3 4 5 6 7 8";
+		String justo = "6" + " ".repeat(4) + "1 2 3 4 5 6 7 8";
+		assertEquals(21, largo.length());
+		assertEquals(20, justo.length());
+
+		assertTrue(VALIDATOR.validate(conTelefonos(largo, "")).stream()
+				.anyMatch(v -> v.getPropertyPath().toString().equals("telefono")));
+		assertTrue(VALIDATOR.validate(conTelefonos("612345678", largo)).stream()
+				.anyMatch(v -> v.getPropertyPath().toString().equals("telefono2")));
+		assertTrue(VALIDATOR.validate(conTelefonos(justo, justo)).isEmpty());
+	}
+
+	private PreinscripcionRequest conTelefonos(String telefono, String telefono2) {
+		return new PreinscripcionRequest(Deporte.TAEKWONDO.name(), List.of(11L), "Ana", "García López", "12345678Z",
+				LocalDate.of(1990, 1, 1), "Calle Mayor 1", telefono, telefono2, "ana@example.com", null, null, null,
+				false, false, true, "María García", "data:image/png;base64,AAAA");
+	}
+
 	private PreinscripcionRequest request(String dni, LocalDate nacimiento, String tutor, String tutorDni,
 			Boolean discapacidad) {
 		return request(dni, nacimiento, tutor, tutorDni, discapacidad, null);

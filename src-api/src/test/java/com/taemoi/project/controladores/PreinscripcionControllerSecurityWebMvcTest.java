@@ -349,6 +349,110 @@ class PreinscripcionControllerSecurityWebMvcTest {
 		assertNull(peticion.getValue().datosDeporte().cuantiaTarifa());
 	}
 
+	// ------------------------------------------------------------------ listas públicas y sedes inactivas (decisión 500)
+
+	/** Sin sesión: solo las sedes activas en las dos listas. */
+	@Test
+	void listasPublicas_anonimo_soloSedesActivas() throws Exception {
+		mockMvc.perform(get("/api/preinscripciones/public/turnos/TAEKWONDO")).andExpect(status().isOk());
+		mockMvc.perform(get("/api/preinscripciones/public/grupos/TAEKWONDO")).andExpect(status().isOk());
+
+		verify(preinscripciones).turnos("TAEKWONDO", false);
+		verify(preinscripciones).grupos("TAEKWONDO", false);
+	}
+
+	/**
+	 * Una sesión de gestión abierta en el formulario público (sin pedirlo): solo las sedes activas. Antes recibía también
+	 * las inactivas y el alta fallaba con «Ese horario ya no admite preinscripciones».
+	 */
+	@Test
+	void listasPublicas_gestionSinParametro_soloSedesActivas() throws Exception {
+		for (String rol : List.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_RESPONSABLE_SEDE")) {
+			mockMvc.perform(get("/api/preinscripciones/public/turnos/TAEKWONDO")
+					.with(user("gestion@example.com").authorities(() -> rol))).andExpect(status().isOk());
+			mockMvc.perform(get("/api/preinscripciones/public/grupos/TAEKWONDO")
+					.with(user("gestion@example.com").authorities(() -> rol))).andExpect(status().isOk());
+		}
+
+		verify(preinscripciones, org.mockito.Mockito.times(3)).turnos("TAEKWONDO", false);
+		verify(preinscripciones, org.mockito.Mockito.times(3)).grupos("TAEKWONDO", false);
+		verify(preinscripciones, never()).turnos(anyString(), eq(true));
+		verify(preinscripciones, never()).grupos(anyString(), eq(true));
+	}
+
+	/** La gestión que lo pide expresamente ({@code conSedesInactivas=true}, editor del panel): también las inactivas. */
+	@Test
+	void listasPublicas_gestionConParametro_incluyeSedesInactivas() throws Exception {
+		for (String rol : List.of("ROLE_ADMIN", "ROLE_MANAGER", "ROLE_RESPONSABLE_SEDE")) {
+			mockMvc.perform(get("/api/preinscripciones/public/turnos/TAEKWONDO").param("conSedesInactivas", "true")
+					.with(user("gestion@example.com").authorities(() -> rol))).andExpect(status().isOk());
+			mockMvc.perform(get("/api/preinscripciones/public/grupos/TAEKWONDO").param("conSedesInactivas", "true")
+					.with(user("gestion@example.com").authorities(() -> rol))).andExpect(status().isOk());
+		}
+
+		verify(preinscripciones, org.mockito.Mockito.times(3)).turnos("TAEKWONDO", true);
+		verify(preinscripciones, org.mockito.Mockito.times(3)).grupos("TAEKWONDO", true);
+	}
+
+	/** {@code conSedesInactivas=true} sin sesión de gestión (anónimo, familia, profesor): se ignora. */
+	@Test
+	void listasPublicas_sinGestionConParametro_seIgnora() throws Exception {
+		mockMvc.perform(get("/api/preinscripciones/public/turnos/TAEKWONDO").param("conSedesInactivas", "true"))
+				.andExpect(status().isOk());
+		mockMvc.perform(get("/api/preinscripciones/public/grupos/TAEKWONDO").param("conSedesInactivas", "true"))
+				.andExpect(status().isOk());
+		for (String rol : List.of("ROLE_USER", "ROLE_PROFESOR")) {
+			mockMvc.perform(get("/api/preinscripciones/public/turnos/TAEKWONDO").param("conSedesInactivas", "true")
+					.with(user("otro@example.com").authorities(() -> rol))).andExpect(status().isOk());
+			mockMvc.perform(get("/api/preinscripciones/public/grupos/TAEKWONDO").param("conSedesInactivas", "true")
+					.with(user("otro@example.com").authorities(() -> rol))).andExpect(status().isOk());
+		}
+
+		verify(preinscripciones, org.mockito.Mockito.times(3)).turnos("TAEKWONDO", false);
+		verify(preinscripciones, org.mockito.Mockito.times(3)).grupos("TAEKWONDO", false);
+		verify(preinscripciones, never()).turnos(anyString(), eq(true));
+		verify(preinscripciones, never()).grupos(anyString(), eq(true));
+	}
+
+	// ------------------------------------------------------------------ teléfonos del alta (longitud de la columna)
+
+	/** Un teléfono con espacios de más supera el patrón pero no cabe en la columna (20): 400 sin llegar al servicio. */
+	@Test
+	void altaConTelefonoDeMasDe20Caracteres_400SinInvocarElServicio() throws Exception {
+		String largo = "6" + " ".repeat(5) + "1 2 3 4 5 6 7 8";
+		assertEquals(21, largo.length());
+		for (String campo : List.of("telefono", "telefono2")) {
+			String telefono = campo.equals("telefono") ? largo : "612345678";
+			String telefono2 = campo.equals("telefono2") ? largo : "";
+			mockMvc.perform(post("/api/preinscripciones").contentType(MediaType.APPLICATION_JSON)
+					.content(altaJson(telefono, telefono2)))
+					.andExpect(status().isBadRequest());
+		}
+
+		verify(preinscripciones, never()).crear(any(), any());
+	}
+
+	/** Mismo alta con teléfonos de 20 caracteres (el máximo de la columna): llega al servicio. */
+	@Test
+	void altaConTelefonosDe20Caracteres_llegaAlServicio() throws Exception {
+		String justo = "6" + " ".repeat(4) + "1 2 3 4 5 6 7 8";
+		assertEquals(20, justo.length());
+		mockMvc.perform(post("/api/preinscripciones").contentType(MediaType.APPLICATION_JSON)
+				.content(altaJson(justo, justo)))
+				.andExpect(status().isCreated());
+
+		verify(preinscripciones).crear(any(), any());
+	}
+
+	private static String altaJson(String telefono, String telefono2) {
+		return """
+				{"deporte":"TAEKWONDO","turnoIds":[11],"nombre":"Ana","apellidos":"García López","dni":"12345678Z",
+				 "fechaNacimiento":"1990-01-01","direccion":"Calle Mayor 1","telefono":"%s","telefono2":"%s",
+				 "email":"ana@example.com","tieneDiscapacidad":false,"consentimientoFotografico":false,
+				 "aceptacionNormas":true,"firmanteNombre":"Ana García","firmaBase64":"data:image/png;base64,AAAA"}
+				""".formatted(telefono, telefono2);
+	}
+
 	@TestConfiguration
 	static class FilterTestConfig {
 		@Bean
