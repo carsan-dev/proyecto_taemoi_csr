@@ -1,0 +1,160 @@
+<main class="pn web-tema" pnAcento aria-labelledby="web-tema-titulo">
+  <div class="web-tema__pagina" [class.con-barra]="estado() === 'listo' && modo() !== 'oculta'">
+    <nav class="migas" aria-label="Ruta"><span>Web</span><span aria-hidden="true">/</span></nav>
+    <header class="cabecera">
+      <h1 id="web-tema-titulo">Tema</h1>
+      @if (estado() === 'listo') {
+      @if (publicado(); as p) {
+      <p class="estado-web es-publicada">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.8 2.8L16.5 9.5"></path></svg>
+        <span>Tu web está publicada con <strong>{{ comillas(p) }}</strong>.</span>
+      </p>
+      } @else {
+      <p class="estado-web">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span>{{ textos.estadoSinPublicar }}</span>
+      </p>
+      }
+      }
+    </header>
+
+    @if (estado() === 'cargando') {
+    <pn-esqueleto [etiqueta]="textos.cargandoPantalla">
+      <div class="rejilla">
+        <div class="esqueleto esqueleto--temas"></div>
+        <div class="esqueleto esqueleto--vista"></div>
+      </div>
+    </pn-esqueleto>
+    } @else if (estado() === 'error') {
+    <pn-bloque-error [titulo]="textos.errorCarga" (reintentar)="cargar()" />
+    } @else {
+    <div class="rejilla">
+      <section class="bloque" aria-labelledby="t-temas">
+        <h2 class="bloque__titulo" id="t-temas">Elige un tema</h2>
+        <div class="temas" role="radiogroup" aria-labelledby="t-temas" [style.--escuela]="color()">
+          @for (t of temas(); track t.id) {
+          @let elegida = t.id === elegido();
+          @let esPublicado = t.id === publicado();
+          <div class="tema" role="radio" [attr.data-tema]="t.id" [attr.aria-checked]="elegida" [attr.tabindex]="elegida ? 0 : -1"
+            [attr.aria-labelledby]="'n-' + t.id" [attr.aria-describedby]="'d-' + t.id + (esPublicado ? ' p-' + t.id : '')"
+            (click)="elegir(t.id, true)" (keydown)="teclaTema($event, t.id)">
+            <span [class]="'mini mini--' + t.mini" aria-hidden="true">
+              @for (pieza of t.piezas; track pieza) {<span [class]="pieza"></span>}
+            </span>
+            <span class="tema__texto">
+              <span class="tema__nombre" [id]="'n-' + t.id">{{ t.nombre }}</span>
+              <span class="tema__desc" [id]="'d-' + t.id">{{ t.descripcion }}</span>
+              @if (esPublicado) {
+              <span class="publicado" [id]="'p-' + t.id">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.8 2.8L16.5 9.5"></path></svg>Publicado
+              </span>
+              }
+            </span>
+            <span class="tema__marca" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path
+                d="m5 12 5 5 9-10"></path></svg>
+            </span>
+          </div>
+          }
+        </div>
+      </section>
+
+      <section class="bloque vista" aria-labelledby="t-vista">
+        <div class="vista__cab">
+          <h2 class="bloque__titulo" id="t-vista">Así se verá tu web con tus sedes, horarios, logo y color</h2>
+          <p class="marca-ro">
+            @if (logo(); as srcLogo) {
+            <img class="marca-ro__logo" [src]="srcLogo" [attr.alt]="'Logo de ' + nombreEscuela()" width="30" height="30" (error)="logo.set(null)" />
+            }
+            @if (color(); as c) {
+            <span class="marca-ro__color" role="img" [attr.aria-label]="'Color de la escuela: ' + c" [style.background]="c"></span>
+            }
+            <svg class="marca-ro__candado" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="1.5"></rect><path
+              d="M8 10.5V8a4 4 0 0 1 8 0v2.5"></path></svg>
+            <span>Logo y color: los cambia el equipo de Taemoi</span>
+          </p>
+        </div>
+
+        <div class="vista__controles">
+          <div class="control">
+            <span class="control__etiqueta" id="t-ver">Ver en</span>
+            <div class="segmento" role="radiogroup" aria-labelledby="t-ver">
+              @for (d of dispositivos; track d) {
+              @let activo = d === dispositivo();
+              <button type="button" role="radio" [attr.data-dispositivo]="d" [attr.aria-checked]="activo" [attr.tabindex]="activo ? 0 : -1"
+                (click)="cambiarDispositivo(d, true)" (keydown)="teclaDispositivo($event, d)">
+                @if (d === 'movil') {
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                  stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"></rect><path d="M11 18h2"></path></svg>Móvil
+                } @else {
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                  stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="1.5"></rect><path d="M9 20h6M12 16.5V20"></path></svg>Escritorio
+                }
+              </button>
+              }
+            </div>
+          </div>
+          <div class="control">
+            <label class="control__etiqueta" for="web-tema-pagina">Página</label>
+            <select class="selector" id="web-tema-pagina" (change)="cambiarPagina($event)">
+              @for (p of paginas; track p.id) {
+              <option [value]="p.id" [selected]="p.id === pagina()" [disabled]="p.id === 'sede' && !slug()">{{ p.etiqueta }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="escenario" #escenario tabindex="-1">
+          @if (vista() === 'error') {
+          <div class="fallo" role="alert">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+            <h3>{{ textos.errorVistaTitulo }}</h3>
+            <p>{{ textos.errorVistaTexto }}</p>
+            <button type="button" class="secundario" (click)="reintentarVista()">Reintentar</button>
+          </div>
+          } @else if (src(); as direccion) {
+          <div class="marco" [class.marco--movil]="movil()" [class.marco--escritorio]="!movil()" [class.es-cargando]="esqueleto()"
+            [style.width.px]="anchoMarco() * factor()" [style.height.px]="altoMarco() * factor()">
+            <div class="escalado" [style.width.px]="anchoMarco()" [style.height.px]="altoMarco()" [style.transform]="'scale(' + factor() + ')'">
+              <div class="dispositivo">
+                <div class="pantalla" [style.width.px]="ventana().ancho" [style.height.px]="ventana().alto">
+                  <iframe [src]="direccion" [title]="titulo()" (load)="alCargar($event)"></iframe>
+                  <div class="esq" aria-hidden="true"><i class="e-cab"></i><i class="e-heroe"></i><i class="e-linea"></i><i
+                    class="e-linea corta"></i><div class="e-fila"><i></i><i></i><i></i></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+        <p class="oculto" role="status">{{ anuncio() }}</p>
+      </section>
+    </div>
+    }
+
+    @if (estado() === 'listo' && modo() !== 'oculta') {
+    <div class="barra" role="region" aria-label="Publicar la web">
+      <p class="barra__texto">
+        @if (modo() === 'cambios') {
+        Has elegido <strong>{{ comillas(elegido()) }}</strong>. Tu web sigue con {{ comillas(publicado()!) }} hasta que publiques.
+        } @else {
+        Tu web aún no está publicada. Has elegido <strong>{{ comillas(elegido()) }}</strong>.
+        }
+      </p>
+      <div class="barra__acciones">
+        @if (modo() === 'cambios') {
+        <button type="button" class="secundario" [attr.aria-disabled]="publicando() ? 'true' : null" (click)="descartar()">Descartar</button>
+        }
+        <button type="button" class="primario" [attr.aria-disabled]="publicando() ? 'true' : null" (click)="publicar()">
+          {{ modo() === 'cambios' ? textos.publicarCambios : textos.publicarPrimera }}
+        </button>
+      </div>
+    </div>
+    }
+  </div>
+</main>

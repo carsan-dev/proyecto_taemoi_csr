@@ -279,3 +279,38 @@ describe('menu-panel: Datos de la escuela (pieza 394)', () => {
     expect(seccionActiva('/datos-escuela')).toBe('escuela');
   });
 });
+
+describe('menu-panel: Web · Tema (W7)', () => {
+  const base: ContextoMenu = { propietario: true, gestion: true, profesor: false, misGrupos: false, plataforma: false };
+
+  it('«Tema» va en el grupo «Web» de Escuela, tras «Ver la web», con la condición webPlantilla', () => {
+    const escuela = MENU_PANEL.find((s) => s.id === 'escuela')!;
+    const rutas = escuela.entradas.map((e) => e.ruta);
+    expect(rutas.indexOf('/web-tema')).toBe(rutas.indexOf('/') + 1);
+    expect(escuela.entradas.find((e) => e.ruta === '/web-tema')).toEqual(
+      jasmine.objectContaining({ etiqueta: 'Tema', condicion: 'webPlantilla' })
+    );
+    expect(escuela.prefijos).toContain('/web-tema');
+  });
+
+  it('la ve el propietario de una escuela de la plantilla', () => {
+    expect(rutasDeGestion({ ...base, legado: false })).toContain('/web-tema');
+  });
+
+  it('no la ve el propietario de Moiskimdo, ni el propietario si aún no se sabe si es Moiskimdo', () => {
+    expect(rutasDeGestion({ ...base, legado: true })).not.toContain('/web-tema');
+    expect(rutasDeGestion(base)).not.toContain('/web-tema');
+  });
+
+  it('no la ven el gestor, el responsable de sede ni quien solo es profesor', () => {
+    expect(rutasDeGestion({ ...base, propietario: false, legado: false })).not.toContain('/web-tema');
+    expect(rutasDeGestion({ ...base, propietario: false, gestion: false, panelSede: true, legado: false })).not.toContain('/web-tema');
+    expect(
+      rutasDeGestion({ propietario: false, profesor: true, soloProfesor: true, misGrupos: false, plataforma: false, legado: false })
+    ).not.toContain('/web-tema');
+  });
+
+  it('/web-tema enciende la entrada Escuela', () => {
+    expect(seccionActiva('/web-tema')).toBe('escuela');
+  });
+});

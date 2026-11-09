@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -7,6 +7,8 @@ import { BehaviorSubject, Subject, of } from 'rxjs';
 import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
+import { Catalogo } from '../../features/catalogo/catalogo.models';
+import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { SolicitudesContadorService } from '../../servicios/endpoints/solicitudes-contador.service';
@@ -101,6 +103,8 @@ describe('CabeceraPanelComponent (8b-N)', () => {
   let total: ReturnType<typeof signal<number>>;
   let datosPermisos: PermisosSesion;
   let escuelasCuenta: EscuelaUsuario[];
+  /** El catálogo de la escuela (solo su organización); null mientras no ha llegado. */
+  let catalogoEscuela: WritableSignal<Catalogo | null>;
 
   async function montar(ruta = '/alumnosListar'): Promise<void> {
     await TestBed.configureTestingModule({
@@ -137,6 +141,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
         { provide: SolicitudesContadorService, useValue: { total, refrescar, reiniciar: () => undefined } },
         { provide: RECARGAR_PAGINA, useValue: recargar },
         { provide: SelectorEscuelaService, useValue: { organizaciones: () => of(escuelasCuenta) } },
+        { provide: CatalogoService, useValue: { catalogo: catalogoEscuela } },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
@@ -170,6 +175,7 @@ describe('CabeceraPanelComponent (8b-N)', () => {
     total = signal(0);
     datosPermisos = permisos();
     escuelasCuenta = [escuela({ activa: true })];
+    catalogoEscuela = signal(null);
   });
 
   afterEach(() => http.verify());
@@ -193,6 +199,38 @@ describe('CabeceraPanelComponent (8b-N)', () => {
       await fixture.whenStable();
       expect(router.url).toBe('/');
       expect(router.lastSuccessfulNavigation?.extras.state?.['verWeb']).toBeTrue();
+    });
+  });
+
+  describe('Web · Tema (W7)', () => {
+    const opcionesEscuela = async (): Promise<string[]> => {
+      await montar();
+      responderMarca();
+      entrada('escuela').click();
+      fixture.detectChanges();
+      return Array.from(el().querySelectorAll<HTMLAnchorElement>('.pn-menu__opcion')).map((a) => a.getAttribute('href') ?? '');
+    };
+    const organizacion = (legado: boolean) =>
+      ({ organizacion: { id: legado ? 1 : 2, comportamientoLegadoTaemoi: legado } }) as unknown as Catalogo;
+
+    itSinReloj('el propietario de una escuela de la plantilla ve «Tema» en Escuela', async () => {
+      catalogoEscuela.set(organizacion(false));
+      expect(await opcionesEscuela()).toContain('/web-tema');
+    });
+
+    itSinReloj('el propietario de Moiskimdo no lo ve', async () => {
+      catalogoEscuela.set(organizacion(true));
+      expect(await opcionesEscuela()).not.toContain('/web-tema');
+    });
+
+    itSinReloj('sin catálogo, tampoco', async () => {
+      expect(await opcionesEscuela()).not.toContain('/web-tema');
+    });
+
+    itSinReloj('el gestor no lo ve', async () => {
+      roles = ['ROLE_MANAGER'];
+      catalogoEscuela.set(organizacion(false));
+      expect(await opcionesEscuela()).not.toContain('/web-tema');
     });
   });
 
