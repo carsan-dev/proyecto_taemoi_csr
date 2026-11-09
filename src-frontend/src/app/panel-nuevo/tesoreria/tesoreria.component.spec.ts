@@ -19,6 +19,7 @@ import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { ReciboPagoService } from '../cobro/recibo-pago.service';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { TesoreriaComponent } from './tesoreria.component';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 
 const API = environment.apiUrl;
 
@@ -180,6 +181,7 @@ describe('TesoreriaComponent (8b-3d, Tesorería del panel nuevo)', () => {
     await TestBed.configureTestingModule({
       imports: [TesoreriaComponent],
       providers: [
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),

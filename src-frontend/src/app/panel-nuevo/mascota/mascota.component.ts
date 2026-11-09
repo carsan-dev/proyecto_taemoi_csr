@@ -9,9 +9,12 @@ import {
   signal,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { firstValueFrom } from 'rxjs';
 
 import { menosMovimiento } from '../capas/capa-modal';
-import { CARGADORES_MASCOTA, CargadoresMascota, ClaveSvgMascota, PoseMascota, esPoseMascota } from './poses';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
+import { identificarSvg } from './identificar-svg';
+import { CARGADORES_MASCOTA, CARGADORES_MASCOTA_MAKI, CargadoresMascota, ClaveSvgMascota, PoseMascota, esPoseMascota } from './poses';
 
 export type TamanoMascota = 'sm' | 'md' | 'lg';
 export type AnimacionMascota = 'aparecer' | 'saludar' | 'celebrar' | 'dudar' | 'descansar' | 'cumpleanos';
@@ -22,8 +25,15 @@ export const MASCOTA_CARGADORES = new InjectionToken<CargadoresMascota>('MASCOTA
   factory: () => CARGADORES_MASCOTA,
 });
 
+/** Los chunks de las poses de Maki; las pruebas los sustituyen igual. */
+export const MASCOTA_CARGADORES_MAKI = new InjectionToken<CargadoresMascota>('MASCOTA_CARGADORES_MAKI', {
+  providedIn: 'root',
+  factory: () => CARGADORES_MASCOTA_MAKI,
+});
+
 /** Etiqueta cuando la mascota no es decorativa y quien la usa no da ninguna. */
-const ETIQUETA_POR_DEFECTO = 'Gota de esfuerzo, la mascota';
+const ETIQUETA_TAMI = 'Gota de esfuerzo, la mascota';
+const ETIQUETA_MAKI = 'Maki, la mascota';
 
 let siguienteInstancia = 0;
 
@@ -60,10 +70,18 @@ export class MascotaComponent implements OnInit, OnChanges {
   @Input() decorativa = true;
   @Input() etiqueta = '';
 
-  readonly etiquetaPorDefecto = ETIQUETA_POR_DEFECTO;
+  /** La mascota de la escuela; null mientras no se sabe cuál es (no se pinta nada, ni Tami por si acaso) o si la marca falló. */
+  readonly mascota = signal<'TAMI' | 'MAKI' | null>(null);
+
+  get etiquetaPorDefecto(): string {
+    return this.mascota() === 'MAKI' ? ETIQUETA_MAKI : ETIQUETA_TAMI;
+  }
+
   readonly svg = signal<SafeHtml | null>(null);
 
-  private readonly cargadores = inject(MASCOTA_CARGADORES);
+  private readonly cargadoresTami = inject(MASCOTA_CARGADORES);
+  private readonly cargadoresMaki = inject(MASCOTA_CARGADORES_MAKI);
+  private readonly marcaServicio = inject(MarcaEscuelaPanelService);
   private readonly saneador = inject(DomSanitizer);
   readonly quieta = menosMovimiento();
   private readonly prefijo = `pn-mascota-${++siguienteInstancia}-`;
@@ -91,6 +109,16 @@ export class MascotaComponent implements OnInit, OnChanges {
     }
   }
 
+  /** La mascota de la marca (una sola petición compartida por el servicio); un valor raro o ausente, Tami; un error, null. */
+  private async resolverMascota(): Promise<'TAMI' | 'MAKI' | null> {
+    try {
+      const marca = await firstValueFrom(this.marcaServicio.marca());
+      return marca?.mascota === 'MAKI' ? 'MAKI' : 'TAMI';
+    } catch {
+      return null;
+    }
+  }
+
   /** El compacto con sm; en los demás tamaños, la pose animada. */
   private claves(): ClaveSvgMascota[] {
     if (this.tam === 'sm') {
@@ -102,25 +130,26 @@ export class MascotaComponent implements OnInit, OnChanges {
     return [this.pose];
   }
 
-  /** Los fragmentos y el título accesible deben apuntar solo a esta instancia. */
-  private identificar(svg: string): string {
-    return svg
-      .replace(/\bid="([^"]+)"/g, (_, id: string) => `id="${this.prefijo}${id}"`)
-      .replace(/url\(#([^)]+)\)/g, (_, id: string) => `url(#${this.prefijo}${id})`)
-      .replace(/\b(href|xlink:href)="#([^"]+)"/g, (_, atributo: string, id: string) => `${atributo}="#${this.prefijo}${id}"`)
-      .replace(/\b(aria-labelledby|aria-describedby)="([^"]+)"/g, (_, atributo: string, ids: string) =>
-        `${atributo}="${ids.split(/\s+/).map((id) => this.prefijo + id).join(' ')}"`);
-  }
-
   private async cargar(): Promise<void> {
     const version = ++this.version;
     const claves = this.claves();
     try {
-      const svgs = await Promise.all(claves.map((clave) => this.cargadores[clave]()));
+      const mascota = this.mascota() ?? (await this.resolverMascota());
+      if (version !== this.version) {
+        return;
+      }
+      if (!mascota) {
+        // Sin marca no se sabe qué mascota toca: hueco vacío y se reintenta en la siguiente carga.
+        this.svg.set(null);
+        return;
+      }
+      this.mascota.set(mascota);
+      const cargadores = mascota === 'MAKI' ? this.cargadoresMaki : this.cargadoresTami;
+      const svgs = await Promise.all(claves.map((clave) => cargadores[clave]()));
       if (version === this.version) {
         // Son los SVG propios de `mascota-app/`, empaquetados con la aplicación: el saneador de Angular quitaría los
         // elementos SVG y los `style` que llevan la variable del acento.
-        this.svg.set(svgs.length ? this.saneador.bypassSecurityTrustHtml(this.identificar(svgs[0])) : null);
+        this.svg.set(svgs.length ? this.saneador.bypassSecurityTrustHtml(identificarSvg(svgs[0], this.prefijo)) : null);
       }
     } catch {
       // Sin el chunk (sin conexión) o sin pose: se queda el hueco; la mascota nunca lleva el mensaje.

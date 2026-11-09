@@ -61,7 +61,7 @@ public class MarcaPanelService {
 		this.enEscuela = enEscuela;
 	}
 
-	/** La marca de la escuela activa: nombre, de dónde sale el logo y el tema. */
+	/** La marca de la escuela activa: nombre, de dónde sale el logo, el tema y la mascota. */
 	@Transactional(readOnly = true)
 	public MarcaPanelDTO marcaActiva() {
 		Organizacion escuela = escuelaActiva();
@@ -70,7 +70,7 @@ public class MarcaPanelService {
 				: Boolean.TRUE.equals(escuela.getComportamientoLegadoTaemoi()) ? MarcaPanelDTO.Logo.LEGADO
 						: MarcaPanelDTO.Logo.NINGUNO;
 		return new MarcaPanelDTO(escuela.getNombre(), origen, logo.map(Imagen::getId).orElse(null),
-				ReglaContraste.tema(escuela.getColorPrimario()));
+				ReglaContraste.tema(escuela.getColorPrimario()), escuela.getMascota());
 	}
 
 	/**

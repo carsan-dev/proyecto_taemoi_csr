@@ -17,6 +17,7 @@ import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { GESTION_UNA_SEDE, GESTION_VARIAS_SEDES, RESPONSABLE_VARIAS_SEDES } from '../filtro-sede/filtro-sede-prueba';
 import { AlumnosComponent, CLAVE_VISTA } from './alumnos.component';
 import { PendienteAlumno } from './pendientes-alumno.service';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 
 const API = environment.apiUrl;
 const NBSP = ' ';
@@ -168,6 +169,7 @@ describe('AlumnosComponent (8b-3a, listado de alumnos C)', () => {
     await TestBed.configureTestingModule({
       imports: [AlumnosComponent],
       providers: [
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),

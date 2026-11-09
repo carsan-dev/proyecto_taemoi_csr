@@ -20,6 +20,7 @@ import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { salirSinGuardarGuard } from '../../productos-alumno/salir-sin-guardar.guard';
 import { VisorPdfComponent } from '../../visor-pdf/visor-pdf.component';
 import { PlantillasPdfComponent } from './plantillas-pdf.component';
+import { MarcaEscuelaPanelService } from '../../marca-escuela-panel.service';
 
 @Component({ selector: 'pn-visor-pdf', standalone: true, template: '' })
 class ViewerStub {
@@ -67,7 +68,7 @@ describe('PlantillasPdfComponent', () => {
     notices = jasmine.createSpyObj<AvisosService>('avisos', ['exito', 'error']);
     await TestBed.configureTestingModule({
       imports: [PlantillasPdfComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), proveerCatalogoTesting(CATALOGO_TAEMOI),
+      providers: [{ provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } }, provideHttpClient(), provideHttpClientTesting(), proveerCatalogoTesting(CATALOGO_TAEMOI),
         { provide: AuthenticationService, useValue: { tieneRolAdmin: () => admin } },
         { provide: ConfirmacionService, useValue: { confirmar: confirm } },
         { provide: AvisosService, useValue: notices }],
@@ -628,7 +629,7 @@ describe('PlantillasPdfComponent with the catalogue still loading', () => {
     let catalogo!: CatalogoService;
     await TestBed.configureTestingModule({
       imports: [PlantillasPdfComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: CatalogoService, useFactory: () => catalogo },
+      providers: [{ provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } }, provideHttpClient(), provideHttpClientTesting(), { provide: CatalogoService, useFactory: () => catalogo },
         { provide: AuthenticationService, useValue: { tieneRolAdmin: () => true } },
         { provide: ConfirmacionService, useValue: { confirmar: () => Promise.resolve({ confirmado: true, valor: null }) } },
         { provide: AvisosService, useValue: jasmine.createSpyObj<AvisosService>('avisos', ['exito', 'error']) }],

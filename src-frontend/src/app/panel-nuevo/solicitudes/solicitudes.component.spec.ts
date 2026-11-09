@@ -18,6 +18,7 @@ import { EstilosPanelService } from '../estilos-panel.service';
 import { DEVOLUCION_OTRA_SEDE, accionesDe, devolucionDelProfesor, verboAceptar } from './solicitudes-vista';
 import { solicitudVista } from './solicitudes-vista.spec';
 import { SolicitudesPanelComponent } from './solicitudes.component';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 
 const BASE = `${environment.apiUrl}/solicitudes`;
 const CONTADOR = `${BASE}/contador`;
@@ -158,6 +159,7 @@ describe('SolicitudesPanelComponent (8b-3i, Solicitudes del panel nuevo, P1 acci
     await TestBed.configureTestingModule({
       imports: [SolicitudesPanelComponent],
       providers: [
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),

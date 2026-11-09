@@ -1,0 +1,49 @@
+export const SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 1254 1254" class="maki-celebrar-motion-animated" role="img" aria-labelledby="maki-celebrar-motion-title maki-celebrar-motion-desc">
+<title id="maki-celebrar-motion-title">Maki: Celebrar · Animación</title>
+<desc id="maki-celebrar-motion-desc">Un salto corto de alegría con preparación, brazos que se elevan, pies que acompañan y una caída suave. Conserva su sonrisa amplia. Ritmo revisado; respiración de reposo conservada.</desc>
+<style>.maki-celebrar-motion-animated { --maki-idle-count: 1; }
+.maki-celebrar-motion-animated.modo-vivo { --maki-idle-count: infinite; }
+.maki-celebrar-motion-animated .maki-celebrar-motion-torso { transform-origin: 625px 1008px; animation: maki-celebrar-motion-act 1.3s cubic-bezier(.35,0,.2,1) 1,maki-celebrar-motion-idle 6.6s cubic-bezier(.35,0,.2,1) 1.3s var(--maki-idle-count); }
+.maki-celebrar-motion-animated .maki-celebrar-motion-arm-left { transform-origin: 330px 650px; animation: 1.3s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-celebrar-motion-arm-left; }
+.maki-celebrar-motion-animated .maki-celebrar-motion-arm-right { transform-origin: 870px 770px; animation: 1.3s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-celebrar-motion-arm-right; }
+.maki-celebrar-motion-animated .maki-celebrar-motion-face { animation: 1.3s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-celebrar-motion-attention; }
+.maki-celebrar-motion-animated .maki-celebrar-motion-flame { transform-origin: 625px 1008px; animation: 1.3s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-celebrar-motion-follow; }
+.maki-celebrar-motion-animated .maki-celebrar-motion-blink { transform-origin: 625px 624px; animation: maki-celebrar-motion-blink 1.3s linear 1,maki-celebrar-motion-idle-blink 8.9s linear 1.3s var(--maki-idle-count); }
+@keyframes maki-celebrar-motion-act{0.0000%,80.0000%,100.0000%{transform: rotate(0deg) scale(1);}13.3333%{transform: rotate(-0.8deg);}30.0000%{transform: rotate(1.1deg);}51.6667%{transform: rotate(-0.4deg);}}
+@keyframes maki-celebrar-motion-arm-left{0.0000%,80.0000%,100.0000%{transform: rotate(0deg);}13.3333%{transform: rotate(-5deg);}31.6667%{transform: rotate(10deg);}46.6667%{transform: rotate(3deg);}55.0000%{transform: rotate(-3deg);}66.6667%{transform: rotate(1.5deg);}}
+@keyframes maki-celebrar-motion-arm-right{0.0000%,85.0000%,100.0000%{transform: rotate(0deg);}15.0000%{transform: rotate(5deg);}33.3333%{transform: rotate(-11deg);}48.3333%{transform: rotate(-4deg);}58.3333%{transform: rotate(3deg);}71.6667%{transform: rotate(-1deg);}}
+@keyframes maki-celebrar-motion-attention{0.0000%,15.0000%,75.0000%,100.0000%{transform: translate(0px, 0px);}31.6667%{transform: translate(0px, -6px);}50.0000%{transform: translate(0px, 7px);}}
+@keyframes maki-celebrar-motion-blink{0%,68.6154%,79.3846%,100%{transform:scaleY(1)}72.0769%,75.9231%{transform:scaleY(.1)}}
+@keyframes maki-celebrar-motion-follow{0.0000%,98.3333%,100.0000%{transform: skewX(0deg);}16.6667%{transform: skewX(0.35deg);}40.0000%{transform: skewX(-0.6deg);}63.3333%{transform: skewX(-0.2deg);}78.3333%{transform: skewX(0.25deg);}}
+@keyframes maki-celebrar-motion-idle { 
+  0%, 100% { transform: scale(1); }
+  39% { transform: scale(1.009, 1.014); }
+  68% { transform: scale(1.002, 1.003); }
+  85% { transform: scale(1.003, 1.005); }
+}
+@keyframes maki-celebrar-motion-idle-blink { 
+  0%, 32%, 35%, 100% { transform: scaleY(1); }
+  33%, 33.7% { transform: scaleY(0.1); }
+}
+.maki-celebrar-motion-animated .maki-celebrar-motion-foot-left { transform-origin: 420px 945px; animation: 1.3s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-celebrar-motion-weight-left; }
+.maki-celebrar-motion-animated .maki-celebrar-motion-foot-right { transform-origin: 760px 945px; animation: 1.3s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-celebrar-motion-weight-right; }
+@keyframes maki-celebrar-motion-weight-left{0.0000%,80.0000%,100.0000%{transform: rotate(0deg);}13.3333%{transform: rotate(3deg);}31.6667%{transform: rotate(-8deg);}48.3333%{transform: rotate(5deg);}61.6667%{transform: rotate(-2deg);}}
+@keyframes maki-celebrar-motion-weight-right{0.0000%,83.3333%,100.0000%{transform: rotate(0deg);}15.0000%{transform: rotate(-3deg);}35.0000%{transform: rotate(8deg);}50.0000%{transform: rotate(-5deg);}65.0000%{transform: rotate(2deg);}}
+.maki-celebrar-motion-animated .maki-celebrar-motion-scene { transform-origin: 625px 1070px; animation: 1.3s cubic-bezier(0.35, 0, 0.2, 1) 0s 1 normal none running maki-celebrar-motion-jump; }
+@keyframes maki-celebrar-motion-jump{0.0000%,76.6667%,100.0000%{transform: translateY(0px) scale(1);}11.6667%{transform: translateY(14px) scale(1.025, 0.976);}26.6667%{transform: translateY(-33px) scale(0.993, 1.01);}36.6667%{transform: translateY(-27px) scale(1);}48.3333%{transform: translateY(12px) scale(1.023, 0.978);}58.3333%{transform: translateY(-8px) scale(0.998, 1.004);}68.3333%{transform: translateY(3px) scale(1.005, 0.997);}}
+@media (prefers-reduced-motion: reduce) {
+  .maki-celebrar-motion-animated * { animation: auto ease 0s 1 normal none running none !important; }
+}</style>
+<g class="maki-celebrar-motion-scene">
+<g id="maki-celebrar-motion-back"><g class="maki-celebrar-motion-foot-left"><path d="M379 879 C352 897 337 925 321 948 C295 947 281 964 291 996 C304 1029 350 1060 381 1058 C400 1057 426 1024 443 1000 L507 948Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g><g class="maki-celebrar-motion-foot-right"><path d="M657 933 C689 958 707 982 722 1018 C735 1054 755 1074 787 1065 C827 1054 874 1022 888 992 C903 961 881 944 853 944 C838 922 820 899 790 878Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g><g class="maki-celebrar-motion-torso"><g class="maki-celebrar-motion-arm-left"><path d="M320 717 C269 688 235 640 211 595 C184 580 162 553 164 524 C164 501 175 487 194 497 C189 476 202 460 220 459 C240 455 251 468 255 487 C265 469 285 473 295 488 C305 505 294 529 296 548 C323 581 347 618 359 656Z" fill="#e3130a" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g></g><g class="maki-celebrar-motion-torso"><g class="maki-celebrar-motion-arm-right"><path d="M857 779 C897 751 922 706 963 686 C966 658 970 611 992 605 C1013 598 1032 618 1028 638 C1054 619 1081 615 1090 631 C1100 644 1085 658 1067 670 C1090 661 1105 671 1096 689 C1087 712 1048 723 1018 727 C976 762 917 796 869 793Z" fill="#2e75b9" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g>
+<g class="maki-celebrar-motion-torso"><g class="maki-celebrar-motion-flame"><g id="maki-celebrar-motion-source-body" transform="translate(0 -8) scale(1 .96)">
+<defs><clipPath id="maki-celebrar-motion-source-clip"><path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z"></path></clipPath></defs>
+<path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z" fill="#e3130a"></path>
+<g clip-path="url(#maki-celebrar-motion-source-clip)"><path d="M762 159 C821 199 856 284 849 364 C844 416 818 465 819 492 C843 525 921 508 960 440 C991 557 972 660 922 721 C870 777 796 809 700 835 C635 857 540 885 519 925 C501 961 534 1000 590 1008 C501 993 456 945 434 886 C409 826 419 754 474 709 C434 708 396 744 377 789 C350 719 341 655 357 586 C374 507 440 458 529 424 C607 390 719 373 764 311 C798 262 788 201 762 159Z" fill="#f6e001"></path><path d="M978 507 C980 600 964 670 922 721 C870 777 796 809 700 835 C635 857 540 885 519 925 C501 961 534 1000 590 1008 C738 1054 893 952 978 803 C1040 690 1056 608 1018 596 C1000 556 980 535 978 507Z" fill="#2e75b9"></path></g>
+<path d="M640 124 C610 100 620 80 650 78 C725 60 825 119 869 215 C897 281 890 370 878 421 C902 414 918 382 927 352 C935 331 954 335 966 348 C1016 398 1036 481 1012 593 C991 707 932 826 864 902 C792 988 699 1025 579 1015 C477 1009 395 979 357 917 C318 858 319 793 311 711 C283 634 279 562 295 483 C319 374 395 292 475 264 C506 252 529 257 527 280 C524 301 505 320 515 337 C574 306 619 258 642 202 C660 172 652 145 640 124Z" fill="none" stroke="#293b3f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path>
+</g></g></g>
+<g class="maki-celebrar-motion-torso"><g class="maki-celebrar-motion-face"><g id="maki-celebrar-motion-source-face"><g transform="translate(0 -39)"><g class="maki-celebrar-motion-blink"><path d="M467 611 C463 581 482 550 510 548 C543 546 564 572 569 604 C574 629 563 638 543 629 C524 620 514 621 494 628 C476 634 468 627 467 611Z" fill="#302e26"></path></g><g class="maki-celebrar-motion-blink"><path d="M686 612 C681 582 700 552 728 549 C760 544 782 570 785 602 C789 628 781 637 760 629 C742 621 731 620 712 628 C695 635 688 630 686 612Z" fill="#302e26"></path></g></g><path d="M583 620 C614 626 653 628 681 623 C699 621 703 632 698 654 C691 686 666 708 633 708 C598 708 574 687 566 655 C560 634 565 619 583 620Z" fill="#302e26"></path></g></g></g>
+<g id="maki-celebrar-motion-front"></g>
+</g>
+</svg>
+`;

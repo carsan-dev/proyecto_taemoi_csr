@@ -2,7 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 import { MASCOTA_CARGADORES } from '../mascota/mascota.component';
 import { environment } from '../../../environments/environment';
 import { AvisosService } from '../avisos/avisos.service';
@@ -24,6 +25,7 @@ describe('GestionarAlumnosComponent (3m-4)', () => {
     await TestBed.configureTestingModule({
       imports: [GestionarAlumnosComponent],
       providers: [
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         { provide: MASCOTA_CARGADORES, useValue: {
           esperar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
           buscar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),

@@ -31,6 +31,7 @@ import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { DialogosFichaPanel } from './dialogos/dialogos-ficha-panel';
 import { FichaAlumnoComponent } from './ficha-alumno.component';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 
 /**
  * Referencia de «lo de hoy» para las pruebas de paridad: la lógica de la ficha (`FichaAlumnoBase`) con el puerto de
@@ -230,6 +231,7 @@ function configurar(): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
       { provide: MASCOTA_CARGADORES, useValue: {
         esperar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
         compacta: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),

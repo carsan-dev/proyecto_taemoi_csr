@@ -157,6 +157,8 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 			assertTrue(marca.get("logoVersion").isNull());
 			assertTema(ReglaContraste.tema("#3E9B4F"), marca.get("tema"));
 			assertEquals(ReglaContraste.TINTA, marca.get("tema").get("sobrePrimario").asText());
+			// V32_7: cualquier escuela que no sea Moiskimdo lleva TAMI.
+			assertEquals("TAMI", marca.get("mascota").asText());
 			// También el propietario.
 			assertEquals("#3E9B4F", leer(get("/api/escuela/marca"), tPropietarioA, 200).get("tema").get("primario")
 					.asText());
@@ -173,6 +175,8 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 			assertEquals("Escuela Ficticia Marca B", enB.get("nombre").asText());
 			assertEquals("#1B2B2E", enB.get("tema").get("primario").asText());
 			assertEquals(ReglaContraste.BLANCO, enB.get("tema").get("sobrePrimario").asText());
+			assertEquals("TAMI", enA.get("mascota").asText());
+			assertEquals("TAMI", enB.get("mascota").asText());
 		}));
 	}
 
@@ -195,6 +199,8 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("LEGADO", marca.get("logo").asText());
 		assertTrue(marca.get("logoVersion").isNull());
 		assertTema(ReglaContraste.tema(color), marca.get("tema"));
+		// V32_7: Moiskimdo (organización 1) lleva MAKI.
+		assertEquals("MAKI", marca.get("mascota").asText());
 		// Sin logo subido no hay PNG: el panel usa el SVG de siempre de assets.
 		mvc.perform(get("/api/escuela/logo").cookie(new Cookie("jwt", tGestorOrg1))).andExpect(status().isNotFound());
 	}
@@ -227,7 +233,7 @@ class MarcaEscuelaPanelIntegrationTest extends MySqlIntegrationTest {
 			assertEquals("NINGUNO", enA.get("logo").asText());
 			assertTrue(enA.get("logoVersion").isNull());
 			assertTema(ReglaContraste.tema("#3E9B4F"), enA.get("tema"));
-			assertEquals(Set.of("nombre", "logo", "logoVersion", "tema"), campos(enA), "solo la marca");
+			assertEquals(Set.of("nombre", "logo", "logoVersion", "tema", "mascota"), campos(enA), "solo la marca");
 			mvc.perform(head("/api/escuela/marca").cookie(new Cookie("jwt", tProfesorA))).andExpect(status().isOk());
 
 			// La misma cuenta, profesor también en B y con la sesión en B: la de B.

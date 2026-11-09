@@ -19,6 +19,7 @@ import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { InicioComponent } from './inicio.component';
 import { PendienteVencido } from './pendiente-vencido.service';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 
 const API = environment.apiUrl;
 const NBSP = ' ';
@@ -93,6 +94,7 @@ describe('InicioComponent (8b-2, Inicio I1)', () => {
     await TestBed.configureTestingModule({
       imports: [InicioComponent],
       providers: [
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         { provide: MASCOTA_CARGADORES, useValue: {
           cumpleanos: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),
           saludar: () => Promise.resolve('<svg viewBox="0 0 320 320"></svg>'),

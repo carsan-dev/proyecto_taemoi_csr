@@ -1,4 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
+import { MarcaEscuelaPanelService } from '../marca-escuela-panel.service';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of } from 'rxjs';
@@ -53,6 +54,7 @@ describe('FestivosComponent (decisión 458)', () => {
       imports: [FestivosComponent],
       providers: [
         provideHttpClient(), provideHttpClientTesting(),
+        { provide: MarcaEscuelaPanelService, useValue: { marca: () => of({}) } },
         { provide: AvisosService, useValue: avisos },
         { provide: ConfirmacionService, useValue: { confirmar } },
         { provide: PermisosSesionService, useValue: { obtener: () => of(p) } },

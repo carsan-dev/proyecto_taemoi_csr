@@ -36,6 +36,7 @@
 :host .pn-mascota__lienzo ::ng-deep svg {
   // Gana a las variables de la raíz del SVG, incluso a .modo-vivo.
   --gota-idle-count: 1;
+  --maki-idle-count: 1;
   display: block;
   width: 100%;
   height: 100%;
