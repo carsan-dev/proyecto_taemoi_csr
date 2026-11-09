@@ -81,13 +81,14 @@ public class ProfesorService {
 	private final ProductosCatalogoService productosCatalogo;
 	private final RegistroAccionesProfesor registro;
 	private final TurnoRepository turnos;
+	private final RallasService rallas;
 
 	public ProfesorService(EntityManager em, AlcanceActual alcanceActual, AsignacionProfesorRepository asignaciones,
 			TutorRepository tutores, ProgresionGradosService progresionGrados,
 			CatalogoDisciplinasService catalogoDisciplinas, ComportamientoLegadoService comportamientoLegado,
 			AlumnoSaludService alumnoSalud, PDFService pdf, AlumnoDeporteService alumnoDeportes, AlumnoService alumnos,
 			AlumnoDeporteRepository inscripciones, ProductosCatalogoService productosCatalogo,
-			RegistroAccionesProfesor registro, TurnoRepository turnos) {
+			RegistroAccionesProfesor registro, TurnoRepository turnos, RallasService rallas) {
 		this.em = em;
 		this.alcanceActual = alcanceActual;
 		this.asignaciones = asignaciones;
@@ -103,6 +104,7 @@ public class ProfesorService {
 		this.productosCatalogo = productosCatalogo;
 		this.registro = registro;
 		this.turnos = turnos;
+		this.rallas = rallas;
 	}
 
 	/**
@@ -218,7 +220,8 @@ public class ProfesorService {
 				FROM Grupo g JOIN g.alumnos a LEFT JOIN g.disciplina d LEFT JOIN Sede s ON s.id = g.sedeId
 				WHERE a.id = :alumno AND g.id IN :grupos ORDER BY g.nombre, g.id""", Object[].class)
 				.setParameter("alumno", alumnoId).setParameter("grupos", grupos).getResultList()) {
-			compartidos.add(new ProfesorDTOs.GrupoCompartido((Long) f[0], (String) f[1], sede((Long) f[2], (String) f[3])));
+			compartidos.add(new ProfesorDTOs.GrupoCompartido((Long) f[0], (String) f[1], sede((Long) f[2], (String) f[3]),
+					(String) f[4], rallas.puedeCambiar((Long) f[0], (Long) f[2])));
 			if (f[4] != null) {
 				disciplinasCompartidas.add((String) f[4]);
 			}

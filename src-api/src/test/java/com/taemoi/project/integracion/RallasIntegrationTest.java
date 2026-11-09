@@ -653,6 +653,27 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(sinGenero.has("genero") && sinGenero.get("genero").isNull(), "sin género: null");
 	}
 
+	@Test
+	void fichaDeMisGrupos_diceSiPuedeCambiarLasRallasEnCadaGrupo() throws Exception {
+		long a = alumno("FICHAHOJA", e.gA, gAmarillo);
+		fijar(a, 4);
+
+		// Titular: puede en su grupo; el grupo trae su disciplina para saber qué cinturón abre la hoja.
+		JsonNode delTitular = buscar(leer(get("/api/profesor/alumnos/" + a), tTitular, 200).get("grupos"), e.gA);
+		assertTrue(delTitular.get("puedeCambiarRallas").asBoolean());
+		assertEquals("TAEKWONDO", delTitular.get("deporte").asText());
+		assertTrue(delTitular.has("id") && delTitular.has("nombre") && delTitular.has("sede"), "los campos de siempre siguen");
+
+		// Ayudante: ve la ficha, pero no puede cambiarlas.
+		JsonNode delAyudante = buscar(leer(get("/api/profesor/alumnos/" + a), tAyudante, 200).get("grupos"), e.gA);
+		assertFalse(delAyudante.get("puedeCambiarRallas").asBoolean());
+		assertEquals("TAEKWONDO", delAyudante.get("deporte").asText());
+
+		// Otro grupo u otra escuela: sin acceso a la ficha, como hoy.
+		assertEquals(403, estado(get("/api/profesor/alumnos/" + a), tTitularB));
+		assertEquals(403, estado(get("/api/profesor/alumnos/" + a), tTitularOtra));
+	}
+
 	// ------------------------------------------------------------------ utilidades
 
 	private long sistemaDeGrados(EscuelaConSedesDePrueba x) {
