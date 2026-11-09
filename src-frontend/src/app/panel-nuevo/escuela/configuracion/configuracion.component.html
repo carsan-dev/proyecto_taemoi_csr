@@ -2,7 +2,7 @@
   <div class="conf__pagina">
     <header class="conf__cabecera">
       <h1 class="conf__titulo">Configuración</h1>
-      <p class="conf__subtitulo">Los ajustes de la escuela: cuántos alumnos caben en un turno.</p>
+      <p class="conf__subtitulo">{{ verRallas ? 'Los ajustes de la escuela: cuántos alumnos caben en un turno y las rallas hacia el examen.' : 'Los ajustes de la escuela: cuántos alumnos caben en un turno.' }}</p>
     </header>
 
     @if (ancho) {
@@ -18,6 +18,10 @@
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"></path><path d="M16 5.2a3 3 0 0 1 0 5.6M18.5 19c-.3-1.9-1.1-3.3-2.3-4.2"></path></svg>
             }
+            @case ('rallas') {
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><rect x="2.5" y="8" width="19" height="8" rx="1"></rect><path d="M12 8v8M15 8v8M18 8v8"></path></svg>
+            }
             @case ('legal') {
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round"><path d="M7 3.5h7l4 4v13H7z"></path><path d="M14 3.5v4h4M10 12h5M10 15.5h5"></path></svg>
@@ -31,18 +35,74 @@
       <div class="conf__panel" role="tabpanel" [id]="'conf-panel-' + seccion" [attr.aria-labelledby]="'conf-tab-' + seccion">
         @switch (seccion) {
         @case ('turno') { <ng-container [ngTemplateOutlet]="turno" /> }
+        @case ('rallas') { <ng-container [ngTemplateOutlet]="rallasSeccion" /> }
         @case ('legal') { <ng-container [ngTemplateOutlet]="legal" /> }
         }
       </div>
     </div>
     } @else {
-    <!-- P1 (menos de 768 px): solo «Alumnos por turno»; lo legal y las cookies, en el menú de la cuenta. -->
+    <!-- P1 (menos de 768 px): las rallas y «Alumnos por turno» seguidas; lo legal y las cookies, en el menú de la cuenta. -->
     <div class="conf__seguidas">
+      @if (verRallas) { <ng-container [ngTemplateOutlet]="rallasSeccion" /> }
       <ng-container [ngTemplateOutlet]="turno" />
     </div>
     }
   </div>
+
+  <span class="conf__oculto" role="status" aria-live="polite">@if (numCambiosRallas) { {{ textoCambiosRallas }} }</span>
+  @if (verRallas && numCambiosRallas) {
+  <div class="conf__cambios" role="region" aria-label="Cambios sin guardar">
+    <strong>{{ textoCambiosRallas }}</strong>
+    <button type="button" class="conf__boton-texto" [disabled]="guardandoRallas" (click)="descartarRallas()">Descartar</button>
+    <button pnOcupado type="button" class="conf__boton-primario" data-guardar-rallas [ocupado]="guardandoRallas" textoOcupado="Guardando…"
+      (click)="guardarRallas()">Guardar cambios</button>
+  </div>
+  }
 </div>
+
+<!-- ================================================================== Rallas hacia el examen -->
+<ng-template #rallasSeccion>
+  <section class="conf__seccion" data-seccion="rallas" aria-labelledby="conf-titulo-rallas">
+    <h2 class="conf__seccion-titulo" id="conf-titulo-rallas">Rallas hacia el examen</h2>
+    <p class="conf__seccion-nota conf__seccion-nota--junta">Rallas negras en el cinturón al pasar lista. Con 5 rallas, el alumno queda listo para examen. Se activan por disciplina.</p>
+    <p class="conf__seccion-nota conf__seccion-nota--junta">Las dan y las quitan el propietario, la gestión, el responsable de la sede y el profesor titular del grupo. El ayudante solo las ve.</p>
+
+    @if (cargandoRallas) {
+    <pn-esqueleto etiqueta="Cargando las rallas">
+      <div class="conf__esqueleto-campo"><span></span><span></span></div>
+    </pn-esqueleto>
+    } @else if (errorRallas) {
+    <pn-bloque-error titulo="No se han podido leer las rallas." (reintentar)="cargarRallas()" />
+    } @else {
+    <ul class="conf__interruptores">
+      @for (d of disciplinasRallas ?? []; track d.deporte) {
+      <li>
+        <button type="button" class="conf__interruptor" role="switch" [attr.aria-checked]="activa(d)" [attr.data-rallas]="d.deporte"
+          [disabled]="guardandoRallas" (click)="alternarRallas(d)">
+          <span class="conf__pista" aria-hidden="true"></span>
+          <span class="conf__interruptor-texto">
+            <b>{{ d.nombre }}@if (modificada(d)) {&ngsp;<span class="conf__modificado-punto">Modificado</span>}</b>&ngsp;
+            <span>{{ descripcionRallas(d) }}</span>
+          </span>
+        </button>
+        @if (seApaga(d)) {
+        <p class="conf__aviso-rallas" role="note">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.5h.01"></path></svg>
+          <span>Las rallas que ya tienen los alumnos de {{ d.nombre }} no se borran: dejan de verse hasta que vuelvas a activarlas.</span>
+        </p>
+        }
+      </li>
+      }
+    </ul>
+    <div class="conf__ejemplo" aria-hidden="true">
+      @for (e of ejemploRallas; track e.texto) {
+      <span><pn-cinturon [color1]="e.color1" [color2]="e.color2" [medias]="e.medias" />{{ e.texto }}</span>
+      }
+    </div>
+    }
+  </section>
+</ng-template>
 
 <!-- ================================================================== Alumnos por turno -->
 <ng-template #turno>

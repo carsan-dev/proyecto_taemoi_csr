@@ -346,6 +346,157 @@
   }
 }
 
+// ------------------------------------------------------------------ rallas hacia el examen (boceto de rallas, config)
+
+.conf__seccion-nota--junta {
+  margin-bottom: 0;
+}
+
+.conf__interruptores {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--pn-linea);
+
+  li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--pn-linea);
+  }
+}
+
+// Interruptor (role=switch) de 40 × 24 con su texto: toda la fila es el objetivo táctil.
+.conf__interruptor {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: none;
+  color: var(--pn-tinta);
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: progress;
+  }
+}
+
+.conf__pista {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 24px;
+  border-radius: var(--pn-radio-pastilla);
+  background: var(--pn-borde-control);
+  transition: background-color var(--pn-transicion);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--pn-superficie);
+    transition: transform var(--pn-transicion);
+  }
+}
+
+.conf__interruptor[aria-checked='true'] .conf__pista {
+  background: var(--pn-acento);
+
+  &::after {
+    transform: translateX(16px);
+  }
+}
+
+.conf__interruptor-texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+
+  b {
+    font-weight: 600;
+  }
+
+  > span {
+    font: var(--pn-secundario);
+    color: var(--pn-tinta-2);
+  }
+}
+
+.conf__modificado-punto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  color: var(--pn-acento);
+  font: var(--pn-etiqueta);
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--pn-acento);
+  }
+}
+
+// Al apagar una disciplina guardada encendida: las rallas no se borran.
+.conf__aviso-rallas {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0 0 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+  font: var(--pn-secundario);
+
+  svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    color: var(--pn-acento);
+  }
+}
+
+.conf__ejemplo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 16px 0 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+// Barra inferior de cambios del panel (la de Mi perfil y Productos).
+.conf__cambios {
+  @include c.barra-cambios;
+}
+
+.conf__oculto {
+  @include c.oculto;
+}
+
 // ------------------------------------------------------------------ esqueletos
 
 .conf__esqueleto-campo {
@@ -363,9 +514,34 @@
 
 // ------------------------------------------------------------------ móvil (P1)
 
+// Hueco bajo la página para que la barra de cambios no tape lo último.
+.conf:has(.conf__cambios) .conf__pagina {
+  padding-bottom: 120px;
+}
+
+@media (max-width: 1023px) {
+  .conf__cambios {
+    @include c.barra-cambios-sobre-navegacion;
+  }
+
+  .conf:has(.conf__cambios) .conf__pagina {
+    padding-bottom: 200px;
+  }
+}
+
+@media (max-width: 599px) {
+  .conf__cambios {
+    @include c.barra-cambios-compacta;
+  }
+}
+
 @media (max-width: 767.98px) {
   .conf__pagina {
     padding: var(--pn-espacio-m) var(--pn-espacio-m) var(--pn-espacio-xl);
+  }
+
+  .conf__aviso-rallas {
+    margin-left: 0;
   }
 
   .conf__titulo {
@@ -395,7 +571,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .conf__entrada {
+  .conf__entrada,
+  .conf__pista,
+  .conf__pista::after {
     transition: none;
   }
 }
