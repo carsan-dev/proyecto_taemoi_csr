@@ -153,6 +153,10 @@ export class PanelLateralComponent implements AfterViewInit, OnDestroy {
 
   alTeclear(evento: KeyboardEvent): void {
     if (evento.key === 'Escape') {
+      // Una capa abierta dentro del panel (la hoja de rallas de la ficha) ya atendió el Esc: solo se cierra ella.
+      if (evento.defaultPrevented) {
+        return;
+      }
       evento.preventDefault();
       this.pedirCierre();
       return;

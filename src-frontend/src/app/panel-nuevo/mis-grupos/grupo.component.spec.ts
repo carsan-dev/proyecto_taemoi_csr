@@ -338,6 +338,40 @@ describe('GrupoPanelComponent', () => {
       expect(document.activeElement).toBe(elemento().querySelector('[data-alumno="22"]'));
     }));
 
+    it('con la hoja de rallas abierta, Esc cierra solo la hoja y el foco vuelve a la punta; otro Esc cierra el panel', () => {
+      cargar();
+      spyOn(fixture.componentInstance, 'esEscritorio').and.returnValue(true);
+      consulta.next(convertToParamMap({ alumno: '22' }));
+      fixture.detectChanges();
+      http.expectOne(`${api}/alumnos/22`).flush({
+        ...ficha, id: 22, nombre: 'Hugo', apellidos: 'Martín',
+        grupos: [{ id: 7, nombre: 'Infantil', sede: null, deporte: 'TAEKWONDO', puedeCambiarRallas: true }],
+        deportes: [{
+          deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'AMARILLO', nombre: 'Amarillo' }, fechaGrado: null,
+          apto: false, deMisGrupos: true, admitePases: false, siguienteGrado: null, pideRojoBordado: false, mediasRallas: 4, aplicaRallas: true,
+        }],
+      });
+      fixture.detectChanges();
+      const navegar = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+      const punta = () => elemento().querySelector<HTMLButtonElement>('pn-panel-lateral button.ficha__punta');
+      punta()!.focus();
+      punta()!.click();
+      fixture.detectChanges();
+      const hoja = () => document.querySelector<HTMLDialogElement>('dialog[data-dialogo="rallas"]');
+      expect(hoja()).not.toBeNull();
+
+      hoja()!.querySelector<HTMLElement>('[data-paso="1"]')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(hoja()).toBeNull();
+      expect(navegar).not.toHaveBeenCalled();
+      expect(elemento().querySelector('pn-panel-lateral')).not.toBeNull();
+      expect(document.activeElement).toBe(punta());
+
+      punta()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      expect(navegar).toHaveBeenCalledWith([], jasmine.objectContaining({ queryParams: { alumno: null } }));
+    });
+
     it('cerrar quita ?alumno= de la URL', () => {
       cargar();
       spyOn(fixture.componentInstance, 'esEscritorio').and.returnValue(true);
