@@ -247,8 +247,8 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 	@Test
 	void alumnosDelGrupo_activosConDeportesGradoYApto_sinDatosSensibles() throws Exception {
 		JsonNode alumnos = leer(get("/api/profesor/grupos/" + e.gA + "/alumnos"), tProfA, 200);
-		assertEquals(List.of(tutelado, e.aGrupoA, e.aSinSede), idsEnOrden(alumnos, "id"),
-				"activos, por apellidos y nombre; sin el de baja: " + alumnos);
+		assertEquals(List.of(e.aGrupoA, e.aSinSede, tutelado), idsEnOrden(alumnos, "id"),
+				"activos, por nombre y apellidos como Pasar lista; sin el de baja: " + alumnos);
 		JsonNode lucia = fila(alumnos, "id", tutelado);
 		assertEquals(Set.of("id", "nombre", "apellidos", "fotoId", "deportes", "genero"), campos(lucia));
 		assertTrue(lucia.get("fotoId").isNull(), "sin foto, nulo");

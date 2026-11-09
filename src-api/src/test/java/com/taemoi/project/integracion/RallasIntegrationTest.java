@@ -654,6 +654,37 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
+	void misGrupos_ordenaLosAlumnosComoPasarLista_porNombreYApellidos() throws Exception {
+		long g = grupo(e, "IT orden " + e.marca, "TAEKWONDO", e.sA);
+		long profesor = soloProfesor(e, "orden");
+		asignar(e, profesor, g, "TITULAR");
+		String token = e.token(jwtService, usuarios, profesor);
+		long turno = turnoLunes(g);
+		List<Long> esperado = new ArrayList<>();
+		// Por nombre y luego apellidos: «Nuria Calvo» antes de «Nuria Santos»; «Alma» antes que «Candela».
+		for (String[] n : new String[][] { { "Alma", "Diez" }, { "Candela", "Calvo" }, { "Nuria", "Calvo" },
+				{ "Nuria", "Santos" } }) {
+			long id = alumno("ORDEN" + n[0] + n[1], g, gAmarillo);
+			jdbc.update("UPDATE alumno SET nombre = ?, apellidos = ? WHERE id = ?", n[0], n[1], id);
+			esperado.add(id);
+		}
+		// Se dan de alta en otro orden que el esperado.
+		List<Long> alta = List.of(esperado.get(3), esperado.get(1), esperado.get(0), esperado.get(2));
+		for (long id : alta) {
+			e.enTurno(turno, id);
+		}
+
+		List<Long> enGrupo = new ArrayList<>();
+		leer(get("/api/profesor/grupos/" + g + "/alumnos"), token, 200).forEach(a -> enGrupo.add(a.get("id").asLong()));
+		assertEquals(esperado, enGrupo, "Mis grupos: por nombre y apellidos");
+
+		List<Long> enLista = new ArrayList<>();
+		leer(get("/api/profesor/grupos/" + g + "/clases/" + turno + "/" + LUNES), token, 200).get("alumnos")
+				.forEach(a -> enLista.add(a.get("id").asLong()));
+		assertEquals(enLista, enGrupo, "el mismo orden que Pasar lista");
+	}
+
+	@Test
 	void fichaDeMisGrupos_diceSiPuedeCambiarLasRallasEnCadaGrupo() throws Exception {
 		long a = alumno("FICHAHOJA", e.gA, gAmarillo);
 		fijar(a, 4);

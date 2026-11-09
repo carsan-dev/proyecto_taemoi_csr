@@ -146,9 +146,10 @@ public class ProfesorService {
 	}
 
 	/**
-	 * Alumnos ACTIVOS de un grupo suyo (§5.2), por apellidos, nombre e id, cada uno con el id de su foto y sus deportes
-	 * activos (grado con nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no es suyo → 403. La condición
-	 * del {@code LEFT JOIN} solo quita el id de la foto de un anonimizado: no cambia quién sale en la lista.
+	 * Alumnos ACTIVOS de un grupo suyo (§5.2), por nombre, apellidos e id (el orden de Pasar lista), cada uno con el id
+	 * de su foto y sus deportes activos (grado con nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no
+	 * es suyo → 403. La condición del {@code LEFT JOIN} solo quita el id de la foto de un anonimizado: no cambia quién
+	 * sale en la lista.
 	 */
 	@Transactional(readOnly = true)
 	public List<ProfesorDTOs.AlumnoDeGrupo> alumnosDelGrupo(Long grupoId) {
@@ -166,7 +167,7 @@ public class ProfesorService {
 		for (Object[] f : em.createQuery("""
 				SELECT a.id, a.nombre, a.apellidos, foto.id, a.genero FROM Grupo g JOIN g.alumnos a
 				LEFT JOIN a.fotoAlumno foto ON a.anonimizadoEn IS NULL
-				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.apellidos, a.nombre, a.id""", Object[].class)
+				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.nombre, a.apellidos, a.id""", Object[].class)
 				.setParameter("grupo", grupoId).getResultList()) {
 			porAlumno.put((Long) f[0], new ProfesorDTOs.AlumnoDeGrupo((Long) f[0], (String) f[1], (String) f[2],
 					(Long) f[3], new ArrayList<>(), genero(f[4])));
