@@ -135,8 +135,9 @@
                 <span class="alumnos__punto" [class]="d.claseDisciplina" aria-hidden="true"></span>
                 <span>{{ d.nombre }}</span>
                 @if (d.grado) {
-                <span class="alumnos__cinto" [style.background]="d.grado.fondo" aria-hidden="true"></span>
-                <span class="alumnos__grado">{{ d.grado.nombre }}</span>
+                <pn-cinturon class="alumnos__cinto" [color1]="d.grado.color1" [color2]="d.grado.color2" [medias]="d.medias" />
+                <span class="alumnos__grado">{{ d.grado.nombre }}@if (d.medias !== null) {<span class="alumnos__oculto">, {{ textoOcultoRallas(d.medias) }}</span>}</span>
+                @if (d.medias === 10) { <pn-distintivo-examen data-listo [genero]="f.genero" /> }
                 } @else if (d.sinGrado) {
                 <span class="alumnos__grado">sin grado</span>
                 }
@@ -239,7 +240,7 @@
               </span>
               @if (d.grado) {
               <span class="alumnos__dato">
-                <span class="alumnos__cinto" [style.background]="d.grado.fondo" aria-hidden="true"></span>
+                <pn-cinturon class="alumnos__cinto" [color1]="d.grado.color1" [color2]="d.grado.color2" [medias]="d.medias" />
                 <strong class="alumnos__grado-detalle">{{ d.grado.nombreDetalle }}</strong>
                 @if (d.tiempoConGrado) {<span class="alumnos__etiqueta" data-cifras>{{ d.tiempoConGrado === 'Desde hoy' ? 'desde hoy' : d.tiempoConGrado + ' con el grado' }}</span>}
               </span>

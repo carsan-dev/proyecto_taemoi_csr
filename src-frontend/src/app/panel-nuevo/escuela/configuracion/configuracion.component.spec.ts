@@ -15,6 +15,11 @@ import { ConfiguracionPanelComponent } from './configuracion.component';
 const API = environment.apiUrl;
 const LIMITE = `${API}/turnos/limite`;
 const GUARDAR_LIMITE = `${API}/admin/configuracion/limite-turno`;
+const RALLAS = `${API}/admin/configuracion/rallas`;
+const DISCIPLINAS = [
+  { deporte: 'TAEKWONDO', nombre: 'Taekwondo', activas: true },
+  { deporte: 'KICKBOXING', nombre: 'Kickboxing', activas: false },
+];
 
 /** `matchMedia` de un navegador de `px` de ancho: las consultas de ancho de las capas y del componente. */
 function consultaDeAncho(px: number): (q: string) => MediaQueryList {
@@ -80,9 +85,10 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
     fixture.detectChanges();
   }
 
-  function cargar(ancho = 375, limite = 36): void {
+  function cargar(ancho = 375, limite = 36, rallas: object = DISCIPLINAS): void {
     crear(ancho);
     peticiones(LIMITE).forEach((r) => r.flush(limite));
+    peticiones(RALLAS).forEach((r) => r.flush(rallas));
     fixture.detectChanges();
   }
 
@@ -134,28 +140,31 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
 
   // ------------------------------------------------------------------ lecturas y distribuciones
 
-  it('al entrar pide solo el límite (sin la lectura de cuentas) con ERROR_HANDLED_LOCALLY', () => {
+  it('al entrar pide el límite y las rallas (sin la lectura de cuentas) con ERROR_HANDLED_LOCALLY', () => {
     crear(375);
     const [l] = peticiones(LIMITE);
     expect(l.request.urlWithParams).toBe(LIMITE);
     expect(l.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
     l.flush(36);
+    const [r] = peticiones(RALLAS);
+    expect(r.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+    r.flush(DISCIPLINAS);
     http.verify();
     expect(texto(el().querySelector('h1'))).toBe('Configuración');
   });
 
-  it('a 375 (P1): solo «Alumnos por turno», sin índice; «Avisos legales y cookies» queda en el menú de la cuenta', () => {
+  it('a 375 (P1): las rallas y «Alumnos por turno» seguidas, sin índice; «Avisos legales y cookies» queda en el menú de la cuenta', () => {
     cargar(375);
     expect(el().querySelector('[role="tablist"]')).toBeNull();
     const secciones = Array.from(el().querySelectorAll('.conf__seccion')).map((s) => texto(s.querySelector('h2')));
-    expect(secciones).toEqual(['Alumnos por turno']);
+    expect(secciones).toEqual(['Rallas hacia el examen', 'Alumnos por turno']);
   });
 
-  it('desde 768 (P2): índice con dos secciones, Alumnos por turno y Avisos legales y cookies, y sin rastro de roles', () => {
+  it('desde 768 (P2): índice con Alumnos por turno, Rallas hacia el examen y Avisos legales y cookies, y sin rastro de roles', () => {
     cargar(768);
     const tabs = Array.from(el().querySelectorAll('[role="tab"]'));
     expect(tabs.map((t) => [texto(t), t.getAttribute('aria-selected')])).toEqual([
-      ['Alumnos por turno', 'true'], ['Avisos legales y cookies', 'false'],
+      ['Alumnos por turno', 'true'], ['Rallas hacia el examen', 'false'], ['Avisos legales y cookies', 'false'],
     ]);
     expect(el().querySelector('[role="tablist"]')!.getAttribute('aria-orientation')).toBe('vertical');
     const visibles = () => Array.from(el().querySelectorAll('.conf__seccion')).map((s) => texto(s.querySelector('h2')));
@@ -177,8 +186,11 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
     el().querySelector<HTMLButtonElement>('#conf-tab-turno')!.focus();
     lista.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
     fixture.detectChanges();
+    expect(document.activeElement?.id).toBe('conf-tab-rallas');
+    expect(el().querySelector('#conf-tab-rallas')!.getAttribute('aria-selected')).toBe('true');
+    lista.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    fixture.detectChanges();
     expect(document.activeElement?.id).toBe('conf-tab-legal');
-    expect(el().querySelector('#conf-tab-legal')!.getAttribute('aria-selected')).toBe('true');
     lista.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
     fixture.detectChanges();
     expect(document.activeElement?.id).toBe('conf-tab-turno');
@@ -187,8 +199,8 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
 
   it('las mismas acciones del límite a 375 y a 768', () => {
     const acciones = (): string[] => {
-      const botones = Array.from(el().querySelectorAll<HTMLButtonElement>('.conf__seccion button')).map((b) => texto(b));
-      const campos = Array.from(el().querySelectorAll<HTMLInputElement>('.conf__seccion input')).map((c) => c.id);
+      const botones = Array.from(el().querySelectorAll<HTMLButtonElement>('.conf__seccion[data-seccion="turno"] button')).map((b) => texto(b));
+      const campos = Array.from(el().querySelectorAll<HTMLInputElement>('.conf__seccion[data-seccion="turno"] input')).map((c) => c.id);
       return [...new Set([...botones, ...campos])].sort();
     };
     cargar(375);
@@ -198,6 +210,7 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
     fixture = TestBed.createComponent(ConfiguracionPanelComponent);
     fixture.detectChanges();
     peticiones(LIMITE).forEach((r) => r.flush(36));
+    peticiones(RALLAS).forEach((r) => r.flush(DISCIPLINAS));
     fixture.detectChanges();
     expect(el().querySelector('[role="tablist"]')).not.toBeNull();
     expect(acciones()).toEqual(enMovil);
@@ -284,6 +297,7 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
 
   it('si no se puede leer el límite: bloque de error con «Reintentar» que vuelve a pedirlo', () => {
     crear(375);
+    peticiones(RALLAS)[0].flush(DISCIPLINAS);
     peticiones(LIMITE)[0].flush(null, { status: 500, statusText: 'Error' });
     fixture.detectChanges();
     const seccion = el().querySelector('.conf__seccion[data-seccion="turno"]')!;
@@ -318,5 +332,98 @@ describe('ConfiguracionPanelComponent (8b-3k, Configuración del panel nuevo: P1
     fixture.detectChanges();
     const pagina = host.querySelector<HTMLElement>('.conf__pagina')!;
     expect(pagina.scrollWidth).toBeLessThanOrEqual(pagina.clientWidth);
+  });
+
+  // ------------------------------------------------------------------ rallas hacia el examen (decisiones 510-513)
+
+  const seccionRallas = (): HTMLElement => el().querySelector<HTMLElement>('.conf__seccion[data-seccion="rallas"]')!;
+  const interruptor = (deporte: string): HTMLButtonElement => seccionRallas().querySelector<HTMLButtonElement>(`[data-rallas="${deporte}"]`)!;
+  const barra = (): HTMLElement | null => el().querySelector<HTMLElement>('.conf__cambios');
+
+  it('rallas: un interruptor por disciplina, con las notas del boceto, el ejemplo y sin barra mientras no hay cambios', () => {
+    cargar(375);
+    expect(texto(el().querySelector('.conf__subtitulo'))).toBe('Los ajustes de la escuela: cuántos alumnos caben en un turno y las rallas hacia el examen.');
+    const notas = Array.from(seccionRallas().querySelectorAll('.conf__seccion-nota')).map((n) => texto(n));
+    expect(notas).toEqual([
+      'Rallas negras en el cinturón al pasar lista. Con 5 rallas, el alumno queda listo para examen. Se activan por disciplina.',
+      'Las dan y las quitan el propietario, la gestión, el responsable de la sede y el profesor titular del grupo. El ayudante solo las ve.',
+    ]);
+    expect(interruptor('TAEKWONDO').getAttribute('role')).toBe('switch');
+    expect(interruptor('TAEKWONDO').getAttribute('aria-checked')).toBe('true');
+    expect(interruptor('KICKBOXING').getAttribute('aria-checked')).toBe('false');
+    expect(texto(interruptor('TAEKWONDO').querySelector('b'))).toBe('Taekwondo');
+    expect(texto(interruptor('TAEKWONDO').querySelector('b + span'))).toBe('Todos los grados de color. Rojo-negro (PUM) y negro (DAN) no llevan.');
+    expect(texto(interruptor('KICKBOXING').querySelector('b + span'))).toBe('Todos los grados de color.');
+    expect(Array.from(seccionRallas().querySelectorAll('.conf__ejemplo > span')).map((e) => texto(e))).toEqual(['Media', '2 y media', '5: listo para examen']);
+    expect(barra()).toBeNull();
+  });
+
+  it('rallas: apagar una activa marca «Modificado», da la nota de que no se borran y saca la barra de cambios; Descartar vuelve atrás', () => {
+    cargar(375);
+    interruptor('TAEKWONDO').click();
+    fixture.detectChanges();
+    expect(interruptor('TAEKWONDO').getAttribute('aria-checked')).toBe('false');
+    expect(texto(interruptor('TAEKWONDO').querySelector('b'))).toBe('Taekwondo Modificado');
+    expect(texto(seccionRallas().querySelector('.conf__aviso-rallas'))).toBe(
+      'Las rallas que ya tienen los alumnos de Taekwondo no se borran: dejan de verse hasta que vuelvas a activarlas.'
+    );
+    expect(texto(barra()!.querySelector('strong'))).toBe('1 cambio sin guardar');
+    interruptor('KICKBOXING').click();
+    fixture.detectChanges();
+    expect(texto(barra()!.querySelector('strong'))).toBe('2 cambios sin guardar');
+    // Encender una apagada no lleva la nota.
+    expect(seccionRallas().querySelectorAll('.conf__aviso-rallas').length).toBe(1);
+    boton(barra()!, 'Descartar').click();
+    fixture.detectChanges();
+    expect(barra()).toBeNull();
+    expect(interruptor('TAEKWONDO').getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('rallas: Guardar envía solo las que cambian y deja lo que devuelve el API', async () => {
+    cargar(375);
+    interruptor('KICKBOXING').click();
+    fixture.detectChanges();
+    boton(barra()!, 'Guardar cambios').click();
+    fixture.detectChanges();
+    const [put] = peticiones(RALLAS, 'PUT');
+    expect(put.request.body).toEqual({ KICKBOXING: true });
+    put.flush([{ deporte: 'TAEKWONDO', nombre: 'Taekwondo', activas: true }, { deporte: 'KICKBOXING', nombre: 'Kickboxing', activas: true }]);
+    await esperar();
+    expect(barra()).toBeNull();
+    expect(interruptor('KICKBOXING').getAttribute('aria-checked')).toBe('true');
+    expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Rallas guardadas.' }]);
+  });
+
+  it('rallas: si guardar falla, se avisa y lo elegido se queda', async () => {
+    cargar(375);
+    interruptor('KICKBOXING').click();
+    fixture.detectChanges();
+    boton(barra()!, 'Guardar cambios').click();
+    peticiones(RALLAS, 'PUT')[0].flush({ mensaje: 'x' }, { status: 400, statusText: 'Bad Request' });
+    await esperar();
+    expect(avisos()).toEqual([{ tipo: 'error', texto: 'No se pudo guardar la configuración.' }]);
+    expect(texto(barra()!.querySelector('strong'))).toBe('1 cambio sin guardar');
+  });
+
+  it('rallas: sin permiso (403) la sección no existe, ni en el índice', () => {
+    crear(768);
+    peticiones(LIMITE).forEach((r) => r.flush(36));
+    peticiones(RALLAS).forEach((r) => r.flush({ mensaje: 'x' }, { status: 403, statusText: 'Forbidden' }));
+    fixture.detectChanges();
+    expect(el().querySelector('#conf-tab-rallas')).toBeNull();
+    expect(texto(el().querySelector('.conf__subtitulo'))).toBe('Los ajustes de la escuela: cuántos alumnos caben en un turno.');
+  });
+
+  it('rallas: si no se pueden leer, bloque de error con «Reintentar»', () => {
+    crear(375);
+    peticiones(LIMITE).forEach((r) => r.flush(36));
+    peticiones(RALLAS)[0].flush(null, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(texto(seccionRallas().querySelector('.pn-bloque-error'))).toContain('No se han podido leer las rallas.');
+    boton(seccionRallas(), 'Reintentar').click();
+    fixture.detectChanges();
+    peticiones(RALLAS)[0].flush(DISCIPLINAS);
+    fixture.detectChanges();
+    expect(interruptor('TAEKWONDO')).not.toBeNull();
   });
 });

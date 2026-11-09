@@ -448,6 +448,11 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		m.put("PUT" + deporte + "fecha-grado", grados + "paseEnDisciplinaNoCompartida_403");
 		m.put("POST" + deporte + "pase-examen", grados + "paseEnDisciplinaNoCompartida_403");
 		m.put("POST" + deporte + "pase-recompensa", grados + "alumnoQuitadoDelGrupo_403");
+		// Decisiones 510-513: rallas hacia el examen en un grupo suyo; solo el titular (el ayudante, 403 en el servicio).
+		String rallas = "integracion.RallasIntegrationTest#";
+		m.put("POST /api/profesor/grupos/{grupoId}/alumnos/{alumnoId}/rallas", rallas + "cadaRol_porSuRuta");
+		m.put("POST /api/profesor/grupos/{grupoId}/alumnos/{alumnoId}/rallas/apto",
+				rallas + "ayudante_soloVe_403_sinCambiarNada");
 		return Map.copyOf(m);
 	}
 

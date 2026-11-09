@@ -123,6 +123,92 @@ final class CinturonesPdf {
 		return "<td style='background: " + c.inferior() + ";'></td>";
 	}
 
+	/** Ancho de cada ralla, su paso y su distancia al borde derecho de la celda «Grado», en mm (boceto aprobado). */
+	private static final double RALLA_ANCHO_MM = 0.9;
+	private static final double RALLA_PASO_MM = 1.6;
+	private static final double RALLA_MARGEN_MM = 0.8;
+	/** Halo blanco a cada lado de la ralla (el boceto: max(0,6; ancho/6) en medios milímetros), en mm. */
+	private static final double HALO_MM = 0.3;
+
+	/**
+	 * Celda del cinturón en el listado de asistencia con las rallas hacia el examen (decisiones 510, 511 y 513).
+	 * {@code mediasRallas} es {@code AlumnoDeporte#mediasRallasVisibles()}: nulo (no se usan) o 0 dejan la celda como
+	 * siempre. Las rallas son negras y salen del borde derecho; una ralla entera cruza la celda y la media ocupa la
+	 * mitad de abajo. Donde el negro no llega a contraste 3:1 sobre el color (azul) lleva un halo blanco fino.
+	 */
+	static String celdaAsistencia(Grado grado, Integer mediasRallas) {
+		if (grado == null || mediasRallas == null || mediasRallas <= 0) {
+			return celdaAsistencia(grado);
+		}
+		Cinturon c = ColoresGrado.de(grado);
+		if (c == null || c.franjas() > 0) {
+			return celdaAsistencia(grado);
+		}
+		int medias = Math.min(mediasRallas, 10);
+		StringBuilder html = new StringBuilder("<td><div class='cinturon-split' style='position: relative;'>");
+		html.append("<div class='cinturon-half-superior' style='background-color: ").append(c.superior())
+				.append(";'></div>");
+		html.append("<div class='cinturon-half-inferior' style='background-color: ").append(c.inferior())
+				.append(";'></div>");
+		int enteras = medias / 2;
+		for (int k = 0; k <= enteras; k++) {
+			boolean media = k == enteras;
+			if (media && medias % 2 == 0) {
+				break;
+			}
+			double derecha = RALLA_MARGEN_MM + RALLA_PASO_MM * k;
+			if (media) {
+				halo(html, derecha, c.inferior(), "50%", "50%");
+				ralla(html, derecha, "50%", "50%");
+			} else {
+				halo(html, derecha, c.superior(), "0", "50%");
+				halo(html, derecha, c.inferior(), "50%", "50%");
+				ralla(html, derecha, "0", "100%");
+			}
+		}
+		return html.append("</div></td>").toString();
+	}
+
+	private static void ralla(StringBuilder html, double derechaMm, String arriba, String alto) {
+		html.append("<div class='ralla' style='position: absolute; background-color: #000000; right: ")
+				.append(mm(derechaMm)).append("; width: ").append(mm(RALLA_ANCHO_MM)).append("; top: ").append(arriba)
+				.append("; height: ").append(alto).append(";'></div>");
+	}
+
+	private static void halo(StringBuilder html, double derechaMm, String colorFondo, String arriba, String alto) {
+		if (!negroNoLlegaAContraste(colorFondo)) {
+			return;
+		}
+		html.append("<div class='ralla-halo' style='position: absolute; background-color: #ffffff; right: ")
+				.append(mm(derechaMm - HALO_MM)).append("; width: ").append(mm(RALLA_ANCHO_MM + 2 * HALO_MM))
+				.append("; top: ").append(arriba).append("; height: ").append(alto).append(";'></div>");
+	}
+
+	private static String mm(double valor) {
+		return String.format(java.util.Locale.ROOT, "%.2fmm", valor);
+	}
+
+	/** El negro sobre ese color queda por debajo de 3:1 (como {@code necesitaHalo} del boceto); sin leer el color, sí. */
+	static boolean negroNoLlegaAContraste(String hex) {
+		try {
+			if (hex == null || !hex.matches("#[0-9a-fA-F]{6}")) {
+				return true;
+			}
+			double r = canal(Integer.parseInt(hex.substring(1, 3), 16));
+			double g = canal(Integer.parseInt(hex.substring(3, 5), 16));
+			double b = canal(Integer.parseInt(hex.substring(5, 7), 16));
+			double luminancia = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+			return (luminancia + 0.05) / 0.05 < 3;
+		} catch (NumberFormatException e) {
+			return true;
+		}
+	}
+
+	private static double canal(int valor) {
+		double c = valor / 255.0;
+		return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+	}
+
 	/** Celda del listado de asistencia derivada del código (antes de V30, con la paleta de este listado). */
 	static String celdaAsistenciaDesdeCodigo(String tipoGrado) {
 		if (tipoGrado == null) {

@@ -61,18 +61,25 @@ public final class AsistenciaDTOs {
 	/**
 	 * Un alumno de la lista de una clase, con la misma forma de {@code deportes} que el listado del grupo. {@code motivo}:
 	 * el de su falta guardada ({@code INJUSTIFICADA}, {@code MEDICA}, {@code FAMILIAR} u {@code OTRA_JUSTIFICADA});
-	 * {@code null} si estuvo, si la falta no tiene motivo o si no hay fila.
+	 * {@code null} si estuvo, si la falta no tiene motivo o si no hay fila. Rallas (decisiones 510-513): las del alumno
+	 * van en su deporte {@code delGrupo} ({@code mediasRallas}, {@code aplicaRallas}); {@code puedeCambiarRallas}: quien
+	 * pide la lista puede darle o quitarle rallas (tiene permiso en el grupo y sus rallas se usan). {@code genero}:
+	 * {@code FEMENINO}, {@code MASCULINO} o {@code null} si la ficha no lo tiene (para «apto/apta», decisión 513 d).
 	 */
 	public record AlumnoDeLista(Long id, String nombre, String apellidos, boolean presente,
-			List<ProfesorDTOs.DeporteEnLista> deportes, String motivo) {
+			List<ProfesorDTOs.DeporteEnLista> deportes, String motivo, String genero, boolean puedeCambiarRallas) {
 	}
 
 	/** La sede del grupo de una clase. */
 	public record SedeDeLista(Long id, String nombre) {
 	}
 
-	/** {@code GET /clases/{turnoId}/{fecha}}. {@code sede}: la del grupo; {@code null} si no tuviera. */
-	public record ListaDeClase(Clase clase, SedeDeLista sede, List<AlumnoDeLista> alumnos) {
+	/**
+	 * {@code GET /clases/{turnoId}/{fecha}}. {@code sede}: la del grupo; {@code null} si no tuviera.
+	 * {@code puedeCambiarRallas}: quien pide la lista puede cambiar rallas en este grupo (propietario, gestor, responsable
+	 * de la sede del grupo o profesor titular); el ayudante, no.
+	 */
+	public record ListaDeClase(Clase clase, SedeDeLista sede, List<AlumnoDeLista> alumnos, boolean puedeCambiarRallas) {
 	}
 
 	/** {@code GET /asistencia/resumen}: un alumno con alguna fila ese mes. */

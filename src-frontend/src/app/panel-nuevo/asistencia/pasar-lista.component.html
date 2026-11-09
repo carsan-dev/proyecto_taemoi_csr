@@ -12,6 +12,9 @@
         </div>
         @if (!sinAlumnos && !festivo) {
           <p class="pasar-lista__secundario">Toca a quien ha venido. Sin marcar cuenta como falta.</p>
+          @if (hayRallas && !cargandoLista && !error) {
+            <p class="pasar-lista__secundario" data-ayuda-rallas>{{ puedeCambiarRallas ? 'Toca el cinturón para dar o quitar rallas.' : 'Ves las rallas; solo las cambian el titular y la escuela.' }}</p>
+          }
         }
       }
     </header>
@@ -57,6 +60,9 @@
           <a class="pasar-lista__festivo-enlace" routerLink="/festivos">Ver en Festivos</a>
         }
       </div>
+      @if (hayRallas) {
+        <p class="pasar-lista__secundario pasar-lista__festivo-rallas" data-festivo-rallas>Sin lista no hay cinturones: las rallas se dan en otra clase.</p>
+      }
     } @else if (sinAlumnos) {
       <pn-bloque-vacio [titulo]="textos.sinAlumnos" />
     } @else {
@@ -83,9 +89,10 @@
               <span class="pasar-lista__identidad">
                 <span class="pasar-lista__nombre">{{ nombreCompleto(alumno.nombre, alumno.apellidos) }}</span>
                 <span class="pasar-lista__grado">
-                  @let grado = gradoDe(alumno);
-                  @if (grado.fondo) { <span class="pasar-lista__cinto" [style.background]="grado.fondo" aria-hidden="true"></span> }
-                  {{ grado.texto }}
+                  @let medias = mediasDe(alumno);
+                  <span class="pasar-lista__grado-texto">{{ gradoDe(alumno).texto }}@if (medias !== null) {<span class="pasar-lista__oculto">, {{ textoOcultoRallas(medias) }}</span>}</span>
+                  @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="alumno.genero" /> }
+                  @if (estaMarcado(alumno)) { <span class="pasar-lista__grado-presente" aria-hidden="true">Presente</span> }
                 </span>
               </span>
               @if (estaMarcado(alumno)) { <span class="pasar-lista__presente">Presente</span> }
@@ -122,6 +129,17 @@
                   </ul>
                 </div>
               }
+            }
+            @let cinto = gradoDe(alumno);
+            @if (abreHoja(alumno)) {
+              <button type="button" class="pasar-lista__cinto" [attr.data-cinto]="alumno.id" aria-haspopup="dialog"
+                [attr.aria-expanded]="hojaRallas === alumno.id" [attr.aria-label]="etiquetaCinto(alumno)" (click)="abrirRallas(alumno)">
+                <span class="pasar-lista__cinto-marco"><pn-cinturon [color1]="cinto.color1" [color2]="cinto.color2" [medias]="mediasDe(alumno)" /></span>
+              </button>
+            } @else {
+              <span class="pasar-lista__cinto" aria-hidden="true">
+                <span class="pasar-lista__cinto-marco"><pn-cinturon [color1]="cinto.color1" [color2]="cinto.color2" [medias]="mediasDe(alumno)" [sinGrado]="!cinto.color1" /></span>
+              </span>
             }
           </li>
         }
@@ -172,6 +190,13 @@
         <p class="pasar-lista__secundario">{{ textos.sinClases }}</p>
       }
     </pn-panel-lateral>
+  }
+
+  @if (alumnoHoja; as a) {
+    @let g = gradoDe(a);
+    <pn-hoja-rallas [nombre]="nombreCompleto(a.nombre, a.apellidos)" [nombreCorto]="a.nombre" [subtitulo]="subtituloHoja(a)"
+      [color1]="g.color1" [color2]="g.color2" [medias]="mediasDe(a) ?? 0" [genero]="a.genero ?? null" [enCurso]="rallasEnCurso"
+      (paso)="darPaso($event)" (apto)="marcarAptoDesdeHoja()" (cerrar)="cerrarRallas()" />
   }
 
   @if (dialogoFestivo && clase && sede) {

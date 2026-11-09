@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -38,6 +39,44 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT ad FROM AlumnoDeporte ad WHERE ad.id = :id")
 	Optional<AlumnoDeporte> bloquearPorId(@Param("id") Long id);
+
+	// ------------------------------------------------------------------ rallas hacia el examen (V32_8)
+	// Sentencias atómicas (la columna medias_rallas no se escribe desde la entidad): cada una es UN UPDATE de UNA fila,
+	// con la condición dentro, así que dos pasos a la vez se aplican los dos, uno tras otro (bloqueo de fila de InnoDB),
+	// y ninguno deja el valor fuera de 0 a 10. Nativas y con organizacion_id explícito: el id ya viene de una consulta
+	// acotada por @TenantId y la condición lo vuelve a comprobar. Devuelven las filas cambiadas (0 o 1).
+
+	/**
+	 * Suma {@code paso} (−2, −1, +1 o +2) si la inscripción sigue en el grado leído y el resultado queda de 0 a 10. 0
+	 * filas: fuera de rango o el grado cambió entre medias.
+	 */
+	@Modifying
+	@Query(value = """
+			UPDATE alumno_deporte SET medias_rallas = medias_rallas + :paso
+			WHERE id = :id AND organizacion_id = :organizacion AND grado_id = :grado
+			  AND medias_rallas + :paso BETWEEN 0 AND 10""", nativeQuery = true)
+	int sumarMediasRallas(@Param("id") Long id, @Param("organizacion") Long organizacion, @Param("grado") Long grado,
+			@Param("paso") int paso);
+
+	/** «Marcar apto» desde la hoja: apto y rallas a 0 a la vez, solo si tiene las 10 medias y sigue en ese grado. */
+	@Modifying
+	@Query(value = """
+			UPDATE alumno_deporte SET apto_para_examen = TRUE, medias_rallas = 0
+			WHERE id = :id AND organizacion_id = :organizacion AND grado_id = :grado AND medias_rallas = 10""",
+			nativeQuery = true)
+	int marcarAptoConRallasCompletas(@Param("id") Long id, @Param("organizacion") Long organizacion,
+			@Param("grado") Long grado);
+
+	/** Rallas a 0 (cambio de grado). 0 filas: ya estaban en 0. */
+	@Modifying
+	@Query(value = """
+			UPDATE alumno_deporte SET medias_rallas = 0
+			WHERE id = :id AND organizacion_id = :organizacion AND medias_rallas <> 0""", nativeQuery = true)
+	int ponerMediasRallasACero(@Param("id") Long id, @Param("organizacion") Long organizacion);
+
+	/** Medias rallas, grado y apto confirmados de la inscripción (escuela activa). */
+	@Query("SELECT ad.mediasRallas, g.id, ad.aptoParaExamen FROM AlumnoDeporte ad LEFT JOIN ad.grado g WHERE ad.id = :id")
+	List<Object[]> leerRallas(@Param("id") Long id);
 
 	/**
 	 * Encuentra todos los alumnos que practican un deporte específico

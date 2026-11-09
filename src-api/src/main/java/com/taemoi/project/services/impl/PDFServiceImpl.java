@@ -1477,6 +1477,7 @@ public class PDFServiceImpl implements PDFService {
 				".side-table tbody td.festivo { overflow: visible; max-height: none; height: auto; line-height: normal; }");
 		html.append(
 				".festivo-texto { width: 20mm; position: relative; left: -7mm; text-align: center; white-space: nowrap; font-size: 6.5pt; line-height: 6.5pt; transform-origin: 50% 50%; transform: rotate(-90deg); }");
+		html.append(".leyenda-rallas { margin: 2mm 4mm 0 4mm; font-size: 7pt; color: #5d6573; }");
 		html.append(".main-table thead, .side-table thead { display: table-header-group; }");
 		html.append("</style>");
 		html.append("</head><body>");
@@ -1531,6 +1532,7 @@ public class PDFServiceImpl implements PDFService {
 				"<th>Apto</th><th>Grado</th><th>Lic. Fed</th><th>Edad</th><th>Nombre y Apellidos</th><th>Nº Exp.</th>");
 		html.append("</tr></thead><tbody>");
 
+		boolean conRallas = false;
 		for (AlumnoDeporte ad : alumnos) {
 			Alumno a = ad.getAlumno();
 			LocalDate nac = Instant.ofEpochMilli(a.getFechaNacimiento().getTime())
@@ -1577,7 +1579,9 @@ public class PDFServiceImpl implements PDFService {
 
 			html.append("<tr>");
 			html.append("<td class='").append(aptoClass).append("'>").append(aptoText).append("</td>");
-			html.append(CinturonesPdf.celdaAsistencia(ad.getGrado()));
+			Integer rallas = ad.mediasRallasVisibles();
+			conRallas |= rallas != null && rallas > 0 && ad.getGrado() != null;
+			html.append(CinturonesPdf.celdaAsistencia(ad.getGrado(), rallas));
 			html.append("<td class='").append(licClass).append("'>").append(lic).append("</td>");
 			html.append("<td>").append(edad).append("</td>");
 			html.append("<td>").append(a.getNombre()).append(" ").append(a.getApellidos()).append("</td>");
@@ -1632,7 +1636,13 @@ public class PDFServiceImpl implements PDFService {
 		html.append("</div>");
 		html.append("</div>");
 		html.append("</div>");
+		if (conRallas) {
+			html.append("<p class='leyenda-rallas'>").append(LEYENDA_RALLAS).append("</p>");
+		}
 	}
+
+	/** Leyenda de las rallas en la celda «Grado» (texto aprobado); solo si alguna fila de la página lleva rallas. */
+	static final String LEYENDA_RALLAS = "Rallas en la celda Grado: cada raya negra es una ralla; media raya, media ralla.";
 
 	/** Hasta cuántos alumnos la columna festiva es una sola celda con texto: más filas pueden pasar de página. */
 	private static final int FILAS_CON_TEXTO_FESTIVO = 40;

@@ -30,6 +30,7 @@ import com.taemoi.project.entities.AsignacionProfesor;
 import com.taemoi.project.entities.Grado;
 import com.taemoi.project.entities.Imagen;
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.entities.ReglaRallas;
 import com.taemoi.project.entities.RolAsignacionProfesor;
 import com.taemoi.project.entities.Tutor;
 import com.taemoi.project.organizacion.AlcanceActual;
@@ -161,19 +162,20 @@ public class ProfesorService {
 		String disciplina = disciplinaDelGrupo.get(0);
 		Map<Long, ProfesorDTOs.AlumnoDeGrupo> porAlumno = new LinkedHashMap<>();
 		for (Object[] f : em.createQuery("""
-				SELECT a.id, a.nombre, a.apellidos, foto.id FROM Grupo g JOIN g.alumnos a
+				SELECT a.id, a.nombre, a.apellidos, foto.id, a.genero FROM Grupo g JOIN g.alumnos a
 				LEFT JOIN a.fotoAlumno foto ON a.anonimizadoEn IS NULL
 				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.apellidos, a.nombre, a.id""", Object[].class)
 				.setParameter("grupo", grupoId).getResultList()) {
 			porAlumno.put((Long) f[0], new ProfesorDTOs.AlumnoDeGrupo((Long) f[0], (String) f[1], (String) f[2],
-					(Long) f[3], new ArrayList<>()));
+					(Long) f[3], new ArrayList<>(), genero(f[4])));
 		}
 		for (FilaDeporte d : deportesActivos(porAlumno.keySet())) {
 			porAlumno.get(d.alumnoId()).deportes().add(new ProfesorDTOs.DeporteEnLista(d.codigo(), d.nombre(),
-					grado(d.grado()), d.fechaGrado(), d.apto(), d.codigo().equals(disciplina)));
+					grado(d.grado()), d.fechaGrado(), d.apto(), d.codigo().equals(disciplina), d.mediasRallas(),
+					d.aplicaRallas()));
 		}
 		return porAlumno.values().stream().map(a -> new ProfesorDTOs.AlumnoDeGrupo(a.id(), a.nombre(), a.apellidos(),
-				a.fotoId(), List.copyOf(a.deportes()))).toList();
+				a.fotoId(), List.copyOf(a.deportes()), a.genero())).toList();
 	}
 
 	/**
@@ -225,7 +227,7 @@ public class ProfesorService {
 			throw new AccessDeniedException("Acceso denegado.");
 		}
 		List<Object[]> datos = em.createQuery("""
-				SELECT a.nombre, a.apellidos, a.fechaNacimiento, a.telefono, a.telefono2
+				SELECT a.nombre, a.apellidos, a.fechaNacimiento, a.telefono, a.telefono2, a.genero
 				FROM Alumno a WHERE a.id = :alumno AND a.activo = TRUE""", Object[].class)
 				.setParameter("alumno", alumnoId).getResultList();
 		if (datos.isEmpty()) {
@@ -258,10 +260,16 @@ public class ProfesorService {
 			Grado siguiente = siguienteGrado(d, nacimiento);
 			deportes.add(new ProfesorDTOs.DeporteDelAlumno(d.codigo(), d.nombre(), grado(d.grado()), d.fechaGrado(),
 					d.apto(), deMisGrupos, deMisGrupos && siguiente != null, grado(siguiente),
-					pideRojoBordado(legado, siguiente == null ? null : siguiente.getCodigo())));
+					pideRojoBordado(legado, siguiente == null ? null : siguiente.getCodigo()), d.mediasRallas(),
+					d.aplicaRallas()));
 		}
 		return new ProfesorDTOs.Ficha(alumnoId, nombre, apellidos, edad(aLocalDate(nacimiento)), List.copyOf(compartidos),
-				List.copyOf(contacto), List.copyOf(deportes));
+				List.copyOf(contacto), List.copyOf(deportes), genero(alumno[5]));
+	}
+
+	/** {@code "FEMENINO"}, {@code "MASCULINO"} o {@code null} (decisión 513 d), como en Pasar lista. */
+	private static String genero(Object genero) {
+		return genero instanceof Enum<?> valor ? valor.name() : null;
 	}
 
 	/**
@@ -462,11 +470,13 @@ public class ProfesorService {
 	private ProfesorDTOs.DeporteDelAlumno deporteDelAlumno(AlumnoDeporte inscripcion) {
 		FilaDeporte d = new FilaDeporte(inscripcion.getAlumno().getId(), inscripcion.getDisciplina().getCodigo(),
 				inscripcion.getDisciplina().getNombre(), inscripcion.getGrado(), aLocalDate(inscripcion.getFechaGrado()),
-				Boolean.TRUE.equals(inscripcion.getAptoParaExamen()));
+				Boolean.TRUE.equals(inscripcion.getAptoParaExamen()), inscripcion.mediasRallasVisibles(),
+				inscripcion.aplicaRallas());
 		Grado siguiente = siguienteGrado(d, inscripcion.getAlumno().getFechaNacimiento());
 		return new ProfesorDTOs.DeporteDelAlumno(d.codigo(), d.nombre(), grado(d.grado()), d.fechaGrado(), d.apto(), true,
 				siguiente != null, grado(siguiente),
-				pideRojoBordado(comportamientoLegado.activo(), siguiente == null ? null : siguiente.getCodigo()));
+				pideRojoBordado(comportamientoLegado.activo(), siguiente == null ? null : siguiente.getCodigo()),
+				d.mediasRallas(), d.aplicaRallas());
 	}
 
 	private static String ruta(Long alumnoId, String deporte, String accion) {
@@ -483,8 +493,9 @@ public class ProfesorService {
 
 	// ------------------------------------------------------------------ apoyo
 
+	/** {@code mediasRallas}: las visibles (nulas si las rallas no se usan); {@code aplicaRallas}: {@link ReglaRallas}. */
 	private record FilaDeporte(Long alumnoId, String codigo, String nombre, Grado grado, LocalDate fechaGrado,
-			boolean apto) {
+			boolean apto, Integer mediasRallas, boolean aplicaRallas) {
 	}
 
 	/** Deportes activos de esos alumnos (escuela activa por {@code @TenantId}): principal primero y por id. */
@@ -494,13 +505,17 @@ public class ProfesorService {
 		}
 		List<FilaDeporte> filas = new ArrayList<>();
 		for (Object[] f : em.createQuery("""
-				SELECT ad.alumno.id, d.codigo, d.nombre, gr, ad.fechaGrado, ad.aptoParaExamen
+				SELECT ad.alumno.id, d.codigo, d.nombre, gr, ad.fechaGrado, ad.aptoParaExamen, ad.mediasRallas,
+				       d.rallasActivas
 				FROM AlumnoDeporte ad JOIN ad.disciplina d LEFT JOIN ad.grado gr
 				WHERE ad.alumno.id IN :alumnos AND ad.activo = TRUE
 				ORDER BY ad.alumno.id, ad.principal DESC, ad.id""", Object[].class)
 				.setParameter("alumnos", alumnos).getResultList()) {
-			filas.add(new FilaDeporte((Long) f[0], (String) f[1], (String) f[2], (Grado) f[3], aLocalDate((Date) f[4]),
-					Boolean.TRUE.equals(f[5])));
+			Grado grado = (Grado) f[3];
+			boolean aplica = ReglaRallas.aplica((Boolean) f[7], grado == null ? null : grado.getCodigo());
+			Integer medias = aplica ? (f[6] == null ? 0 : ((Number) f[6]).intValue()) : null;
+			filas.add(new FilaDeporte((Long) f[0], (String) f[1], (String) f[2], grado, aLocalDate((Date) f[4]),
+					Boolean.TRUE.equals(f[5]), medias, aplica));
 		}
 		return filas;
 	}
@@ -523,7 +538,9 @@ public class ProfesorService {
 	}
 
 	private ProfesorDTOs.Grado grado(Grado grado) {
-		return grado == null ? null : new ProfesorDTOs.Grado(grado.getCodigo(), progresionGrados.obtenerNombreVisible(grado));
+		return grado == null ? null
+				: new ProfesorDTOs.Grado(grado.getCodigo(), progresionGrados.obtenerNombreVisible(grado), grado.getColor1(),
+						grado.getColor2());
 	}
 
 	/** Su rol en cada uno de sus grupos; {@code asignacion_profesor} con {@code organizacion_id} explícito. */
@@ -550,7 +567,8 @@ public class ProfesorService {
 		Map<Long, List<ProfesorDTOs.DeporteEnLista>> porAlumno = new HashMap<>();
 		for (FilaDeporte d : deportesActivos(alumnos)) {
 			porAlumno.computeIfAbsent(d.alumnoId(), k -> new ArrayList<>()).add(new ProfesorDTOs.DeporteEnLista(d.codigo(),
-					d.nombre(), grado(d.grado()), d.fechaGrado(), d.apto(), d.codigo().equals(disciplina)));
+					d.nombre(), grado(d.grado()), d.fechaGrado(), d.apto(), d.codigo().equals(disciplina), d.mediasRallas(),
+					d.aplicaRallas()));
 		}
 		return porAlumno;
 	}

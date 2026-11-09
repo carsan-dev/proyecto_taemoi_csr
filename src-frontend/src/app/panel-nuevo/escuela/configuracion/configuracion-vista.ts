@@ -1,7 +1,11 @@
-/** Ajustes del índice (P2, desde 768 px). «Roles y permisos» salió en la pieza 9-8: los roles se gestionan en Miembros. */
-export type SeccionConfiguracion = 'turno' | 'legal';
+/**
+ * Ajustes del índice (P2, desde 768 px). «Roles y permisos» salió en la pieza 9-8: los roles se gestionan en Miembros.
+ * «Rallas hacia el examen» (decisiones 510-513) solo se ve si el API la da.
+ */
+export type SeccionConfiguracion = 'turno' | 'rallas' | 'legal';
 export const SECCIONES: ReadonlyArray<{ clave: SeccionConfiguracion; titulo: string }> = [
   { clave: 'turno', titulo: 'Alumnos por turno' },
+  { clave: 'rallas', titulo: 'Rallas hacia el examen' },
   { clave: 'legal', titulo: 'Avisos legales y cookies' },
 ];
 

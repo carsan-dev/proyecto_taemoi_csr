@@ -8,6 +8,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,7 +31,16 @@ import jakarta.persistence.TemporalType;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 
+/**
+ * Inscripción de un alumno en una disciplina.
+ *
+ * <p>{@code @DynamicUpdate} (rallas hacia el examen, V32_8): el {@code UPDATE} de la entidad solo lleva las columnas que
+ * cambió quien la guarda. «Apto desde la hoja» es una sentencia aparte ({@code AlumnoDeporteRepository
+ * #marcarAptoConRallasCompletas}); sin esto, otra ruta que hubiera cargado la inscripción antes y la guardara por otro
+ * campo (tarifa, licencia, fecha de grado…) devolvería {@code apto_para_examen} al valor leído.
+ */
 @Entity
+@DynamicUpdate
 @Table(name = "alumno_deporte",
 	uniqueConstraints = @UniqueConstraint(name = "uk_alumno_deporte_alumno_disciplina",
 		columnNames = {"alumno_id", "disciplina_id"}),
@@ -136,6 +149,18 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 	@OneToMany(mappedBy = "alumnoDeporte", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<AlumnoConvocatoria> convocatorias = new ArrayList<>();
 
+	/**
+	 * Medias rallas hacia el examen (V32_8, decisiones 510-513): 0 a 10. Solo LECTURA desde la entidad: la columna no
+	 * entra en el INSERT (la base pone 0) ni en el UPDATE de la entidad, para que guardar la inscripción por otra ruta
+	 * (tarifa, licencia, apto…) nunca pise un paso dado a la vez. Solo la cambian las sentencias atómicas de
+	 * {@code RallasService} y {@code AlumnoDeporteRepository}. Nunca sale en el JSON de la entidad: los DTO deciden si
+	 * se ve ({@link #mediasRallasVisibles()}).
+	 */
+	@JsonIgnore
+	@JdbcTypeCode(SqlTypes.TINYINT)
+	@Column(name = "medias_rallas", nullable = false, insertable = false, updatable = false)
+	private Integer mediasRallas = 0;
+
 	public Long getId() {
 		return id;
 	}
@@ -235,6 +260,36 @@ public class AlumnoDeporte extends EntidadOrganizacion {
 
 	public List<AlumnoConvocatoria> getConvocatorias() {
 		return convocatorias;
+	}
+
+	/** Medias rallas guardadas (0 a 10), también si hoy no se ven (disciplina apagada, sin grado, PUM o DAN). */
+	@JsonIgnore
+	public Integer getMediasRallas() {
+		return mediasRallas;
+	}
+
+	/**
+	 * Solo para dejar en memoria lo que ya escribió una sentencia atómica (la columna no se actualiza desde la
+	 * entidad). Fuera de 0 a 10, error de programación.
+	 */
+	public void reflejarMediasRallas(int medias) {
+		if (medias < ReglaRallas.MINIMO || medias > ReglaRallas.MAXIMO) {
+			throw new IllegalStateException("Medias rallas fuera de rango: " + medias);
+		}
+		this.mediasRallas = medias;
+	}
+
+	/** Las rallas se usan en esta inscripción: disciplina con rallas activas, con grado y grado que no es PUM ni DAN. */
+	@JsonIgnore
+	public boolean aplicaRallas() {
+		return ReglaRallas.aplica(disciplina == null ? null : disciplina.getRallasActivas(),
+				grado == null ? null : grado.getCodigo());
+	}
+
+	/** Medias rallas si se usan ({@link #aplicaRallas()}); si no, {@code null} (se conservan, ocultas). */
+	@JsonIgnore
+	public Integer mediasRallasVisibles() {
+		return aplicaRallas() ? (mediasRallas == null ? 0 : mediasRallas) : null;
 	}
 
 	public void setConvocatorias(List<AlumnoConvocatoria> convocatorias) {

@@ -250,14 +250,15 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(List.of(tutelado, e.aGrupoA, e.aSinSede), idsEnOrden(alumnos, "id"),
 				"activos, por apellidos y nombre; sin el de baja: " + alumnos);
 		JsonNode lucia = fila(alumnos, "id", tutelado);
-		assertEquals(Set.of("id", "nombre", "apellidos", "fotoId", "deportes"), campos(lucia));
+		assertEquals(Set.of("id", "nombre", "apellidos", "fotoId", "deportes", "genero"), campos(lucia));
 		assertTrue(lucia.get("fotoId").isNull(), "sin foto, nulo");
 		assertEquals("LUCIA", lucia.get("nombre").asText());
 		assertEquals("AAA FICTICIA", lucia.get("apellidos").asText());
 		JsonNode deportes = lucia.get("deportes");
 		assertEquals(2, deportes.size(), "taekwondo y kickboxing activos: " + deportes);
 		JsonNode tkd = fila(deportes, "deporte", "TAEKWONDO");
-		assertEquals(Set.of("deporte", "deporteNombre", "grado", "fechaGrado", "apto", "delGrupo"), campos(tkd));
+		assertEquals(Set.of("deporte", "deporteNombre", "grado", "fechaGrado", "apto", "delGrupo", "mediasRallas",
+				"aplicaRallas"), campos(tkd));
 		assertEquals("AMARILLO", tkd.get("grado").get("codigo").asText());
 		assertEquals("Amarillo IT", tkd.get("grado").get("nombre").asText());
 		assertEquals("2026-03-12", tkd.get("fechaGrado").asText());
@@ -347,7 +348,7 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(200, r.getResponse().getStatus());
 		String cuerpo = r.getResponse().getContentAsString();
 		JsonNode ficha = json.readTree(cuerpo);
-		assertEquals(Set.of("id", "nombre", "apellidos", "edad", "grupos", "contacto", "deportes"), campos(ficha),
+		assertEquals(Set.of("id", "nombre", "apellidos", "edad", "grupos", "contacto", "deportes", "genero"), campos(ficha),
 				"claves de la ficha");
 		assertEquals(Set.of("id", "nombre", "sede"), campos(ficha.get("grupos").get(0)));
 		assertEquals(Set.of("id", "nombre"), campos(ficha.get("grupos").get(0).get("sede")));
@@ -356,9 +357,9 @@ class ProfesorGruposIntegrationTest extends MySqlIntegrationTest {
 		}
 		for (JsonNode d : ficha.get("deportes")) {
 			assertEquals(Set.of("deporte", "deporteNombre", "grado", "fechaGrado", "apto", "deMisGrupos", "admitePases",
-					"siguienteGrado", "pideRojoBordado"), campos(d));
+					"siguienteGrado", "pideRojoBordado", "mediasRallas", "aplicaRallas"), campos(d));
 		}
-		assertEquals(Set.of("codigo", "nombre"),
+		assertEquals(Set.of("codigo", "nombre", "color1", "color2"),
 				campos(fila(ficha.get("deportes"), "deporte", "TAEKWONDO").get("grado")));
 		assertSinSensibles(ficha);
 	}

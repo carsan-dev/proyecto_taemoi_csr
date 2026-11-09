@@ -1,8 +1,8 @@
 import { SECCIONES, validarLimite } from './configuracion-vista';
 
 describe('configuracion-vista (8b-3k, 9-8)', () => {
-  it('el índice tiene dos secciones, sin Roles y permisos (9-8)', () => {
-    expect(SECCIONES.map((s) => s.titulo)).toEqual(['Alumnos por turno', 'Avisos legales y cookies']);
+  it('el índice tiene tres secciones (con las rallas), sin Roles y permisos (9-8)', () => {
+    expect(SECCIONES.map((s) => s.titulo)).toEqual(['Alumnos por turno', 'Rallas hacia el examen', 'Avisos legales y cookies']);
   });
 
   it('el límite: menor que 1 da el error de hoy; vacío o con decimales tampoco se guarda', () => {

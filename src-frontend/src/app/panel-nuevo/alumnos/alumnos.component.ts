@@ -39,6 +39,9 @@ import { GenerarInformePanelComponent } from './herramientas/generar-informe-pan
 import { HerramientaPanelComponent } from './herramientas/herramienta-panel.component';
 import { InformePdfPanelService } from './herramientas/informe-pdf-panel.service';
 import { CargoPendiente, PendienteAlumno, PendientesAlumnoService } from './pendientes-alumno.service';
+import { CinturonComponent } from '../cinturon/cinturon.component';
+import { DistintivoExamenComponent } from '../cinturon/distintivo-examen.component';
+import { mediasVisibles, textoOcultoRallas } from '../cinturon/rallas-textos';
 
 /** Clave de localStorage de «Filas | Tarjetas». */
 export const CLAVE_VISTA = 'panelAlumnosVista';
@@ -63,6 +66,8 @@ interface DeporteFila {
   principal: boolean;
   activo: boolean;
   grado: GradoFila | null;
+  /** Medias rallas hacia el examen (0-10) en el cinturón; null si no se usan. */
+  medias: number | null;
   /** Disciplina con grados y sin grado asignado: hoy se ve «Sin grado». */
   sinGrado: boolean;
   tiempoConGrado: string;
@@ -90,6 +95,8 @@ interface FilaAlumno {
   tarifa: string;
   antiguedad: string;
   licencia: EstadoLicencia | null;
+  /** `FEMENINO`, `MASCULINO` o null: «Lista» o «Listo para examen». */
+  genero: string | null;
 }
 
 const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqueta: string }> = [
@@ -117,6 +124,8 @@ const OPCIONES_HERRAMIENTAS: ReadonlyArray<{ seccion: SeccionHerramientas; etiqu
   selector: 'app-alumnos',
   standalone: true,
   imports: [
+    CinturonComponent,
+    DistintivoExamenComponent,
     RouterLink,
     GenerarInformePanelComponent,
     VisorPdfComponent,
@@ -152,6 +161,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
   readonly fecha = fecha;
   readonly numero = numero;
   readonly plural = plural;
+  readonly textoOcultoRallas = textoOcultoRallas;
   readonly porPagina = POR_PAGINA;
   /**
    * Responsable de sede (decisión 370): sin bajas definitivas, sin informes de escuela (`/api/informes/**` sin sede), sin
@@ -677,6 +687,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
       tarifa: principal ? this.nombreTarifa(principal.tipoTarifa) : '',
       antiguedad: principal ? antiguedad(principal.fechaAltaInicial || principal.fechaAlta, hoy) : '',
       licencia: estadoLicencia(principal, principal ? this.catalogo.requiereLicencia(principal.deporte) : false, hoy),
+      genero: typeof a?.genero === 'string' ? a.genero : null,
     };
   }
 
@@ -689,6 +700,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
       principal,
       activo: d.activo !== false,
       grado: conGrados && d.grado ? gradoFila(d.grado, d.deporte) : null,
+      medias: conGrados && d.grado ? mediasVisibles(d) : null,
       sinGrado: conGrados && !d.grado,
       tiempoConGrado: conGrados ? tiempoConGrado(d.fechaGrado, hoy) : '',
       tarifa: this.nombreTarifa(d.tipoTarifa),

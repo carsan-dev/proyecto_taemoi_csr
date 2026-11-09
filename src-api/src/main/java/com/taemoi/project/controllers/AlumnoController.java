@@ -135,6 +135,8 @@ public class AlumnoController {
 	@Autowired private com.taemoi.project.services.PreinscripcionService preinscripcionService;
 	@Autowired private com.taemoi.project.services.CatalogoDisciplinasService catalogoDisciplinas;
 	@Autowired private com.taemoi.project.services.ProgresionGradosService progresionGrados;
+	/** Rallas hacia el examen (decisión 513 j): quién lee los deportes como panel y quién solo como familia. */
+	@Autowired private com.taemoi.project.acceso.AccesoRecursos acceso;
 
 	/**
 	 * Obtiene una lista de alumnos paginada o filtrada según los parámetros
@@ -948,6 +950,10 @@ public class AlumnoController {
 	/**
 	 * Obtiene todos los deportes de un alumno (activos e inactivos)
 	 * GET /api/alumnos/{id}/deportes
+	 *
+	 * <p>Rallas hacia el examen (decisión 513 j): el panel (alcance total o responsable de una sede del alumno,
+	 * {@code @acceso.alumnoEnSede}) recibe {@code mediasRallas} y {@code aplicaRallas}; quien entra solo como familia
+	 * (también una cuenta familia + responsable con un alumno fuera de sus sedes), no: ni en el JSON.
 	 */
 	@GetMapping("/{id}/deportes")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_USER','ROLE_RESPONSABLE_SEDE') and @acceso.alumnoComoFamiliaOSede(#id)")
@@ -958,8 +964,10 @@ public class AlumnoController {
 			if (deportes == null) {
 				return ResponseEntity.ok(java.util.Collections.emptyList());
 			}
+			boolean comoPanel = acceso.alumnoEnSede(id, "LEER");
 			List<com.taemoi.project.dtos.AlumnoDeporteDTO> deportesDTO = deportes.stream()
-					.map(com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporte)
+					.map(comoPanel ? com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporte
+							: com.taemoi.project.dtos.AlumnoDeporteDTO::deAlumnoDeporteParaFamilia)
 					.collect(Collectors.toList());
 			return ResponseEntity.ok(deportesDTO);
 		} catch (Exception e) {

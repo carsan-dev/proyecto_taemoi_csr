@@ -1,0 +1,43 @@
+<dialog #dialogo class="rallas-hoja" [class.rallas-hoja--hoja]="hoja" [attr.aria-labelledby]="id + '-titulo'" data-dialogo="rallas"
+  (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
+  <div class="rallas-hoja__caja">
+    @if (hoja) {
+    <div class="rallas-hoja__asa" aria-hidden="true"></div>
+    }
+    <div class="rallas-hoja__cabecera">
+      <div class="rallas-hoja__titulos">
+        <h2 class="rallas-hoja__titulo" [id]="id + '-titulo'">{{ nombre }}</h2>
+        @if (subtitulo) {<p class="rallas-hoja__sub">{{ subtitulo }}</p>}
+      </div>
+      <button type="button" class="rallas-hoja__cerrar" aria-label="Cerrar" (click)="cancelar()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="rallas-hoja__cuerpo">
+      <div class="rallas-hoja__muestra">
+        <pn-cinturon tamano="hoja" [color1]="color1" [color2]="color2" [medias]="medias" />
+        <div class="rallas-hoja__cuenta" role="status">
+          <strong data-cuenta>{{ cuenta }}</strong>
+          @if (falta) {<span class="rallas-hoja__falta">{{ falta }}</span>}
+        </div>
+      </div>
+      <div class="rallas-hoja__pasos" role="group" aria-label="Cambiar rallas" [attr.aria-busy]="enCurso ? 'true' : null">
+        @for (p of pasos; track p.paso) {
+        <button type="button" class="rallas-hoja__paso" [attr.data-paso]="p.paso" [attr.aria-label]="p.etiqueta"
+          [attr.aria-disabled]="bloqueado(p.paso) ? 'true' : null" (click)="dar(p.paso)">{{ p.texto }}</button>
+        }
+      </div>
+      <p class="rallas-hoja__nota" [attr.data-nota]="nota ? '' : null">{{ nota }}</p>
+      @if (completa) {
+      <p class="rallas-hoja__completa" role="status">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.8 2.8L16.5 9.5"></path></svg>
+        <span><strong>{{ nombreCorto }}</strong> ha completado sus 5 rallas.</span>
+      </p>
+      <button type="button" class="rallas-hoja__apto" data-apto [attr.aria-disabled]="enCurso ? 'true' : null" (click)="marcarApto()">{{ textoAptoBoton }}</button>
+      }
+    </div>
+  </div>
+</dialog>

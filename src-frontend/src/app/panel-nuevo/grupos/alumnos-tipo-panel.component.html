@@ -46,9 +46,11 @@
             <span class="tipo__linea">
               @if (a.numeroExpediente) {<span data-cifras>Exp. {{ a.numeroExpediente }}</span>}
               @if (a.grado) {
+              @let m = medias(a);
               <span class="tipo__grado">
-                @if (colorGrado(a.grado); as c) {<span class="tipo__cinto" [style.background]="c" aria-hidden="true"></span>}
-                <span>{{ a.grado }}</span>
+                @if (cinturon(a); as c) {<pn-cinturon [color1]="c.color1" [color2]="c.color2" [medias]="m" />}
+                <span>{{ a.grado }}@if (m !== null) {<span class="tipo__oculto">, {{ textoOcultoRallas(m) }}</span>}</span>
+                @if (m === 10) {<pn-distintivo-examen data-listo [genero]="a.genero" />}
               </span>
               }
             </span>

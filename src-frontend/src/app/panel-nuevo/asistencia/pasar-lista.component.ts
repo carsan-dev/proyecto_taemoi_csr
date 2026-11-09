@@ -3,12 +3,15 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, Subscription, catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 
-import { AlumnoDeLista, ClaseAsistencia, ClasesDelGrupo, FestivoDeClase, MotivoFalta, PrefijoAsistencia, SedeDeClase } from '../../interfaces/asistencia';
+import {
+  AlumnoDeLista, ClaseAsistencia, ClasesDelGrupo, FestivoDeClase, MotivoFalta, PasoRallas, PrefijoAsistencia, SedeDeClase,
+} from '../../interfaces/asistencia';
 import { DeporteEnLista } from '../../interfaces/profesor';
 import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AsistenciaService } from '../../servicios/endpoints/asistencia.service';
 import { ProfesorService } from '../../servicios/endpoints/profesor.service';
+import { RallasService } from '../../servicios/endpoints/rallas.service';
 import { gradoFila, gradoParaFrase } from '../alumnos/alumno-vista';
 import { AcentoEscuelaDirective } from '../acento-escuela.directive';
 import { AvisosService } from '../avisos/avisos.service';
@@ -37,6 +40,10 @@ import {
   MOTIVOS_FALTA, cuenta, estadoClase, fechaClase, fechaClaseCapital, franja, mismaClase, textoFaltas, textoMotivo, tieneLista,
 } from './asistencia-textos';
 import { DialogoFestivoComponent } from './dialogo-festivo.component';
+import { CinturonComponent } from '../cinturon/cinturon.component';
+import { DistintivoExamenComponent } from '../cinturon/distintivo-examen.component';
+import { mediasVisibles, pasoBloqueado, textoApto, textoOcultoRallas } from '../cinturon/rallas-textos';
+import { HojaRallasComponent } from './hoja-rallas.component';
 
 const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
 /** Menú de motivo: aire sobre la barra fija, solape con su fila (el `6px` del CSS) y lo que tapa la cabecera fija. */
@@ -54,6 +61,8 @@ export const TEXTOS_PASAR_LISTA = {
   errorQuitarFestivo: 'No se ha podido quitar el festivo. Inténtalo de nuevo.',
   profesorFestivo: 'Si ese día hay clase, pide a la escuela que quite el festivo.',
   errorBorrarLista: 'No se ha podido borrar la lista. Inténtalo de nuevo.',
+  errorRallas: 'No se ha podido guardar la ralla. Inténtalo de nuevo.',
+  errorApto: 'No se ha podido marcar para examen. Inténtalo de nuevo.',
 } as const;
 
 /**
@@ -75,6 +84,7 @@ export const TEXTOS_PASAR_LISTA = {
   selector: 'pn-pasar-lista',
   standalone: true,
   imports: [
+    CinturonComponent, DistintivoExamenComponent, HojaRallasComponent,
     RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, BloqueVacioComponent, BotonOcupadoComponent, DialogoFestivoComponent,
     EsqueletoComponent, PanelLateralComponent,
   ],
@@ -94,6 +104,7 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   private readonly permisos = inject(PermisosSesionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly rallas = inject(RallasService);
   private carga?: Subscription;
   private cargaLista?: Subscription;
 
@@ -106,6 +117,7 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   readonly nombreCompleto = nombreCompleto;
   readonly motivosFalta = MOTIVOS_FALTA;
   readonly textoMotivo = textoMotivo;
+  readonly textoOcultoRallas = textoOcultoRallas;
 
   prefijo: PrefijoAsistencia = 'profesor';
   grupoId = 0;
@@ -137,6 +149,12 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
   guardando = false;
   guardada = false;
   hojaAbierta = false;
+  /** Quien pide puede cambiar rallas en este grupo (la frase de la cabecera); por alumno manda `puedeCambiarRallas`. */
+  puedeCambiarRallas = false;
+  /** Alumno con la hoja de rallas abierta. */
+  hojaRallas: number | null = null;
+  /** Un paso o «Marcar apto» en vuelo: no se aceptan más toques hasta que acabe. */
+  rallasEnCurso = false;
   private reintento: () => void = () => this.cargar();
 
   ngOnInit(): void {
@@ -224,6 +242,8 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
         this.clase = lista.clase;
         this.alumnos = lista.alumnos;
         this.sede = lista.sede ?? null;
+        this.puedeCambiarRallas = !!lista.puedeCambiarRallas;
+        this.hojaRallas = null;
         this.menuAbierto = null;
         // Lista sin guardar: ninguna marcada ni con motivo, vengan como vengan.
         const guardada = tieneLista(lista.clase);
@@ -393,11 +413,111 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     return alumno.deportes.find((d) => d.delGrupo) ?? alumno.deportes[0] ?? null;
   }
 
-  gradoDe(alumno: AlumnoDeLista): { texto: string; fondo: string } {
+  gradoDe(alumno: AlumnoDeLista): { texto: string; color1: string | null; color2: string | null } {
     const deporte = this.deporteDe(alumno);
-    if (!deporte?.grado) return { texto: 'Sin grado', fondo: '' };
+    if (!deporte?.grado) return { texto: 'Sin grado', color1: null, color2: null };
     const grado = gradoFila(deporte.grado.codigo, deporte.deporte);
-    return { texto: gradoParaFrase(grado), fondo: grado.fondo };
+    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2 };
+  }
+
+  // ------------------------------------------------------------------ rallas hacia el examen (decisiones 510-513)
+  /** Medias del alumno en la disciplina del grupo; `null` si sus rallas no se usan. */
+  mediasDe(alumno: AlumnoDeLista): number | null {
+    return mediasVisibles(this.deporteDe(alumno));
+  }
+
+  /** Alguien de la lista lleva rallas: la frase de la cabecera y la del festivo. */
+  get hayRallas(): boolean {
+    return this.alumnos.some((a) => this.mediasDe(a) !== null);
+  }
+
+  /** La punta abre la hoja solo si quien pide puede y sus rallas se usan (con grado y no PUM ni DAN). */
+  abreHoja(alumno: AlumnoDeLista): boolean {
+    return !!alumno.puedeCambiarRallas && this.mediasDe(alumno) !== null && !!this.deporteDe(alumno)?.grado;
+  }
+
+  etiquetaCinto(alumno: AlumnoDeLista): string {
+    return `Rallas de ${nombreCompleto(alumno.nombre, alumno.apellidos)}: ${textoOcultoRallas(this.mediasDe(alumno) ?? 0)}`;
+  }
+
+  get alumnoHoja(): AlumnoDeLista | null {
+    return this.hojaRallas === null ? null : this.alumnos.find((a) => a.id === this.hojaRallas) ?? null;
+  }
+
+  subtituloHoja(alumno: AlumnoDeLista): string {
+    const d = this.deporteDe(alumno);
+    return [d?.deporteNombre, this.gradoDe(alumno).texto].filter(Boolean).join(' · ');
+  }
+
+  abrirRallas(alumno: AlumnoDeLista): void {
+    if (!this.abreHoja(alumno)) return;
+    this.menuAbierto = null;
+    this.hojaRallas = alumno.id;
+  }
+
+  cerrarRallas(): void {
+    this.hojaRallas = null;
+  }
+
+  /**
+   * Un paso, guardado al momento (decisión 513 a). Optimista: la hoja cambia ya y, si la llamada falla (red o 409), el
+   * paso se deshace y se avisa. Mientras hay una llamada en curso, los toques se ignoran.
+   */
+  darPaso(paso: PasoRallas): void {
+    const alumno = this.alumnoHoja;
+    const antes = alumno ? this.mediasDe(alumno) : null;
+    if (!alumno || antes === null || this.rallasEnCurso || pasoBloqueado(antes, paso)) return;
+    this.rallasEnCurso = true;
+    this.ponerRallas(alumno.id, antes + paso);
+    this.rallas.paso(this.prefijo, this.grupoId, alumno.id, paso).pipe(
+      takeUntilDestroyed(this.destruir),
+      finalize(() => (this.rallasEnCurso = false)),
+    ).subscribe({
+      next: (r) => this.ponerRallas(alumno.id, r.mediasRallas, r.aptoParaExamen),
+      error: (e) => {
+        this.ponerRallas(alumno.id, antes);
+        this.avisos.error(mensajeDelServidor(e, this.textos.errorRallas));
+      },
+    });
+  }
+
+  /** Con las 5 rallas: la hoja se cierra, se confirma y, si sale bien, queda apto y sus rallas a 0. */
+  async marcarAptoDesdeHoja(): Promise<void> {
+    const alumno = this.alumnoHoja;
+    if (!alumno || this.rallasEnCurso || this.mediasDe(alumno) !== 10) return;
+    const apto = textoApto(alumno.genero);
+    const disciplina = this.deporteDe(alumno)?.deporteNombre ?? '';
+    const enDisciplina = disciplina ? ` en ${disciplina}` : '';
+    // La hoja se cierra antes: el foco vuelve a la punta y la confirmación lo devuelve ahí al cerrarse.
+    this.hojaRallas = null;
+    this.cdr.detectChanges();
+    const r = await this.confirmacion.confirmar({
+      titulo: `¿Marcar a ${alumno.nombre} ${apto} para examen?`,
+      mensaje: [{ fuerte: nombreCompleto(alumno.nombre, alumno.apellidos) }, ` quedará ${apto} para examen${enDisciplina} y sus rallas volverán a 0.`],
+      accion: `Marcar ${apto}`,
+      accionOcupada: 'Marcando…',
+      nombre: 'rallas-apto',
+      ejecutar: () => this.rallas.apto(this.prefijo, this.grupoId, alumno.id),
+    });
+    if (!r.confirmado) return;
+    if (r.error) {
+      this.avisos.error(mensajeDelServidor(r.error, this.textos.errorApto));
+      return;
+    }
+    this.ponerRallas(alumno.id, r.respuesta?.mediasRallas ?? 0, r.respuesta?.aptoParaExamen ?? true);
+    this.avisos.exito(`${alumno.nombre} queda ${apto} para examen${enDisciplina}. Sus rallas vuelven a 0.`);
+  }
+
+  /** Cambia las medias (y el apto) de la disciplina del grupo de un alumno, sin tocar el resto de la lista. */
+  private ponerRallas(alumnoId: number, medias: number, apto?: boolean): void {
+    this.alumnos = this.alumnos.map((a) => {
+      if (a.id !== alumnoId) return a;
+      const delGrupo = this.deporteDe(a);
+      return {
+        ...a,
+        deportes: a.deportes.map((d) => (d === delGrupo ? { ...d, mediasRallas: medias, ...(apto === undefined ? {} : { apto }) } : d)),
+      };
+    });
   }
 
   // ------------------------------------------------------------------ guardar

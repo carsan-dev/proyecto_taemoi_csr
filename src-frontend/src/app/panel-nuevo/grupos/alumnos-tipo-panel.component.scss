@@ -185,15 +185,6 @@ li:last-child > .tipo__alumno {
   gap: 6px;
 }
 
-// Cinturón de 16 × 8 px con su borde (WCAG 1.4.11: el blanco se ve).
-.tipo__cinto {
-  flex: none;
-  width: 16px;
-  height: 8px;
-  border: 1px solid var(--pn-cinto-borde);
-  border-radius: 2px;
-}
-
 .tipo__flecha {
   flex: none;
   width: 18px;

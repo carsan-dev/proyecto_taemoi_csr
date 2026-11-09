@@ -215,7 +215,7 @@ class ProfesorFotoAlumnoIntegrationTest extends MySqlIntegrationTest {
 		JsonNode alumnos = leer(get("/api/profesor/grupos/" + e.gA + "/alumnos"), tProfA);
 		JsonNode alumno = fila(alumnos, conFoto);
 		assertEquals(fotoConFoto, alumno.get("fotoId").asLong());
-		assertEquals(Set.of("id", "nombre", "apellidos", "fotoId", "deportes"), campos(alumno));
+		assertEquals(Set.of("id", "nombre", "apellidos", "fotoId", "deportes", "genero"), campos(alumno));
 		JsonNode sinFoto = fila(alumnos, e.aSinSede);
 		assertTrue(sinFoto.has("fotoId") && sinFoto.get("fotoId").isNull(), sinFoto.toString());
 		String cuerpo = alumnos.toString();

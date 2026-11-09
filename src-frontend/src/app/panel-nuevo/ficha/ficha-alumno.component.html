@@ -39,7 +39,7 @@
     <section class="ficha__carnet" aria-labelledby="ficha-nombre">
       <div class="ficha__franja" aria-hidden="true">
         @for (d of franja; track d.codigo) {
-        <span class="ficha__franja-tramo" [style.background]="d.fondo"></span>
+        <span class="ficha__franja-tramo">@if (d.color2) {<i [style.background]="d.color2"></i>}<i [style.background]="d.color1"></i></span>
         }
       </div>
 
@@ -113,8 +113,8 @@
         <ul class="ficha__disciplinas" aria-label="Disciplinas">
           @for (d of disciplinas; track d.codigo) {
           <li class="ficha__disciplina">
-            @if (d.fondo) {
-            <span class="ficha__cinto" [style.background]="d.fondo" aria-hidden="true"></span>
+            @if (d.color1) {
+            <pn-cinturon class="ficha__cinto" [color1]="d.color1" [color2]="d.color2" [medias]="d.medias" />
             } @else {
             <span class="ficha__cinto ficha__cinto--sin" [class]="d.clase" aria-hidden="true"></span>
             }
@@ -125,6 +125,10 @@
               }
               @if (d.linea) {
               <span class="ficha__grado-linea" data-cifras>{{ d.linea }}</span>
+              }
+              @if (d.medias !== null) {
+              <span class="ficha__grado-linea" data-rallas>{{ textoCuentaRallas(d.medias) }}</span>
+              @if (d.medias === 10) {<span class="ficha__listo"><pn-distintivo-examen data-listo [genero]="alumno?.genero" /></span>}
               }
             </span>
           </li>

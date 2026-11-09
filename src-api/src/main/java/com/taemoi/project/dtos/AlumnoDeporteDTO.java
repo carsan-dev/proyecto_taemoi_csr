@@ -5,9 +5,18 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.taemoi.project.entities.AlumnoDeporte;
 
 public class AlumnoDeporteDTO {
+
+	/**
+	 * El mismo DTO para el área de familias (decisión 513 j): sin las rallas hacia el examen, tampoco en el JSON
+	 * ({@code mediasRallas} y {@code aplicaRallas} no salen). Ver {@link #deAlumnoDeporteParaFamilia}.
+	 */
+	@JsonIgnoreProperties({ "mediasRallas", "aplicaRallas" })
+	public static class ParaFamilia extends AlumnoDeporteDTO {
+	}
 
 	// Identity and sport
 	private Long id;
@@ -17,6 +26,9 @@ public class AlumnoDeporteDTO {
 	private String grado; // TipoGrado como String
 	private Date fechaGrado;
 	private Boolean aptoParaExamen;
+	// Rallas hacia el examen (V32_8): medias de 0 a 10 si se usan; null si no (disciplina apagada, sin grado, PUM o DAN)
+	private Integer mediasRallas;
+	private Boolean aplicaRallas;
 
 	// Status and dates
 	private Boolean activo;
@@ -62,8 +74,24 @@ public class AlumnoDeporteDTO {
 		if (alumnoDeporte == null) {
 			return null;
 		}
+		return rellenar(new AlumnoDeporteDTO(), alumnoDeporte);
+	}
 
-		AlumnoDeporteDTO dto = new AlumnoDeporteDTO();
+	/**
+	 * Para quien lee la inscripción solo como familia (decisión 513 j): todo lo de {@link #deAlumnoDeporte} salvo las
+	 * rallas: quedan a {@code null} en el objeto y no salen en el JSON ({@link ParaFamilia}).
+	 */
+	public static AlumnoDeporteDTO deAlumnoDeporteParaFamilia(AlumnoDeporte alumnoDeporte) {
+		if (alumnoDeporte == null) {
+			return null;
+		}
+		AlumnoDeporteDTO dto = rellenar(new ParaFamilia(), alumnoDeporte);
+		dto.setMediasRallas(null);
+		dto.setAplicaRallas(null);
+		return dto;
+	}
+
+	private static AlumnoDeporteDTO rellenar(AlumnoDeporteDTO dto, AlumnoDeporte alumnoDeporte) {
 
 		// Identity and sport
 		dto.setId(alumnoDeporte.getId());
@@ -73,6 +101,8 @@ public class AlumnoDeporteDTO {
 		dto.setGrado(alumnoDeporte.getGrado() != null ? alumnoDeporte.getGrado().getCodigo() : null);
 		dto.setFechaGrado(alumnoDeporte.getFechaGrado());
 		dto.setAptoParaExamen(alumnoDeporte.getAptoParaExamen());
+		dto.setAplicaRallas(alumnoDeporte.aplicaRallas());
+		dto.setMediasRallas(alumnoDeporte.mediasRallasVisibles());
 
 		// Status and dates
 		dto.setActivo(alumnoDeporte.getActivo());
@@ -367,5 +397,23 @@ public class AlumnoDeporteDTO {
 
 	public void setFechaLicencia(Date fechaLicencia) {
 		this.fechaLicencia = fechaLicencia;
+	}
+
+	/** Medias rallas hacia el examen (0 a 10), solo lectura; {@code null} si las rallas no se usan. */
+	public Integer getMediasRallas() {
+		return mediasRallas;
+	}
+
+	public void setMediasRallas(Integer mediasRallas) {
+		this.mediasRallas = mediasRallas;
+	}
+
+	/** Las rallas se usan: disciplina con rallas activas, con grado y que no es PUM ni DAN. */
+	public Boolean getAplicaRallas() {
+		return aplicaRallas;
+	}
+
+	public void setAplicaRallas(Boolean aplicaRallas) {
+		this.aplicaRallas = aplicaRallas;
 	}
 }

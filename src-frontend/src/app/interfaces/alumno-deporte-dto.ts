@@ -11,6 +11,9 @@ export interface AlumnoDeporteDTO {
   grado: string | null; // código del grado en el catálogo (p. ej. "BLANCO")
   fechaGrado: Date | string | null;
   aptoParaExamen: boolean;
+  /** Rallas hacia el examen (0-10 medias); null si no se usan. Opcionales: un API anterior no las manda. */
+  mediasRallas?: number | null;
+  aplicaRallas?: boolean | null;
 
   // Status and dates
   activo: boolean;

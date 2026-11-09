@@ -428,6 +428,73 @@ class CambioGradosDisciplinasIntegrationTest extends MySqlIntegrationTest {
 		assertTrue(pdf.contains("A MARRÓN"), pdf);
 	}
 
+	// =============================================================================
+	// Rallas hacia el examen (V32_8): el cambio de grado por convocatoria o por cobro las pone a 0
+	// =============================================================================
+
+	@Test
+	void convocatoria_alPromover_poneLasRallasACero_yQuedaEnElRegistro() {
+		long kb = altaCon("RALLAS-CONV", ANIO - 30, "KICKBOXING", "AZUL", "KICKBOXING");
+		long ad = idInscripcion(kb, "KICKBOXING");
+		jdbc.update("UPDATE alumno_deporte SET medias_rallas = 7 WHERE id = ?", ad);
+		ConvocatoriaDTO dto = new ConvocatoriaDTO();
+		dto.setFechaConvocatoria(java.sql.Date.valueOf(LocalDate.now().plusDays(11)));
+		dto.setDeporte(Deporte.KICKBOXING.name());
+		long convocatoria = TenantContext.calcularCon(ORG_TAEMOI, () -> convocatoriaService.crearConvocatoria(dto).getId());
+
+		TenantContext.ejecutarCon(ORG_TAEMOI, () -> tx.executeWithoutResult(s -> {
+			alumnoDeporteService.actualizarAptoParaExamen(kb, Deporte.KICKBOXING.name(), true);
+			alumnoService.agregarAlumnoAConvocatoria(kb, convocatoria, false, false);
+			assertEquals(7, mediasRallas(ad), "inscribirse en la convocatoria no las toca");
+			convocatoriaService.actualizarGradosDeConvocatoria(convocatoria);
+		}));
+		assertInscripcion(kb, "KICKBOXING", "ROJO", "MARRÓN");
+		assertEquals(0, mediasRallas(ad));
+		assertEquals(1, registrosACero(kb, ad));
+	}
+
+	@Test
+	void pagarUnPaseOUnaRecompensa_poneLasRallasACero_unCargoSinGradoNo() {
+		long tkd = altaCon("RALLAS-PAGO", ANIO - 10, "TAEKWONDO", "BLANCO", "INFANTIL");
+		long ad = idInscripcion(tkd, "TAEKWONDO");
+		jdbc.update("UPDATE alumno_deporte SET medias_rallas = 5 WHERE id = ?", ad);
+
+		pagar(cargo(tkd, "TAEKWONDO", null, "CAMISETA TAEMOI - TAEKWONDO"));
+		assertEquals(5, mediasRallas(ad), "un cargo que no concede grado no las toca");
+		assertEquals(0, registrosACero(tkd, ad));
+
+		// Pase (derecho a examen).
+		pagar(cargo(tkd, "TAEKWONDO", productoCanonico("DERECHO A EXAMEN AMARILLO"), "DERECHO A EXAMEN AMARILLO - TAEKWONDO"));
+		assertInscripcion(tkd, "TAEKWONDO", "AMARILLO", null);
+		assertEquals(0, mediasRallas(ad));
+		assertEquals(1, registrosACero(tkd, ad));
+
+		// Recompensa.
+		jdbc.update("UPDATE alumno_deporte SET medias_rallas = 4 WHERE id = ?", ad);
+		pagar(cargo(tkd, "TAEKWONDO", productoCanonico("DERECHO DE CAMBIO A NARANJA POR RECOMPENSA"),
+				"DERECHO DE CAMBIO A NARANJA POR RECOMPENSA - TAEKWONDO"));
+		assertInscripcion(tkd, "TAEKWONDO", "NARANJA", null);
+		assertEquals(0, mediasRallas(ad));
+		assertEquals(2, registrosACero(tkd, ad));
+	}
+
+	private long idInscripcion(long alumnoId, String deporte) {
+		return ((Number) inscripcion(alumnoId, deporte).get("id")).longValue();
+	}
+
+	private int mediasRallas(long alumnoDeporteId) {
+		return jdbc.queryForObject("SELECT medias_rallas FROM alumno_deporte WHERE id = ?", Integer.class,
+				alumnoDeporteId);
+	}
+
+	/** Registros «rallas a 0 por cambio de grado» de esa inscripción. */
+	private long registrosACero(long alumnoId, long alumnoDeporteId) {
+		return jdbc.queryForObject("""
+				SELECT COUNT(*) FROM auditoria_evento WHERE modulo = 'rallas' AND recurso_id = ?
+				  AND resumen LIKE CONCAT('RALLAS A\\_CERO\\_POR\\_GRADO alumno=#', ?, ' alumnoDeporte=#', ?, ' %')""",
+				Long.class, alumnoId, alumnoId, alumnoDeporteId);
+	}
+
 	/**
 	 * En kickboxing el cinturón que el código llama ROJO es marrón: los cargos NUEVOS de examen y recompensa a ese grado
 	 * (normal y bordado) lo nombran con el nombre del grado en el catálogo de la disciplina («MARRÓN»); en taekwondo

@@ -439,10 +439,17 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
       try {
         const tramos = Array.from(m.el().querySelectorAll<HTMLElement>('.ficha__franja-tramo'));
         expect(tramos.length).toBe(2);
-        expect(getComputedStyle(tramos[0]).backgroundColor).toBe('rgb(255, 255, 255)');
+        expect(getComputedStyle(tramos[0].querySelector('i')!).backgroundColor).toBe('rgb(255, 255, 255)');
         const carnet = m.el().querySelector<HTMLElement>('.ficha__carnet')!;
         const fondo = getComputedStyle(carnet).backgroundColor;
-        for (const muestra of [...tramos, ...Array.from(m.el().querySelectorAll<HTMLElement>('.ficha__cinto'))]) {
+        // El cinturón común lleva su borde de 1 px (#868D97) dentro del SVG y llega a 3:1 frente al carnet.
+        const cintos = Array.from(m.el().querySelectorAll<HTMLElement>('pn-cinturon.ficha__cinto'));
+        expect(cintos.length).toBe(2);
+        for (const cinto of cintos) {
+          expect(cinto.querySelector('svg')!.getAttribute('aria-hidden')).toBe('true');
+          expect(contrasteRgb('rgb(134, 141, 151)', fondo)).withContext('borde del cinturón frente al carnet').toBeGreaterThanOrEqual(3);
+        }
+        for (const muestra of tramos) {
           const s = getComputedStyle(muestra);
           expect(s.borderTopStyle).withContext('borde visible').toBe('solid');
           expect(parseFloat(s.borderTopWidth)).toBeGreaterThanOrEqual(1);

@@ -91,11 +91,12 @@ describe('alumno-vista (8b-3a, listado de alumnos)', () => {
 });
 
 describe('alumno-vista: grado compartido por el listado y el carnet (8b-3b)', () => {
-  it('gradoFila: en minúscula para la línea 2, el texto de hoy para el detalle y el fondo del cinturón', () => {
+  it('gradoFila: en minúscula para la línea 2, el texto de hoy para el detalle y los colores del cinturón', () => {
     const blanco = gradoFila('BLANCO', 'TAEKWONDO');
     expect(blanco.nombre).toBe('blanco');
     expect(blanco.nombreDetalle).toBe('BLANCO');
-    expect(blanco.fondo.toUpperCase()).toBe('#FFFFFF');
+    expect(blanco.color1.toUpperCase()).toBe('#FFFFFF');
+    expect(blanco.color2).toBeNull();
     const raro = gradoFila('ROJO_NEGRO_X', 'TAEKWONDO');
     expect(raro.nombre).toBe('rojo negro x');
     expect(raro.nombreDetalle).toBe('ROJO NEGRO X');
