@@ -72,6 +72,10 @@ export interface GrupoCompartido {
   id: number;
   nombre: string;
   sede: SedeProfesor | null;
+  /** Código de la disciplina del grupo (nulo si no tiene). */
+  deporte?: string | null;
+  /** Quien pide puede dar rallas en este grupo (decisión 514). */
+  puedeCambiarRallas?: boolean;
 }
 
 /** ProfesorDTOs.Contacto: del alumno (sin parentesco) o de un tutor. */

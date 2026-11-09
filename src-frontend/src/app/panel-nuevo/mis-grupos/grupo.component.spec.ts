@@ -259,6 +259,35 @@ describe('GrupoPanelComponent', () => {
       expect(anterior[1].deportes[0].apto).toBeFalse();
     });
 
+    it('las rallas dadas en la ficha (decisión 514) ponen al día el cinturón, el distintivo y «Apto» de la fila', () => {
+      const conRallas: AlumnoDeGrupo[] = [alumnos[0], { id: 22, nombre: 'Hugo', apellidos: 'Martín', deportes: [
+        { deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'AMARILLO', nombre: 'Amarillo' }, fechaGrado: null, apto: false, delGrupo: true, mediasRallas: 9, aplicaRallas: true },
+      ] }];
+      cargar(conRallas);
+      spyOn(fixture.componentInstance, 'esEscritorio').and.returnValue(true);
+      consulta.next(convertToParamMap({ alumno: '22' }));
+      fixture.detectChanges();
+      http.expectOne(`${api}/alumnos/22`).flush({ ...ficha, id: 22 });
+      fixture.detectChanges();
+      const fila = () => elemento().querySelectorAll<HTMLElement>('.grupo-profesor__fila')[1];
+      const aptos = () => elemento().querySelector('[data-filtro="aptos"]')!.textContent!.replace(/\s+/g, ' ').trim();
+      const fichaHija = fixture.debugElement.query(By.directive(FichaProfesorPanelComponent)).componentInstance as FichaProfesorPanelComponent;
+      expect(fila().querySelector('[data-listo]')).toBeNull();
+      expect(fila().querySelectorAll('pn-cinturon [data-ralla]').length).toBe(5);
+
+      fichaHija.rallasCambiadas.emit({ alumnoId: 22, deporte: 'TAEKWONDO', medias: 10, apto: false });
+      fixture.detectChanges();
+      expect(fila().querySelector('[data-listo]')?.textContent?.trim()).toBe('Listo para examen');
+      expect(aptos()).toBe('Aptos 1');
+
+      fichaHija.rallasCambiadas.emit({ alumnoId: 22, deporte: 'TAEKWONDO', medias: 0, apto: true });
+      fixture.detectChanges();
+      expect(fila().querySelector('[data-listo]')).toBeNull();
+      expect(fila().querySelectorAll('pn-cinturon [data-ralla]').length).toBe(0);
+      expect(fila().querySelector('.grupo-profesor__apto')).not.toBeNull();
+      expect(aptos()).toBe('Aptos 2');
+    });
+
     it('el panel no es modal: sin velo, la lista sigue activa, la fila abierta queda marcada y el contenido se estrecha', () => {
       cargar();
       spyOn(fixture.componentInstance, 'esEscritorio').and.returnValue(true);

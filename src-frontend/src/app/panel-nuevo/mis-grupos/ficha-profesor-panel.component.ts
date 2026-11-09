@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, DestroyRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -7,11 +7,12 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, finalize, firstValueFrom } from 'rxjs';
 
 import { ORDEN_DISCAPACIDAD, TIPOS_DISCAPACIDAD } from '../../interfaces/tipo-discapacidad';
-import { AsistenciaDeAlumno, DiaAsistencia } from '../../interfaces/asistencia';
+import { AsistenciaDeAlumno, DiaAsistencia, PasoRallas } from '../../interfaces/asistencia';
 import {
   ContactoAlumno,
   DeporteDelAlumno,
   FichaAlumnoProfesor,
+  GrupoCompartido,
   PaseCreado,
   SaludAlumno,
   TipoPase,
@@ -40,7 +41,9 @@ import { diaCorto, diaLargo, letraMotivo, textoMotivo } from '../asistencia/asis
 import { eur } from '../formato/formato-es';
 import { CinturonComponent } from '../cinturon/cinturon.component';
 import { DistintivoExamenComponent } from '../cinturon/distintivo-examen.component';
-import { mediasVisibles, textoCuentaRallas } from '../cinturon/rallas-textos';
+import { MEDIAS_COMPLETAS, mediasVisibles, textoCuentaRallas, textoOcultoRallas } from '../cinturon/rallas-textos';
+import { HojaRallasComponent } from '../asistencia/hoja-rallas.component';
+import { PasosRallasService } from '../asistencia/pasos-rallas.service';
 
 /** Texto de la confirmación de un pase (D7-6). Igual que en la ficha de hoy. */
 export const NOTA_PASE = 'Crea el cargo; el grado sube al cobrarlo en Mi caja.';
@@ -92,7 +95,7 @@ interface EdicionFecha {
 @Component({
   selector: 'pn-ficha-profesor',
   standalone: true,
-  imports: [CinturonComponent, DistintivoExamenComponent, FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, EsqueletoComponent],
+  imports: [CinturonComponent, DistintivoExamenComponent, HojaRallasComponent, FormsModule, NgTemplateOutlet, RouterLink, AcentoEscuelaDirective, BloqueErrorComponent, EsqueletoComponent],
   templateUrl: './ficha-profesor-panel.component.html',
   styleUrl: './ficha-profesor-panel.component.scss',
 })
@@ -105,6 +108,8 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   private readonly confirmacion = inject(ConfirmacionService);
   private readonly avisos = inject(AvisosService);
   private readonly destruir = inject(DestroyRef);
+  private readonly pasosRallas = inject(PasosRallasService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   /** El alumno, si la ficha va dentro del panel lateral; si no, sale de la ruta. */
   @Input() alumnoId = 0;
@@ -116,6 +121,8 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   @Output() readonly cargada = new EventEmitter<FichaAlumnoProfesor>();
   /** Emite tras guardar con éxito un cambio de «Apto para examen», para que la lista de al lado se ponga al día. */
   @Output() readonly aptoCambiado = new EventEmitter<{ alumnoId: number; deporte: string; apto: boolean }>();
+  /** Emite cada vez que cambian las rallas desde la hoja (y el apto, si llega), para que la lista de al lado se ponga al día. */
+  @Output() readonly rallasCambiadas = new EventEmitter<{ alumnoId: number; deporte: string; medias: number; apto?: boolean }>();
 
   readonly fechaCorta = fechaCorta;
   readonly mediasVisibles = mediasVisibles;
@@ -137,6 +144,10 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   readonly ediciones = new Map<string, EdicionFecha>();
   /** Un pase en marcha (el diálogo abierto): impide abrir otro. */
   pasando = false;
+  /** Deporte con la hoja de rallas abierta (decisión 514). */
+  hojaRallas: string | null = null;
+  /** Un paso o «Marcar apto» en vuelo: no se aceptan más toques hasta que acabe. */
+  rallasEnCurso = false;
 
   readonly etiquetasDiscapacidad = TIPOS_DISCAPACIDAD;
   get tiposSalud() { return ORDEN_DISCAPACIDAD.filter(t => this.salud?.discapacidadTipos.includes(t)); }
@@ -186,6 +197,7 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   ngOnChanges(cambios: SimpleChanges): void {
     if (this.embebida && cambios['alumnoId'] && this.alumnoId > 0) {
       this.ficha = null;
+      this.hojaRallas = null;
       this.ediciones.clear();
       this.saludAbierta = false;
       this.descartarSalud();
@@ -325,6 +337,86 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
         },
         error: (e) => this.avisos.error(mensajeDelServidor(e, 'No se ha podido cambiar el apto.')),
       });
+  }
+
+  // ------------------------------------------------------------------ rallas hacia el examen (decisión 514)
+
+  /** El grupo desde el que se abrió la ficha, si lo comparte: su disciplina es la única cuyas rallas se dan aquí. */
+  private get grupoDeRallas(): GrupoCompartido | null {
+    return this.grupoOrigen ? (this.ficha?.grupos ?? []).find((g) => g.id === this.grupoOrigen) ?? null : null;
+  }
+
+  /**
+   * La punta abre la hoja solo en la disciplina del grupo, si quien pide puede cambiar rallas en él y se usan (con
+   * grado y no PUM ni DAN). Las demás disciplinas, en solo lectura.
+   */
+  abreHoja(d: DeporteDelAlumno): boolean {
+    const grupo = this.grupoDeRallas;
+    return !!grupo?.puedeCambiarRallas && !!grupo.deporte && grupo.deporte === d.deporte && d.deMisGrupos
+      && !!d.grado && mediasVisibles(d) !== null;
+  }
+
+  etiquetaCinto(d: DeporteDelAlumno): string {
+    return `Rallas de ${this.nombre}: ${textoOcultoRallas(mediasVisibles(d) ?? 0)}`;
+  }
+
+  get deporteHoja(): DeporteDelAlumno | null {
+    return this.hojaRallas === null ? null : (this.ficha?.deportes ?? []).find((d) => d.deporte === this.hojaRallas) ?? null;
+  }
+
+  subtituloHoja(d: DeporteDelAlumno): string {
+    return [d.deporteNombre, this.gradoDe(d)?.texto].filter(Boolean).join(' · ');
+  }
+
+  abrirRallas(d: DeporteDelAlumno): void {
+    if (!this.abreHoja(d)) return;
+    this.hojaRallas = d.deporte;
+  }
+
+  cerrarRallas(): void {
+    this.hojaRallas = null;
+  }
+
+  /** Un paso, guardado al momento y con vuelta atrás si falla (como en Pasar lista). */
+  darPaso(paso: PasoRallas): void {
+    const d = this.deporteHoja;
+    const antes = d ? mediasVisibles(d) : null;
+    const grupoId = this.grupoOrigen;
+    if (!d || antes === null || !grupoId || this.rallasEnCurso) return;
+    const deporte = d.deporte;
+    this.pasosRallas.darPaso({
+      prefijo: 'profesor', grupoId, alumnoId: this.alumnoId, antes, paso, destruir: this.destruir,
+      poner: (medias, apto) => this.ponerRallas(deporte, medias, apto),
+      enCurso: (valor) => (this.rallasEnCurso = valor),
+    });
+  }
+
+  /** Con las 5 rallas: la hoja se cierra, se confirma y, si sale bien, queda apto y sus rallas a 0. */
+  async marcarAptoDesdeHoja(): Promise<void> {
+    const d = this.deporteHoja;
+    const ficha = this.ficha;
+    const grupoId = this.grupoOrigen;
+    if (!d || !ficha || !grupoId || this.rallasEnCurso || mediasVisibles(d) !== MEDIAS_COMPLETAS) return;
+    const deporte = d.deporte;
+    // La hoja se cierra antes: el foco vuelve a la punta y la confirmación lo devuelve ahí al cerrarse.
+    this.hojaRallas = null;
+    this.cdr.detectChanges();
+    await this.pasosRallas.confirmarApto({
+      prefijo: 'profesor', grupoId, disciplina: d.deporteNombre ?? '',
+      alumno: { id: this.alumnoId, nombre: ficha.nombre, apellidos: ficha.apellidos, genero: ficha.genero ?? null },
+      poner: (medias, apto) => this.ponerRallas(deporte, medias, apto),
+    });
+  }
+
+  /** Cambia las medias (y el apto) de un deporte de la ficha y avisa a la lista del grupo. */
+  private ponerRallas(deporte: string, medias: number, apto?: boolean): void {
+    if (!this.ficha) return;
+    this.ficha = {
+      ...this.ficha,
+      deportes: this.ficha.deportes.map((d) =>
+        d.deporte === deporte ? { ...d, mediasRallas: medias, ...(apto === undefined ? {} : { apto }) } : d),
+    };
+    this.rallasCambiadas.emit({ alumnoId: this.alumnoId, deporte, medias, ...(apto === undefined ? {} : { apto }) });
   }
 
   // ------------------------------------------------------------------ fecha de grado

@@ -1,4 +1,5 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
@@ -83,7 +84,7 @@ describe('FichaProfesorPanelComponent', () => {
     TestBed.configureTestingModule({
       imports: [FichaProfesorPanelComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
         { provide: ProfesorService, useValue: profesor },
         { provide: AvisosService, useValue: avisos },
         { provide: AsistenciaService, useValue: asistencia },
