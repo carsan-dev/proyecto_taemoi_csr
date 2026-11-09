@@ -3,6 +3,13 @@ import { borrarBorrador, guardarBorrador, leerBorrador, leerValor, guardarValor 
 import {
   DATOS_VACIOS,
   DatosPreinscripcion,
+  MAX_APELLIDOS,
+  MAX_DIRECCION,
+  MAX_EMAIL,
+  MAX_FIRMANTE,
+  MAX_NOMBRE,
+  MAX_TELEFONO,
+  MAX_TUTOR_NOMBRE,
   algunDiaConPlaza,
   diasDeParametro,
   diasElegibles,
@@ -152,6 +159,36 @@ describe('preinscripción de la web por plantilla · lógica común', () => {
       expect(ids(adulto({ observaciones: 'x'.repeat(1000) }))).toEqual([]);
       expect(ids(adulto({ discapacidad: '' }))).toEqual(['discapacidad']);
       expect(ids(adulto({ discapacidad: 'si' }))).toEqual([]);
+    });
+
+    it('longitudes de la API: cada campo de texto pasado de largo da su error; en el límite, ninguno', () => {
+      const telefono = (espacios: number) => `+34${' '.repeat(espacios)}612345678`;
+      // Parte local de 60 (≤64, Hibernate @Email); dominio con etiquetas ≤63; total = n.
+      const email = (n: number) => `${'a'.repeat(60)}@${'b'.repeat(60)}.${'c'.repeat(n - 125)}.es`;
+      const casos: [keyof DatosPreinscripcion, (n: number) => string, number, string][] = [
+        ['nombre', (n) => 'x'.repeat(n), MAX_NOMBRE, 'El nombre no puede superar los 100 caracteres.'],
+        ['apellidos', (n) => 'x'.repeat(n), MAX_APELLIDOS, 'Los apellidos no pueden superar los 160 caracteres.'],
+        ['direccion', (n) => 'x'.repeat(n), MAX_DIRECCION, 'La dirección no puede superar los 255 caracteres.'],
+        ['tutorNombre', (n) => 'x'.repeat(n), MAX_TUTOR_NOMBRE, 'El nombre del responsable legal no puede superar los 180 caracteres.'],
+        ['telefono', (n) => telefono(n - 12), MAX_TELEFONO, 'El teléfono no puede superar los 20 caracteres.'],
+        ['telefono2', (n) => telefono(n - 12), MAX_TELEFONO, 'El teléfono secundario no puede superar los 20 caracteres.'],
+        ['email', email, MAX_EMAIL, 'El email no puede superar los 180 caracteres.'],
+        ['firmante', (n) => 'x'.repeat(n), MAX_FIRMANTE, 'El nombre de quien firma no puede superar los 180 caracteres.'],
+      ];
+      expect([MAX_NOMBRE, MAX_APELLIDOS, MAX_DIRECCION, MAX_TUTOR_NOMBRE, MAX_TELEFONO, MAX_EMAIL, MAX_FIRMANTE]).toEqual([100, 160, 255, 180, 20, 180, 180]);
+      for (const [campo, valor, max, msg] of casos) {
+        expect(valor(max).length).withContext(campo).toBe(max);
+        expect(validar(menor({ [campo]: valor(max) }))).withContext(`${campo} en el límite`).toEqual([]);
+        expect(validar(menor({ [campo]: valor(max + 1) }))).withContext(`${campo} pasado`).toEqual([{ id: campo, campo, msg }]);
+      }
+      // Los espacios de los extremos no cuentan (la solicitud los quita).
+      expect(ids(adulto({ nombre: ` ${'x'.repeat(MAX_NOMBRE)} ` }))).toEqual([]);
+    });
+
+    it('email: la parte local (antes de @) no puede pasar de 64 caracteres', () => {
+      const error = [{ id: 'email', campo: 'email', msg: 'Escribe un email válido, como nombre@ejemplo.es.' }];
+      expect(validar(menor({ email: `${'a'.repeat(65)}@ejemplo.es` }))).toEqual(error);
+      expect(validar(menor({ email: `${'a'.repeat(64)}@ejemplo.es` }))).toEqual([]);
     });
 
     it('normas obligatorias; sin normas cargadas no se puede enviar', () => {

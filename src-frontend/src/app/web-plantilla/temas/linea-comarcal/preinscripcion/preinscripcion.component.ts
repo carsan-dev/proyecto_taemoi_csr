@@ -2,6 +2,7 @@ import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   ViewEncapsulation,
@@ -23,7 +24,14 @@ import { enlaceDocumento, envioPreinscripcion, normasPreinscripcion } from '../.
 import {
   DatosPreinscripcion,
   ErrorCampo,
+  MAX_APELLIDOS,
+  MAX_DIRECCION,
+  MAX_EMAIL,
+  MAX_FIRMANTE,
+  MAX_NOMBRE,
   MAX_OBSERVACIONES,
+  MAX_TELEFONO,
+  MAX_TUTOR_NOMBRE,
   MENSAJES,
   diasDeParametro,
   diasElegibles,
@@ -110,6 +118,16 @@ export class PreinscripcionLineaComarcalComponent {
   protected readonly t = TEXTOS_PREINSCRIPCION_LINEA_COMARCAL;
   protected readonly rellenar = rellenar;
   protected readonly maxObservaciones = MAX_OBSERVACIONES;
+  /** El `maxlength` de cada campo de texto: las longitudes de la API. */
+  protected readonly max = {
+    nombre: MAX_NOMBRE,
+    apellidos: MAX_APELLIDOS,
+    direccion: MAX_DIRECCION,
+    tutorNombre: MAX_TUTOR_NOMBRE,
+    telefono: MAX_TELEFONO,
+    email: MAX_EMAIL,
+    firmante: MAX_FIRMANTE,
+  } as const;
   protected readonly pagina = paginaWeb('preinscripcion', () => '/preinscripcion');
 
   /** Vista previa del panel (`?vista-previa=`, o la API la confirma): se usa el formulario, pero no se envía. */
@@ -210,6 +228,8 @@ export class PreinscripcionLineaComarcalComponent {
     const sitio = this.pagina.sitio();
     return sitio && salida ? casillasDia(sitio, salida, this.reloj()) : [];
   });
+  /** El día que lleva el ancla `d-primero` (foco y error del campo): el primero que se puede elegir. */
+  protected readonly primeraElegible = computed(() => this.casillas().find((c) => c.elegible)?.numero ?? null);
   /** Algún día de la salida elegida no se puede elegir (está lleno y otros tienen plaza). */
   protected readonly diasParciales = computed(() => {
     const salida = this.salida();
@@ -240,6 +260,7 @@ export class PreinscripcionLineaComarcalComponent {
   private primeraVez = true;
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.dejarDeObservar());
     // El paso, al llegar y cada vez que cambia la dirección (como el boceto: se comprueba lo que falta).
     effect(() => {
       const sitio = this.pagina.sitio();
@@ -525,23 +546,91 @@ export class PreinscripcionLineaComarcalComponent {
   // Firma: lienzo con fondo blanco, como Moiskimdo (la API la pone en el PDF).
   private trazando = false;
 
+  /** Los trazos de la firma, con los puntos en proporción del tamaño CSS del lienzo (0 a 1), para repintarlos. */
+  private trazos: [number, number][][] = [];
+  /** El ancho CSS con el que se dimensionó el lienzo (si no cambia, no se repinta). */
+  private anchoLienzo = 0;
+  private observador: ResizeObserver | null = null;
+  private lienzoObservado: HTMLCanvasElement | null = null;
+
+  /** Lienzo limpio (al aparecer y al borrar): sin trazos y sin firmar. */
   private prepararLienzo(lienzo: HTMLCanvasElement): void {
+    this.trazos = [];
+    this.trazando = false;
+    this.dimensionarLienzo(lienzo);
+    this.observar(lienzo);
+  }
+
+  /**
+   * El mapa de bits a la medida del lienzo, con fondo blanco y el estilo del trazo, y los trazos guardados repintados a
+   * esa medida. La densidad se limita a {@link DENSIDAD_MAX_FIRMA} y el ancho a {@link ANCHO_MAX_FIRMA} para que el PNG
+   * quede muy por debajo del tope de la API (`firmaBase64`, 700.000 caracteres) también en tabletas anchas.
+   */
+  private dimensionarLienzo(lienzo: HTMLCanvasElement): void {
     const r = lienzo.getBoundingClientRect();
     const dpr = this.documento.defaultView?.devicePixelRatio || 1;
-    lienzo.width = Math.max(1, Math.round(r.width * dpr));
-    lienzo.height = Math.max(1, Math.round(r.height * dpr));
+    const escala = Math.min(dpr, DENSIDAD_MAX_FIRMA, r.width > 0 ? ANCHO_MAX_FIRMA / r.width : DENSIDAD_MAX_FIRMA);
+    lienzo.width = Math.max(1, Math.round(r.width * escala));
+    lienzo.height = Math.max(1, Math.round(r.height * escala));
+    this.anchoLienzo = r.width;
     const ctx = lienzo.getContext('2d');
     if (ctx) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, lienzo.width, lienzo.height);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Los puntos van en píxeles CSS: la transformación lleva al mapa de bits (redondeado) en cada eje.
+      const sx = r.width > 0 ? lienzo.width / r.width : escala;
+      const sy = r.height > 0 ? lienzo.height / r.height : escala;
+      ctx.setTransform(sx, 0, 0, sy, 0, 0);
       ctx.lineWidth = 2.25;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.strokeStyle = '#101418';
+      for (const trazo of this.trazos) {
+        if (trazo.length < 2) {
+          continue;
+        }
+        ctx.beginPath();
+        ctx.moveTo(trazo[0][0] * r.width, trazo[0][1] * r.height);
+        for (const [x, y] of trazo.slice(1)) {
+          ctx.lineTo(x * r.width, y * r.height);
+        }
+        ctx.stroke();
+      }
+      // Un trazo en curso sigue desde su último punto.
+      const ultimo = this.trazando ? this.trazos.at(-1)?.at(-1) : undefined;
+      if (ultimo) {
+        ctx.beginPath();
+        ctx.moveTo(ultimo[0] * r.width, ultimo[1] * r.height);
+      }
     }
-    this.firmado.set(false);
+    this.firmado.set(this.trazos.some((t) => t.length > 1));
+  }
+
+  /** Al girar la tableta o cambiar el ancho de la ventana, el lienzo se redimensiona y la firma se repinta a escala. */
+  private observar(lienzo: HTMLCanvasElement): void {
+    if (this.lienzoObservado === lienzo) {
+      return;
+    }
+    this.dejarDeObservar();
+    const Observador = this.documento.defaultView?.ResizeObserver;
+    if (typeof Observador !== 'function') {
+      return;
+    }
+    this.lienzoObservado = lienzo;
+    this.observador = new Observador(() => {
+      const ancho = lienzo.getBoundingClientRect().width;
+      if (lienzo.isConnected && ancho > 0 && ancho !== this.anchoLienzo) {
+        this.dimensionarLienzo(lienzo);
+      }
+    });
+    this.observador.observe(lienzo);
+  }
+
+  private dejarDeObservar(): void {
+    this.observador?.disconnect();
+    this.observador = null;
+    this.lienzoObservado = null;
   }
 
   protected borrarFirma(): void {
@@ -561,6 +650,7 @@ export class PreinscripcionLineaComarcalComponent {
     }
     const ctx = lienzo.getContext('2d');
     const [x, y] = this.punto(lienzo, evento);
+    this.trazos.push([this.relativo(lienzo, x, y)]);
     ctx?.beginPath();
     ctx?.moveTo(x, y);
   }
@@ -572,6 +662,7 @@ export class PreinscripcionLineaComarcalComponent {
     const lienzo = evento.currentTarget as HTMLCanvasElement;
     const ctx = lienzo.getContext('2d');
     const [x, y] = this.punto(lienzo, evento);
+    this.trazos.at(-1)?.push(this.relativo(lienzo, x, y));
     ctx?.lineTo(x, y);
     ctx?.stroke();
     if (!this.firmado()) {
@@ -586,6 +677,12 @@ export class PreinscripcionLineaComarcalComponent {
   private punto(lienzo: HTMLCanvasElement, evento: PointerEvent): [number, number] {
     const r = lienzo.getBoundingClientRect();
     return [evento.clientX - r.left, evento.clientY - r.top];
+  }
+
+  /** El punto en proporción del tamaño CSS del lienzo. */
+  private relativo(lienzo: HTMLCanvasElement, x: number, y: number): [number, number] {
+    const r = lienzo.getBoundingClientRect();
+    return [r.width > 0 ? x / r.width : 0, r.height > 0 ? y / r.height : 0];
   }
 
   // ------------------------------------------------------------------------------------------------------------
@@ -704,6 +801,11 @@ export class PreinscripcionLineaComarcalComponent {
     }
   }
 }
+
+/** Densidad máxima del mapa de bits de la firma (más no se nota y engorda el PNG). */
+const DENSIDAD_MAX_FIRMA = 2;
+/** Ancho máximo del mapa de bits de la firma, en píxeles. */
+const ANCHO_MAX_FIRMA = 1600;
 
 /** Si la salida es de esa edad. */
 function avisoEdadVacio(salida: Salida, edad: number): boolean {

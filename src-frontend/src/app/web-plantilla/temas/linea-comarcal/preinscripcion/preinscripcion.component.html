@@ -112,8 +112,9 @@
                                     <p class="campo-pista" id="dias-pista">{{ diasParciales() ? t.diasPistaConPlaza : t.diasPista }}</p>
                                     <div id="dias-error" aria-live="assertive"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'dias' }" /></div>
                                     <div class="casillas-dia">
-                                      @for (c of casillas(); track c.numero; let primera = $first) {
-                                        <label class="casilla-dia" [class.casilla-dia--sin]="!c.elegible"><input type="checkbox" name="dia-semana" [value]="c.numero" [id]="primera ? 'd-primero' : null" [checked]="c.elegible && diasMarcados().includes(c.numero)" [disabled]="!c.elegible" (change)="marcarDia(c.numero, $any($event.target).checked)" [attr.aria-invalid]="primera ? invalido('d-primero') : null"><span class="casilla-texto"><span class="casilla-nombre">{{ c.nombre }}@if (c.hoy) {<span class="casilla-hoy">{{ t.hoy }}</span>}</span>@if (c.plazas) {<span [class]="'plazas plazas--' + c.plazas"><ng-container *ngTemplateOutlet="icono; context: { $implicit: c.plazas }" /><span class="cifras">{{ c.plazasTexto }}</span></span>}</span></label>
+                                      @for (c of casillas(); track c.numero) {
+                                        @let primera = c.numero === primeraElegible();
+                                        <label class="casilla-dia" [class.casilla-dia--sin]="!c.elegible"><input type="checkbox" name="dia-semana" [value]="c.numero" [attr.id]="primera ? 'd-primero' : null" [checked]="c.elegible && diasMarcados().includes(c.numero)" [disabled]="!c.elegible" (change)="marcarDia(c.numero, $any($event.target).checked)" [attr.aria-invalid]="primera ? invalido('d-primero') : null"><span class="casilla-texto"><span class="casilla-nombre">{{ c.nombre }}@if (c.hoy) {<span class="casilla-hoy">{{ t.hoy }}</span>}</span>@if (c.plazas) {<span [class]="'plazas plazas--' + c.plazas"><ng-container *ngTemplateOutlet="icono; context: { $implicit: c.plazas }" /><span class="cifras">{{ c.plazasTexto }}</span></span>}</span></label>
                                       }
                                     </div>
                                   </fieldset>
@@ -178,8 +179,8 @@
 
                   <section class="bloque-form" aria-labelledby="b-alumno">
                     <h2 id="b-alumno">{{ t.bloqueAlumno }}</h2>
-                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'nombre', etiqueta: t.nombre, auto: 'given-name', ancho: 'ancho-20' } }" />
-                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'apellidos', etiqueta: t.apellidos, auto: 'family-name' } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'nombre', etiqueta: t.nombre, auto: 'given-name', max: max.nombre, ancho: 'ancho-20' } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'apellidos', etiqueta: t.apellidos, auto: 'family-name', max: max.apellidos } }" />
                     <fieldset class="campo" id="campo-fecha" aria-describedby="fecha-pista fecha-error" [class.campo--error]="error('fecha')">
                       <legend>{{ t.fechaNacimiento }}</legend>
                       <p class="campo-pista" id="fecha-pista">{{ t.fechaPistaDatos }}</p>
@@ -191,7 +192,7 @@
                       </div>
                     </fieldset>
                     <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'dni', etiqueta: t.dni, opcional: men ? t.opcionalMenores : '', max: 9, ancho: 'ancho-12', pista: t.dniPista } }" />
-                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'direccion', etiqueta: t.direccion, auto: 'street-address' } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'direccion', etiqueta: t.direccion, auto: 'street-address', max: max.direccion } }" />
                     <fieldset class="campo" id="campo-discapacidad" aria-describedby="discapacidad-error" [class.campo--error]="error('discapacidad')">
                       <legend>{{ t.discapacidad }}</legend>
                       <div id="discapacidad-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'discapacidad' }" /></div>
@@ -206,7 +207,7 @@
                     <section class="bloque-form" id="bloque-tutor" aria-labelledby="b-tutor">
                       <h2 id="b-tutor">{{ t.bloqueTutor }}</h2>
                       <p class="pista">{{ t.pistaTutor }}</p>
-                      <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'tutorNombre', etiqueta: t.tutorNombre, auto: 'name' } }" />
+                      <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'tutorNombre', etiqueta: t.tutorNombre, auto: 'name', max: max.tutorNombre } }" />
                       <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'tutorDni', etiqueta: t.dni, max: 9, ancho: 'ancho-12' } }" />
                     </section>
                   }
@@ -214,9 +215,9 @@
                   <section class="bloque-form" aria-labelledby="b-contacto">
                     <h2 id="b-contacto">{{ t.bloqueContacto }}</h2>
                     <p class="pista">{{ espera() ? t.pistaContactoEspera : t.pistaContacto }}</p>
-                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'telefono', etiqueta: t.telefono, tipo: 'tel', auto: 'tel', modo: 'tel', ancho: 'ancho-20', pista: t.telefonoPista } }" />
-                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'telefono2', etiqueta: t.telefono2, opcional: t.opcional, tipo: 'tel', modo: 'tel', ancho: 'ancho-20' } }" />
-                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'email', etiqueta: t.email, tipo: 'email', auto: 'email', pista: t.emailPista } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'telefono', etiqueta: t.telefono, tipo: 'tel', auto: 'tel', modo: 'tel', max: max.telefono, ancho: 'ancho-20', pista: t.telefonoPista } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'telefono2', etiqueta: t.telefono2, opcional: t.opcional, tipo: 'tel', modo: 'tel', max: max.telefono, ancho: 'ancho-20' } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'email', etiqueta: t.email, tipo: 'email', auto: 'email', max: max.email, pista: t.emailPista } }" />
                   </section>
 
                   <section class="bloque-form" aria-labelledby="b-obs">
@@ -256,7 +257,7 @@
                   <section class="bloque-form" aria-labelledby="b-firma">
                     <h2 id="b-firma">{{ t.bloqueFirma }}</h2>
                     <p class="pista" id="firma-quien">{{ men ? t.firmaTutor : t.firmaAlumno }}</p>
-                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'firmante', etiqueta: t.firmante, auto: 'name' } }" />
+                    <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'firmante', etiqueta: t.firmante, auto: 'name', max: max.firmante } }" />
                     <div class="campo" id="campo-firma" [class.campo--error]="error('firma')">
                       <p class="campo-etiqueta" id="firma-etiqueta">{{ t.firma }}</p>
                       <p class="campo-pista" id="firma-pista">{{ t.firmaPista }}</p>
