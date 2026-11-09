@@ -394,3 +394,135 @@ df -h / /mnt/backups_usb
 ```bash
 docker system df
 ```
+
+## 7. Alta del dominio de una escuela (web por plantilla)
+
+Cada escuela con dominio propio tiene un fichero `nginx/escuelas/<dominio>.conf` (copia de
+`nginx/escuelas/_plantilla.conf.ejemplo`), un certificado `certbot/conf/live/<dominio>/` con el dominio y su `www`, y una
+fila principal en `organizacion_dominio`. El dominio sin `www` es el principal; `www` redirige con 301. Al arrancar el
+contenedor `frontend`, y cada vez que cambia un certificado (lo mira cada 5 minutos), `nginx-cert-reloader` activa solo
+los hosts que tienen fichero y certificado y pasan `nginx -t`; si falta el certificado o el fichero está mal, ese host
+no se sirve, sale en el log y moiskimdo.es sigue igual. Sustituya `<dominio>` por el dominio real en minúsculas (p. ej.
+`club.example`).
+
+**Orden: DNS → certificado → UNA PR con el fichero de nginx y la fila → `desplegar_migrar` → Google.** Por qué:
+
+- Un host que nginx no conoce lo recoge el `default_server` de 443 (rechaza el handshake o responde 444), así que con el
+  DNS y el certificado listos el dominio aún no sirve nada. Pero la API resuelve un host sin fila a la escuela 1: un host
+  activo en nginx sin su fila serviría datos de Moiskimdo. Por eso el fichero y la fila llegan a la vez (y la baja va en
+  orden inverso).
+- Con la fila principal en `organizacion_dominio`, `UrlsEscuela.baseFrontend` manda los enlaces de correo de esa escuela
+  al dominio nuevo en cuanto el resolutor recarga (≈60 s). Si la fila llegara antes que el fichero, los correos llevarían
+  enlaces a un host que aún no sirve. Flyway corre antes de que el backend sirva, así que el fichero (llega con `git pull`
+  y el montaje `./nginx/escuelas` de solo lectura; lo activa el reloader al recrear el contenedor del `frontend`) y la
+  fila (que aplica la migración) deben ir en la misma PR y en el mismo despliegue.
+- Google va al final: hasta que el host sirve no hay nada que probar, y el cambio de `GOOGLE_REDIRECT_URI` solo hace
+  falta con el primer dominio de escuela.
+
+1. DNS en Cloudflare (o donde esté el dominio): registro `A` de `<dominio>` y de `www.<dominio>` a la IP pública del
+   servidor (la misma que `moiskimdo.es`), en modo «Solo DNS» (nube gris, no «Proxied»). Comprobar desde cualquier equipo:
+
+```bash
+dig +short <dominio> ; dig +short www.<dominio> ; dig +short moiskimdo.es
+```
+
+Debe salir: la misma IP en las tres líneas. Si sale otra (las de Cloudflare cuando la nube está naranja) o nada: parar
+y esperar a que propague o corregir el registro.
+
+2. Certificado, primero en prueba. El `server` del puerto 80 ya sirve el reto ACME (`/.well-known/acme-challenge/`) a
+   cualquier dominio, no hace falta tocar nginx:
+
+```bash
+cd /opt/taemoi && docker compose -f docker-compose.production.yml run --rm --no-deps --entrypoint certbot certbot certonly --webroot -w /var/www/certbot -d <dominio> -d www.<dominio> --cert-name <dominio> --non-interactive --agree-tos --dry-run
+```
+
+Debe salir: `The dry run was successful.` Si falla el reto (`Invalid response`, `Timeout`): parar y revisar el paso 1.
+Si pide correo (no hay cuenta ACME registrada), añada `--email <correo>`. Después, la misma orden sin `--dry-run`:
+
+```bash
+cd /opt/taemoi && docker compose -f docker-compose.production.yml run --rm --no-deps --entrypoint certbot certbot certonly --webroot -w /var/www/certbot -d <dominio> -d www.<dominio> --cert-name <dominio> --non-interactive --agree-tos
+```
+
+Debe salir: `Successfully received certificate`. Comprobarlo:
+
+```bash
+cd /opt/taemoi && docker compose -f docker-compose.production.yml run --rm --no-deps --entrypoint certbot certbot certificates --cert-name <dominio>
+```
+
+Debe salir: `Domains: <dominio> www.<dominio>` y la fecha de caducidad. El host aún no se sirve: todavía no hay fichero de
+nginx. El contenedor `certbot` ya renueva este certificado con el resto (`certbot renew` cada 12 h).
+
+> Pendiente de comprobar en el servidor: las secciones 2 (:87) y 3 (:233) se contradicen sobre el contenedor `certbot`
+> (`up -d --build backend frontend` no lo nombra; la comprobación de :233 espera verlo `Up`). Antes del primer alta,
+> confirmar con `docker ps` que existe y está levantado; no se resuelve aquí.
+
+3. Una sola PR a `develop` (no se toca el servidor) con las dos cosas juntas. El nombre del fichero es el dominio
+   principal en minúsculas, igual que `--cert-name`:
+
+```bash
+sed 's/__DOMINIO__/<dominio>/g' nginx/escuelas/_plantilla.conf.ejemplo > nginx/escuelas/<dominio>.conf
+```
+
+   y la migración Flyway de datos (siguiente versión libre) con la fila principal, sin `www` (lo redirige nginx).
+   Escríbala repetible, como la semilla de `V32_4__organizacion_dominio.sql`:
+
+```sql
+INSERT INTO organizacion_dominio (organizacion_id, host, principal)
+SELECT <id de la escuela>, '<dominio>', TRUE
+FROM DUAL
+WHERE EXISTS (SELECT 1 FROM organizacion WHERE id = <id de la escuela>)
+  AND NOT EXISTS (SELECT 1 FROM organizacion_dominio WHERE host = '<dominio>');
+```
+
+4. Desplegar con `desplegar_migrar` (sección 3, con copia de seguridad): el contenedor `frontend` tiene que recrearse para
+   ver el fichero nuevo (`git pull` solo no basta) y la migración inserta la fila. Después:
+
+```bash
+docker logs taemoi-frontend-prod 2>&1 | grep "School host"
+```
+
+Debe salir: `School host <dominio> active`. Si sale `not active: no certificate`: falta el paso 2 (en cuanto exista el
+certificado se activa solo, en 5 minutos como mucho, sin volver a desplegar). Si sale `not active: nginx -t failed`:
+el fichero tiene un error (el detalle va en las líneas siguientes del log); moiskimdo.es sigue servido.
+
+```bash
+docker exec taemoi-frontend-prod nginx -t
+```
+
+Debe salir: `syntax is ok` y `test is successful`. Comprobar desde cualquier equipo:
+
+```bash
+curl -sI https://<dominio>/ | head -1 ; curl -sI https://www.<dominio>/tarifas | grep -iE '^(HTTP|location)' ; curl -sI https://<dominio>/index.html | grep -iE '^(HTTP|location)' ; curl -sI https://<dominio>/favicon.ico | head -1 ; curl -s https://<dominio>/robots.txt | head -3
+```
+
+Debe salir: `200`; `301` con `location: https://<dominio>/tarifas`; `301` con `location: https://<dominio>/`; `404`
+(el favicon de Moiskimdo no se sirve en el host de la escuela); y el `robots.txt` que genera la API para esa escuela (no
+el de Moiskimdo). moiskimdo.es, igual que antes:
+
+```bash
+curl -sI https://moiskimdo.es/ | head -1 ; curl -sI https://moiskimdo.es/index-plantilla.html | head -1
+```
+
+Debe salir: `200` y `404`.
+
+5. Google Cloud Console (cliente OAuth de la aplicación): añadir, para `<dominio>` y para `www.<dominio>`, el URI de
+   redirección autorizado `https://<host>/login/oauth2/code/google` y el origen de JavaScript autorizado
+   `https://<host>`; en la pantalla de consentimiento, `<dominio>` en dominios autorizados (puede pedir verificarlo en
+   Search Console).
+
+   Después, el `.env` del servidor (una sola vez, con el primer dominio de escuela): `GOOGLE_REDIRECT_URI` con la
+   plantilla, para que cada host use su propia URI de redirección (en moiskimdo.es sale la misma de hoy):
+
+```bash
+grep GOOGLE_REDIRECT_URI /opt/taemoi/.env
+```
+
+Debe salir: `GOOGLE_REDIRECT_URI={baseUrl}/login/oauth2/code/{registrationId}`. Si sale otra URI fija: cambiarla a esa
+línea y hacer el despliegue normal de las secciones 2/3. No usar `docker compose … up -d backend` suelto: con
+`pull_policy: always` y el `.env` en `:develop` bajaría un backend más nuevo, con posible migración y sin copia de
+seguridad. Si solo hay que recrear el contenedor con la imagen que ya está en el servidor:
+`docker compose -f docker-compose.production.yml up -d --pull never backend`.
+
+**Baja de un dominio:** orden inverso. Primero quitar `nginx/escuelas/<dominio>.conf` y desplegar (el host deja de
+servirse); después la migración que borra la fila de `organizacion_dominio`, con `desplegar_migrar`. Si la fila se
+quitara antes, el dominio seguiría apuntando al servidor y su host caería en la escuela 1.

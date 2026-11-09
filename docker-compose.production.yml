@@ -78,6 +78,10 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx-production.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/app-locations.conf:/etc/nginx/app-locations.conf:ro
+      - ./nginx/ssl-comun.conf:/etc/nginx/ssl-comun.conf:ro
+      # Hosts de escuela (<dominio>.conf): nginx-cert-reloader activa solo los que tienen certificado.
+      - ./nginx/escuelas:/etc/nginx/escuelas:ro
       - ./src-frontend/nginx-cabeceras-seguridad.conf:/etc/nginx/cabeceras-seguridad.conf:ro
       - ./src-frontend/nginx-cert-reloader.sh:/usr/local/bin/nginx-cert-reloader:ro
       - ./certbot/conf:/etc/letsencrypt:ro
