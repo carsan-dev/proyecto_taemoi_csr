@@ -20,6 +20,18 @@ export interface SedeProfesor {
 export interface GradoProfesor {
   codigo: string;
   nombre: string;
+  /** Colores del grado en el catálogo de la escuela (`color1` abajo, `color2` arriba); nulos si no los tiene. */
+  color1?: string | null;
+  color2?: string | null;
+}
+
+/**
+ * Rallas hacia el examen (decisiones 510-513): `mediasRallas` de 0 a 10 (2 medias = 1 ralla) solo si se usan
+ * (`aplicaRallas`); si no, `null`. Opcionales: un API anterior no las manda.
+ */
+export interface RallasDeDeporte {
+  mediasRallas?: number | null;
+  aplicaRallas?: boolean;
 }
 
 /** ProfesorDTOs.Grupo */
@@ -34,7 +46,7 @@ export interface GrupoProfesor {
 }
 
 /** ProfesorDTOs.DeporteEnLista */
-export interface DeporteEnLista {
+export interface DeporteEnLista extends RallasDeDeporte {
   deporte: string;
   deporteNombre: string;
   grado: GradoProfesor | null;
@@ -70,7 +82,7 @@ export interface ContactoAlumno {
 }
 
 /** ProfesorDTOs.DeporteDelAlumno */
-export interface DeporteDelAlumno {
+export interface DeporteDelAlumno extends RallasDeDeporte {
   deporte: string;
   deporteNombre: string;
   grado: GradoProfesor | null;

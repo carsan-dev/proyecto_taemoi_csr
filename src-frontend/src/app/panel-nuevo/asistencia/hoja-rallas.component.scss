@@ -1,0 +1,209 @@
+// Hoja de rallas (boceto `boceto-rallas-cinturon.html`, hoja-0 a hoja-5): la forma del diálogo del panel
+// (dialogo-festivo.component.scss, decisión 271) con la punta grande, la cuenta, cuatro pasos y, con las 5 rallas, el
+// aviso en verde y «Marcar apto». Solo tokens de panel-nuevo.scss bajo .pn.
+@use '../capas/capas' as c;
+
+:host {
+  display: contents;
+}
+
+.rallas-hoja {
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  font-variant-numeric: tabular-nums;
+  box-shadow: var(--pn-sombra-dialogo);
+
+  &::backdrop {
+    background: var(--pn-velo);
+  }
+
+  button:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.rallas-hoja__caja {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.rallas-hoja__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 0 24px;
+}
+
+.rallas-hoja__titulos {
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.rallas-hoja__titulo {
+  margin: 0;
+  font: var(--pn-titulo-dialogo);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.rallas-hoja__sub {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.rallas-hoja__cerrar {
+  @include c.boton-icono;
+}
+
+.rallas-hoja__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 24px 24px;
+}
+
+.rallas-hoja__muestra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 16px 0;
+  border-top: 1px solid var(--pn-linea);
+  border-bottom: 1px solid var(--pn-linea);
+}
+
+.rallas-hoja__cuenta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    font: 700 1.125rem / 1.25 var(--pn-fuente-titulo);
+  }
+}
+
+.rallas-hoja__falta {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// Cuatro pasos en una fila; por debajo de 400 px, en dos (quitar arriba, añadir abajo).
+.rallas-hoja__pasos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rallas-hoja__paso {
+  @include c.boton-secundario;
+  min-height: 48px;
+  padding: 0 6px;
+  font-size: 0.9375rem;
+
+  // Deshabilitado del boceto: sigue enfocable (aria-disabled) y se ve apagado.
+  &[aria-disabled='true'] {
+    border-color: var(--pn-linea);
+    background: var(--pn-superficie-2);
+    color: var(--pn-tinta-3);
+  }
+}
+
+.rallas-hoja__nota {
+  margin: -8px 0 0;
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.rallas-hoja__completa {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--pn-bien) 40%, var(--pn-linea-fuerte));
+  border-radius: var(--pn-radio-m);
+  background: color-mix(in srgb, var(--pn-bien) 6%, var(--pn-superficie));
+
+  svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    color: var(--pn-bien);
+  }
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.rallas-hoja__apto {
+  @include c.boton-primario;
+  width: 100%;
+  min-height: 48px;
+  font-size: 0.9375rem;
+}
+
+// Hoja inferior (por debajo de 768 px): pegada abajo, radio 14 y asa.
+.rallas-hoja--hoja {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100dvh - 24px);
+  margin: auto 0 0;
+  border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+  box-shadow: var(--pn-sombra-hoja);
+
+  .rallas-hoja__caja {
+    max-height: calc(100dvh - 24px);
+    padding: 8px 0 env(safe-area-inset-bottom, 0px);
+  }
+
+  .rallas-hoja__asa {
+    flex: none;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto;
+    border-radius: var(--pn-radio-pastilla);
+    background: var(--pn-linea-fuerte);
+  }
+
+  .rallas-hoja__cabecera {
+    padding: 0 8px 0 16px;
+  }
+
+  .rallas-hoja__titulos {
+    padding-top: 10px;
+  }
+
+  .rallas-hoja__cerrar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .rallas-hoja__cuerpo {
+    padding: 4px 16px 24px;
+  }
+}
+
+@media (max-width: 399.98px) {
+  .rallas-hoja__pasos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -26,14 +26,15 @@
 
   // Sin `overflow: hidden`: el menú de motivo sale de su fila. Las esquinas las redondean la primera y la última fila.
   .pasar-lista__lista { margin: 0; padding: 0; list-style: none; border: 1px solid var(--pn-linea); border-radius: var(--pn-radio-m); background: var(--pn-superficie); }
-  .pasar-lista__item { position: relative; display: flex; align-items: center; background: var(--pn-superficie); transition: background-color var(--pn-transicion); }
+  // Fila: [fila · motivo · cinturón] (variante A del boceto de rallas): el cinturón en su columna a la derecha.
+  .pasar-lista__item { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'fila motivo cinto'; align-items: stretch; background: var(--pn-superficie); transition: background-color var(--pn-transicion); }
   .pasar-lista__item:first-child { border-radius: var(--pn-radio-m) var(--pn-radio-m) 0 0; }
   .pasar-lista__item:last-child { border-radius: 0 0 var(--pn-radio-m) var(--pn-radio-m); }
   .pasar-lista__item:only-child { border-radius: var(--pn-radio-m); }
   .pasar-lista__item + .pasar-lista__item { border-top: 1px solid var(--pn-linea); }
   .pasar-lista__item:not(.pasar-lista__item--presente):hover { background: var(--pn-superficie-2); }
   .pasar-lista__item--presente { background: color-mix(in srgb, var(--pn-bien) 7%, var(--pn-superficie)); }
-  .pasar-lista__fila { display: flex; flex: 1; align-items: center; gap: 12px; min-width: 0; min-height: 60px; padding: 8px 16px 8px 12px; border: 0; border-radius: inherit; background: transparent; color: var(--pn-tinta); text-align: left; cursor: pointer; font: inherit; }
+  .pasar-lista__fila { grid-area: fila; display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 60px; padding: 8px 8px 8px 12px; border: 0; border-radius: inherit; background: transparent; color: var(--pn-tinta); text-align: left; cursor: pointer; font: inherit; }
   .pasar-lista__fila:focus-visible { outline-offset: -3px; }
   .pasar-lista__fila:disabled { cursor: default; }
   .pasar-lista__casilla { display: flex; flex: none; align-items: center; justify-content: center; width: 28px; height: 28px; box-sizing: border-box; border: 2px solid var(--pn-borde-control); border-radius: var(--pn-radio-s); background: var(--pn-superficie); color: #fff; }
@@ -41,11 +42,26 @@
   .pasar-lista__casilla svg { width: 18px; height: 18px; }
   .pasar-lista__identidad { flex: 1; min-width: 0; }
   .pasar-lista__nombre { display: block; font: var(--pn-cuerpo); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-  .pasar-lista__grado { display: flex; align-items: center; gap: 6px; font: var(--pn-secundario); color: var(--pn-tinta-2); }
+  .pasar-lista__grado { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font: var(--pn-secundario); color: var(--pn-tinta-2); }
+  .pasar-lista__grado-texto { min-width: 0; }
+  .pasar-lista__oculto { @include c.oculto; }
   .pasar-lista__presente { flex: none; font: var(--pn-etiqueta); color: var(--pn-bien); }
+  .pasar-lista__grado-presente { display: none; font: var(--pn-etiqueta); color: var(--pn-bien); }
+>>>>
+
+
+  // Columna del cinturón: botón aparte de la fila (abre la hoja) o, sin permiso o sin rallas, solo la punta.
+  .pasar-lista__cinto { grid-area: cinto; display: flex; flex: none; align-items: center; justify-content: center; min-width: 44px; padding: 0 10px 0 2px; border: 0; background: none; }
+  button.pasar-lista__cinto { cursor: pointer; }
+  button.pasar-lista__cinto:focus-visible { outline-offset: -3px; border-radius: var(--pn-radio-m); }
+  .pasar-lista__cinto-marco { display: flex; align-items: center; justify-content: center; padding: 6px 4px; border: 1px solid transparent; border-radius: var(--pn-radio-s); transition: background-color var(--pn-transicion), border-color var(--pn-transicion); }
+  button.pasar-lista__cinto .pasar-lista__cinto-marco { border-color: var(--pn-linea-fuerte); background: var(--pn-superficie); }
+  button.pasar-lista__cinto:hover .pasar-lista__cinto-marco,
+  button.pasar-lista__cinto[aria-expanded='true'] .pasar-lista__cinto-marco { border-color: var(--pn-acento-borde); background: var(--pn-acento-suave); }
+  .pasar-lista__festivo-rallas { margin-top: 12px; }
 
   // Motivo de la falta: botón hermano de la fila (no anidado), texto en acento; elegido, pastilla acento-suave.
-  .pasar-lista__motivo { display: flex; flex: none; align-items: center; align-self: stretch; margin-right: 6px; padding: 0 6px; border: 0; border-radius: var(--pn-radio-m); background: none; cursor: pointer; }
+  .pasar-lista__motivo { grid-area: motivo; display: flex; flex: none; align-items: center; align-self: stretch; margin-right: 2px; padding: 0 6px; border: 0; border-radius: var(--pn-radio-m); background: none; cursor: pointer; }
   .pasar-lista__motivo:focus-visible { outline-offset: -3px; }
   .pasar-lista__motivo:disabled { cursor: default; }
   .pasar-lista__motivo-caja { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 8px 0 10px; border: 1px solid transparent; border-radius: var(--pn-radio-pastilla); color: var(--pn-acento); font: var(--pn-etiqueta); white-space: nowrap; transition: background-color var(--pn-transicion), border-color var(--pn-transicion); }
@@ -110,6 +126,19 @@
   .pasar-lista__opcion-fecha { font: var(--pn-cuerpo); font-weight: 600; }
   .pasar-lista__opcion-estado { display: inline-flex; align-items: center; gap: 6px; flex: none; font: var(--pn-secundario); color: var(--pn-tinta-2); font-variant-numeric: tabular-nums; }
   .pasar-lista__opcion-estado svg { width: 16px; height: 16px; }
+}
+
+// Por debajo de 480 px, la fila ausente: el motivo baja bajo el nombre y el cinturón ocupa la columna derecha en toda la
+// altura (duda h del boceto de rallas). Por debajo de 360 px, «Presente» pasa a la línea del grado.
+@media (max-width: 479.98px) {
+  .pn.pasar-lista .pasar-lista__item { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'fila cinto' 'motivo cinto'; }
+  .pn.pasar-lista .pasar-lista__item:not(.pasar-lista__item--presente) > .pasar-lista__fila { min-height: 48px; padding-bottom: 0; }
+  .pn.pasar-lista .pasar-lista__item > .pasar-lista__motivo { justify-self: start; align-self: start; min-height: 44px; margin: 0 0 4px 46px; }
+}
+
+@media (max-width: 359.98px) {
+  .pn.pasar-lista .pasar-lista__fila > .pasar-lista__presente { display: none; }
+  .pn.pasar-lista .pasar-lista__grado-presente { display: inline; }
 }
 
 @media (max-width: 767.98px) {
