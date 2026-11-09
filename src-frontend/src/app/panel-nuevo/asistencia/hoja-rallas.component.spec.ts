@@ -108,16 +108,22 @@ describe('HojaRallasComponent (hoja de rallas, decisiones 510-513)', () => {
     expect(texto(dialogo().querySelector('[data-apto]'))).toBe('Marcar apto para examen');
   });
 
-  it('la fila de pasos no se mueve entre cuentas cortas y largas', () => {
+  it('la fila de pasos no se mueve de 0 a 9 medias, a 320, 375 y 440 px de hoja', () => {
     crear(0);
-    const arriba = (): number => paso(1).getBoundingClientRect().top;
-    const sinRallas = arriba();
-    cambiarMedias(5);
-    expect(arriba()).toBe(sinRallas);
-    cambiarMedias(1);
-    expect(arriba()).toBe(sinRallas);
-    cambiarMedias(9);
-    expect(arriba()).toBe(sinRallas);
+    for (const ancho of [320, 375, 440]) {
+      dialogo().style.width = `${ancho}px`;
+      dialogo().style.maxWidth = 'none';
+      cambiarMedias(0);
+      const sinRallas = paso(1).getBoundingClientRect().top - dialogo().getBoundingClientRect().top;
+      const cuenta = dialogo().querySelector('.rallas-hoja__cuenta')!.getBoundingClientRect();
+      const punta = dialogo().querySelector('pn-cinturon')!.getBoundingClientRect();
+      for (let m = 1; m <= 9; m++) {
+        cambiarMedias(m);
+        expect(paso(1).getBoundingClientRect().top - dialogo().getBoundingClientRect().top).withContext(`${ancho}px, ${m} medias`).toBe(sinRallas);
+        expect(dialogo().querySelector('.rallas-hoja__cuenta')!.getBoundingClientRect().left).toBeGreaterThanOrEqual(punta.right - 1);
+      }
+      expect(cuenta.left).toBeGreaterThanOrEqual(punta.right - 1);
+    }
   });
 
   it('un paso deshabilitado sigue apagado con el foco puesto', () => {

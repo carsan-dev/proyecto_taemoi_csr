@@ -10,10 +10,8 @@
 .rallas-hoja {
   width: 440px;
   max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - var(--rallas-arriba) - 16px);
-  // Anclado arriba, no centrado: si crece o encoge por debajo (nota, aviso de «completa»), los pasos no se mueven.
-  --rallas-arriba: clamp(16px, 12dvh, 96px);
-  margin: var(--rallas-arriba) auto auto;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -37,7 +35,7 @@
 .rallas-hoja__caja {
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - var(--rallas-arriba) - 16px);
+  max-height: calc(100dvh - 32px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -79,13 +77,13 @@
   padding: 8px 24px 24px;
 }
 
-// Maquetación estable: la punta y la cuenta van siempre una sobre otra (en fila, el texto largo bajaba y movía los
-// pasos), y la cuenta reserva sus dos líneas, así que la fila de pasos no se mueve entre toques.
+// Como el boceto: la punta a la izquierda y la cuenta a la derecha, siempre en fila. El texto se parte dentro de su
+// columna y esta reserva su altura (cuenta + lo que falta), así que la fila de pasos no se mueve entre toques.
 .rallas-hoja__muestra {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 12px 20px;
   padding: 16px 0;
   border-top: 1px solid var(--pn-linea);
   border-bottom: 1px solid var(--pn-linea);
@@ -94,10 +92,11 @@
 .rallas-hoja__cuenta {
   display: flex;
   flex-direction: column;
-  align-self: stretch;
+  flex: 1;
+  justify-content: center;
   gap: 2px;
   min-width: 0;
-  min-height: 3rem;
+  min-height: 4.25rem;
 
   strong {
     font: 700 1.125rem / 1.25 var(--pn-fuente-titulo);
@@ -191,6 +190,11 @@
   .rallas-hoja__caja {
     max-height: calc(100dvh - 24px);
     padding: 8px 0 env(safe-area-inset-bottom, 0px);
+  }
+
+  // Más estrecha: el texto se parte en más líneas dentro de su columna.
+  .rallas-hoja__cuenta {
+    min-height: 8rem;
   }
 
   .rallas-hoja__asa {
