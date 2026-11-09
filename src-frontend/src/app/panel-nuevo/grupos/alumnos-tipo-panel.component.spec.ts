@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
+import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { AlumnosTipoPanelComponent } from './alumnos-tipo-panel.component';
@@ -68,5 +69,27 @@ describe('AlumnosTipoPanelComponent cinturon', () => {
     expect(componente.medias({ mediasRallas: 5, aplicaRallas: true })).toBe(5);
     expect(componente.medias({ mediasRallas: 5, aplicaRallas: false })).toBeNull();
     expect(componente.medias({ mediasRallas: null, aplicaRallas: false })).toBeNull();
+  });
+});
+
+describe('AlumnosTipoPanelComponent género en «Lista/Listo para examen»', () => {
+  it('FEMENINO da «Lista para examen» y sin género «Listo para examen»', () => {
+    const alumno = (id: number, genero: string | null) => ({
+      id, nombre: 'A' + id, apellidos: 'B', genero, grado: 'Amarillo', codigoGrado: 'AMARILLO', deporte: 'TAEKWONDO',
+      mediasRallas: 10, aplicaRallas: true, activo: true,
+    });
+    TestBed.configureTestingModule({
+      imports: [AlumnosTipoPanelComponent],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
+        { provide: LecturasPanelService, useValue: { alumnosPorTipo: () => of([alumno(1, 'FEMENINO'), alumno(2, null)]) } },
+        { provide: CatalogoService, useValue: { catalogo: () => CATALOGO, cargar: () => of(null) } },
+        { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: of(false), emailCambio: of(null) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(AlumnosTipoPanelComponent);
+    fixture.detectChanges();
+    const textos = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-listo]')).map((e) => e.textContent?.trim());
+    expect(textos).toEqual(['Lista para examen', 'Listo para examen']);
   });
 });

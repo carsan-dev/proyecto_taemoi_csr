@@ -176,6 +176,11 @@ describe('FichaProfesorPanelComponent', () => {
     expect(bloqueDe('Taekwondo').querySelector('[data-listo]')?.textContent?.trim()).toBe('Listo para examen');
   });
 
+  it('rallas: con las 5 y género FEMENINO, «Lista para examen»', () => {
+    crear({ ...ficha([deporte({ mediasRallas: 10, aplicaRallas: true })]), genero: 'FEMENINO' });
+    expect(bloqueDe('Taekwondo').querySelector('[data-listo]')?.textContent?.trim()).toBe('Lista para examen');
+  });
+
   it('rallas: sin usarse (PUM/DAN o disciplina apagada), ni rallas ni texto', () => {
     crear(ficha([deporte({ mediasRallas: null, aplicaRallas: false })]));
     expect(bloqueDe('Taekwondo').querySelectorAll('[data-ralla]').length).toBe(0);

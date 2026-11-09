@@ -120,7 +120,7 @@
               @if (gradoDe(d); as grado) {
                 @let medias = mediasVisibles(d);
                 <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" />{{ grado.texto }}
-                @if (medias === 10) { <pn-distintivo-examen data-listo /> }
+                @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="ficha?.genero" /> }
                 @if (medias !== null) { <span class="ficha__detalle" data-rallas>{{ textoCuentaRallas(medias) }}</span> }
               } @else {
                 Sin grado
@@ -236,7 +236,7 @@
               @if (gradoDe(d); as grado) {
                 @let medias = mediasVisibles(d);
                 <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" />{{ grado.texto }}
-                @if (medias === 10) { <pn-distintivo-examen data-listo /> }
+                @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="ficha?.genero" /> }
                 @if (medias !== null) { <span class="ficha__detalle" data-rallas>{{ textoCuentaRallas(medias) }}</span> }
               } @else {
                 Sin grado

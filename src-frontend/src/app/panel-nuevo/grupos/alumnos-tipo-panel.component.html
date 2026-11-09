@@ -50,7 +50,7 @@
               <span class="tipo__grado">
                 @if (cinturon(a); as c) {<pn-cinturon [color1]="c.color1" [color2]="c.color2" [medias]="m" />}
                 <span>{{ a.grado }}@if (m !== null) {<span class="tipo__oculto">, {{ textoOcultoRallas(m) }}</span>}</span>
-                @if (m === 10) {<pn-distintivo-examen data-listo />}
+                @if (m === 10) {<pn-distintivo-examen data-listo [genero]="a.genero" />}
               </span>
               }
             </span>

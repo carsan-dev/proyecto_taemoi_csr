@@ -69,7 +69,7 @@
                     @if (gradoDe(deporte); as grado) {
                       <pn-cinturon class="grupo-profesor__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" />
                       {{ deporte.deporteNombre }} · {{ grado.texto }}@if (medias !== null) {<span class="grupo-profesor__oculto">, {{ textoOcultoRallas(medias) }}</span>}
-                      @if (medias === 10) { <pn-distintivo-examen data-listo /> }
+                      @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="alumno.genero" /> }
                     } @else {
                       <pn-cinturon class="grupo-profesor__cinto" [sinGrado]="true" />
                       {{ deporte.deporteNombre }} · Sin grado

@@ -108,6 +108,15 @@ describe('GrupoPanelComponent', () => {
     expect(fila.querySelector('.grupo-profesor__avatar')?.textContent?.trim()).toBe('LR');
   });
 
+  it('rallas: con las 5 y género FEMENINO, «Lista para examen»', () => {
+    cargar([
+      { id: 31, nombre: 'Marta', apellidos: 'Gil', genero: 'FEMENINO', deportes: [
+        { deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'VERDE', nombre: 'Verde' }, fechaGrado: null, apto: false, delGrupo: true, mediasRallas: 10, aplicaRallas: true },
+      ] },
+    ]);
+    expect(elemento().querySelector('.grupo-profesor__fila [data-listo]')?.textContent?.trim()).toBe('Lista para examen');
+  });
+
   it('rallas (solo lectura): el cinturón con sus rallas, el texto oculto y «Listo para examen» con las 5; sin grado, punta vacía', () => {
     cargar([
       { id: 21, nombre: 'Lucía', apellidos: 'Romero', deportes: [
