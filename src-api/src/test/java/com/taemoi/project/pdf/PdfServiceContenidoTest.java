@@ -573,4 +573,52 @@ class PdfServiceContenidoTest {
 				Presentacion.de("Escuela Moi Kim Do · Calle Ficticia 1 · Temporada 2026/2027"),
 				"Vista previa con los datos de ejemplo fijos del generador; fecha de firma = HOY (presentación).");
 	}
+
+	// ------------------------------------------------------------------ rallas en la celda Grado
+
+	private static final String LEYENDA_RALLAS = "Rallas en la celda Grado: cada raya negra es una ralla; media raya, media ralla.";
+
+	private String textoAsistenciaTurno9() throws Exception {
+		byte[] pdf = conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(9L)));
+		return String.join(" ", ContenidoPdf.lineas(pdf));
+	}
+
+	private void rallas(com.taemoi.project.entities.AlumnoDeporte inscripcion, int medias, boolean disciplinaActiva) {
+		inscripcion.getDisciplina().setRallasActivas(disciplinaActiva);
+		ReflectionTestUtils.setField(inscripcion, "mediasRallas", medias);
+	}
+
+	@Test
+	void leyendaDeRallasSoloSiAlgunaFilaLlevaRallas() throws Exception {
+		for (int medias : new int[] { 1, 5, 9, 10 }) {
+			rallas(datos.anaTkd, medias, true);
+			assertTrue(textoAsistenciaTurno9().contains(LEYENDA_RALLAS), "medias=" + medias);
+		}
+		rallas(datos.anaTkd, 0, true);
+		assertFalse(textoAsistenciaTurno9().contains("Rallas en la celda Grado"), "0 medias");
+	}
+
+	@Test
+	void sinLeyendaConLaDisciplinaDesactivada() throws Exception {
+		rallas(datos.anaTkd, 5, false);
+		assertFalse(textoAsistenciaTurno9().contains("Rallas en la celda Grado"));
+	}
+
+	@Test
+	void sinLeyendaSinGrado() throws Exception {
+		rallas(datos.anaTkd, 5, true);
+		datos.anaTkd.setGrado(null);
+		assertFalse(textoAsistenciaTurno9().contains("Rallas en la celda Grado"));
+	}
+
+	@Test
+	void sinLeyendaConGradoDanOPum() throws Exception {
+		// Turno 11: Bruno (azul) y Eva (1.º DAN). Eva con rallas guardadas y la disciplina activa: no se pintan.
+		rallas(datos.evaTkd, 5, true);
+		byte[] pdf = conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(11L)));
+		assertFalse(String.join(" ", ContenidoPdf.lineas(pdf)).contains("Rallas en la celda Grado"), "DAN");
+		datos.evaTkd.setGrado(datos.catalogo.grado("TAEKWONDO", "ROJO_NEGRO_2_PUM"));
+		pdf = conHoy(() -> servicio.generarListadoAsistenciaPorTurnos(2026, 10, List.of(11L)));
+		assertFalse(String.join(" ", ContenidoPdf.lineas(pdf)).contains("Rallas en la celda Grado"), "PUM");
+	}
 }
