@@ -262,12 +262,11 @@
       </section>
     }
   }
-</ng-template>
-
-@if (deporteHoja; as d) {
-  @if (gradoDe(d); as g) {
-    <pn-hoja-rallas [nombre]="nombre" [nombreCorto]="ficha?.nombre ?? ''" [subtitulo]="subtituloHoja(d)"
-      [color1]="g.color1" [color2]="g.color2" [medias]="mediasVisibles(d) ?? 0" [genero]="ficha?.genero ?? null" [enCurso]="rallasEnCurso"
-      (paso)="darPaso($event)" (apto)="marcarAptoDesdeHoja()" (cerrar)="cerrarRallas()" />
+  @if (deporteHoja; as d) {
+    @if (gradoDe(d); as g) {
+      <pn-hoja-rallas [nombre]="nombre" [nombreCorto]="ficha?.nombre ?? ''" [subtitulo]="subtituloHoja(d)"
+        [color1]="g.color1" [color2]="g.color2" [medias]="mediasVisibles(d) ?? 0" [genero]="ficha?.genero ?? null" [enCurso]="rallasEnCurso"
+        (paso)="darPaso($event)" (apto)="marcarAptoDesdeHoja()" (cerrar)="cerrarRallas()" />
+    }
   }
-}
+</ng-template>
