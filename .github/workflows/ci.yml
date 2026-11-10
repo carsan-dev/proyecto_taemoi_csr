@@ -208,7 +208,8 @@ jobs:
   e2e:
     needs: ya-probado
     if: ${{ !cancelled() && needs.ya-probado.outputs.probado != 'true' }}
-    runs-on: ubuntu-latest
+    # Playwright 1.55 cannot install Chromium on ubuntu-latest (Ubuntu 26.04 since 19/10/2026).
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       E2E_ADMIN_EMAIL: e2e-admin@taemoi.test

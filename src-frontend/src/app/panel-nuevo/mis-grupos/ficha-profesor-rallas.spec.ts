@@ -151,6 +151,16 @@ describe('FichaProfesorPanelComponent · rallas desde la ficha (decisión 514)',
     expect(document.activeElement).toBe(punta());
   });
 
+  it('en la página propia, la hoja cuelga del alcance .pn de la ficha (tokens y acento de la escuela)', () => {
+    crear(ficha([deporte()]));
+    abrir();
+    const raiz = document.querySelector<HTMLElement>('pn-hoja-rallas')!;
+    expect(raiz).not.toBeNull();
+    const alcance = raiz.closest('.pn');
+    expect(alcance).not.toBeNull();
+    expect(alcance!.matches('section.ficha--pagina')).toBeTrue();
+  });
+
   it('un paso se guarda al tocar, optimista; la lista del grupo recibe el valor nuevo', () => {
     crear(ficha([deporte()]));
     abrir();
