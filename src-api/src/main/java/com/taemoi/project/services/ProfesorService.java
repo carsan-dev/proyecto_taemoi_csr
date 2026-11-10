@@ -110,6 +110,8 @@ public class ProfesorService {
 	/**
 	 * Sus grupos (§5.1), por nombre: sede, su rol, disciplina, nº de alumnos activos y sus turnos (pieza 8b-3o: los de
 	 * todos sus grupos en una consulta, la misma que el resumen de gestión). Sin grupos, lista vacía.
+	 * Cuenta como Grupos en gestión (decisión 310): alumno activo que, si tiene alguna inscripción, la tiene activa en la
+	 * disciplina del grupo (sin ninguna inscripción, entra).
 	 */
 	@Transactional(readOnly = true)
 	public List<ProfesorDTOs.Grupo> misGrupos() {
@@ -120,8 +122,10 @@ public class ProfesorService {
 		Map<Long, RolAsignacionProfesor> roles = rolesEnSusGrupos(grupos);
 		Map<Long, Long> activos = new HashMap<>();
 		for (Object[] f : em.createQuery("""
-				SELECT g.id, COUNT(a.id) FROM Grupo g JOIN g.alumnos a
-				WHERE g.id IN :grupos AND a.activo = TRUE GROUP BY g.id""", Object[].class)
+				SELECT g.id, COUNT(DISTINCT a.id) FROM Grupo g JOIN g.alumnos a
+				WHERE g.id IN :grupos AND a.activo = TRUE AND (NOT EXISTS (SELECT ad.id FROM AlumnoDeporte ad
+				WHERE ad.alumno = a) OR EXISTS (SELECT ad2.id FROM AlumnoDeporte ad2 WHERE ad2.alumno = a
+				AND ad2.activo = TRUE AND ad2.disciplina.codigo = g.disciplina.codigo)) GROUP BY g.id""", Object[].class)
 				.setParameter("grupos", grupos).getResultList()) {
 			activos.put((Long) f[0], (Long) f[1]);
 		}
@@ -149,7 +153,8 @@ public class ProfesorService {
 	 * Alumnos ACTIVOS de un grupo suyo (§5.2), por nombre, apellidos e id (el orden de Pasar lista), cada uno con el id
 	 * de su foto y sus deportes activos (grado con nombre, fecha de grado y apto). Dos consultas, sin N+1. Grupo que no
 	 * es suyo → 403. La condición del {@code LEFT JOIN} solo quita el id de la foto de un anonimizado: no cambia quién
-	 * sale en la lista.
+	 * sale en la lista. Mismo criterio que Grupos en gestión (decisión 310): sale el alumno activo que, si tiene alguna
+	 * inscripción, la tiene activa en la disciplina del grupo (sin ninguna inscripción, sale).
 	 */
 	@Transactional(readOnly = true)
 	public List<ProfesorDTOs.AlumnoDeGrupo> alumnosDelGrupo(Long grupoId) {
@@ -167,7 +172,10 @@ public class ProfesorService {
 		for (Object[] f : em.createQuery("""
 				SELECT a.id, a.nombre, a.apellidos, foto.id, a.genero FROM Grupo g JOIN g.alumnos a
 				LEFT JOIN a.fotoAlumno foto ON a.anonimizadoEn IS NULL
-				WHERE g.id = :grupo AND a.activo = TRUE ORDER BY a.nombre, a.apellidos, a.id""", Object[].class)
+				WHERE g.id = :grupo AND a.activo = TRUE AND (NOT EXISTS (SELECT ad.id FROM AlumnoDeporte ad
+				WHERE ad.alumno = a) OR EXISTS (SELECT ad2.id FROM AlumnoDeporte ad2 WHERE ad2.alumno = a
+				AND ad2.activo = TRUE AND ad2.disciplina.codigo = g.disciplina.codigo))
+				ORDER BY a.nombre, a.apellidos, a.id""", Object[].class)
 				.setParameter("grupo", grupoId).getResultList()) {
 			porAlumno.put((Long) f[0], new ProfesorDTOs.AlumnoDeGrupo((Long) f[0], (String) f[1], (String) f[2],
 					(Long) f[3], new ArrayList<>(), genero(f[4])));
