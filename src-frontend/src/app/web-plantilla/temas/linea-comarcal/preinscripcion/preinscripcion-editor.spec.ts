@@ -111,6 +111,7 @@ describe('PreinscripcionLineaComarcalComponent con el editor de la web (W12c-ter
 
   const raiz = () => harness.routeNativeElement!;
   const texto = (selector: string) => raiz().querySelector(selector)?.textContent!.replace(/\s+/g, ' ').trim() ?? null;
+  const textos = (selector: string) => Array.from(raiz().querySelectorAll(selector)).map((e) => e.textContent!.replace(/\s+/g, ' ').trim());
   const escrituras = (spy: jasmine.Spy) => spy.calls.all().filter((c) => c.object === sessionStorage).length;
 
   describe('sin el editor activo (visitante)', () => {
@@ -200,6 +201,10 @@ describe('PreinscripcionLineaComarcalComponent con el editor de la web (W12c-ter
       expect(texto('.banda-estado')).toBe('Tu preinscripción ya cuenta en las plazas de Peques en Herrera.');
       expect(raiz().querySelector('.progreso')).toBeNull();
       expect(raiz().textContent).toContain('Si falta algo, te llaman al 955000001.');
+      // d534: sin las fichas «Alumno» y «Contacto» (la web real las conserva: preinscripcion.component.spec.ts l.510).
+      expect(textos('.ficha-fila dt')).not.toContain('Alumno');
+      expect(textos('.ficha-fila dt')).not.toContain('Contacto');
+      expect(textos('.ficha-fila dt')).toContain('Grupo');
 
       await ver(null, 2);
       expect(texto('h1.pregunta-titulo')).toBe('¿Qué grupo?');
@@ -234,6 +239,9 @@ describe('PreinscripcionLineaComarcalComponent con el editor de la web (W12c-ter
       await ver('fin-espera', 4);
       expect(texto('#fin-titulo')).toBe('Estás en la lista de espera');
       expect(texto('.banda-estado')).toContain('3');
+      expect(textos('.ficha-fila dt')).not.toContain('Alumno');
+      expect(textos('.ficha-fila dt')).not.toContain('Contacto');
+      expect(textos('.ficha-fila dt')).toContain('Grupo');
     });
 
     it('lo que se escriba o se envíe no se guarda ni sale: ni sessionStorage ni POST', async () => {
