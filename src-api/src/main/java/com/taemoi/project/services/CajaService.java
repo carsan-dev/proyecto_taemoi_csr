@@ -224,7 +224,10 @@ public class CajaService {
 	/**
 	 * Pieza 6b-3b-1: alumnos ACTIVOS de los grupos del profesor de la sesión en la escuela activa (el filtro por escuela
 	 * lo pone {@code @TenantId} en Grupo y Alumno), sin duplicados, por apellidos, nombre e id; cada uno con los nombres
-	 * de SUS grupos (los del profesor) en los que está, por nombre. Una consulta con los datos que se muestran (sin
+	 * de SUS grupos (los del profesor) en los que está, por nombre. Mismo criterio que Mis grupos y Grupos en gestión
+	 * (decisiones 310 y 515): un alumno cuenta en un grupo si está activo y, si tiene alguna inscripción, la tiene activa
+	 * en la disciplina del grupo (sin ninguna inscripción, cuenta). El criterio se aplica por cada par alumno-grupo: sus
+	 * {@code grupos} y {@code sedes} solo incluyen los grupos donde se cumple, y quien no cumple en ninguno no sale. Una consulta con los datos que se muestran (sin
 	 * cargar entidades). Sin grupos en el alcance (o con alcance total), lista vacía.
 	 */
 	public List<CajaDTOs.AlumnoDeMisGrupos> alumnosDeMisGrupos() {
@@ -236,7 +239,9 @@ public class CajaService {
 		List<Object[]> filas = em.createQuery("""
 				SELECT a.id, a.nombre, a.apellidos, g.nombre, g.sedeId, s.nombre
 				FROM Grupo g JOIN g.alumnos a LEFT JOIN Sede s ON s.id = g.sedeId
-				WHERE g.id IN :grupos AND a.activo = TRUE
+				WHERE g.id IN :grupos AND a.activo = TRUE AND (NOT EXISTS (SELECT ad.id FROM AlumnoDeporte ad
+				WHERE ad.alumno = a) OR EXISTS (SELECT ad2.id FROM AlumnoDeporte ad2 WHERE ad2.alumno = a
+				AND ad2.activo = TRUE AND ad2.disciplina.codigo = g.disciplina.codigo))
 				ORDER BY a.apellidos, a.nombre, a.id, g.nombre, g.id""", Object[].class)
 				.setParameter("grupos", grupos).getResultList();
 		Map<Long, CajaDTOs.AlumnoDeMisGrupos> porAlumno = new LinkedHashMap<>();
