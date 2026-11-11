@@ -30,15 +30,15 @@
             <h2 class="legal-h2" id="t-aviso">{{ textos.avisoLegal }}</h2>
             <p>En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI), estos son los datos del titular de esta web.</p>
             <dl class="ficha">
-              <div class="ficha-fila"><dt>Titular</dt><dd>{{ v.titular }}</dd></div>
+              <div class="ficha-fila"><dt>Titular</dt><dd data-dato="titular">{{ v.titular }}</dd></div>
               @if (v.cif) {
-                <div class="ficha-fila"><dt>CIF</dt><dd><span class="cifras">{{ v.cif }}</span></dd></div>
+                <div class="ficha-fila"><dt>CIF</dt><dd data-dato="cif"><span class="cifras">{{ v.cif }}</span></dd></div>
               }
               @if (v.domicilio) {
-                <div class="ficha-fila"><dt>Domicilio</dt><dd>{{ v.domicilio }}</dd></div>
+                <div class="ficha-fila"><dt>Domicilio</dt><dd data-dato="domicilio">{{ v.domicilio }}</dd></div>
               }
               @if (v.correo; as c) {
-                <div class="ficha-fila"><dt>Correo</dt><dd><a [href]="c.enlace">{{ c.texto }}</a></dd></div>
+                <div class="ficha-fila"><dt>Correo</dt><dd data-dato="correo"><a [href]="c.enlace">{{ c.texto }}</a></dd></div>
               }
               @if (v.telefono; as tel) {
                 <div class="ficha-fila"><dt>Teléfono</dt><dd><a class="cifras" [href]="tel.enlace">{{ tel.texto }}</a></dd></div>

@@ -44,7 +44,8 @@ export interface VistaTarifas {
   } | null;
   cuadro: { leyenda: string; filas: FilaCuadro[] } | null;
   porSede: { paradas: ParadaTarifa[]; conCambio: boolean } | null;
-  aparte: { concepto: string; precio: string }[];
+  /** `dato` (`data-dato`, neutro): la capa de edición de «Web · Contenido» pone su candado al precio de la licencia. */
+  aparte: { concepto: string; precio: string; dato: 'licencia' | 'examen' }[];
   boton: string;
 }
 
@@ -145,16 +146,17 @@ function filaCuadro(tarifa: TarifaWeb): FilaCuadro | null {
 }
 
 /** Licencia de cada disciplina (con precio) y examen «desde» el menor precio, como los da la API. */
-function apartes(sitio: SitioWeb): { concepto: string; precio: string }[] {
+function apartes(sitio: SitioWeb): VistaTarifas['aparte'] {
   const nombres = new Map(sitio.sedes.flatMap((s) => s.grupos).map((g) => [g.disciplina, g.disciplinaNombre]));
-  const lista = sitio.licencias
+  const lista: VistaTarifas['aparte'] = sitio.licencias
     .filter((l) => l.precio != null)
     .map((l) => ({
       concepto: l.concepto?.trim() || `${P.licencia} de ${(nombres.get(l.disciplina) ?? l.disciplina).toLowerCase()}`,
       precio: importeEnTexto(l.precio!),
+      dato: 'licencia',
     }));
   if (sitio.examenDesde != null) {
-    lista.push({ concepto: P.examen, precio: t(P.examenDesde, { x: importeEnTexto(sitio.examenDesde) }) });
+    lista.push({ concepto: P.examen, precio: t(P.examenDesde, { x: importeEnTexto(sitio.examenDesde) }), dato: 'examen' });
   }
   return lista;
 }

@@ -135,7 +135,7 @@
             <div class="aparte-caja">
               <ul class="aparte">
                 @for (x of v.aparte; track $index) {
-                  <li><span class="aparte-concepto">{{ x.concepto }}</span><span class="aparte-precio">{{ x.precio }}</span></li>
+                  <li><span class="aparte-concepto">{{ x.concepto }}</span><span class="aparte-precio" [attr.data-dato]="x.dato">{{ x.precio }}</span></li>
                 }
               </ul>
               <p class="aparte-nota">{{ textos.notaAparte }}</p>

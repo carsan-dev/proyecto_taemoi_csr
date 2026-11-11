@@ -1,12 +1,14 @@
 import {
-  CANDADOS_LINEA_COMARCAL,
   Candado,
   NOMBRE_DESTINO,
   NOMBRE_EQUIPO,
-  PARTES_LINEA_COMARCAL,
   Parte,
   SIN_ENLACE_LINEA_COMARCAL,
+  candadosDe,
+  paginaDelDocumento,
+  partesDe,
 } from './candados-linea-comarcal';
+import { PARTE_DEL_CASO, SimuladorCaso, simuladorDe } from './casos-vista';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
 import {
   BloqueBorrador,
@@ -39,6 +41,8 @@ export interface OpcionesCapaEditor {
   padre?: Window;
   /** Llega un borrador del panel. */
   alBorrador: (bloques: BloqueBorrador[]) => void;
+  /** «Ver el caso» (W12c-bis): cómo cambiar los datos de la vista previa para ese caso; null, los datos reales. */
+  alCaso?: (simulador: SimuladorCaso | null) => void;
 }
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -55,7 +59,7 @@ function recorta(texto: string, maximo: number): string {
 }
 
 export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
-  const { ventana, alBorrador } = opciones;
+  const { ventana, alBorrador, alCaso } = opciones;
   const padre = opciones.padre ?? ventana.parent;
   const doc = ventana.document;
   let seleccionado: string | null = null;
@@ -207,10 +211,11 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   }
 
   function decorar(): void {
-    for (const parte of PARTES_LINEA_COMARCAL) {
+    const pagina = paginaDelDocumento(doc);
+    for (const parte of partesDe(pagina)) {
       doc.querySelectorAll<HTMLElement>(parte.selector).forEach((el) => envolver(parte, el));
     }
-    for (const def of CANDADOS_LINEA_COMARCAL) {
+    for (const def of candadosDe(pagina)) {
       doc.querySelectorAll<HTMLElement>(def.selector).forEach((el) => marcarDato(def, el));
     }
     enlacesOcultos();
@@ -433,7 +438,30 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     }
   }
 
+  // «Ver el caso»: cuando el tema ha pintado el caso, se dice al panel dónde empieza su parte para enseñarla.
+  let esperaMostrar: ReturnType<typeof setTimeout> | null = null;
+  function mostrarParte(ids: readonly string[]): void {
+    if (esperaMostrar !== null) {
+      clearTimeout(esperaMostrar);
+    }
+    esperaMostrar = setTimeout(() => {
+      esperaMostrar = null;
+      const parte = ids.map((id) => doc.querySelector<HTMLElement>(`.ed-bloque[data-bloque="${id}"]`)).find((el) => !!el);
+      if (parte) {
+        const arriba = Math.max(0, Math.round(parte.getBoundingClientRect().top + ventana.scrollY));
+        enviar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba });
+      }
+    }, 0);
+  }
+
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
+    if (mensaje.tipo === 'caso') {
+      alCaso?.(mensaje.caso ? simuladorDe(mensaje.caso) : null);
+      if (mensaje.caso) {
+        mostrarParte(PARTE_DEL_CASO[mensaje.caso]);
+      }
+      return;
+    }
     if (mensaje.acento) {
       const raiz = doc.documentElement.style;
       raiz.setProperty('--pn-acento', mensaje.acento.acento);
@@ -452,6 +480,9 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     observador.disconnect();
     tamano?.disconnect();
     limpiarTemporizador();
+    if (esperaMostrar !== null) {
+      clearTimeout(esperaMostrar);
+    }
     doc.removeEventListener('click', alPulsar, true);
     doc.removeEventListener('keydown', alTeclear);
     doc.removeEventListener('mouseover', alPasar);

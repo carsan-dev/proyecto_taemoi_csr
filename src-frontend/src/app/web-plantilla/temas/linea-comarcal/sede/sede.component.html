@@ -122,7 +122,7 @@
                     @for (fila of l.filas; track fila.rotulo) {
                       <div class="ficha-fila">
                         <dt>{{ fila.rotulo }}</dt>
-                        <dd>
+                        <dd [attr.data-dato]="fila.dato">
                           @if (fila.enlace) {<a class="cifras" [href]="fila.enlace">{{ fila.texto }}</a>} @else {<ng-container>{{ fila.texto }}</ng-container>}
                           @if (fila.nota) {<span class="ficha-nota">{{ fila.nota }}</span>}
                         </dd>

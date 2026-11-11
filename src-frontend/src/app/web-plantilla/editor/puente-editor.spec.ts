@@ -1,5 +1,6 @@
 import {
   CANAL_EDITOR_WEB,
+  CASOS_VISTA,
   enviarPorPuente,
   esMensajeDelEditor,
   esMensajeDelPanel,
@@ -30,6 +31,25 @@ describe('puente del editor de la web (W12c)', () => {
       expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'ir', destino: '/plataformaErrores' })).toBeFalse();
       expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'navegar', url: 'https://ejemplo.es' })).toBeFalse();
       expect(esMensajeDelEditor({ tipo: 'listo' })).toBeFalse();
+    });
+
+    it('W12c-bis: el caso del panel, de la lista cerrada o null; nada de datos libres', () => {
+      const caso = (valor: unknown) => ({ canal: CANAL_EDITOR_WEB, tipo: 'caso', caso: valor });
+      for (const id of CASOS_VISTA) {
+        expect(esMensajeDelPanel(caso(id))).toBeTrue();
+      }
+      expect(esMensajeDelPanel(caso(null))).toBeTrue();
+      expect(esMensajeDelPanel(caso('desconocido'))).toBeFalse();
+      expect(esMensajeDelPanel(caso({ tarifas: [] }))).toBeFalse();
+      expect(esMensajeDelPanel({ canal: CANAL_EDITOR_WEB, tipo: 'caso' })).toBeFalse();
+      expect(CASOS_VISTA).toEqual(['lleno', 'espera', 'sin-tarifas', 'sin-proximos', 'sin-eventos', 'un-evento', 'sin-anteriores', 'una-foto']);
+    });
+
+    it('W12c-bis: «mostrar» con un número y el destino de Preinscripciones · Plantillas', () => {
+      expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: 1200 })).toBeTrue();
+      expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: '1200' })).toBeFalse();
+      expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: -5 })).toBeFalse();
+      expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'ir', destino: 'plantillas' })).toBeTrue();
     });
   });
 
