@@ -369,15 +369,20 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  /** «Quitar»: el hueco se queda sin foto; si había una guardada, se borra al guardar. */
+  /**
+   * «Quitar»: sobre una foto recién elegida (sin subir) descarta solo el fichero y vuelve a la guardada; estando en la
+   * guardada, el hueco se queda sin foto y se borra al guardar.
+   */
   quitarFoto(numero: NumeroFoto): void {
     const foto = this.panel?.fotos[numero];
     if (!foto) {
       return;
     }
     this.soltarLocal(foto);
+    if (!foto.archivo) {
+      foto.quitar = foto.guardada !== null;
+    }
     foto.archivo = null;
-    foto.quitar = foto.guardada !== null;
     foto.fallo = null;
   }
 
@@ -411,7 +416,7 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
     const web = this.webPlantilla;
     const edicion = this.sedeAbierta;
     panel.errores = validarCampos(panel.campos);
-    panel.erroresWeb = web ? validarCamposWeb(panel.web, this.sedes, edicion?.id ?? null) : {};
+    panel.erroresWeb = web ? validarCamposWeb(panel.web, this.sedes, edicion?.id ?? null, this.longitud((edicion?.lugar ?? '').trim())) : {};
     const primero = this.campos.find((c) => panel.errores[c.clave]);
     if (primero) {
       this.enfocar(primero.clave);
@@ -563,6 +568,9 @@ export class SedesPanelComponent implements OnInit, OnDestroy {
     const fotos = fallos === 1 ? 'una foto no se pudo guardar' : 'las fotos no se pudieron guardar';
     this.avisos.error(creada ? `La sede se ha creado, pero ${fotos}.` : `Los cambios se han guardado, pero ${fotos}.`);
     this.cargar(true);
+    if (this.webPlantilla) {
+      this.cargarUrlsFotos();
+    }
     this.cdr.detectChanges();
   }
 

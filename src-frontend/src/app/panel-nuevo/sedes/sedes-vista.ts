@@ -277,7 +277,8 @@ export function textoSlugRepetido(otra: Sede | null): string {
 export function validarCamposWeb(
   web: CamposWebSede,
   sedes: readonly Sede[],
-  propia: number | null
+  propia: number | null,
+  longitudLugarGuardado = 0
 ): Partial<Record<ClaveCampoWeb, string>> {
   const errores: Partial<Record<ClaveCampoWeb, string>> = {};
   const slug = web.slug.trim().toLowerCase();
@@ -290,8 +291,10 @@ export function validarCamposWeb(
     }
   }
   for (const clave of ['lugar', 'indicacionesAcceso', 'fotoAlt', 'foto2Alt'] as const) {
-    if ([...web[clave].trim()].length > MAXIMOS_WEB[clave]) {
-      errores[clave] = `No puede pasar de ${MAXIMOS_WEB[clave]} caracteres.`;
+    // El servidor admite 120 en `lugar`: uno ya guardado de 101-120 no se bloquea (puede quedarse igual o acortarse).
+    const maximo = clave === 'lugar' ? Math.max(MAXIMOS_WEB.lugar, longitudLugarGuardado) : MAXIMOS_WEB[clave];
+    if ([...web[clave].trim()].length > maximo) {
+      errores[clave] = `No puede pasar de ${maximo} caracteres.`;
     }
   }
   return errores;

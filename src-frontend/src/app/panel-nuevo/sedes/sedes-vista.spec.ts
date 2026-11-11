@@ -151,6 +151,11 @@ describe('sedes-vista: grupo «En la web» (W12g)', () => {
     expect(validarCamposWeb({ ...vacio, slug: 'roda--x' }, sedes, null).slug).toBe(SLUG_NO_VALIDO);
     expect(validarCamposWeb({ ...vacio, slug: 'a'.repeat(61) }, sedes, null).slug).toBe(SLUG_NO_VALIDO);
     expect(validarCamposWeb({ ...vacio, lugar: 'x'.repeat(101) }, sedes, null).lugar).toBe('No puede pasar de 100 caracteres.');
+    // Un lugar ya guardado de 101-120 caracteres (el servidor admite 120) no se bloquea: se queda igual o se acorta.
+    expect(validarCamposWeb({ ...vacio, lugar: 'x'.repeat(110) }, sedes, 1, 110)).toEqual({});
+    expect(validarCamposWeb({ ...vacio, lugar: 'x'.repeat(105) }, sedes, 1, 110)).toEqual({});
+    expect(validarCamposWeb({ ...vacio, lugar: 'x'.repeat(111) }, sedes, 1, 110).lugar).toBe('No puede pasar de 110 caracteres.');
+    expect(validarCamposWeb({ ...vacio, lugar: 'x'.repeat(101) }, sedes, 1, 50).lugar).toBe('No puede pasar de 100 caracteres.');
     expect(validarCamposWeb({ ...vacio, foto2Alt: 'x'.repeat(151) }, sedes, null).foto2Alt).toBe('No puede pasar de 150 caracteres.');
   });
 

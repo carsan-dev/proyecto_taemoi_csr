@@ -1026,6 +1026,106 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
       expect(texto(foto(1).querySelector('.sedes__foto-nota'))).toBe('Guardada');
     });
 
+    it('un lugar guardado de 110 caracteres se guarda sin tocarlo, se acorta, y no se alarga', async () => {
+      const largo = 'x'.repeat(110);
+      cargarPlantilla([sede({ ...HERRERA, lugar: largo }), ESTEPA]);
+      abrirEditar(1);
+      expect(texto(el().querySelector('#sedes-ayuda-lugar .sedes__contador'))).toBe('110 / 100');
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`);
+      expect((put.request.body as { lugar: string }).lugar).toBe(largo);
+      put.flush(sede({ ...HERRERA, lugar: largo }));
+      await esperar();
+      expect(panel()).toBeNull();
+
+      abrirEditar(1);
+      escribir('lugar', 'x'.repeat(105));
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      expect(el().querySelector('#sedes-error-lugar')).toBeNull();
+      http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`).flush(sede({ ...HERRERA, lugar: 'x'.repeat(105) }));
+      await esperar();
+
+      abrirEditar(1);
+      escribir('lugar', 'x'.repeat(106));
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      expect(texto(el().querySelector('#sedes-error-lugar'))).toBe('No puede pasar de 105 caracteres.');
+      expect(http.match((r) => r.method === 'PUT').length).toBe(0);
+    });
+
+    it('fallo parcial de fotos: se vuelven a pedir las miniaturas', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      await fixture.componentInstance.fotoElegida(1, elegir(jpeg()));
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`).flush(HERRERA);
+      await esperar();
+      http
+        .expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/fotos/1`)
+        .flush({ mensaje: 'La imagen no se puede leer.' }, { status: 400, statusText: 'Bad Request' });
+      await esperar();
+      expect(panel()).not.toBeNull();
+      expect(http.match((r) => r.method === 'GET' && r.url === WEB).length).toBe(1);
+    });
+
+    it('«La foto de antes sigue puesta.» solo sale si había una foto guardada', () => {
+      cargarPlantilla();
+      // Sin foto previa (la sede 2 no tiene): el fallo de subida no lo dice.
+      abrirEditar(2);
+      fixture.componentInstance.panel!.fotos[1].archivo = jpeg();
+      fixture.componentInstance.panel!.fotos[1].fallo = { titulo: 'No se pudo subir la foto', texto: 'x' };
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).not.toContain('La foto de antes sigue puesta.');
+      fixture.componentInstance.cerrarPanel();
+      pintar();
+      // Con foto guardada, sí.
+      abrirEditar(1);
+      fixture.componentInstance.panel!.fotos[1].fallo = { titulo: 'No se pudo subir la foto', texto: 'x' };
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).toContain('La foto de antes sigue puesta.');
+      // Con la guardada marcada para quitar, ya no está puesta.
+      fixture.componentInstance.panel!.fotos[1].quitar = true;
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).not.toContain('La foto de antes sigue puesta.');
+    });
+
+    it('«Quitar» sobre una foto recién elegida descarta solo el fichero y vuelve a la guardada', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      await fixture.componentInstance.fotoElegida(1, elegir(jpeg()));
+      pintar();
+      boton(foto(1), 'Quitar').click();
+      pintar();
+      expect(fixture.componentInstance.panel!.fotos[1].quitar).toBeFalse();
+      expect(fixture.componentInstance.panel!.fotos[1].archivo).toBeNull();
+      expect(texto(foto(1).querySelector('.sedes__foto-nota'))).toBe('Guardada');
+      // Guardar no borra la foto guardada.
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`).flush(HERRERA);
+      await esperar();
+      expect(http.match((r) => r.url.includes('/fotos/')).length).toBe(0);
+
+      // Estando en la guardada, «Quitar» sí la marca para borrar.
+      abrirEditar(1);
+      boton(foto(1), 'Quitar').click();
+      pintar();
+      expect(fixture.componentInstance.panel!.fotos[1].quitar).toBeTrue();
+      expect(texto(foto(1).querySelector('.sedes__anadir-foto'))).toContain('Añadir foto');
+    });
+
+    it('«Cambiar foto» y «Quitar» distinguen la foto principal de la segunda para los lectores de pantalla', () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      const etiquetas = (n: number): string[] =>
+        Array.from(foto(n).querySelectorAll<HTMLButtonElement>('.sedes__foto-acciones button')).map((b) => `${texto(b)}|${b.getAttribute('aria-label')}`);
+      expect(etiquetas(1)).toEqual(['Cambiar foto|Cambiar la foto principal', 'Quitar|Quitar la foto principal']);
+      expect(etiquetas(2)).toEqual(['Cambiar foto|Cambiar la segunda foto', 'Quitar|Quitar la segunda foto']);
+    });
+
     it('una foto HEIC: «Formato no admitido» con el motivo', async () => {
       cargarPlantilla();
       abrirEditar(2);

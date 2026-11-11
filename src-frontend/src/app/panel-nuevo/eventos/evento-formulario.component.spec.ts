@@ -978,6 +978,19 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
       });
     });
 
+    itSinReloj('editar con un lugar guardado de más de 100 caracteres: no se bloquea y se reenvía intacto', async () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      const largo = 'x'.repeat(150);
+      editar({ ...EVENTO, hora: '09:30', lugar: largo, sedeId: 1 });
+      conSedes();
+      expect(el().querySelector<HTMLInputElement>('#evento-lugar')!.value).toBe(largo);
+      guardar().click();
+      fixture.detectChanges();
+      const r = http.expectOne((x) => x.method === 'PUT' && x.url === `${API}/eventos/1`);
+      expect((JSON.parse((r.request.body as FormData).get('eventoEditado') as string) as { lugar: string }).lugar).toBe(largo);
+      expect(el().querySelector('#evento-lugar-error')).toBeNull();
+    });
+
     itSinReloj('400 de sede de otra escuela: el error sale bajo «Sede», con el foco, sin aviso', async () => {
       catalogo.set(CATALOGO_PLANTILLA);
       editar({ ...EVENTO, sedeId: 1 });
