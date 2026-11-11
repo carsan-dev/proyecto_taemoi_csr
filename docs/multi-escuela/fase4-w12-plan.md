@@ -165,7 +165,7 @@ la ruta existe pero no se enlaza: una pantalla que no guarda no debe verse; deci
   menores y envío real, y la vista de la sede). Sin el editor activo, comportamiento idéntico; en el editor, nada en
   `sessionStorage` ni llamadas de escritura.
 - **Tests**: Karma de la invariante (sin editor, ni paso 3-4 ni confirmación por dirección o puente), pasos y casos
-  con editor, puente, capa inerte y selector. **Moiskimdo igual**: bundle inicial sin cambios.
+  con editor, puente, capa inerte y selector. **Moiskimdo igual**: bundle inicial +8 bytes (1.209.901 → 1.209.909).
 
 ### W12d · Textos en el sitio y guardar (medium; careful en la revisión del guardado)
 
