@@ -127,7 +127,7 @@ export class AltaAlumnoComponent implements OnInit, OnDestroy {
       nombre: ['', Validators.required],
       apellidos: ['', Validators.required],
       fechaNacimiento: ['', Validators.required],
-      nif: ['', [Validators.pattern('^[0-9]{8}[A-Za-z]$')]],
+      nif: ['', [Validators.pattern('^[0-9XYZxyz][0-9]{7}[A-Za-z]$')]],
       sede: [''],
       direccion: ['', Validators.required],
       telefono: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.maxLength(9)]],

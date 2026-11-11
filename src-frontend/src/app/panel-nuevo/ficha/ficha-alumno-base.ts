@@ -245,7 +245,7 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
         fechaNacimiento: ['', Validators.required],
         nif: [
           '',
-          [Validators.pattern(String.raw`^\d{8}[A-Za-z]$`)],
+          [Validators.pattern(String.raw`^[0-9XYZxyz][0-9]{7}[A-Za-z]$`)],
         ],
         email: ['', [Validators.required, Validators.email]],
         telefono: [
