@@ -133,6 +133,18 @@ export const PASOS_CONTENIDO: readonly (OpcionSub & { paso: PasoPreinscripcion }
   { paso: 4, valor: '4', texto: 'Enviada', desactivada: false },
 ];
 
+/**
+ * Con una sola sede, como la web real (decisión del propietario, 11/11): sin «Pueblo» y renumerados. Con dos o más,
+ * `PASOS_CONTENIDO`.
+ */
+export const PASOS_UNA_SEDE: readonly (OpcionSub & { paso: PasoPreinscripcion })[] = [
+  { paso: 2, valor: '2', texto: '1 · Grupo', desactivada: false },
+  { paso: 3, valor: '3', texto: '2 · Datos y firma', desactivada: false },
+  { paso: 4, valor: '4', texto: 'Enviada', desactivada: false },
+];
+
+export const pasosContenido = (unaSede: boolean) => (unaSede ? PASOS_UNA_SEDE : PASOS_CONTENIDO);
+
 /** La primera que se puede elegir; null si no hay ninguna. */
 export function primeraOpcion(opciones: readonly OpcionSub[]): string | null {
   return opciones.find((o) => !o.desactivada)?.valor ?? null;

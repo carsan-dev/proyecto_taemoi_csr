@@ -10,6 +10,7 @@ export const ESTILOS_CAPA_EDITOR = `
   --pn-linea:#e4e4df;--pn-linea-fuerte:#cfcfc8;--pn-borde-control:#868d97;--pn-tinta:#1a2230;--pn-tinta-2:#5d6573;--pn-tinta-3:#7a8290;
   --pn-fuente:"Public Sans","Segoe UI",system-ui,sans-serif;
   --pn-sombra-menu:0 6px 20px -6px rgb(26 34 48/22%),0 2px 4px rgb(26 34 48/6%);
+  --pn-peligro:#b42318;--pn-atencion:#a14f0b;
   --pn-anillo:inset 0 0 0 2px var(--pn-acento),inset 0 0 0 3px rgb(255 255 255/90%);
 }
 /* El iframe mide lo que mide la página (el panel le pone ese alto): lo que en la web depende del alto de la pantalla
@@ -61,6 +62,32 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .ed-nota-parte svg{margin-top:1px}
 /* En móvil el nombre de «Horarios» va a la derecha: a la izquierda taparía su título, que empieza arriba del todo */
 @media (max-width:767.98px){.ed-fija[data-bloque="horarios"] > .ed-barra .ed-fila{flex-direction:row-reverse}}
+/* W12d: textos en el sitio (boceto: .ed-texto, .ed-chip, .ed-error). Al editar, la capa pone una copia del elemento
+   (.ed-campo) con el texto editable (.ed-campo__texto) y esconde el original (.ed-escondido). */
+.ed-texto{cursor:text;border-radius:3px;outline:2px dashed transparent;outline-offset:4px;transition:outline-color 150ms ease-out}
+.ed-bloque:hover .ed-texto{outline-color:rgb(22 99 180/40%)}
+.ed-texto:hover{outline-color:var(--pn-acento)!important}
+.presentacion-velo .ed-texto:hover,.tarifas .ed-texto:hover{outline-color:#fff!important}
+.ed-bloque:hover .presentacion-velo .ed-texto,.ed-bloque:hover .tarifas .ed-texto{outline-color:rgb(255 255 255/55%)}
+.ed-texto:focus-visible{outline:3px solid var(--pn-acento-borde)!important;outline-offset:2px;border-radius:6px;box-shadow:0 0 0 2px #fff}
+.ed-texto.es-vacio{outline-color:rgb(22 99 180/55%);opacity:.62}
+.presentacion-velo .ed-texto.es-vacio,.tarifas .ed-texto.es-vacio{outline-color:rgb(255 255 255/70%)}
+.ed-texto.es-error{outline:2px solid var(--pn-peligro)!important}
+.ed-escondido{display:none!important}
+.ed-campo{cursor:text}
+.ed-campo__texto{outline:2px solid var(--pn-acento);outline-offset:4px;border-radius:3px;box-shadow:0 0 0 4px rgb(255 255 255/92%);caret-color:currentColor}
+.ed-campo__texto:focus{outline:2px solid var(--pn-acento)}
+.ed-campo__texto:empty::before{content:attr(data-vacio);opacity:.45}
+.ed-campo__texto[aria-invalid="true"]{outline-color:var(--pn-peligro)}
+.ed-multi{display:block;white-space:pre-wrap}
+.ed-error{display:flex;align-items:flex-start;gap:6px;width:fit-content;max-width:100%;margin:10px 0 0;padding:6px 10px;border-radius:6px;background:var(--pn-superficie);color:var(--pn-peligro);font:600 .875rem/1.35 var(--pn-fuente);box-shadow:var(--pn-sombra-menu)}
+.ed-error svg{margin-top:1px}
+.ed-chip{position:absolute;z-index:30;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--pn-linea);border-radius:8px;background:var(--pn-superficie);box-shadow:var(--pn-sombra-menu);pointer-events:none;white-space:nowrap}
+.ed-chip[hidden]{display:none}
+.ed-chip b{font-weight:600}
+.ed-marca{color:var(--pn-tinta-2)}
+.ed-cont{margin-left:6px;padding-left:8px;border-left:1px solid var(--pn-linea);font-variant-numeric:tabular-nums;color:var(--pn-tinta-2)}
+.ed-chip.es-tope .ed-cont{color:var(--pn-atencion);font-weight:600}
 ::selection{background:#cfe3fb;color:#12161c}
-@media (prefers-reduced-motion:reduce){.ed-bloque::after,.ed-nombre,.ed-acciones,.ed-dato{transition:none}}
+@media (prefers-reduced-motion:reduce){.ed-bloque::after,.ed-nombre,.ed-acciones,.ed-dato,.ed-texto{transition:none}}
 `;

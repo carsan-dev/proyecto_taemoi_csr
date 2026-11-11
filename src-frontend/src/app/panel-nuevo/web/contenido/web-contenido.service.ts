@@ -6,6 +6,7 @@ import { environment } from '../../../../environments/environment';
 import { EventoListaWeb, EventosWeb, SedeWeb, SitioWeb, TemaWeb } from '../../../web-plantilla/datos/modelos';
 import { contextoErrorLocal } from '../../carga/lecturas-panel.service';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
+import { PeticionContenido } from './web-contenido-guardar';
 import { ContenidoWeb } from './web-contenido-vista';
 
 export interface DatosContenido {
@@ -25,6 +26,9 @@ export interface ListasVista {
  * (`GET /api/escuela/web/contenido`, W12a). Solo lectura en esta pieza. Con `contextoErrorLocal()` el fallo lo enseña
  * la pantalla.
  *
+ * W12d: `guardar` (`PUT /api/escuela/web/contenido`, reemplazo completo con la versión leída): 200 con el contenido y la
+ * versión nueva; 400 `{mensaje, errores}`; 409 si otra persona guardó antes. El fallo lo trata la pantalla.
+ *
  * W12c-bis: las sedes y los eventos de la vista previa de gestión (`GET /api/publico/web?vistaPrevia=true` y
  * `/eventos`, como «Web · Tema»), solo para el selector de «Una sede» y «Un evento». Un fallo da null.
  */
@@ -40,6 +44,10 @@ export class WebContenidoService {
       estado: this.http.get<EstadoWebEscuela>(this.url, opciones),
       contenido: this.http.get<ContenidoWeb>(`${this.url}/contenido`, opciones),
     });
+  }
+
+  guardar(peticion: PeticionContenido): Observable<ContenidoWeb> {
+    return this.http.put<ContenidoWeb>(`${this.url}/contenido`, peticion, { withCredentials: true, context: contextoErrorLocal() });
   }
 
   listas(tema: TemaWeb): Observable<ListasVista | null> {

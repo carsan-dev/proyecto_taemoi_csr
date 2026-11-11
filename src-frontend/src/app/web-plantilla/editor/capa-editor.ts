@@ -13,6 +13,7 @@ import {
 } from './candados-linea-comarcal';
 import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
+import { activarEdicionTextos } from './edicion-textos';
 import {
   BloqueBorrador,
   CANAL_EDITOR_WEB,
@@ -36,7 +37,8 @@ import {
  * - el contorno punteado de cada dato de otra pantalla, el aviso flotante «X · Se cambia en Y» con enlace (o «Lo
  *   cambia el equipo de Taemoi») y un enlace oculto por tipo de dato para el teclado;
  * - los enlaces y botones de la web, fuera del orden de tabulación y sin navegar;
- * - W12c-ter: los formularios de la web, inertes: no se escribe, no se marca, no se firma y no se envía.
+ * - W12c-ter: los formularios de la web, inertes: no se escribe, no se marca, no se firma y no se envía;
+ * - W12d: los textos que se cambian en el sitio (`edicion-textos.ts`).
  * Los enlaces de los candados no navegan aquí: piden el destino al panel por el puente.
  */
 
@@ -118,6 +120,9 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   candado.setAttribute('aria-hidden', 'true');
   candado.hidden = true;
   doc.body.appendChild(candado);
+
+  // W12d: textos en el sitio. El tema recibe el borrador por aquí (con los vacíos marcados para el editor).
+  const textos = activarEdicionTextos({ ventana, enviar: (m) => enviar(m), alTema: alBorrador, seleccionar: (id) => seleccionar(id) });
 
   // ------------------------------------------------------------------ anotar el DOM del tema
   function nombreDe(parte: Parte, el: HTMLElement): string {
@@ -359,7 +364,12 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   function sinTabulador(): void {
     doc.querySelectorAll<HTMLElement>('.lc').forEach((raiz) =>
       raiz.querySelectorAll<HTMLElement>(CONTROLES_WEB).forEach((control) => {
-        if (!control.closest('.ed') && !control.classList.contains('ed-dato__ir') && control.tabIndex !== -1) {
+        if (
+          !control.closest('.ed, .ed-campo') &&
+          !control.classList.contains('ed-dato__ir') &&
+          !control.classList.contains('ed-texto') &&
+          control.tabIndex !== -1
+        ) {
           control.tabIndex = -1;
         }
       }),
@@ -384,6 +394,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     }
     notasDelCaso();
     notaDePagina(pagina);
+    textos.decorar(pagina);
     enlacesOcultos();
     sinTabulador();
     if (datoActivo && !datoActivo.isConnected) {
@@ -514,7 +525,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
    */
   const delFormulario = (evento: Event): boolean => {
     const t = elemento(evento);
-    return !!t && !!t.closest('.lc') && !t.closest('.ed');
+    return !!t && !!t.closest('.lc') && !t.closest('.ed, .ed-campo');
   };
   const alEscribir = (evento: Event) => {
     if (delFormulario(evento)) {
@@ -594,9 +605,9 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   // Lo que escribe la propia capa (aviso del candado, barras, enlaces ocultos) no vuelve a decorar la página.
   const esNodoDeLaCapa = (nodo: Node) =>
     nodo.nodeType === Node.ELEMENT_NODE &&
-    ['ed', 'ed-dato__ir', ENVOLTORIO].some((clase) => (nodo as Element).classList.contains(clase));
+    ['ed', 'ed-campo', 'ed-dato__ir', ENVOLTORIO].some((clase) => (nodo as Element).classList.contains(clase));
   const esDeLaCapa = (cambio: MutationRecord) => {
-    if ((cambio.target as Element).closest?.('.ed')) {
+    if ((cambio.target as Element).closest?.('.ed, .ed-campo')) {
       return true;
     }
     const nodos = [...Array.from(cambio.addedNodes), ...Array.from(cambio.removedNodes)];
@@ -648,6 +659,17 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   }
 
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
+    if (mensaje.tipo === 'errores') {
+      textos.errores(mensaje.errores);
+      return;
+    }
+    if (mensaje.tipo === 'ir-texto') {
+      const arriba = textos.irA(mensaje.clave);
+      if (arriba !== null) {
+        enviar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba });
+      }
+      return;
+    }
     if (mensaje.tipo === 'paso') {
       pasoActual = mensaje.paso;
       alCaso?.(simuladorDeLaVista(casoActual, pasoActual));
@@ -668,7 +690,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       raiz.setProperty('--pn-acento-borde', mensaje.acento.borde);
       raiz.setProperty('--pn-acento-suave', mensaje.acento.suave);
     }
-    alBorrador(mensaje.bloques);
+    textos.borrador(mensaje.bloques);
   });
 
   decorar();
@@ -692,6 +714,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       doc.removeEventListener(tipo, alEscribir, true);
     }
     doc.removeEventListener('pointerdown', alFirmar, true);
+    textos.quitar();
     estilos.remove();
     candado.remove();
   };

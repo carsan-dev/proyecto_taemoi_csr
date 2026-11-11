@@ -147,7 +147,9 @@ describe('capa de edición de la vista previa (W12c)', () => {
 
   it('los enlaces y botones de la web, fuera del tabulador y sin navegar', () => {
     expect(q('.salto').tabIndex).toBe(-1);
-    expect(q('.cabecera-cta').tabIndex).toBe(-1);
+    // W12d: el botón de la cabecera es un texto que se cambia en el sitio («Editar botón»): sí va en el tabulador.
+    expect(q('.cabecera-cta').tabIndex).toBe(0);
+    expect(q('.cabecera-cta').getAttribute('role')).toBe('button');
     expect(q('.parada-boton').tabIndex).toBe(-1);
     expect(q('.ed-nombre').tabIndex).toBe(0);
     let llego = false;

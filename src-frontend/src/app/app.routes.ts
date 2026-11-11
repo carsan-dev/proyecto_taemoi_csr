@@ -562,8 +562,8 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
-    // Escuela → Web → Contenido (W12c): vista previa de la web en modo editor, con candados. Sin entrada de menú hasta
-    // W12d (una pantalla que no guarda no se enlaza). Mismos guards que Tema: solo el propietario y nunca Moiskimdo.
+    // Escuela → Web → Contenido (W12c; W12d: textos en el sitio, guardar y entrada del menú): vista previa de la web en
+    // modo editor, con candados. Mismos guards que Tema: solo el propietario y nunca Moiskimdo.
     path: 'web-contenido',
     canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
