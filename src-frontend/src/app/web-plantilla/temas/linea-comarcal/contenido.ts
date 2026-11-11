@@ -340,6 +340,9 @@ function seccionesDelTema(bloques: BloquesWeb): SeccionTema[] {
 /** Las que se pueden ocultar (las fijas y contacto, nunca). */
 const OCULTABLES = new Set<TipoSeccion>(['presentacion', 'profesores', 'galeria', 'sedes', 'texto_foto']);
 
+/** Sin filas de cabecera, el fondo de andén va fijo en estas secciones (la portada de antes de W12b). */
+const TIPOS_CON_ANDEN = new Set<TipoSeccion>(['disciplinas', 'galeria', 'contacto']);
+
 /** El ancla de la sección: `#sedes` ya es la lista de sedes del contacto (menú «Sedes»). */
 function idSeccion(tipo: TipoSeccion, clave: string): string {
   if (tipo === 'texto_foto') {
@@ -390,7 +393,8 @@ export function vistaPortada(sitio: SitioWeb, ahora: Date): VistaPortada {
     }
     const seccion = construirSeccion(tipo, clave, { sitio, textos, ahora, una, edad, disciplinas, tarifa, siguiente, lugares });
     if (seccion) {
-      const anden = tipo !== 'tarifas' && conFondo++ % 2 === 1;
+      // Con cabeceras, alternan (boceto del editor); sin ellas, el fondo es fijo por tipo, como antes de W12b.
+      const anden = bloques.hayCabeceras() ? tipo !== 'tarifas' && conFondo++ % 2 === 1 : TIPOS_CON_ANDEN.has(tipo);
       secciones.push({ ...seccion, id: idSeccion(tipo, clave), anden });
     }
   }
@@ -404,11 +408,20 @@ export function vistaPortada(sitio: SitioWeb, ahora: Date): VistaPortada {
       ? bloques.texto('portada.boton_horarios', una ? FIJOS.botonHorariosUnaSede : TEXTOS_LINEA_COMARCAL['portada.boton_horarios'])
       : '',
     enlaceTarifas: tarifa ? textos.t('portada.enlace_tarifas') || null : null,
-    // La descripción es el texto del bloque de la foto (W12a; `portada.alt` ya no existe).
-    foto: bloques.imagen('portada.foto'),
+    // La descripción es el texto del bloque de la foto; `portada.alt` es solo respaldo de filas anteriores a W12a.
+    foto: fotoPortada(bloques),
     horarios: horarios ? { ...horarios, numero: '01' } : null,
     secciones,
   };
+}
+
+function fotoPortada(bloques: BloquesWeb): ImagenBloque | null {
+  const foto = bloques.imagen('portada.foto');
+  if (foto && !foto.alt) {
+    const antigua = bloques.textoPropio('portada.alt')?.trim();
+    return antigua ? { ...foto, alt: antigua } : foto;
+  }
+  return foto;
 }
 
 interface Contexto {
@@ -640,7 +653,7 @@ function datosDelClub(sitio: SitioWeb, x: Contexto): VistaDato[] {
     datos.push({ cifra: String(x.edad), etiqueta: 'años, edad de inicio' });
   }
   if (x.tarifa) {
-    datos.push({ cifra: importeEnTexto(x.tarifa.importe), etiqueta: FIJOS.alMes });
+    datos.push({ cifra: importeEnTexto(x.tarifa.importe), etiqueta: x.textos.t('tarifas.al_mes') });
   }
   const grupos = gruposPorSede(sitio.sedes);
   if (grupos) {
@@ -748,7 +761,7 @@ export function claveSede(sede: SedeWeb): string {
 /** Descripción de la foto 1 o 2 de una sede (d523): la suya o, vacía, «Foto de la sede de {nombre}». */
 export function altFotoSede(sede: SedeWeb, n: 1 | 2): string {
   const propia = (n === 1 ? sede.fotoAlt : sede.foto2Alt)?.trim();
-  return propia || TEXTOS_PAGINAS_LINEA_COMARCAL.fotoSede.replace('{x}', sede.nombre);
+  return propia || TEXTOS_PAGINAS_LINEA_COMARCAL.fotoSede.replace('{x}', () => sede.nombre);
 }
 
 function enParrafos(texto: string): string[] {

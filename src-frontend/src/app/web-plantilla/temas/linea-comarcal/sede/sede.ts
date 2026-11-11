@@ -180,7 +180,7 @@ function tarifaDeSede(sitio: SitioWeb, sede: SedeWeb, textos: TextosTema, una: b
   }
   return {
     importe: importeEnTexto(enSede?.importe ?? principal.importe),
-    alMes: FIJOS.alMes,
+    alMes: textos.t('tarifas.al_mes'),
     igual: principal.igual ? (una ? FIJOS.igualUnaSede : FIJOS.igualEnTodasLasSedes) : null,
     puntos: puntos.filter(Boolean),
     boton: textos.t('tarifas.boton_preinscripcion'),

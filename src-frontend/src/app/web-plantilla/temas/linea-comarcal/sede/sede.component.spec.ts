@@ -113,6 +113,19 @@ describe('SedeLineaComarcalComponent', () => {
       expect(sinDescripcion.querySelector('.llegar-foto img')!.getAttribute('alt')).toBe('Foto de la sede de Estepa');
     });
 
+    it('el nombre de la sede va literal en la descripción por defecto (sin interpretar `$&`)', async () => {
+      const sitio = seisSedes();
+      sitio.sedes[1] = { ...sitio.sedes[1], nombre: 'Estepa $& $$' };
+      const raiz = await abrir(sitio, '/sedes/estepa');
+      expect(raiz.querySelector('.sede-foto img')!.getAttribute('alt')).toBe('Foto de la sede de Estepa $& $$');
+    });
+
+    it('«al mes» de la tarifa de la sede se lee de `tarifas.al_mes`', async () => {
+      const sitio = seisSedes({ bloques: [{ clave: 'tarifas.al_mes', texto: 'mensuales', imagenUrl: null, orden: 0 }] });
+      const raiz = await abrir(sitio, '/sedes/estepa');
+      expect(textos(raiz, '.tarifa-mes')).toEqual(['mensuales']);
+    });
+
     it('fotos 1 y 2 con su descripción', async () => {
       const sitio = seisSedes();
       sitio.sedes[1] = { ...sitio.sedes[1], fotoAlt: 'Fachada del pabellón cubierto', foto2Alt: 'Puerta lateral junto al aparcamiento' };

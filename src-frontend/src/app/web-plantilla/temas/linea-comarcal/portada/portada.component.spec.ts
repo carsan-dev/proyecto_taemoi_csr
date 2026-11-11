@@ -304,6 +304,21 @@ describe('PortadaLineaComarcalComponent', () => {
       expect(textos(raiz, '.pie-legal a')).toEqual(['Aviso legal', 'Privacidad']);
     });
 
+    it('la foto de portada usa `portada.alt` solo si su bloque no tiene texto (filas anteriores a W12a)', async () => {
+      const conAlt = (texto: string) => [bloque('portada.foto', texto, 0, 'https://cdn/portada.jpg'), bloque('portada.alt', 'Descripción antigua')];
+      const antigua = await abrir(sitioConSedes(6, { bloques: conAlt('') }));
+      expect(antigua.querySelector('.portada-foto img')!.getAttribute('alt')).toBe('Descripción antigua');
+    });
+
+    it('la foto de portada con texto en su bloque ignora `portada.alt`', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: [bloque('portada.foto', 'Descripción nueva', 0, 'https://cdn/portada.jpg'), bloque('portada.alt', 'Descripción antigua')],
+        }),
+      );
+      expect(raiz.querySelector('.portada-foto img')!.getAttribute('alt')).toBe('Descripción nueva');
+    });
+
     it('profesores, galería y foto de portada desde los bloques; sin foto, monograma', async () => {
       const raiz = await abrir(
         sitioConSedes(6, {
@@ -425,6 +440,49 @@ describe('PortadaLineaComarcalComponent', () => {
       expect(Array.from(raiz.querySelectorAll('main > section.seccion--anden')).map((s) => s.id)).toEqual(['disciplinas', 'galeria', 'contacto']);
     });
 
+    it('sin cabeceras y con secciones ausentes, el fondo sigue siendo el fijo de antes', async () => {
+      // Sin presentación, profesores ni galería: disciplinas y contacto con andén, eventos sin él.
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: [bloque('presentacion.texto', '')],
+          proximosEventos: [evento(1, 'Examen', '2026-11-14')],
+        }),
+      );
+      expect(ids(raiz)).toEqual(['portada', 'disciplinas', 'eventos', 'tarifas', 'contacto']);
+      expect(Array.from(raiz.querySelectorAll('main > section.seccion--anden')).map((x) => x.id)).toEqual(['disciplinas', 'contacto']);
+    });
+
+    it('sin cabeceras, sin galería ni eventos: contacto con andén', async () => {
+      const raiz = await abrir(sitioConSedes(6, { bloques: [bloque('presentacion.texto', '')] }));
+      expect(ids(raiz)).toEqual(['portada', 'disciplinas', 'tarifas', 'contacto']);
+      expect(Array.from(raiz.querySelectorAll('main > section.seccion--anden')).map((x) => x.id)).toEqual(['disciplinas', 'contacto']);
+    });
+
+    it('ocultar profesores, galería, sedes y un texto con foto: no salen y no gastan número', async () => {
+      const sitio = sitioConSedes(3, {
+        bloques: [
+          ...conProfesYGaleria,
+          cabecera('profesores', 0, true),
+          cabecera('galeria', 1, true),
+          cabecera('sedes', 2, true),
+          cabecera('texto_foto.1', 3, true),
+          bloque('texto_foto.1.titulo', 'Oculto'),
+        ],
+      });
+      sitio.sedes[0] = { ...sitio.sedes[0], fotoUrl: 'https://cdn/herrera.jpg' };
+      const raiz = await abrir(sitio);
+      expect(ids(raiz)).toEqual(['portada', 'presentacion', 'disciplinas', 'tarifas', 'contacto']);
+      expect(textos(raiz, '#disciplinas .rotulo')).toEqual(['03 · Disciplinas']);
+    });
+
+    it('texto con foto: el 10 (dos dígitos) se pinta con su ancla', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, { bloques: [cabecera('texto_foto.10', 0), bloque('texto_foto.10.titulo', 'Diez')] }),
+      );
+      expect(ids(raiz)).toContain('texto-foto-10');
+      expect(textos(raiz, '#texto-foto-10 h2')).toEqual(['Diez']);
+    });
+
     it('texto con foto: ninguno', async () => {
       const raiz = await abrir(sitioConSedes(6, { bloques: [cabecera('presentacion', 0)] }));
       expect(raiz.querySelector('.tf')).toBeNull();
@@ -523,6 +581,7 @@ describe('PortadaLineaComarcalComponent', () => {
       expect(textos(raiz, '#presentacion .rotulo')).toEqual(['02 · Nosotros']);
       expect(textos(raiz, '.contacto-principal .rotulo')).toEqual(['05']);
       expect(textos(raiz, '.tarifa-mes')).toEqual(['mensuales']);
+      expect(textos(raiz, '.dato-etiqueta')).toContain('mensuales');
       expect(textos(raiz, '.tarifa-igual')).toEqual(['La misma en todas']);
       expect(textos(raiz, '.acciones .enlace-flecha')).toEqual(['Cuánto cuesta']);
       expect(textos(raiz, '#disciplinas .rotulo')).toEqual(['03 · Disciplinas']);
