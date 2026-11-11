@@ -36,12 +36,24 @@ export interface VistaConProxima {
 export interface EjemploPreinscripcion {
   paso: PasoPreinscripcion;
   consulta: Partial<Record<'sede' | 'grupo' | 'dias', string>>;
-  datos: Partial<Pick<DatosPreinscripcion, 'dia' | 'mes' | 'anio' | 'telefono'>>;
+  datos: Partial<Pick<DatosPreinscripcion, 'dia' | 'mes' | 'anio' | 'telefono' | 'nombre' | 'apellidos' | 'tutorNombre' | 'email'>>;
   respuesta: (Pick<RespuestaPreinscripcion, 'referencia' | 'tokenDocumento' | 'plazaAsignada' | 'posicionListaEspera'>) | null;
 }
 
 /** La referencia del boceto (`preinscripcionHtml`, paso 4). */
 export const REFERENCIA_DE_EJEMPLO = 'TSS-2026-0142';
+/**
+ * El solicitante de ejemplo del paso «Enviada» (decisión del propietario, 11/11; valores del boceto del tema,
+ * `boceto-linea-comarcal-preinscripcion.html`): rellena la ficha (alumno, responsable y contacto) y «Si falta algo, te
+ * llaman al {x}» con un teléfono de ejemplo, nunca el de la sede.
+ */
+export const SOLICITANTE_DE_EJEMPLO = {
+  nombre: 'Lucía',
+  apellidos: 'García Ruiz',
+  tutorNombre: 'Ana Ruiz Pérez',
+  telefono: '600 000 000',
+  email: 'ana@ejemplo.es',
+} as const;
 /** La posición en la lista de espera del boceto («En la lista de espera»). */
 const POSICION_DE_EJEMPLO = 3;
 /** La edad del boceto en «Sin grupo para su edad». */
@@ -169,8 +181,7 @@ function ejemploPreinscripcion(sitio: SitioWeb, ahora: Date, paso: PasoPreinscri
   return {
     paso,
     consulta: elegido,
-    // «Si falta algo, te llaman al {x}»: el boceto pone el teléfono de la sede.
-    datos: { ...datos, telefono: sede.telefono?.trim() ?? '' },
+    datos: { ...datos, ...SOLICITANTE_DE_EJEMPLO },
     respuesta: {
       referencia: REFERENCIA_DE_EJEMPLO,
       tokenDocumento: '',

@@ -90,11 +90,13 @@ describe('ejemplo de la preinscripción en el editor (W12c-ter)', () => {
     expect(edad(s, e)).toBe(4);
   });
 
-  it('paso 4: enviada con plaza, la referencia del boceto y el teléfono de la sede (el del boceto)', () => {
+  it('paso 4: enviada con plaza, la referencia del boceto y el solicitante de ejemplo (nunca el teléfono de la sede)', () => {
     const e = ejemplo(sitio(), null, 4)!;
     expect(e.paso).toBe(4);
     expect(e.consulta).toEqual({ sede: 'estepa', grupo: '71', dias: '2,4' });
-    expect(e.datos.telefono).toBe('600000002');
+    expect(e.datos.telefono).toBe('600 000 000');
+    expect(e.datos).toEqual(jasmine.objectContaining({ nombre: 'Lucía', apellidos: 'García Ruiz', tutorNombre: 'Ana Ruiz Pérez', email: 'ana@ejemplo.es' }));
+    expect(e.datos.telefono).not.toBe('600000002');
     expect(e.respuesta).toEqual({ referencia: REFERENCIA_DE_EJEMPLO, tokenDocumento: '', plazaAsignada: true, posicionListaEspera: null });
     expect(REFERENCIA_DE_EJEMPLO).toBe('TSS-2026-0142');
   });
