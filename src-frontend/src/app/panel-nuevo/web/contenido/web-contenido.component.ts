@@ -128,7 +128,7 @@ export class WebContenidoComponent implements OnInit {
     afterNextRender(() => this.enfocarTitulo(), { injector: this.injector });
   }
 
-  cargar(): void {
+  cargar(anunciar = false): void {
     this.estado.set('cargando');
     this.servicio.obtener().subscribe({
       next: ({ estado, contenido }) => {
@@ -138,14 +138,17 @@ export class WebContenidoComponent implements OnInit {
         this.alto.set(ALTO_INICIAL);
         this.estado.set('listo');
         this.iniciarCarga();
+        if (anunciar) {
+          this.anuncio.set(this.textos.cargado);
+        }
       },
       error: () => this.estado.set('error'),
     });
   }
 
-  /** «Reintentar» del error de la pantalla: vuelve a leer y el foco vuelve al título. */
+  /** «Reintentar» del error de la pantalla: vuelve a leer, el foco vuelve al título y se anuncia «Contenido cargado.». */
   reintentar(): void {
-    this.cargar();
+    this.cargar(true);
     this.enfocarTitulo();
   }
 
@@ -159,6 +162,7 @@ export class WebContenidoComponent implements OnInit {
   private alRecibir(mensaje: MensajeDelEditor): void {
     switch (mensaje.tipo) {
       case 'listo':
+        this.vistaLista();
         this.enviarBorrador();
         break;
       case 'alto':
@@ -207,16 +211,21 @@ export class WebContenidoComponent implements OnInit {
     }, LIMITE_CARGA_PREVIA);
   }
 
-  /** `load` del iframe; el del `about:blank` inicial (sin `src`) no cuenta. */
-  alCargar(evento: Event): void {
-    const iframe = evento.target as HTMLIFrameElement | null;
-    if (this.carga() !== 'cargando' || !iframe?.getAttribute('src')) {
+  /**
+   * La vista previa está lista cuando la capa de edición lo dice (`listo`), no con el `load` del iframe: si la API no
+   * confirma la vista previa de la gestión, la plantilla carga sin capa (sin candados) y, pasado el límite, cae en el
+   * error de la vista previa con su «Reintentar».
+   */
+  private vistaLista(): void {
+    if (this.carga() !== 'cargando') {
       return;
     }
     this.pararTemporizadores();
+    if (this.esqueleto()) {
+      this.anuncio.set('');
+    }
     this.esqueleto.set(false);
     this.carga.set('listo');
-    this.anuncio.set('');
   }
 
   reintentarVista(): void {

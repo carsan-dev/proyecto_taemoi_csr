@@ -79,14 +79,15 @@
         <div class="lienzo" [class.es-cargando]="esqueleto()" [style.width.px]="anchoLienzo()"
           [style.height.px]="altoLienzo()">
           <iframe #iframe [src]="direccion" [title]="textos.tituloIframe" [style.width.px]="ancho()" [style.height.px]="alto()"
-            [style.transform]="escala() < 1 ? 'scale(' + escala() + ')' : null" (load)="alCargar($event)"></iframe>
+            [style.transform]="escala() < 1 ? 'scale(' + escala() + ')' : null"></iframe>
           <div class="esq-vista" aria-hidden="true"><i class="e-cab"></i><i class="e-heroe"></i><i class="e-linea"></i><i
             class="e-linea corta"></i></div>
         </div>
         }
       </div>
     </section>
-    <p class="oculto" role="status">{{ anuncio() }}</p>
     }
+    <!-- Fuera de los estados: tiene que existir antes de que cambie su texto para que se anuncie («Contenido cargado.»). -->
+    <p class="oculto" role="status">{{ anuncio() }}</p>
   </div>
 </main>

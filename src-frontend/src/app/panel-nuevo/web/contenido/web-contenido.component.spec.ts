@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { environment } from '../../../../environments/environment';
@@ -61,6 +61,7 @@ describe('WebContenidoComponent (W12c)', () => {
   const q = <T extends HTMLElement = HTMLElement>(selector: string) => el().querySelector<T>(selector);
   const texto = (selector: string) => (q(selector)?.textContent ?? '').replace(/\s+/g, ' ').trim();
   const iframe = () => q<HTMLIFrameElement>('iframe');
+  const anuncio = () => texto('p.oculto[role="status"]');
 
   function abrir(estado: EstadoWebEscuela = estadoWeb(), contenido: ContenidoWeb = CONTENIDO): void {
     fixture = TestBed.createComponent(WebContenidoComponent);
@@ -100,11 +101,19 @@ describe('WebContenidoComponent (W12c)', () => {
       expect(texto('.pn-bloque-error__titulo')).toBe('No se pudo cargar el contenido de tu web');
       expect(texto('.pn-bloque-error__texto')).toBe('Tu web publicada no cambia. Vuelve a intentarlo en unos segundos.');
       expect(iframe()).toBeNull();
+      expect(anuncio()).toBe('');
       q<HTMLButtonElement>('.pn-bloque-error__reintentar')!.click();
       http.expectOne(URL).flush(estadoWeb());
       http.expectOne(URL_CONTENIDO).flush(CONTENIDO);
       fixture.detectChanges();
       expect(iframe()).not.toBeNull();
+      expect(anuncio()).toBe('Contenido cargado.');
+      expect(document.activeElement).toBe(q('h1'));
+    });
+
+    it('la primera carga no anuncia «Contenido cargado.»', () => {
+      abrir();
+      expect(anuncio()).toBe('');
     });
 
     it('publicada: «Publicada con «tema»», la ayuda, «Ver en la web» y el iframe en modo editor', () => {
@@ -168,6 +177,71 @@ describe('WebContenidoComponent (W12c)', () => {
       expect(iframe()!.style.height).toBe('3000px');
       expect(q('.lienzo')!.style.height).toBe('1500px');
     });
+  });
+
+  describe('carga de la vista previa', () => {
+    const LISTO = { canal: CANAL_EDITOR_WEB, tipo: 'listo' };
+
+    it('esqueleto solo pasados 300 ms; el «listo» de la capa la deja lista y ya no cae en error', fakeAsync(() => {
+      abrir();
+      expect(q('.lienzo')!.classList).not.toContain('es-cargando');
+      tick(299);
+      fixture.detectChanges();
+      expect(q('.lienzo')!.classList).not.toContain('es-cargando');
+      expect(anuncio()).toBe('');
+      tick(1);
+      fixture.detectChanges();
+      expect(q('.lienzo')!.classList).toContain('es-cargando');
+      expect(anuncio()).toBe('Cargando la vista previa…');
+
+      llegar(LISTO);
+      expect(q('.lienzo')!.classList).not.toContain('es-cargando');
+      expect(anuncio()).toBe('');
+      tick(15000);
+      fixture.detectChanges();
+      expect(q('.fallo')).toBeNull();
+      expect(iframe()).not.toBeNull();
+    }));
+
+    it('sin el «listo» de la capa (la API no confirma la vista previa), aunque el iframe cargue: error por tiempo', fakeAsync(() => {
+      abrir();
+      iframe()!.dispatchEvent(new Event('load'));
+      fixture.detectChanges();
+      tick(14999);
+      fixture.detectChanges();
+      expect(q('.fallo')).toBeNull();
+      tick(1);
+      fixture.detectChanges();
+      expect(iframe()).toBeNull();
+      const fallo = q('.fallo')!;
+      expect(fallo.getAttribute('role')).toBe('alert');
+      expect(texto('.fallo h2')).toBe('No se pudo cargar la vista previa');
+      expect(texto('.fallo p')).toBe('Tu web publicada no cambia. Vuelve a intentarlo en unos segundos.');
+      expect(texto('.fallo button')).toBe('Reintentar');
+      expect(anuncio()).toBe('');
+    }));
+
+    it('«Reintentar» de la vista previa: vuelve a cargar el iframe al alto inicial y lleva el foco al marco', fakeAsync(() => {
+      abrir();
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'alto', alto: 3000 });
+      tick(15000);
+      fixture.detectChanges();
+      q<HTMLButtonElement>('.fallo button')!.click();
+      fixture.detectChanges();
+      expect(q('.fallo')).toBeNull();
+      expect(iframe()).not.toBeNull();
+      expect(iframe()!.style.height).toBe('800px');
+      expect(document.activeElement).toBe(q('.marco__vista'));
+      tick(300);
+      fixture.detectChanges();
+      expect(q('.lienzo')!.classList).toContain('es-cargando');
+      llegar(LISTO);
+      expect(q('.lienzo')!.classList).not.toContain('es-cargando');
+      tick(15000);
+      fixture.detectChanges();
+      expect(q('.fallo')).toBeNull();
+      flush();
+    }));
   });
 
   describe('puente', () => {

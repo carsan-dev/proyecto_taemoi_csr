@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, InjectionToken, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, InjectionToken, inject, signal } from '@angular/core';
 
 import type { OpcionesCapaEditor } from '../editor/capa-editor';
 import type { BloqueBorrador } from '../editor/puente-editor';
@@ -31,12 +31,22 @@ export class EditorWebService {
   private readonly documento = inject(DOCUMENT);
   private readonly bloques = signal<BloqueBorrador[] | null>(null);
   private activado = false;
+  private destruido = false;
+  /** Quita la capa (oyentes, observadores y puente); null si no está puesta. */
+  private desactivar: (() => void) | null = null;
 
   /** Los bloques del borrador del panel; null mientras no llega (o fuera del editor). */
   readonly borrador = this.bloques.asReadonly();
 
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.destruido = true;
+      this.quitarCapa();
+    });
+  }
+
   activarSiToca(editor: string | null, sitio: SitioWeb | null): void {
-    if (this.activado || editor !== '1' || sitio?.vistaPrevia !== true) {
+    if (this.activado || this.destruido || editor !== '1' || sitio?.vistaPrevia !== true) {
       return;
     }
     const ventana = this.documento.defaultView;
@@ -45,11 +55,23 @@ export class EditorWebService {
     }
     this.activado = true;
     this.cargar().then(
-      (capa) => capa.activarCapaEditor({ ventana, alBorrador: (bloques) => this.bloques.set(bloques) }),
+      (capa) => {
+        if (this.destruido) {
+          return;
+        }
+        this.quitarCapa();
+        this.desactivar = capa.activarCapaEditor({ ventana, alBorrador: (bloques) => this.bloques.set(bloques) });
+      },
       () => {
         this.activado = false;
       },
     );
+  }
+
+  private quitarCapa(): void {
+    const desactivar = this.desactivar;
+    this.desactivar = null;
+    desactivar?.();
   }
 
   /** El sitio con los bloques del borrador, si los hay (solo en la vista previa de la gestión). */

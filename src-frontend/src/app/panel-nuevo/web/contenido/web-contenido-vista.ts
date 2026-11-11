@@ -108,6 +108,8 @@ export function acentoDe(estilo: Pick<CSSStyleDeclaration, 'getPropertyValue'>):
 
 export const TEXTOS_WEB_CONTENIDO = {
   cargando: 'Cargando el contenido de tu web…',
+  /** Anuncio por voz tras «Reintentar» (boceto). */
+  cargado: 'Contenido cargado.',
   errorTitulo: 'No se pudo cargar el contenido de tu web',
   errorTexto: 'Tu web publicada no cambia. Vuelve a intentarlo en unos segundos.',
   ayuda: 'Pulsa un texto o una foto para cambiarlo. Lo que tiene candado se cambia en otra pantalla.',

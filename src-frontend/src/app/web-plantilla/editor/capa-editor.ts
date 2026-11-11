@@ -11,6 +11,7 @@ import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
 import {
   BloqueBorrador,
   CANAL_EDITOR_WEB,
+  type DestinoPanel,
   MensajeDelEditor,
   enviarPorPuente,
   esDestinoPanel,
@@ -44,6 +45,10 @@ const SVG = 'http://www.w3.org/2000/svg';
 /** Controles propios de la web: fuera del tabulador y sin efecto en el editor. */
 const CONTROLES_WEB = 'a, button, input, select, textarea, summary, [tabindex]';
 const RETRASO_OCULTAR = 160;
+/** Controles del tema que pueden contener un dato: su enlace oculto va después de ellos, nunca dentro. */
+const CONTROL_DEL_TEMA = 'a, button';
+/** Partes plegadas del tema: sin enlace oculto, ni dentro ni al lado. */
+const OCULTO_DEL_TEMA = '.horario:not(.abierto)';
 
 function recorta(texto: string, maximo: number): string {
   return texto.length > maximo ? `${texto.slice(0, maximo - 1).trimEnd()}…` : texto;
@@ -136,27 +141,60 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     el.dataset['donde'] = typeof candadoDef.donde === 'string' ? candadoDef.donde : candadoDef.donde.pantalla;
   }
 
-  /** Un enlace oculto por tipo de dato con destino en el panel, en el primero que no esté dentro de un control. */
+  /** Enlaces ocultos puestos junto al control del tema que contiene su dato (no se anidan controles): su dato. */
+  const datoDeEnlace = new WeakMap<HTMLElement, HTMLElement>();
+
+  function enlaceOculto(dato: HTMLElement, donde: DestinoPanel, clave: string): HTMLAnchorElement {
+    const a = doc.createElement('a');
+    a.href = '#';
+    a.className = 'ed-oculto ed-dato__ir';
+    a.dataset['accion'] = 'ir';
+    a.dataset['destino'] = donde;
+    a.dataset['clave'] = clave;
+    a.textContent = `${dato.dataset['que']}: se cambia en ${NOMBRE_DESTINO[donde]}`;
+    return a;
+  }
+
+  /**
+   * Un enlace oculto por tipo de dato con destino en el panel, en el primero que no esté dentro de un control. Si todos
+   * los de un tipo están dentro de un enlace o un botón del tema (p. ej. «Próxima clase» en el botón de la parada), va
+   * justo después de ese control, como hermano.
+   */
   function enlacesOcultos(): void {
+    doc.querySelectorAll<HTMLElement>('.ed-dato__ir[data-suelto]').forEach((a) => {
+      if (!datoDeEnlace.get(a)?.isConnected) {
+        a.remove();
+      }
+    });
     const con = new Set<string>();
     doc.querySelectorAll<HTMLElement>('.ed-dato__ir').forEach((a) => con.add(a.dataset['clave'] ?? ''));
-    doc.querySelectorAll<HTMLElement>('.ed-dato').forEach((el) => {
+    const datos = Array.from(doc.querySelectorAll<HTMLElement>('.ed-dato'));
+    for (const el of datos) {
       const donde = el.dataset['donde'];
       const clave = claveDato(el);
       if (!esDestinoPanel(donde) || con.has(clave) || el.closest(SIN_ENLACE_LINEA_COMARCAL)) {
-        return;
+        continue;
       }
-      const a = doc.createElement('a');
-      a.href = '#';
-      a.className = 'ed-oculto ed-dato__ir';
-      a.dataset['accion'] = 'ir';
-      a.dataset['destino'] = donde;
-      a.dataset['clave'] = clave;
-      a.textContent = `${el.dataset['que']}: se cambia en ${NOMBRE_DESTINO[donde]}`;
-      el.appendChild(a);
+      el.appendChild(enlaceOculto(el, donde, clave));
       con.add(clave);
-    });
+    }
+    for (const el of datos) {
+      const donde = el.dataset['donde'];
+      const clave = claveDato(el);
+      const control = el.closest<HTMLElement>(CONTROL_DEL_TEMA);
+      if (!esDestinoPanel(donde) || con.has(clave) || !control || el.closest(OCULTO_DEL_TEMA)) {
+        continue;
+      }
+      const a = enlaceOculto(el, donde, clave);
+      a.dataset['suelto'] = '';
+      datoDeEnlace.set(a, el);
+      control.after(a);
+      con.add(clave);
+    }
   }
+
+  /** El dato de un enlace oculto: el que lo contiene o, si va junto a un control, el que se guardó al ponerlo. */
+  const datoDe = (ir: HTMLElement) => ir.closest<HTMLElement>('.ed-dato') ?? datoDeEnlace.get(ir) ?? null;
 
   function sinTabulador(): void {
     doc.querySelectorAll<HTMLElement>('.lc').forEach((raiz) =>
@@ -330,7 +368,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     const t = elemento(evento);
     const ir = t?.closest<HTMLElement>('.ed-dato__ir');
     if (ir) {
-      const dato = ir.closest<HTMLElement>('.ed-dato');
+      const dato = datoDe(ir);
       if (dato) {
         mostrarCandado(dato);
       }
@@ -356,18 +394,44 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   doc.addEventListener('focusout', alDesenfocar);
 
   // ------------------------------------------------------------------ observadores y puente
-  const observador = new MutationObserver(() => decorar());
+  // Lo que escribe la propia capa (aviso del candado, barras, enlaces ocultos) no vuelve a decorar la página.
+  const esNodoDeLaCapa = (nodo: Node) =>
+    nodo.nodeType === Node.ELEMENT_NODE && ((nodo as Element).classList.contains('ed') || (nodo as Element).classList.contains('ed-dato__ir'));
+  const esDeLaCapa = (cambio: MutationRecord) => {
+    if ((cambio.target as Element).closest?.('.ed')) {
+      return true;
+    }
+    const nodos = [...Array.from(cambio.addedNodes), ...Array.from(cambio.removedNodes)];
+    return nodos.length > 0 && nodos.every(esNodoDeLaCapa);
+  };
+  const observador = new MutationObserver((cambios) => {
+    if (cambios.some((cambio) => !esDeLaCapa(cambio))) {
+      decorar();
+      medir();
+    }
+  });
   observador.observe(doc.body, { childList: true, subtree: true });
 
-  const medir = () => {
-    const alto = Math.ceil(doc.documentElement.scrollHeight);
+  // Se mide el contenido (la raíz del tema), no el documento: su scrollHeight nunca baja del alto del iframe, así que
+  // el marco no encogería (de Móvil a Escritorio). Con `.lc{min-height:0}` en los estilos de la capa.
+  const Observador: typeof ResizeObserver | undefined = (ventana as Window & typeof globalThis).ResizeObserver;
+  const tamano = typeof Observador === 'function' ? new Observador(() => medir()) : null;
+  let raizMedida: HTMLElement | null = null;
+  function medir(): void {
+    const raiz = doc.querySelector<HTMLElement>('.lc') ?? doc.body;
+    if (raiz !== raizMedida) {
+      if (raizMedida) {
+        tamano?.unobserve(raizMedida);
+      }
+      raizMedida = raiz;
+      tamano?.observe(raiz);
+    }
+    const alto = Math.ceil(raiz.offsetHeight);
     if (alto !== ultimoAlto) {
       ultimoAlto = alto;
       enviar({ canal: CANAL_EDITOR_WEB, tipo: 'alto', alto });
     }
-  };
-  const tamano = typeof ResizeObserver === 'function' ? new ResizeObserver(medir) : null;
-  tamano?.observe(doc.body);
+  }
 
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
     if (mensaje.acento) {

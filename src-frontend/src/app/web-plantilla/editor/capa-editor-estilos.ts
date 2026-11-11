@@ -12,6 +12,15 @@ export const ESTILOS_CAPA_EDITOR = `
   --pn-sombra-menu:0 6px 20px -6px rgb(26 34 48/22%),0 2px 4px rgb(26 34 48/6%);
   --pn-anillo:inset 0 0 0 2px var(--pn-acento),inset 0 0 0 3px rgb(255 255 255/90%);
 }
+/* El iframe mide lo que mide la página (el panel le pone ese alto): lo que en la web depende del alto de la pantalla
+   usaría aquí el del iframe y crecería con él. En el editor, la raíz no ocupa una pantalla y las fotos usan una
+   pantalla nominal fija (--ed-pantalla), igual en Móvil y en Escritorio. El CSS del tema no cambia. */
+:root{--ed-pantalla:800px}
+:root .lc{min-height:0}
+@media (min-width:900px){
+  :root .lc .portada-foto{height:max(360px,min(calc((50vw - var(--hueco) / 2) * 1.25),calc(var(--ed-pantalla) - var(--cabecera) - 220px)))}
+  :root .lc .p-sede .sede-foto{height:min(calc((50vw - var(--hueco) / 2) * 1.25),calc(var(--ed-pantalla) - var(--cabecera)))}
+}
 .ed{font:400 .875rem/1.35 var(--pn-fuente);color:var(--pn-tinta);letter-spacing:0;font-stretch:100%;text-transform:none;text-align:left}
 .ed svg{width:16px;height:16px;flex:none}
 .ed-oculto{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

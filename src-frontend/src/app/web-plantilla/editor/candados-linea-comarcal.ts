@@ -78,7 +78,8 @@ export const CANDADOS_LINEA_COMARCAL: readonly Candado[] = [
 
 /**
  * Dónde no se pone el enlace oculto de un tipo de dato (va en el siguiente del mismo tipo): dentro de un enlace o un
- * botón del tema (no se anidan controles) o en el horario plegado de una parada.
+ * botón del tema (no se anidan controles) o en el horario plegado de una parada. Si todos los de un tipo están dentro
+ * de un enlace o un botón («Próxima clase», en el botón de la parada), la capa lo pone justo después de ese control.
  */
 export const SIN_ENLACE_LINEA_COMARCAL = 'a, button, .horario:not(.abierto)';
 

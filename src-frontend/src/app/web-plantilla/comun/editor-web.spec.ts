@@ -52,6 +52,28 @@ describe('EditorWebService (W12c)', () => {
     expect(cargar).not.toHaveBeenCalled();
   });
 
+  it('guarda la limpieza de la capa y la llama al destruirse', async () => {
+    const editor = crear();
+    const limpiar = jasmine.createSpy('limpiar');
+    activar.and.returnValue(limpiar);
+    editor.activarSiToca('1', sitio(true));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(activar).toHaveBeenCalledTimes(1);
+    expect(limpiar).not.toHaveBeenCalled();
+    TestBed.resetTestingModule();
+    expect(limpiar).toHaveBeenCalledTimes(1);
+  });
+
+  it('no activa la capa si se destruye antes de que llegue el chunk', async () => {
+    const editor = crear();
+    editor.activarSiToca('1', sitio(true));
+    TestBed.resetTestingModule();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(activar).not.toHaveBeenCalled();
+  });
+
   it('pinta con los bloques del borrador solo en la vista previa de gestión', async () => {
     const editor = crear();
     editor.activarSiToca('1', sitio(true));

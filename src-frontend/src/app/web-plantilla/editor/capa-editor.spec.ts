@@ -17,7 +17,7 @@ const WEB = `
       </div></div>
       <div class="envoltura"><app-lc-linea-sedes>
         <div class="red">
-          <h3 class="parada"><button type="button" class="parada-boton"><span class="parada-nombre">Herrera</span></button></h3>
+          <h3 class="parada"><button type="button" class="parada-boton"><span class="parada-nombre">Herrera</span><span class="parada-proxima"><span class="parada-cuando">Hoy <span class="hora">17:00</span></span></span></button></h3>
           <div class="horario abierto"><p class="tablero-sede">Herrera</p><p class="tablero-lugar">Pabellón</p></div>
         </div>
       </app-lc-linea-sedes></div>
@@ -46,6 +46,10 @@ describe('capa de edición de la vista previa (W12c)', () => {
     ventana = marco.contentWindow!;
     doc = marco.contentDocument!;
     doc.body.innerHTML = WEB;
+    // Como el tema: la raíz ocupa al menos una pantalla (`linea-comarcal.css`).
+    const tema = doc.createElement('style');
+    tema.textContent = '.lc{min-height:100vh;min-height:100svh}';
+    doc.head.appendChild(tema);
     enviados = spyOn(window, 'postMessage');
     borradores = [];
     desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: (b) => borradores.push(b) });
@@ -170,6 +174,88 @@ describe('capa de edición de la vista previa (W12c)', () => {
     await new Promise((r) => setTimeout(r));
     expect(nueva.querySelector('.ed-nombre')!.textContent).toBe('Galería');
     expect(nueva.querySelectorAll('.ed-barra').length).toBe(1);
+  });
+
+  describe('alto que manda al panel', () => {
+    const altos = () =>
+      mensajes()
+        .map(([m]) => m as { tipo: string; alto?: number })
+        .filter((m) => m.tipo === 'alto')
+        .map((m) => m.alto!);
+    const ultimo = () => altos()[altos().length - 1];
+    /** Deja que el ResizeObserver de la ventana del iframe avise. */
+    const cuadro = () => new Promise((r) => ventana.requestAnimationFrame(() => setTimeout(r, 0)));
+
+    it('mide el contenido (la raíz del tema), no el documento: no depende del alto del iframe', async () => {
+      marco.style.height = '4000px';
+      const relleno = doc.createElement('div');
+      relleno.style.height = '1200px';
+      q('main').appendChild(relleno);
+      await cuadro();
+      await cuadro();
+      expect(ultimo()).toBe(Math.ceil(q('.lc').offsetHeight));
+      expect(ultimo()).toBeGreaterThan(1200);
+      expect(ultimo()).toBeLessThan(4000);
+    });
+
+    it('baja cuando el contenido se acorta (de Móvil a Escritorio)', async () => {
+      const relleno = doc.createElement('div');
+      relleno.style.height = '3000px';
+      q('main').appendChild(relleno);
+      await cuadro();
+      await cuadro();
+      marco.style.height = `${ultimo()}px`;
+      const largo = ultimo();
+      expect(largo).toBeGreaterThan(3000);
+      relleno.remove();
+      await cuadro();
+      await cuadro();
+      expect(ultimo()).toBeLessThan(largo - 2500);
+      expect(ultimo()).toBe(Math.ceil(q('.lc').offsetHeight));
+    });
+
+    it('la foto de portada usa una pantalla nominal de 800 px, no el alto del iframe', async () => {
+      const tema = doc.createElement('style');
+      tema.textContent =
+        '.lc{--hueco:16px;--cabecera:72px}@media (min-width:900px){.lc .portada-foto{aspect-ratio:auto;height:max(360px, min(calc((50vw - var(--hueco) / 2) * 1.25), calc(100svh - var(--cabecera) - 220px)))}}';
+      doc.head.insertBefore(tema, doc.head.firstChild);
+      const foto = doc.createElement('div');
+      foto.className = 'portada-foto';
+      q('.portada-rejilla').appendChild(foto);
+      marco.style.maxWidth = 'none';
+      marco.style.width = '1200px';
+      marco.style.height = '3000px';
+      await cuadro();
+      // max(360, min((600 - 8) × 1,25, 800 - 72 - 220)) = 508
+      expect(foto.offsetHeight).toBe(508);
+    });
+  });
+
+  it('«Próxima clase» (dentro del botón de la parada) lleva su enlace oculto al lado del botón, no dentro', () => {
+    const ir = Array.from(doc.querySelectorAll<HTMLElement>('.ed-dato__ir')).filter((a) => a.dataset['clave'] === 'Próxima clase|grupos');
+    expect(ir.length).toBe(1);
+    expect(ir[0].closest('button')).toBeNull();
+    expect(ir[0].previousElementSibling).toBe(q('.parada-boton'));
+    expect(ir[0].textContent).toBe('Próxima clase: se cambia en Grupos');
+
+    ir[0].dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    expect(q('#ed-candado').hidden).toBeFalse();
+    expect(q('#ed-candado').textContent).toBe('Próxima clase · Se cambia enGrupos');
+    expect(q('.parada-cuando').classList).toContain('es-activo');
+
+    enviados.calls.reset();
+    pulsar(ir[0]);
+    expect(mensajes()).toContain([{ canal: CANAL_EDITOR_WEB, tipo: 'ir', destino: 'grupos' }, location.origin]);
+  });
+
+  it('un hover sobre un dato no vuelve a decorar la página', async () => {
+    await new Promise((r) => setTimeout(r));
+    const buscar = spyOn(doc, 'querySelectorAll').and.callThrough();
+    q('.logo').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    q('.tarifa-importe').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    await new Promise((r) => setTimeout(r));
+    expect(q('#ed-candado').hidden).toBeFalse();
+    expect(buscar).not.toHaveBeenCalled();
   });
 
   it('entrega el borrador del panel y descarta el de otra ventana u otro origen', () => {
