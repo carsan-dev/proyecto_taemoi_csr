@@ -71,6 +71,169 @@
         }
       </div>
       }
+      @if (webPlantilla) {
+      <!-- W12g: grupo «En la web» (boceto-panel-contenido-web-comarcal.html, sedesPantallaHtml; d523, d524) -->
+      <section class="sedes__web" aria-labelledby="sedes-web-titulo">
+        <div class="sedes__web-cabecera">
+          <h3 class="sedes__web-titulo" id="sedes-web-titulo">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg>
+            <span>En la web</span>
+          </h3>
+          <p class="sedes__web-texto">Así sale esta sede en tu web. Todo es opcional.</p>
+        </div>
+
+        <div class="sedes__campo">
+          <label class="sedes__etiqueta" for="sedes-campo-slug">Dirección de su página<span class="sedes__marca">(opcional)</span></label>
+          <div class="sedes__prefijo" [attr.aria-invalid]="p.erroresWeb.slug ? 'true' : null">
+            <span class="sedes__prefijo-fijo" aria-hidden="true">{{ prefijoSlug }}</span>
+            <input id="sedes-campo-slug" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" [attr.maxlength]="maximosWeb.slug"
+              [value]="p.web.slug" [disabled]="p.enviando" [attr.aria-invalid]="p.erroresWeb.slug ? 'true' : null"
+              [attr.aria-describedby]="descripcionWeb('slug', p)" (input)="escribirWeb('slug', $event)" />
+          </div>
+          @if (p.erroresWeb.slug; as mensaje) {
+          <p class="sedes__error" id="sedes-error-slug">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+            <span>{{ mensaje }}</span>
+          </p>
+          }
+          <p class="sedes__ayuda sedes__ayuda--contador" id="sedes-ayuda-slug">
+            <span>{{ ayudaSlug }}{{ p.sede ? ayudaSlugEditar : '' }}</span>
+            <span class="sedes__contador">{{ longitud(p.web.slug) }} / {{ maximosWeb.slug }}</span>
+          </p>
+        </div>
+
+        <div class="sedes__campo">
+          <label class="sedes__etiqueta" for="sedes-campo-lugar">Lugar<span class="sedes__marca">(opcional)</span></label>
+          <input class="sedes__control" id="sedes-campo-lugar" type="text" autocomplete="off" [attr.maxlength]="maximosWeb.lugar" [value]="p.web.lugar"
+            [disabled]="p.enviando" [attr.aria-invalid]="p.erroresWeb.lugar ? 'true' : null" [attr.aria-describedby]="descripcionWeb('lugar', p)"
+            (input)="escribirWeb('lugar', $event)" />
+          @if (p.erroresWeb.lugar; as mensaje) {
+          <p class="sedes__error" id="sedes-error-lugar">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+            <span>{{ mensaje }}</span>
+          </p>
+          }
+          <p class="sedes__ayuda sedes__ayuda--contador" id="sedes-ayuda-lugar">
+            <span>El edificio donde se da la clase. Sale encima de la dirección.</span>
+            <span class="sedes__contador">{{ longitud(p.web.lugar) }} / {{ maximosWeb.lugar }}</span>
+          </p>
+        </div>
+
+        <div class="sedes__campo">
+          <label class="sedes__etiqueta" for="sedes-campo-indicacionesAcceso">Indicaciones de acceso<span class="sedes__marca">(opcional)</span></label>
+          <textarea class="sedes__control sedes__control--area" id="sedes-campo-indicacionesAcceso" rows="3" [attr.maxlength]="maximosWeb.indicacionesAcceso"
+            [value]="p.web.indicacionesAcceso" [disabled]="p.enviando" [attr.aria-invalid]="p.erroresWeb.indicacionesAcceso ? 'true' : null"
+            [attr.aria-describedby]="descripcionWeb('indicacionesAcceso', p)" (input)="escribirWeb('indicacionesAcceso', $event)"></textarea>
+          @if (p.erroresWeb.indicacionesAcceso; as mensaje) {
+          <p class="sedes__error" id="sedes-error-indicacionesAcceso">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+            <span>{{ mensaje }}</span>
+          </p>
+          }
+          <p class="sedes__ayuda sedes__ayuda--contador" id="sedes-ayuda-indicacionesAcceso">
+            <span>Cómo encontrar la entrada. Sale en «Cómo llegar».</span>
+            <span class="sedes__contador">{{ longitud(p.web.indicacionesAcceso) }} / {{ maximosWeb.indicacionesAcceso }}</span>
+          </p>
+        </div>
+
+        @for (n of numerosFoto; track n) {
+        @let foto = p.fotos[n];
+        @let alt = n === 1 ? 'fotoAlt' : 'foto2Alt';
+        <div class="sedes__foto" [attr.data-foto]="n">
+          <div class="sedes__foto-cabecera">
+            <b>{{ textosFoto[n].nombre }}</b>
+            <span>{{ textosFoto[n].donde }}</span>
+          </div>
+          <input type="file" class="sedes__oculto" [id]="'sedes-foto-' + n" tabindex="-1" aria-hidden="true" accept="image/jpeg,image/png,image/webp"
+            (change)="fotoElegida(n, $event)" />
+          @if (foto.fallo; as fallo) {
+          <div class="sedes__foto-fallo" role="alert">
+            <p class="sedes__foto-fallo-titulo">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+              <span>{{ fallo.titulo }}</span>
+            </p>
+            <p>{{ fallo.texto }}</p>
+            @if (tieneFoto(foto)) {
+            <p class="sedes__foto-nota">La foto de antes sigue puesta.</p>
+            }
+            <div class="sedes__foto-acciones">
+              <button type="button" class="sedes__boton-texto" [disabled]="p.enviando" (click)="elegirFoto(n)">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m20.5 16-5-5-8.5 8.5"></path></svg>
+                <span>Elegir otra foto</span>
+              </button>
+              <button type="button" class="sedes__boton-texto" [disabled]="p.enviando" (click)="cerrarFallo(n)">Cerrar</button>
+            </div>
+          </div>
+          } @else if (tieneFoto(foto)) {
+          <div class="sedes__foto-fila">
+            <span class="sedes__miniatura" [class.sedes__miniatura--subiendo]="foto.progreso !== null">
+              @if (miniatura(n, foto, p); as src) {
+              <img [src]="src" alt="" />
+              }
+            </span>
+            <div class="sedes__foto-datos">
+              @if (foto.archivo) {
+              <p class="sedes__foto-nombre">{{ foto.archivo.name }}</p>
+              }
+              <p class="sedes__foto-nota" [attr.role]="foto.progreso !== null ? 'status' : null">{{ notaFoto(foto, p) }}</p>
+              @if (foto.progreso !== null) {
+              <span class="sedes__progreso" role="progressbar" [attr.aria-label]="'Subida de la ' + (n === 1 ? 'foto principal' : 'segunda foto')"
+                aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="foto.progreso"><i [style.width.%]="foto.progreso"></i></span>
+              } @else {
+              <div class="sedes__foto-acciones">
+                <button type="button" class="sedes__boton-texto" [disabled]="p.enviando" (click)="elegirFoto(n)">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m20.5 16-5-5-8.5 8.5"></path></svg>
+                  <span>Cambiar foto</span>
+                </button>
+                <button type="button" class="sedes__boton-texto sedes__boton-quitar" [disabled]="p.enviando" (click)="quitarFoto(n)">Quitar</button>
+              </div>
+              }
+            </div>
+          </div>
+          } @else {
+          <button type="button" class="sedes__anadir-foto" [disabled]="p.enviando" (click)="elegirFoto(n)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14"></path></svg>
+            <span>Añadir foto</span>
+            <small>{{ formatosFoto }}</small>
+          </button>
+          }
+          <div class="sedes__campo">
+            <label class="sedes__etiqueta" [for]="'sedes-campo-' + alt">Descripción de la foto<span class="sedes__marca">(opcional)</span></label>
+            <input class="sedes__control" [id]="'sedes-campo-' + alt" type="text" autocomplete="off" [attr.maxlength]="maximosWeb[alt]" [value]="p.web[alt]"
+              [placeholder]="altPorDefecto(p.campos.nombre)" [disabled]="p.enviando" [attr.aria-invalid]="p.erroresWeb[alt] ? 'true' : null"
+              [attr.aria-describedby]="descripcionWeb(alt, p)" (input)="escribirWeb(alt, $event)" />
+            @if (p.erroresWeb[alt]; as mensaje) {
+            <p class="sedes__error" [id]="'sedes-error-' + alt">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+              <span>{{ mensaje }}</span>
+            </p>
+            }
+            <p class="sedes__ayuda sedes__ayuda--contador" [id]="'sedes-ayuda-' + alt">
+              <span>{{ ayudaAlt(p.campos.nombre) }}</span>
+              <span class="sedes__contador">{{ longitud(p.web[alt]) }} / {{ maximosWeb[alt] }}</span>
+            </p>
+          </div>
+        </div>
+        }
+
+        @if (!p.sede) {
+        <p class="sedes__nota sedes__nota--suave">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.5h.01"></path></svg>
+          <span>Las fotos se suben al crear la sede.</span>
+        </p>
+        }
+      </section>
+      }
       @if (p.error) {
       <p class="sedes__error sedes__error--general" id="sedes-error-general" role="alert">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

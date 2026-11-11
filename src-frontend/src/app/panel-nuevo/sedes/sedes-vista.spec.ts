@@ -1,16 +1,24 @@
 import {
   CAMPOS_SEDE,
+  SLUG_NO_VALIDO,
   Sede,
   activarCreaSegunda,
+  altPorDefecto,
+  campoWebDeError,
   camposDe,
+  camposWebDe,
   cuerpoSede,
+  cuerpoSedeWeb,
+  falloAlElegir,
   esUnicaActiva,
   estadoHttp,
   lineaSecundaria,
   mensajeError,
+  pesoFoto,
   seraSegundaSede,
   totalActivas,
   validarCampos,
+  validarCamposWeb,
 } from './sedes-vista';
 
 function sede(cambios: Partial<Sede> = {}): Sede {
@@ -112,5 +120,59 @@ describe('sedes-vista (E9-3)', () => {
     expect(mensajeError(null, 'por defecto')).toBe('por defecto');
     expect(estadoHttp({ status: 409 })).toBe(409);
     expect(estadoHttp({})).toBeNull();
+  });
+});
+
+describe('sedes-vista: grupo «En la web» (W12g)', () => {
+  it('cuerpoSedeWeb: los de siempre y los de la web, recortados, vacíos como null y la dirección en minúsculas', () => {
+    const cuerpo = cuerpoSedeWeb(camposDe(sede({ nombre: 'Herrera' })), {
+      slug: ' Herrera ',
+      lugar: '',
+      indicacionesAcceso: ' Por el patio ',
+      fotoAlt: '  ',
+      foto2Alt: 'Entrada',
+    });
+    expect(cuerpo).toEqual(
+      jasmine.objectContaining({ nombre: 'Herrera', slug: 'herrera', lugar: null, indicacionesAcceso: 'Por el patio', fotoAlt: null, foto2Alt: 'Entrada' })
+    );
+  });
+
+  it('camposWebDe: lo que trae la sede, o vacío', () => {
+    expect(camposWebDe(null)).toEqual({ slug: '', lugar: '', indicacionesAcceso: '', fotoAlt: '', foto2Alt: '' });
+    expect(camposWebDe(sede({ slug: 'casariche', fotoAlt: 'Tatami' })).slug).toBe('casariche');
+  });
+
+  it('validarCamposWeb: formato y repetida de la dirección, máximos', () => {
+    const sedes = [sede({ id: 1, slug: 'casariche' }), sede({ id: 2, nombre: 'Estepa', slug: 'estepa' })];
+    const vacio = camposWebDe(null);
+    expect(validarCamposWeb(vacio, sedes, 1)).toEqual({});
+    expect(validarCamposWeb({ ...vacio, slug: 'casariche' }, sedes, 1)).toEqual({});
+    expect(validarCamposWeb({ ...vacio, slug: 'ESTEPA' }, sedes, 1).slug).toBe('Ya la usa la sede de Estepa. Elige otra.');
+    expect(validarCamposWeb({ ...vacio, slug: 'roda--x' }, sedes, null).slug).toBe(SLUG_NO_VALIDO);
+    expect(validarCamposWeb({ ...vacio, slug: 'a'.repeat(61) }, sedes, null).slug).toBe(SLUG_NO_VALIDO);
+    expect(validarCamposWeb({ ...vacio, lugar: 'x'.repeat(101) }, sedes, null).lugar).toBe('No puede pasar de 100 caracteres.');
+    expect(validarCamposWeb({ ...vacio, foto2Alt: 'x'.repeat(151) }, sedes, null).foto2Alt).toBe('No puede pasar de 150 caracteres.');
+  });
+
+  it('campoWebDeError: cada mensaje del servidor a su campo', () => {
+    expect(campoWebDeError('Ya hay una sede con esa dirección web.')).toBe('slug');
+    expect(campoWebDeError(SLUG_NO_VALIDO)).toBe('slug');
+    expect(campoWebDeError('El lugar de la sede no puede pasar de 120 caracteres.')).toBe('lugar');
+    expect(campoWebDeError('Las indicaciones de acceso no puede pasar de 300 caracteres.')).toBe('indicacionesAcceso');
+    expect(campoWebDeError('La descripción de la foto 1 no puede pasar de 150 caracteres.')).toBe('fotoAlt');
+    expect(campoWebDeError('La descripción de la foto 2 no puede pasar de 150 caracteres.')).toBe('foto2Alt');
+    expect(campoWebDeError('Ya hay una sede con ese nombre.')).toBeNull();
+  });
+
+  it('falloAlElegir y los pesos', () => {
+    expect(falloAlElegir('tamano', { name: 'a.jpg', size: 64 * 1024 * 1024 })).toEqual({
+      titulo: 'Demasiado grande',
+      texto: '«a.jpg» pesa 64 MB. Usa una foto de menos de 50 MB.',
+    });
+    expect(falloAlElegir('formato', { name: 'a.gif', size: 1 }).titulo).toBe('Formato no admitido');
+    expect(pesoFoto(2.4 * 1024 * 1024)).toBe('2,4 MB');
+    expect(pesoFoto(500)).toBe('1 KB');
+    expect(altPorDefecto('Herrera')).toBe('Foto de la sede de Herrera');
+    expect(altPorDefecto('')).toBe('Foto de la sede de esta sede');
   });
 });
