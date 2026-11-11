@@ -722,6 +722,63 @@
   height: 112px !important;
 }
 
+// ------------------------------------------------------------------ W12g: grupo «En la web» (boceto comarcal, d524)
+
+.evento-form__seccion--web {
+  border-color: var(--pn-acento-borde);
+}
+
+.evento-form__seccion-cabecera--con-texto {
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.evento-form__seccion-texto {
+  flex-basis: 100%;
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// Hora (estrecha) y Lugar en una fila; en móvil, una debajo de otra.
+.evento-form__doble {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.evento-form__select {
+  padding-right: 36px;
+  background: var(--pn-superficie)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235d6573' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 12px center;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.evento-form__asi-sale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+  font: var(--pn-secundario);
+
+  span {
+    color: var(--pn-tinta-2);
+  }
+
+  strong {
+    font-weight: 600;
+    color: var(--pn-tinta);
+    overflow-wrap: anywhere;
+  }
+}
+
 // ------------------------------------------------------------------ tableta y móvil
 
 @media (max-width: 1023.98px) {
@@ -746,6 +803,10 @@
 
   .evento-form__campo--corto {
     max-width: none;
+  }
+
+  .evento-form__doble {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .evento-form__control,

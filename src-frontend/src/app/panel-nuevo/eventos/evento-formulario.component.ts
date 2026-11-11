@@ -5,6 +5,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
+import { CatalogoService } from '../../features/catalogo/catalogo.service';
+import { catalogoEsLegadoTaemoi } from '../../features/catalogo/legado-taemoi';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import {
   SUBIDA_DOCUMENTO,
@@ -21,6 +23,8 @@ import { EsqueletoComponent } from '../carga/esqueleto.component';
 import { LecturasPanelService } from '../carga/lecturas-panel.service';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { numero } from '../formato/formato-es';
+import { Sede, estadoHttp } from '../sedes/sedes-vista';
+import { SedesService } from '../sedes/sedes.service';
 import { EventoFotosComponent, ResultadoFotos } from './evento-fotos.component';
 import {
   ANCHO_FORMULARIO,
@@ -28,8 +32,11 @@ import {
   DocumentoEvento,
   EventoPanel,
   IMAGEN_POR_DEFECTO,
+  MAXIMO_LUGAR_EVENTO,
+  campoWebEventoDeError,
   cuerpoCrear,
   cuerpoEditar,
+  cuerpoWebEvento,
   estadoFecha,
   etiquetaEstado,
   fechaCorta,
@@ -37,6 +44,7 @@ import {
   mensajesError,
   nombreDescarga,
   tamanoArchivo,
+  textoAsiSale,
   urlImagen,
 } from './eventos-vista';
 
@@ -84,16 +92,29 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
   private readonly avisos = inject(AvisosService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly catalogo = inject(CatalogoService);
+  private readonly sedesApi = inject(SedesService);
 
-  /** Los validadores de hoy. */
+  /** Los validadores de hoy. W12g: `hora`, `lugar` y `sedeId` solo se envían con web por plantilla. */
   readonly form = inject(FormBuilder).nonNullable.group({
     titulo: ['', [Validators.required, Validators.maxLength(100)]],
     descripcion: ['', [Validators.required, Validators.maxLength(500)]],
     fechaEvento: [''],
     visible: [true],
+    hora: [''],
+    // Sin validador: el `maxlength` del campo limita lo que se escribe; uno ya guardado más largo (el servidor admite
+    // 160) no bloquea el guardado.
+    lugar: [''],
+    sedeId: [''],
   });
 
   readonly ids = IDS;
+  readonly maximoLugar = MAXIMO_LUGAR_EVENTO;
+
+  /** W12g: las sedes del `<select>` «Sede» (todas, en el orden de la API). */
+  sedes: Sede[] = [];
+  /** W12g: errores del servidor en «Lugar» y «Sede» (400 de datos de la web). */
+  erroresWeb: { lugar?: string; sedeId?: string } = {};
   readonly tamanoArchivo = tamanoArchivo;
   readonly imagenPorDefecto = IMAGEN_POR_DEFECTO;
 
@@ -149,7 +170,50 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     return this.modo === 'crear' ? 'Crear evento' : 'Guardar cambios';
   }
 
+  /**
+   * W12g: el grupo «En la web» solo sale en escuelas con web por plantilla. Con `legado` (Moiskimdo) o sin catálogo, el
+   * formulario y los cuerpos enviados quedan como siempre (falla cerrado).
+   */
+  get webPlantilla(): boolean {
+    const catalogo = this.catalogo.catalogo();
+    return catalogo !== null && !catalogoEsLegadoTaemoi(catalogo);
+  }
+
+  /** «En tu web: Pabellón cubierto municipal, Estepa · 10:00». */
+  get asiSale(): string {
+    const v = this.form.getRawValue();
+    const sede = this.sedes.find((s) => String(s.id) === v.sedeId)?.nombre ?? null;
+    return textoAsiSale(v.lugar, sede, v.hora);
+  }
+
+  /** El id de la sede como opción del `<select>`. */
+  idSede(sede: Sede): string {
+    return String(sede.id);
+  }
+
+  limpiarErrorWeb(campo: 'lugar' | 'sedeId'): void {
+    delete this.erroresWeb[campo];
+  }
+
+  describirWeb(campo: 'lugar' | 'sedeId'): string {
+    const ayuda = campo === 'lugar' ? 'evento-lugar-ayuda' : 'evento-sede-ayuda';
+    return this.erroresWeb[campo] ? `${campo === 'lugar' ? 'evento-lugar' : 'evento-sede'}-error ${ayuda}` : ayuda;
+  }
+
   ngOnInit(): void {
+    if (this.webPlantilla) {
+      // Un fallo deja el `<select>` con «Sin sede» (y la del evento, si la tenía, se conserva en el control).
+      this.sedesApi
+        .listar()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (sedes) => {
+            this.sedes = sedes ?? [];
+            this.cdr.markForCheck();
+          },
+          error: () => undefined,
+        });
+    }
     this.ruta.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
       const id = Number(params['id']);
       if (params['id'] !== undefined && !Number.isNaN(id)) {
@@ -188,6 +252,9 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
           titulo: evento.titulo ?? '',
           descripcion: evento.descripcion ?? '',
           fechaEvento: fechaParaCampo(evento.fechaEvento),
+          hora: evento.hora ?? '',
+          lugar: evento.lugar ?? '',
+          sedeId: evento.sedeId == null ? '' : String(evento.sedeId),
         });
         this.documentosGuardados = [...(evento.documentos ?? [])];
         this.estado = 'listo';
@@ -537,8 +604,10 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     const v = this.form.getRawValue();
     const documentos = [...this.documentosNuevos];
     this.guardando = true;
+    this.erroresWeb = {};
+    const cuerpo = this.webPlantilla ? { ...cuerpoCrear(v), ...cuerpoWebEvento(v) } : cuerpoCrear(v);
     this.endpoints
-      .crearEvento(cuerpoCrear(v), this.imagen)
+      .crearEvento(cuerpo, this.imagen)
       .subscribe({
         next: (creado: EventoPanel) => {
           const conFotos = (errores: number, motivos: string[], guardados: DocumentoEvento[], fallidos: File[]) => {
@@ -561,6 +630,9 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.guardando = false;
+          if (this.errorEnCampoWeb(error)) {
+            return;
+          }
           this.avisos.error(mensajeErrorSubida(error, 'No hemos podido crear el evento.'));
           this.cdr.markForCheck();
         },
@@ -629,8 +701,11 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
     if (id === null) {
       return;
     }
+    const v = this.form.getRawValue();
     const datos = new FormData();
-    datos.append('eventoEditado', JSON.stringify(cuerpoEditar(this.form.getRawValue())));
+    // Con `legado`, el cuerpo de siempre: sin `hora`, `lugar` ni `sedeId` (el servidor conserva los que no llegan).
+    datos.append('eventoEditado', JSON.stringify(this.webPlantilla ? { ...cuerpoEditar(v), ...cuerpoWebEvento(v) } : cuerpoEditar(v)));
+    this.erroresWeb = {};
     if (this.imagen) {
       datos.append('file', this.imagen);
     } else {
@@ -667,10 +742,32 @@ export class EventoFormularioComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.guardando = false;
+          if (this.errorEnCampoWeb(error)) {
+            return;
+          }
           this.avisos.error(mensajeErrorSubida(error, 'No se ha podido actualizar el evento'));
           this.cdr.markForCheck();
         },
       });
+  }
+
+  /** W12g: un 400 de «Lugar» o de una sede de otra escuela se enseña bajo su campo, que recibe el foco. */
+  private errorEnCampoWeb(error: unknown): boolean {
+    if (!this.webPlantilla || estadoHttp(error) !== 400) {
+      return false;
+    }
+    const mensaje = mensajeErrorSubida(error, '');
+    const campo = campoWebEventoDeError(mensaje);
+    if (!campo) {
+      return false;
+    }
+    this.erroresWeb = { [campo]: mensaje };
+    this.cdr.detectChanges();
+    const id = campo === 'lugar' ? 'evento-lugar' : 'evento-sede';
+    const control = this.host.nativeElement.querySelector<HTMLElement>(`#${id}`);
+    control?.focus();
+    control?.scrollIntoView?.({ block: 'center' });
+    return true;
   }
 
   private terminarActualizado(): void {

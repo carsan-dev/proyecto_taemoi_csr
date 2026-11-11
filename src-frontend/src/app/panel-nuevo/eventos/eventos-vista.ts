@@ -20,6 +20,10 @@ export interface EventoPanel {
   orden?: number | null;
   fotoEvento?: { id?: number; nombre?: string; url?: string | null; tipo?: string; ruta?: string | null } | null;
   documentos?: DocumentoEvento[];
+  /** Web por plantilla (W2): «HH:mm», lugar y sede; no llegan si no tienen valor. */
+  hora?: string | null;
+  lugar?: string | null;
+  sedeId?: number | null;
 }
 
 export interface DocumentoEvento {
@@ -235,4 +239,51 @@ export function resumenEventos(total: number, visibles: number): string {
   }
   const parteVisibles = visibles === 0 ? 'ninguno visible' : `${numero(visibles)} ${visibles === 1 ? 'visible' : 'visibles'}`;
   return `${plural(total, 'evento', 'eventos')}, ${parteVisibles} en la web`;
+}
+
+// ------------------------------------------------------------------ W12g: grupo «En la web» (d524)
+
+/** Los campos de la web del evento en el formulario (solo escuelas con web por plantilla). */
+export interface ValoresWebEvento {
+  hora: string;
+  lugar: string;
+  /** Id de la sede como texto del `<select>`; vacío = «Sin sede». */
+  sedeId: string;
+}
+
+/** Máximo del lugar en el boceto aprobado (el servidor admite 160). */
+export const MAXIMO_LUGAR_EVENTO = 100;
+
+/** Mensaje de `EventoServiceImpl` para una sede que no es de la escuela. */
+export const SEDE_NO_EXISTE = 'La sede del evento no existe.';
+
+/**
+ * `hora`, `lugar` y `sedeId` para el cuerpo (`EventoService.CAMPOS_WEB`): vacíos como null. Solo se añaden con web por
+ * plantilla; con `legado` el cuerpo es el de siempre y el servidor conserva lo que hubiera.
+ */
+export function cuerpoWebEvento(v: ValoresWebEvento): { hora: string | null; lugar: string | null; sedeId: number | null } {
+  const lugar = v.lugar.trim();
+  const sede = Number(v.sedeId);
+  return {
+    hora: v.hora || null,
+    lugar: lugar === '' ? null : lugar,
+    sedeId: v.sedeId !== '' && Number.isInteger(sede) ? sede : null,
+  };
+}
+
+/** El campo de la web al que va un 400 de datos del evento, o null si no es de uno de ellos. */
+export function campoWebEventoDeError(mensaje: string): 'lugar' | 'sedeId' | null {
+  if (mensaje === SEDE_NO_EXISTE) {
+    return 'sedeId';
+  }
+  if (mensaje.startsWith('El lugar del evento')) {
+    return 'lugar';
+  }
+  return null;
+}
+
+/** «Pabellón cubierto municipal, Estepa · 10:00» o «sin lugar ni hora» (boceto, «En tu web:»). */
+export function textoAsiSale(lugar: string, sede: string | null, hora: string): string {
+  const donde = [lugar.trim(), sede ?? ''].filter((x) => x !== '').join(', ');
+  return [donde, hora].filter((x) => x !== '').join(' · ') || 'sin lugar ni hora';
 }
