@@ -244,6 +244,8 @@ export interface VistaEvento {
 }
 
 export interface VistaDato {
+  /** Qué dato es: la capa de edición (W12c) le pone su candado. */
+  tipo: 'sedes' | 'edad' | 'mensualidad' | 'grupos';
   cifra: string;
   etiqueta: string;
 }
@@ -293,9 +295,17 @@ type CuerpoSeccion =
  */
 export type VistaSeccion = CuerpoSeccion & { id: string; anden: boolean };
 
+/** Una parte del rótulo de la portada: la capa de edición (W12c) le pone su candado. */
+export interface ParteRotulo {
+  tipo: 'disciplina' | 'sedes';
+  texto: string;
+}
+
 export interface VistaPortada {
   una: boolean;
   rotulo: string;
+  /** El rótulo por partes («Escuela de taekwondo», «6 sedes»); unidas con « · » dan {@link rotulo}. */
+  rotuloPartes: ParteRotulo[];
   titular: string;
   frase: string;
   botonHorarios: string;
@@ -367,12 +377,11 @@ export function vistaPortada(sitio: SitioWeb, ahora: Date): VistaPortada {
 
   const nombresDisciplinas = disciplinas.map((d) => d.nombre);
   const rotuloSedes = sedes.length ? `${sedes.length} ${una ? 'sede' : 'sedes'}` : '';
-  const rotulo = [
-    nombresDisciplinas.length ? `Escuela de ${enLista(nombresDisciplinas.map((n) => n.toLowerCase()))}` : '',
-    rotuloSedes,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const rotuloPartes = [
+    { tipo: 'disciplina', texto: nombresDisciplinas.length ? `Escuela de ${enLista(nombresDisciplinas.map((n) => n.toLowerCase()))}` : '' },
+    { tipo: 'sedes', texto: rotuloSedes },
+  ].filter((parte): parte is ParteRotulo => !!parte.texto);
+  const rotulo = rotuloPartes.map((parte) => parte.texto).join(' · ');
   const disciplinaTitular = nombresDisciplinas.length ? enLista(nombresDisciplinas) : sitio.escuela.nombre;
   const titularPorDefecto = sedes.length ? `${disciplinaTitular} en ${lugares}` : disciplinaTitular;
   const desde = edad != null ? ` desde los ${edad} años` : '';
@@ -402,6 +411,7 @@ export function vistaPortada(sitio: SitioWeb, ahora: Date): VistaPortada {
   return {
     una,
     rotulo,
+    rotuloPartes,
     titular: bloques.texto('portada.titular', titularPorDefecto),
     frase: bloques.texto('portada.frase', frasePorDefecto),
     botonHorarios: horarios
@@ -647,17 +657,18 @@ export function vistaSalidas(sede: SedeWeb, textos: TextosTema, ahora: Date): Vi
 function datosDelClub(sitio: SitioWeb, x: Contexto): VistaDato[] {
   const datos: VistaDato[] = [];
   if (sitio.sedes.length) {
-    datos.push({ cifra: String(sitio.sedes.length), etiqueta: x.una ? 'sede' : 'sedes' });
+    datos.push({ tipo: 'sedes', cifra: String(sitio.sedes.length), etiqueta: x.una ? 'sede' : 'sedes' });
   }
   if (x.edad != null) {
-    datos.push({ cifra: String(x.edad), etiqueta: 'años, edad de inicio' });
+    datos.push({ tipo: 'edad', cifra: String(x.edad), etiqueta: 'años, edad de inicio' });
   }
   if (x.tarifa) {
-    datos.push({ cifra: importeEnTexto(x.tarifa.importe), etiqueta: x.textos.t('tarifas.al_mes') });
+    datos.push({ tipo: 'mensualidad', cifra: importeEnTexto(x.tarifa.importe), etiqueta: x.textos.t('tarifas.al_mes') });
   }
   const grupos = gruposPorSede(sitio.sedes);
   if (grupos) {
     datos.push({
+      tipo: 'grupos',
       cifra: String(grupos.maximo),
       etiqueta: grupos.iguales ? 'grupos por sede' : 'grupos por sede, como máximo',
     });

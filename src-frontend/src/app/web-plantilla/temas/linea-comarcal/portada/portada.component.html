@@ -10,7 +10,9 @@
     <section class="portada" id="portada" aria-labelledby="portada-titulo">
       <div class="envoltura portada-rejilla">
         <div class="portada-texto">
-          @if (v.rotulo) {<p class="rotulo">{{ v.rotulo }}</p>}
+          @if (v.rotuloPartes.length) {
+            <p class="rotulo">@for (parte of v.rotuloPartes; track parte.tipo) {@if (!$first) {{{ ' · ' }}}<span [class]="'rotulo-' + parte.tipo">{{ parte.texto }}</span>}</p>
+          }
           @if (v.titular) {<h1 class="titular" id="portada-titulo">{{ v.titular }}</h1>}
           @if (v.frase) {<p class="entrada">{{ v.frase }}</p>}
           @if (v.botonHorarios || v.enlaceTarifas) {
@@ -60,7 +62,7 @@
               @if (seccion.datos.length) {
                 <ul class="datos" aria-label="El club en cifras">
                   @for (dato of seccion.datos; track dato.etiqueta) {
-                    <li class="dato"><span class="dato-cifra">{{ dato.cifra }}</span><span class="dato-etiqueta">{{ dato.etiqueta }}</span></li>
+                    <li class="dato" [attr.data-dato]="dato.tipo"><span class="dato-cifra">{{ dato.cifra }}</span><span class="dato-etiqueta">{{ dato.etiqueta }}</span></li>
                   }
                 </ul>
               }

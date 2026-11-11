@@ -111,6 +111,16 @@ describe('PortadaLineaComarcalComponent', () => {
       expect(textos(raiz, '.acciones .enlace-flecha')).toEqual(['Ver tarifas']);
     });
 
+    it('W12c: el rótulo por partes y el tipo de cada cifra, para los candados del editor', async () => {
+      const raiz = await abrir(sitioConSedes(6));
+      expect(textos(raiz, '.portada-texto .rotulo-disciplina')).toEqual(['Escuela de taekwondo']);
+      expect(textos(raiz, '.portada-texto .rotulo-sedes')).toEqual(['6 sedes']);
+      const tipos = Array.from(raiz.querySelectorAll<HTMLElement>('.datos .dato')).map((d) => d.dataset['dato']);
+      expect(tipos.length).toBeGreaterThan(0);
+      expect(tipos.every((t) => ['sedes', 'edad', 'mensualidad', 'grupos'].includes(t ?? ''))).toBeTrue();
+      expect(tipos[0]).toBe('sedes');
+    });
+
     it('línea: seis paradas con su próxima clase; ninguna abierta en móvil; al pulsar se abre y se recuerda', async () => {
       const raiz = await abrir(sitioConSedes(6));
       const paradas = Array.from(raiz.querySelectorAll<HTMLButtonElement>('button.parada-boton'));
