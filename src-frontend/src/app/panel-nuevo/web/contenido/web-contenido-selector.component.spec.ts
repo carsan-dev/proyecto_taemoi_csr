@@ -121,7 +121,8 @@ describe('WebContenidoComponent: selector de página y «Ver el caso» (W12c-bis
         abrir();
         elegir(pagina(), valor);
         expect(src()).toBe(`${ORIGEN}${ruta}${PREVIA}`);
-        expect(texto('#marco-t')).toBe(`Vista previa de tu web · ${nombre}`);
+        // W12c-ter: en Preinscripción el rótulo lleva el paso (boceto `pintarSelector`, l.2415).
+        expect(texto('#marco-t')).toBe(`Vista previa de tu web · ${nombre}${valor === 'preinscripcion' ? ' · 1 · Pueblo' : ''}`);
         expect(anuncio()).toBe(`Vista previa de ${nombre}.`);
         expect(paginaEnLaDireccion()).toBe(valor);
         // Nada de esto llega a la API.
@@ -251,7 +252,7 @@ describe('WebContenidoComponent: selector de página y «Ver el caso» (W12c-bis
       expect(casosDe('tarifas')).toEqual(['Sin tarifas publicadas']);
       expect(casosDe('eventos')).toEqual(['Sin eventos próximos', 'Sin eventos', 'Un solo evento', 'Sin eventos anteriores']);
       expect(casosDe('evento')).toEqual(['Una sola foto']);
-      expect(casosDe('sede')).toEqual(['Grupo lleno', 'Lista de espera']);
+      expect(casosDe('sede')).toEqual(['Grupo lleno', 'Lista de espera', 'Sin clases esta semana']);
       expect(casosDe('legales')).toEqual([]);
       abrirMenu();
       expect(texto('.flot__ayuda--casos')).toBe('Esta página no tiene textos de casos poco frecuentes.');

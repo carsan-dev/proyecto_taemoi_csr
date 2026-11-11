@@ -61,7 +61,7 @@
           <label class="control__etiqueta" for="web-contenido-sub">{{ etiquetaSub() }}</label>
           <select class="selector" id="web-contenido-sub" (change)="cambiarSub($event)">
             @for (o of opcionesSub(); track $index) {
-            <option [value]="o.valor" [selected]="o.valor === sub() && !o.desactivada" [disabled]="o.desactivada">{{ o.texto }}</option>
+            <option [value]="o.valor" [selected]="o.valor === valorSub() && !o.desactivada" [disabled]="o.desactivada">{{ o.texto }}</option>
             }
           </select>
         </div>

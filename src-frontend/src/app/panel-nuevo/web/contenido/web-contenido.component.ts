@@ -22,6 +22,7 @@ import {
   CANAL_EDITOR_WEB,
   CasoVista,
   MensajeDelEditor,
+  PasoPreinscripcion,
   enviarPorPuente,
   esMensajeDelEditor,
   escucharPuente,
@@ -40,6 +41,7 @@ import {
   ORIGEN_EDITOR,
   OpcionSub,
   PAGINAS_CONTENIDO,
+  PASOS_CONTENIDO,
   RUTA_DESTINO,
   TEXTOS_WEB_CONTENIDO,
   acentoDe,
@@ -80,6 +82,10 @@ const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
  * W12c-bis: selector de página (d519, con su segundo selector en «Una sede» y «Un evento»; la página va en la dirección,
  * `?pagina=`) y «Ver el caso» (d528): el caso se manda por el puente y lo simula la capa dentro del iframe; ni la página
  * ni el caso llegan a la API.
+ *
+ * W12c-ter (d533): en Preinscripción, el segundo selector es «Paso» (boceto `SUBS.preinscripcion`); el paso va por el
+ * puente (un número de la lista cerrada) sin recargar el iframe, y la capa enseña ese paso con datos de ejemplo. Sus
+ * tres casos llevan cada uno a su paso; cambiar a otro paso quita el caso (como el boceto).
  */
 @Component({
   selector: 'pn-web-contenido',
@@ -123,6 +129,8 @@ export class WebContenidoComponent implements OnInit {
   readonly listas = signal<ListasVista | null | undefined>(undefined);
   private readonly elegida = signal<Partial<Record<'sede' | 'evento', string>>>({});
   readonly caso = signal<CasoVista | null>(null);
+  /** El paso de la preinscripción que se ve (boceto: empieza en el 1 y se queda al cambiar de página). */
+  readonly paso = signal<PasoPreinscripcion>(1);
   readonly menuCasos = signal(false);
 
   readonly opcionesSub = computed<OpcionSub[]>(() => {
@@ -132,12 +140,23 @@ export class WebContenidoComponent implements OnInit {
         return listas ? opcionesSede(listas.sedes) : [];
       case 'evento':
         return listas ? opcionesEvento(listas.eventos) : [];
+      case 'preinscripcion':
+        return [...PASOS_CONTENIDO];
       default:
         return [];
     }
   });
-  readonly conSub = computed(() => this.pagina() === 'sede' || this.pagina() === 'evento');
-  readonly etiquetaSub = computed(() => (this.pagina() === 'sede' ? this.textos.etiquetaSede : this.textos.etiquetaEvento));
+  readonly conSub = computed(() => this.pagina() === 'sede' || this.pagina() === 'evento' || this.pagina() === 'preinscripcion');
+  readonly etiquetaSub = computed(() => {
+    switch (this.pagina()) {
+      case 'sede':
+        return this.textos.etiquetaSede;
+      case 'preinscripcion':
+        return this.textos.etiquetaPaso;
+      default:
+        return this.textos.etiquetaEvento;
+    }
+  });
   /** La sede o el evento que se ve: el elegido o, si no, el primero (boceto: la primera sede y el primer evento). */
   readonly sub = computed<string | null>(() => {
     const pagina = this.pagina();
@@ -156,9 +175,11 @@ export class WebContenidoComponent implements OnInit {
       evento: !!listas && listas.eventos.length > 0,
     };
   });
+  /** Lo elegido en el segundo selector: la sede, el evento o el paso (este no cambia la dirección del iframe). */
+  readonly valorSub = computed(() => (this.pagina() === 'preinscripcion' ? String(this.paso()) : this.sub()));
   readonly rotuloPagina = computed(() => {
     const nombre = nombrePagina(this.pagina());
-    const sub = this.opcionesSub().find((o) => o.valor === this.sub());
+    const sub = this.opcionesSub().find((o) => o.valor === this.valorSub());
     return sub ? `${nombre} · ${sub.texto}` : nombre;
   });
   readonly nota = computed(() => {
@@ -275,15 +296,35 @@ export class WebContenidoComponent implements OnInit {
 
   cambiarSub(evento: Event): void {
     const pagina = this.pagina();
+    const valor = (evento.target as HTMLSelectElement).value;
+    if (pagina === 'preinscripcion') {
+      this.cambiarPaso(valor);
+      return;
+    }
     if (pagina !== 'sede' && pagina !== 'evento') {
       return;
     }
-    const valor = (evento.target as HTMLSelectElement).value;
     if (!this.opcionesSub().some((o) => o.valor === valor && !o.desactivada) || valor === this.sub()) {
       return;
     }
     this.elegida.update((e) => ({ ...e, [pagina]: valor }));
     this.recargarVista();
+  }
+
+  /** «Paso» (W12c-ter): va por el puente, sin recargar; si el caso que se ve es de otro paso, se quita (boceto). */
+  private cambiarPaso(valor: string): void {
+    const paso = PASOS_CONTENIDO.find((p) => p.valor === valor)?.paso;
+    if (paso === undefined || paso === this.paso()) {
+      return;
+    }
+    this.paso.set(paso);
+    this.enviarPaso();
+    const caso = this.casoActivo();
+    if (caso?.paso !== undefined && caso.paso !== paso) {
+      this.caso.set(null);
+      this.mostrarCaso = false;
+      this.enviarCaso();
+    }
   }
 
   private ponerPagina(pagina: PaginaEditor): void {
@@ -343,6 +384,11 @@ export class WebContenidoComponent implements OnInit {
 
   private ponerCaso(id: CasoVista | null): void {
     const caso = this.casos().find((c) => c.id === id) ?? null;
+    // Un caso de la preinscripción lleva a su paso (boceto `ponerCaso`).
+    if (caso?.paso !== undefined && caso.paso !== this.paso()) {
+      this.paso.set(caso.paso);
+      this.enviarPaso();
+    }
     this.caso.set(caso?.id ?? null);
     this.mostrarCaso = !!caso;
     this.enviarCaso();
@@ -390,6 +436,9 @@ export class WebContenidoComponent implements OnInit {
       case 'listo':
         this.vistaLista();
         this.enviarBorrador();
+        if (this.pagina() === 'preinscripcion') {
+          this.enviarPaso();
+        }
         // Al recargar (otra sede u otro evento) el caso sigue: la capa nueva lo recibe.
         if (this.caso()) {
           this.enviarCaso();
@@ -416,6 +465,16 @@ export class WebContenidoComponent implements OnInit {
         canal: CANAL_EDITOR_WEB,
         tipo: 'caso',
         caso: this.caso(),
+      });
+    }
+  }
+
+  private enviarPaso(): void {
+    if (this.ventana) {
+      enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, {
+        canal: CANAL_EDITOR_WEB,
+        tipo: 'paso',
+        paso: this.paso(),
       });
     }
   }

@@ -84,11 +84,12 @@ describe('web-contenido-vista: páginas y casos (W12c-bis)', () => {
   it('casos por página: los del boceto que el tema puede enseñar, todos de la lista cerrada del puente', () => {
     const ids = (p: keyof typeof CASOS_PAGINA) => CASOS_PAGINA[p].map((c) => c.id);
     expect(ids('inicio')).toEqual(['lleno', 'espera']);
-    expect(ids('sede')).toEqual(['lleno', 'espera']);
+    expect(ids('sede')).toEqual(['lleno', 'espera', 'sin-clases']);
     expect(ids('tarifas')).toEqual(['sin-tarifas']);
     expect(ids('eventos')).toEqual(['sin-proximos', 'sin-eventos', 'un-evento', 'sin-anteriores']);
     expect(ids('evento')).toEqual(['una-foto']);
     expect(ids('legales')).toEqual([]);
+    expect(ids('preinscripcion')).toEqual(['sin-grupo', 'espera', 'fin-espera']);
     for (const lista of Object.values(CASOS_PAGINA)) {
       for (const c of lista) {
         expect((CASOS_VISTA as readonly string[]).includes(c.id)).toBeTrue();
