@@ -31,6 +31,13 @@ public interface AuditoriaService {
 			String resumen);
 
 	/**
+	 * Como {@link #registrarAccesoSensible(AuditoriaAccion, String, String, Long, String)}, con el método HTTP real de la
+	 * petición en vez del que se deduce de la acción (p. ej. un {@code PUT} que crea: acción CREATE, método PUT).
+	 */
+	void registrarAccesoSensible(AuditoriaAccion accion, String metodoHttp, String modulo, String endpoint,
+			Long recursoId, String resumen);
+
+	/**
 	 * Eventos de la escuela activa según la vista (siempre explícita: no hay sobrecarga con vista implícita, para
 	 * que ningún llamador obtenga el registro completo por accidente). En {@link VistaAuditoria#PROPIETARIO} el filtro
 	 * {@code resultado=ERROR} devuelve una página vacía (misma forma) y {@code texto} busca solo en el resumen.

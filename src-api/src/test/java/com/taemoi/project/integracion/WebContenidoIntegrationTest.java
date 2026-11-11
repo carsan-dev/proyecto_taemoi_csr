@@ -2,6 +2,7 @@ package com.taemoi.project.integracion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,12 +19,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -203,14 +210,15 @@ class WebContenidoIntegrationTest extends MySqlIntegrationTest {
 		assertEquals("WEB CONTENIDO_GUARDADO organizacion=#" + e.org() + " version=1 bloques=20 textos=12 fotos=3"
 				+ " ocultos=1 quitados=0 fotosBorradas=0 permisosNuevos=1", evento.get("resumen"));
 		assertEquals("CREATE", evento.get("accion"));
+		assertEquals("PUT", evento.get("metodo_http"), "el método real, también en el primer guardado");
 		assertEquals("web", evento.get("modulo"));
 		assertEquals(CONTENIDO, evento.get("endpoint"));
 		assertEquals(e.propietario(), ((Number) evento.get("usuario_id")).longValue());
 		assertEquals(200, ((Number) evento.get("estado_http")).intValue());
 		assertTrue(EscrituraConRegistroPropio.WEB_CONTENIDO_GUARDAR.reconoce("PUT", CONTENIDO));
 
-		// Segundo guardado: sin la casilla, la constancia se conserva (mismo autor y fecha); sin la galería, su foto se
-		// borra (fila y fichero).
+		// Segundo guardado: mismo nombre y sin la casilla, la constancia se conserva (mismo autor y fecha); sin la
+		// galería, su foto se borra (fila y fichero).
 		Path ficheroGaleria = CARPETA_IMAGENES.resolve(ruta(galeria1));
 		assertTrue(Files.exists(ficheroGaleria));
 		jdbc.update("UPDATE web_bloque SET permiso_en = '2026-11-03 10:00:00' WHERE organizacion_id = ? "
@@ -218,7 +226,7 @@ class WebContenidoIntegrationTest extends MySqlIntegrationTest {
 		List<Map<String, Object>> segundo = new ArrayList<>(bloques.stream()
 				.filter(b -> !String.valueOf(b.get("clave")).startsWith("galeria")).toList());
 		segundo.replaceAll(b -> "profesor.1.nombre".equals(b.get("clave"))
-				? fila("profesor.1.nombre", "Profesora Inventada Pozo", null, 0, false, null) : b);
+				? fila("profesor.1.nombre", "  Profesora Inventada ", null, 0, false, null) : b);
 		antes = ultimoEvento();
 		JsonNode otra = cuerpo(guardar(e, 1, segundo));
 		assertEquals(2, otra.get("version").asLong());
@@ -232,6 +240,7 @@ class WebContenidoIntegrationTest extends MySqlIntegrationTest {
 		eventos = eventosDesde(e.org(), antes);
 		assertEquals(1, eventos.size(), eventos.toString());
 		assertEquals("UPDATE", eventos.get(0).get("accion"));
+		assertEquals("PUT", eventos.get(0).get("metodo_http"));
 		assertTrue(((String) eventos.get(0).get("resumen")).endsWith("quitados=3 fotosBorradas=1 permisosNuevos=NINGUNO"),
 				eventos.toString());
 	}
@@ -255,6 +264,237 @@ class WebContenidoIntegrationTest extends MySqlIntegrationTest {
 		Map<String, JsonNode> guardado = porClave(cuerpo(guardar(e, 0, bloques)));
 		assertEquals("ALTA", guardado.get("profesor.1.nombre").get("permiso").get("origen").asText());
 		assertEquals("PANEL", guardado.get("profesor.2.nombre").get("permiso").get("origen").asText());
+	}
+
+	/**
+	 * d531: la constancia es de la persona, no del puesto {@code profesor.<n>}. Puesto con la constancia del alta y otro
+	 * nombre: sin la casilla, 400 y nada escrito; con ella, constancia nueva (PANEL, quién y cuándo). Con el mismo nombre
+	 * y la casilla marcada otra vez, también se renueva; con el mismo nombre y sin casilla, se conserva.
+	 */
+	@Test
+	void nombreNuevoEnElPuesto_exigeLaCasilla_yRenuevaLaConstancia() throws Exception {
+		Escuela e = escuela("nombre-nuevo", true);
+		cuerpo(guardar(e, 0, minimo(e)));
+		jdbc.update("""
+				INSERT INTO web_bloque (organizacion_id, clave, texto, orden, permiso_origen, permiso_en)
+				VALUES (?, 'profesor.1.nombre', 'Profesor del alta', 0, 'ALTA', '2026-11-01 09:00:00')""", e.org());
+		List<Map<String, Object>> antes = filasDe(e.org());
+		long ultimo = ultimoEvento();
+
+		// Otro nombre sin la casilla (sin el campo o con false): 400, nada escrito.
+		for (Boolean casilla : Arrays.asList(null, false)) {
+			List<Map<String, Object>> sinCasilla = new ArrayList<>(minimo(e));
+			sinCasilla.add(fila("profesor.1.nombre", "Otra Persona", null, 0, false, casilla));
+			MvcResult r = guardar(e, 1, sinCasilla);
+			assertError(r, "profesor.1.permiso");
+			assertTrue(json.readTree(contenido(r)).get("errores").get("profesor.1.permiso").asText()
+					.startsWith("Has cambiado el nombre"), contenido(r));
+		}
+		assertEquals(antes, filasDe(e.org()), "ningún bloque cambia");
+		assertEquals(1L, version(e.org()));
+		assertTrue(eventosDesde(e.org(), ultimo).stream()
+				.noneMatch(ev -> String.valueOf(ev.get("resumen")).startsWith("WEB CONTENIDO_GUARDADO")));
+
+		// Otro nombre con la casilla: constancia nueva del panel, de quien guarda y de ahora.
+		LocalDateTime alta = LocalDateTime.parse("2026-11-01T09:00:00");
+		List<Map<String, Object>> conCasilla = new ArrayList<>(minimo(e));
+		conCasilla.add(fila("profesor.1.nombre", "Otra Persona", null, 0, false, true));
+		JsonNode permiso = porClave(cuerpo(guardar(e, 1, conCasilla))).get("profesor.1.nombre").get("permiso");
+		assertEquals("PANEL", permiso.get("origen").asText());
+		assertEquals("Usuario Prueba-" + marca, permiso.get("por").asText());
+		assertTrue(LocalDateTime.parse(permiso.get("en").asText()).isAfter(alta), permiso.toString());
+		Map<String, Object> fila = jdbc.queryForMap("SELECT permiso_origen, permiso_por FROM web_bloque "
+				+ "WHERE organizacion_id = ? AND clave = 'profesor.1.nombre'", e.org());
+		assertEquals("PANEL", fila.get("permiso_origen"));
+		assertEquals(e.propietario(), ((Number) fila.get("permiso_por")).longValue());
+
+		// Mismo nombre y la casilla otra vez: se renueva.
+		jdbc.update("UPDATE web_bloque SET permiso_en = '2026-11-02 08:00:00' WHERE organizacion_id = ? "
+				+ "AND clave = 'profesor.1.nombre'", e.org());
+		JsonNode renovada = porClave(cuerpo(guardar(e, 2, conCasilla))).get("profesor.1.nombre").get("permiso");
+		assertNotEquals("2026-11-02T08:00:00", renovada.get("en").asText());
+		assertTrue(LocalDateTime.parse(renovada.get("en").asText()).isAfter(alta));
+
+		// Mismo nombre sin la casilla: se conserva tal cual.
+		jdbc.update("UPDATE web_bloque SET permiso_en = '2026-11-02 08:00:00' WHERE organizacion_id = ? "
+				+ "AND clave = 'profesor.1.nombre'", e.org());
+		List<Map<String, Object>> mismoNombre = new ArrayList<>(minimo(e));
+		mismoNombre.add(fila("profesor.1.nombre", "Otra Persona", null, 0, false, null));
+		JsonNode conservada = porClave(cuerpo(guardar(e, 3, mismoNombre))).get("profesor.1.nombre").get("permiso");
+		assertEquals("PANEL", conservada.get("origen").asText());
+		assertEquals("2026-11-02T08:00:00", conservada.get("en").asText());
+	}
+
+	// ------------------------------------------------------------------ registro sin el cuerpo
+
+	/**
+	 * El cuerpo del contenido (textos y nombres de profesores) no se guarda en el registro con ningún resultado: 200
+	 * (registro propio, solo recuentos), 400, 409 y JSON malformado (fila genérica con su estado y el cuerpo omitido).
+	 */
+	@Test
+	void registro_sinElCuerpoDelContenido_enNingunCaso() throws Exception {
+		Escuela e = escuela("registro", true);
+		String secreto = "Nombre Secreto " + marca;
+		List<Map<String, Object>> bien = new ArrayList<>(minimo(e));
+		bien.add(fila("profesor.1.nombre", secreto, null, 0, false, true));
+		long ultimo = ultimoEvento();
+
+		cuerpo(guardar(e, 0, bien));
+		List<Map<String, Object>> mal = new ArrayList<>(bien);
+		mal.add(fila("profesor.2.nombre", secreto + " Dos", null, 0, false, null));
+		assertError(guardar(e, 1, mal), "profesor.2.permiso");
+		assertEquals(409, guardar(e, 0, bien).getResponse().getStatus());
+		assertEquals(400, peticion(put(CONTENIDO).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"version\":1,\"bloques\":[{\"clave\":\"profesor.1.nombre\",\"texto\":\"" + secreto + "\""),
+				e.sesion()).getResponse().getStatus());
+
+		List<Map<String, Object>> filas = jdbc.queryForList("""
+				SELECT estado_http, metodo_http, payload_json, query_params_json, resumen FROM auditoria_evento
+				WHERE id > ? AND organizacion_id = ? AND endpoint = ? AND metodo_http = 'PUT' ORDER BY id""", ultimo,
+				e.org(), CONTENIDO);
+		List<Integer> estados = filas.stream().map(f -> ((Number) f.get("estado_http")).intValue()).toList();
+		assertEquals(List.of(200, 400, 409, 400), estados, filas.toString());
+		for (Map<String, Object> f : filas) {
+			int estado = ((Number) f.get("estado_http")).intValue();
+			if (estado == 200) {
+				assertNull(f.get("payload_json"), "registro propio: sin cuerpo");
+			} else {
+				assertEquals("[payload omitted: contenido de la web]", f.get("payload_json"), f.toString());
+			}
+		}
+		assertEquals(0, contar("SELECT COUNT(*) FROM auditoria_evento WHERE id > " + ultimo
+				+ " AND (payload_json LIKE '%" + marca + "%' OR resumen LIKE '%" + marca
+				+ "%' OR query_params_json LIKE '%" + marca + "%')"), "ningún texto enviado en el registro");
+	}
+
+	// ------------------------------------------------------------------ URL de imagen en el cuerpo
+
+	/**
+	 * El cuerpo no puede poner una foto por su URL: sin {@code imagenId} válido, 400 (sea de otra escuela, de alumnos, de
+	 * sedes o externa) y nada cambia. La URL que llegue junto a un {@code imagenId} propio se ignora: no hay dónde
+	 * guardarla y sale la de la foto propia.
+	 */
+	@Test
+	void urlDeImagenEnElCuerpo_noPoneNingunaFoto() throws Exception {
+		Escuela e = escuela("url", true);
+		Escuela otra = escuela("url-otra", true);
+		cuerpo(guardar(e, 0, minimo(e)));
+		long ajena = subir(otra);
+		List<String> urls = List.of("/imagenes/" + ruta(ajena),
+				"/imagenes/org-" + e.org() + "/web/bloques/" + nombreDe(ajena),
+				"/imagenes/org-" + e.org() + "/alumnos/foto-" + marca + ".webp",
+				"/imagenes/org-" + e.org() + "/web/sedes/foto-" + marca + ".webp",
+				"https://externa-" + marca + ".invalid/foto.webp");
+		List<Map<String, Object>> antes = filasDe(e.org());
+		for (String url : urls) {
+			List<Map<String, Object>> bloques = new ArrayList<>(minimo(e));
+			Map<String, Object> galeria = fila("galeria.1", "Foto", null, 1, false, null);
+			galeria.put("imagenUrl", url);
+			bloques.add(galeria);
+			assertError(guardar(e, 1, bloques), "galeria.1");
+		}
+		assertEquals(antes, filasDe(e.org()));
+		assertEquals(1L, version(e.org()));
+
+		long propia = subir(e);
+		List<Map<String, Object>> bloques = new ArrayList<>(minimo(e));
+		Map<String, Object> galeria = fila("galeria.1", "Foto", propia, 1, false, null);
+		galeria.put("imagenUrl", "https://externa-" + marca + ".invalid/foto.webp");
+		bloques.add(galeria);
+		MvcResult r = guardar(e, 1, bloques);
+		JsonNode guardada = porClave(cuerpo(r)).get("galeria.1");
+		assertTrue(guardada.get("imagenUrl").asText().endsWith("/org-" + e.org() + "/web/bloques/" + nombreDe(propia)));
+		assertFalse(contenido(r).contains("externa-" + marca));
+		assertFalse(contenido(mvc.perform(get(PUBLICO).header("Host", e.host())).andReturn()).contains("externa-" + marca));
+	}
+
+	// ------------------------------------------------------------------ escuelas aisladas
+
+	/** Lo de la escuela B no se ve ni se toca desde la A: ni al leer, ni al guardar, ni al subir. */
+	@Test
+	void escuelasAisladas() throws Exception {
+		Escuela a = escuela("aislada-a", true);
+		Escuela b = escuela("aislada-b", true);
+		String secretoB = "Solo de B " + marca;
+		long fotoB = subir(b);
+		List<Map<String, Object>> bloquesB = new ArrayList<>(minimo(b));
+		bloquesB.add(fila("presentacion.titulo", secretoB, null, 0, false, null));
+		bloquesB.add(fila("galeria.1", "Foto de B", fotoB, 1, false, null));
+		bloquesB.add(fila("profesor.1.nombre", "Profesor de B " + marca, null, 0, false, true));
+		cuerpo(guardar(b, 0, bloquesB));
+		cuerpo(guardar(b, 1, bloquesB));
+		jdbc.update("UPDATE sede SET foto_alt = 'Descripción de B' WHERE id = ?", b.sedeA());
+		List<Map<String, Object>> filasB = filasDe(b.org());
+		List<Map<String, Object>> sedesB = jdbc.queryForList("SELECT * FROM sede WHERE organizacion_id = ? ORDER BY id",
+				b.org());
+		long imagenesB = contar("SELECT COUNT(*) FROM imagen WHERE organizacion_id = " + b.org());
+		assertEquals(2L, version(b.org()));
+
+		// A lee: nada de B.
+		MvcResult leido = peticion(get(CONTENIDO), a.sesion());
+		JsonNode contenidoA = cuerpo(leido);
+		assertEquals(0, contenidoA.get("version").asLong());
+		assertEquals(0, contenidoA.get("bloques").size());
+		assertFalse(contenido(leido).contains(marca), contenido(leido));
+
+		// A guarda: la foto de B no vale; la versión de B no es la de A; lo suyo, sí.
+		List<Map<String, Object>> conFotoB = new ArrayList<>(minimo(a));
+		conFotoB.add(fila("galeria.1", "Foto", fotoB, 1, false, null));
+		assertError(guardar(a, 0, conFotoB), "galeria.1");
+		assertEquals(409, guardar(a, 2, minimo(a)).getResponse().getStatus());
+		List<Map<String, Object>> deA = new ArrayList<>(minimo(a));
+		deA.add(fila("presentacion.titulo", "De A", null, 0, false, null));
+		MvcResult guardadoA = guardar(a, 0, deA);
+		assertEquals(1, cuerpo(guardadoA).get("version").asLong());
+		assertFalse(contenido(guardadoA).contains("Solo de B"), contenido(guardadoA));
+		assertTrue(ruta(subir(a)).startsWith("org-" + a.org() + "/web/bloques/"));
+
+		// B, intacta.
+		assertEquals(filasB, filasDe(b.org()));
+		assertEquals(2L, version(b.org()));
+		assertEquals(sedesB, jdbc.queryForList("SELECT * FROM sede WHERE organizacion_id = ? ORDER BY id", b.org()));
+		assertEquals(imagenesB, contar("SELECT COUNT(*) FROM imagen WHERE organizacion_id = " + b.org()));
+		assertFalse(contenido(mvc.perform(get(PUBLICO).header("Host", a.host())).andReturn()).contains("Solo de B"));
+	}
+
+	// ------------------------------------------------------------------ a la vez
+
+	/** d522: dos guardados a la vez con la misma versión: uno gana (200) y el otro, 409; la versión sube una vez. */
+	@Test
+	void dosGuardadosALaVez_unoGana_elOtro409() throws Exception {
+		Escuela e = escuela("a-la-vez", true);
+		cuerpo(guardar(e, 0, minimo(e)));
+		List<Map<String, Object>> uno = new ArrayList<>(minimo(e));
+		uno.add(fila("menu.horarios", "Uno", null, 0, false, null));
+		List<Map<String, Object>> dos = new ArrayList<>(minimo(e));
+		dos.add(fila("menu.horarios", "Dos", null, 0, false, null));
+		long ultimo = ultimoEvento();
+
+		ExecutorService hilos = Executors.newFixedThreadPool(2);
+		CountDownLatch salida = new CountDownLatch(1);
+		try {
+			Future<Integer> primero = hilos.submit(() -> {
+				salida.await();
+				return guardar(e, 1, uno).getResponse().getStatus();
+			});
+			Future<Integer> segundo = hilos.submit(() -> {
+				salida.await();
+				return guardar(e, 1, dos).getResponse().getStatus();
+			});
+			salida.countDown();
+			List<Integer> estados = new ArrayList<>(
+					List.of(primero.get(60, TimeUnit.SECONDS), segundo.get(60, TimeUnit.SECONDS)));
+			estados.sort(Comparator.naturalOrder());
+			assertEquals(List.of(200, 409), estados);
+		} finally {
+			hilos.shutdownNow();
+		}
+		assertEquals(2L, version(e.org()));
+		String texto = jdbc.queryForObject("SELECT texto FROM web_bloque WHERE organizacion_id = ? "
+				+ "AND clave = 'menu.horarios'", String.class, e.org());
+		assertTrue("Uno".equals(texto) || "Dos".equals(texto), texto);
+		assertEquals(1, eventosDesde(e.org(), ultimo).stream()
+				.filter(ev -> String.valueOf(ev.get("resumen")).startsWith("WEB CONTENIDO_GUARDADO")).count());
 	}
 
 	// ------------------------------------------------------------------ 400
@@ -289,6 +529,8 @@ class WebContenidoIntegrationTest extends MySqlIntegrationTest {
 				fila("disciplina.kickboxing.descripcion", "No es de la escuela", null, 0, false, null));
 		casos.put("menu.sedes", fila("menu.sedes", "Sedes", null, -1, false, null));
 		casos.put("portada.frase", fila("portada.frase", "Frase", 123L, 0, false, null));
+		// En la galería, orden = puesto de la foto: como mucho 6.
+		casos.put("galeria.4", fila("galeria.4", "Foto", subir(e), 7, false, null));
 		for (Map.Entry<String, Map<String, Object>> caso : casos.entrySet()) {
 			List<Map<String, Object>> bloques = new ArrayList<>(minimo(e));
 			bloques.add(caso.getValue());
@@ -297,7 +539,7 @@ class WebContenidoIntegrationTest extends MySqlIntegrationTest {
 		// Galería con 7 fotos.
 		List<Map<String, Object>> siete = new ArrayList<>(minimo(e));
 		for (int n = 1; n <= 7; n++) {
-			siete.add(fila("galeria." + n, "Foto " + n, subir(e), n, false, null));
+			siete.add(fila("galeria." + n, "Foto " + n, subir(e), Math.min(n, 6), false, null));
 		}
 		assertError(guardar(e, version, siete), "galeria");
 		// Profesor nuevo sin la casilla, o sin nombre.
@@ -723,7 +965,7 @@ class WebContenidoIntegrationTest extends MySqlIntegrationTest {
 
 	private List<Map<String, Object>> eventosDesde(long org, long desde) {
 		return jdbc.queryForList("""
-				SELECT id, accion, modulo, endpoint, usuario_id, estado_http, resumen FROM auditoria_evento
+				SELECT id, accion, metodo_http, modulo, endpoint, usuario_id, estado_http, resumen FROM auditoria_evento
 				WHERE organizacion_id = ? AND id > ? AND metodo_http <> 'GET' AND endpoint = ? ORDER BY id""", org, desde,
 				CONTENIDO);
 	}

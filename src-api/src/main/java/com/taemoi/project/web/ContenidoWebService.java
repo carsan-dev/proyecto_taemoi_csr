@@ -57,8 +57,10 @@ import com.taemoi.project.services.ImagenService;
  * <li>Imágenes: solo fotos de la carpeta pública de bloques de la escuela ({@code org-<id>/web/bloques/}), que solo
  * escribe {@link #subirImagen}: ningún id de otra imagen (de alumnos, de otra escuela, de eventos) llega a la web.</li>
  * <li>Profesores: cada uno necesita constancia del permiso de publicación. Si ya la tiene guardada (marcada en el
- * editor o dada en el alta, d526), se conserva; si no, el cuerpo tiene que traer {@code permiso: true} y se guarda
- * quién y cuándo. La constancia va en columnas de {@code web_bloque} que la API pública no lee.</li>
+ * editor o dada en el alta, d526) y su nombre no cambia, se conserva; si no la tiene o el nombre cambia (puede ser otra
+ * persona en el mismo puesto, d531), el cuerpo tiene que traer {@code permiso: true}. Siempre que llega
+ * {@code permiso: true} se guarda una constancia nueva: quién y cuándo. La constancia va en columnas de
+ * {@code web_bloque} que la API pública no lee.</li>
  * <li>Cada guardado deja UNA fila en el registro de la escuela (solo recuentos y números de profesor, nunca textos):
  * la ruta está en {@code AuditoriaRequestFilter.EscrituraConRegistroPropio}.</li>
  * </ul>
@@ -74,6 +76,9 @@ public class ContenidoWebService {
 			+ " tus cambios no se han guardado.";
 	static final String SIN_ARCHIVO = "Elige una foto.";
 	static final String SIN_VERSION = "Falta la versión del contenido.";
+	static final String PERMISO_FALTA = "Marca la casilla si tienes su permiso. Sin él no puede salir en la web.";
+	static final String PERMISO_NOMBRE_CAMBIADO = "Has cambiado el nombre: marca la casilla si tienes el permiso de esta"
+			+ " persona. Sin él no puede salir en la web.";
 	static final String PERMISO_PANEL = "PANEL";
 	static final String PERMISO_ALTA = "ALTA";
 	/** Más de lo que cabe en el catálogo con todos sus repetibles llenos de sentido. */
@@ -222,6 +227,9 @@ public class ContenidoWebService {
 			boolean permiso = Boolean.TRUE.equals(pedido.permiso());
 			if (orden < 0 || orden > MAXIMO_ORDEN) {
 				error = "Orden no válido.";
+			} else if ("galeria".equals(d.seccion()) && d.esImagen() && orden > ClavesWeb.MAXIMO_GALERIA) {
+				// En la galería, orden = puesto de la foto (como mucho 6, como las fotos).
+				error = "Puesto en la galería no válido.";
 			} else if (oculto && (!d.esCabecera() || d.seccion() == null)) {
 				error = d.esCabecera() ? "Esta sección no se puede ocultar." : "Solo se oculta una sección entera.";
 			} else if (permiso && !d.esNombreDeProfesor()) {
@@ -360,11 +368,11 @@ public class ContenidoWebService {
 				errores.putIfAbsent(clave, "Escribe su nombre.");
 				continue;
 			}
-			WebBloque guardado = existentes.get(clave);
-			boolean conConstancia = guardado != null && guardado.getPermisoOrigen() != null;
-			if (!conConstancia && !nombre.permisoNuevo()) {
-				errores.put("profesor." + n + ".permiso",
-						"Marca la casilla si tienes su permiso. Sin él no puede salir en la web.");
+			if (!nombre.permisoNuevo() && !conservaLaConstancia(existentes.get(clave), nombre)) {
+				WebBloque guardado = existentes.get(clave);
+				errores.put("profesor." + n + ".permiso", guardado != null && guardado.getPermisoOrigen() != null
+						? PERMISO_NOMBRE_CAMBIADO
+						: PERMISO_FALTA);
 			}
 		}
 		for (String seccion : textosConFoto) {
@@ -377,6 +385,15 @@ public class ContenidoWebService {
 				errores.putIfAbsent(seccion + ".titulo", "Escribe el título.");
 			}
 		}
+	}
+
+	/**
+	 * d531: la constancia es de la persona, no del puesto {@code profesor.<n>}. Solo se conserva si la fila ya la tiene y
+	 * el nombre no cambia; con otro nombre puede ser otra persona y hace falta marcar la casilla otra vez.
+	 */
+	private static boolean conservaLaConstancia(WebBloque guardado, Fila nombre) {
+		return guardado != null && guardado.getPermisoOrigen() != null
+				&& Objects.equals(guardado.getTexto() == null ? "" : guardado.getTexto().strip(), nombre.texto());
 	}
 
 	private Guardado escribir(Long organizacionId, List<Fila> filas, Map<String, WebBloque> porClave,
@@ -400,7 +417,9 @@ public class ContenidoWebService {
 			bloque.setImagenId(fila.imagenId());
 			bloque.setOrden(fila.orden());
 			bloque.setOculto(fila.oculto());
-			if (fila.definicion().esNombreDeProfesor() && bloque.getPermisoOrigen() == null) {
+			// d531: casilla marcada → constancia nueva (quién y cuándo), aunque el puesto ya tuviera una. La validación ya
+			// exigió la casilla si no había constancia o si el nombre cambió.
+			if (fila.definicion().esNombreDeProfesor() && (fila.permisoNuevo() || bloque.getPermisoOrigen() == null)) {
 				bloque.setPermisoOrigen(PERMISO_PANEL);
 				bloque.setPermisoPor(usuario);
 				bloque.setPermisoEn(ahora);
@@ -442,7 +461,8 @@ public class ContenidoWebService {
 		long ocultos = filas.stream().filter(Fila::oculto).count();
 		long textos = filas.stream().filter(f -> !f.definicion().esCabecera() && !f.definicion().esImagen()).count();
 		permisosNuevos.sort(Comparator.naturalOrder());
-		auditoria.registrarAccesoSensible(primera ? AuditoriaAccion.CREATE : AuditoriaAccion.UPDATE,
+		// El método real (PUT) también en el primer guardado, que es un CREATE.
+		auditoria.registrarAccesoSensible(primera ? AuditoriaAccion.CREATE : AuditoriaAccion.UPDATE, "PUT",
 				PublicacionWebService.MODULO_AUDITORIA, RUTA, organizacionId,
 				"WEB CONTENIDO_GUARDADO organizacion=#" + organizacionId + " version=" + (actual + 1) + " bloques="
 						+ filas.size() + " textos=" + textos + " fotos=" + fotos + " ocultos=" + ocultos
