@@ -145,12 +145,15 @@ class MiCajaInscripcionInactivaIntegrationTest extends MySqlIntegrationTest {
 
 	@Test
 	void cargosPendientes_losGruposSoloIncluyenLosDeLaDisciplinaActivaDelAlumno() throws Exception {
-		long cBaja = cargo(bajaEnTkdActivoEnKick, "CARGO MCB");
-		long cTodo = cargo(bajaEnTodo, "CARGO MCD");
-		long cAmbos = cargo(activoEnAmbos, "CARGO MCC");
+		long cBaja = 0, cTodo = 0, cAmbos = 0;
 		try {
-			JsonNode cargos = json.readTree(mvc.perform(get("/api/caja/profesor/cargos-pendientes")
-					.cookie(new Cookie("jwt", tProf))).andReturn().getResponse().getContentAsString());
+			cBaja = cargo(bajaEnTkdActivoEnKick, "CARGO MCB");
+			cTodo = cargo(bajaEnTodo, "CARGO MCD");
+			cAmbos = cargo(activoEnAmbos, "CARGO MCC");
+			MvcResult r = mvc.perform(get("/api/caja/profesor/cargos-pendientes").cookie(new Cookie("jwt", tProf)))
+					.andReturn();
+			assertEquals(200, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+			JsonNode cargos = json.readTree(r.getResponse().getContentAsString());
 			// Baja en Taekwondo y activo en Kickboxing: solo el grupo de Kickboxing.
 			assertEquals(List.of(nombre(gKick)), textos(cargoDe(cargos, cBaja).get("grupos")));
 			// Baja en todo: el cargo sigue listado, sin grupos.
