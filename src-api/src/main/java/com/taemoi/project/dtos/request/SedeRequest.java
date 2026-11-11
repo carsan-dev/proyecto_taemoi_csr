@@ -10,23 +10,29 @@ import java.util.Set;
  * <p>Web por plantilla (W2): {@code slug}, {@code lugar} e {@code indicacionesAcceso}, opcionales. En {@code PUT}, si
  * no llegan se conservan (el panel de hoy no los envía); si llegan con {@code null} o en blanco, se vacían. Las fotos de
  * la sede no se escriben por aquí.
+ *
+ * <p>W12a (d523): {@code fotoAlt} y {@code foto2Alt}, la descripción de cada foto (hasta 150), con la misma regla: si no
+ * llegan se conservan; vacías, el tema pone su texto por defecto.
  */
 public record SedeRequest(String nombre, String direccion, String localidad, String codigoPostal, String telefono,
 		String email, String codigoClubFederacion, Integer aforoTurno, String slug, String lugar,
-		String indicacionesAcceso) {
+		String indicacionesAcceso, String fotoAlt, String foto2Alt) {
 
 	/** Los campos de la web que {@code PUT} conserva si no llegan en el cuerpo. */
-	public static final Set<String> CAMPOS_WEB = Set.of("slug", "lugar", "indicacionesAcceso");
+	public static final Set<String> CAMPOS_WEB = Set.of("slug", "lugar", "indicacionesAcceso", "fotoAlt",
+			"foto2Alt");
 
 	/**
 	 * Esta petición con los campos de la web que no llegaron ({@code recibidos} no los contiene) tomados de los valores
 	 * actuales.
 	 */
 	public SedeRequest conservandoWeb(Set<String> recibidos, String slugActual, String lugarActual,
-			String indicacionesAccesoActuales) {
+			String indicacionesAccesoActuales, String fotoAltActual, String foto2AltActual) {
 		return new SedeRequest(nombre, direccion, localidad, codigoPostal, telefono, email, codigoClubFederacion,
 				aforoTurno, recibidos.contains("slug") ? slug : slugActual,
 				recibidos.contains("lugar") ? lugar : lugarActual,
-				recibidos.contains("indicacionesAcceso") ? indicacionesAcceso : indicacionesAccesoActuales);
+				recibidos.contains("indicacionesAcceso") ? indicacionesAcceso : indicacionesAccesoActuales,
+				recibidos.contains("fotoAlt") ? fotoAlt : fotoAltActual,
+				recibidos.contains("foto2Alt") ? foto2Alt : foto2AltActual);
 	}
 }

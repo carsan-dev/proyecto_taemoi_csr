@@ -42,19 +42,25 @@ public record WebPublicaDTO(Escuela escuela, String tema, boolean publicada, boo
 	public record Escuela(String nombre, String colorPrimario, Long logoVersion) {
 	}
 
-	/** @param imagenUrl URL de la imagen del bloque (absoluta con {@code app.base.url}); {@code null} sin imagen. */
+	/**
+	 * @param imagenUrl URL de la imagen del bloque (absoluta con {@code app.base.url}); {@code null} sin imagen.
+	 * @param oculto    W12a: sección oculta (en su cabecera). Al público solo le llega la cabecera, sin texto ni imagen y
+	 *                  sin las filas de la sección; en la vista previa de la gestión, todas.
+	 */
 	public record Bloque(String clave, String texto, @JsonSerialize(using = UrlArchivoSerializer.class) String imagenUrl,
-			int orden) {
+			int orden, boolean oculto) {
 	}
 
 	/**
 	 * W2: {@code slug} (su página, {@code /sedes/<slug>}), {@code lugar}, {@code indicacionesAcceso} y las URL de sus dos
 	 * fotos (absolutas con {@code app.base.url}; solo imágenes de la misma escuela); {@code null} si no están puestos.
+	 * W12a (d523): {@code fotoAlt} y {@code foto2Alt}, la descripción de cada foto; {@code null} = la del tema.
 	 */
 	public record Sede(Long id, String nombre, String direccion, String localidad, String codigoPostal, String telefono,
 			String slug, String lugar, String indicacionesAcceso,
 			@JsonSerialize(using = UrlArchivoSerializer.class) String fotoUrl,
-			@JsonSerialize(using = UrlArchivoSerializer.class) String foto2Url, List<Grupo> grupos) {
+			@JsonSerialize(using = UrlArchivoSerializer.class) String foto2Url, String fotoAlt, String foto2Alt,
+			List<Grupo> grupos) {
 	}
 
 	/**

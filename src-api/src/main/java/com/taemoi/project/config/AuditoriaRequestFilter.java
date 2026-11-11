@@ -55,6 +55,13 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 	private static final Pattern RUTA_CONTRASENA_MIEMBRO = Pattern.compile("^/api/miembros/[^/]+/contrasena/?$");
 	static final String PAYLOAD_OMITIDO_CONTRASENA = "[payload omitted: contrasena]";
 	/**
+	 * Pieza W12a: contenido de la web ({@code /api/escuela/web/contenido}). Nunca se guarda el cuerpo, responda lo que
+	 * responda (400, 409, JSON malformado) y con cualquier método: lleva todos los textos de la web y los nombres de los
+	 * profesores. Queda la fila con su estado; el guardado correcto tiene su registro propio, solo con recuentos.
+	 */
+	private static final Pattern RUTA_CONTENIDO_WEB = Pattern.compile("^/api/escuela/web/contenido/?$");
+	static final String PAYLOAD_OMITIDO_CONTENIDO_WEB = "[payload omitted: contenido de la web]";
+	/**
 	 * Decisión 342: imagen de una foto de la galería. Una visita pide hasta 40: ni fila ni copia de la imagen en memoria.
 	 * Se compara con la ruta tal como llega, sin normalizar: cualquier otra forma de escribirla se sigue auditando.
 	 */
@@ -122,6 +129,11 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		 */
 		WEB_PUBLICAR("PUT", "/api/escuela/web/publicacion"),
 		WEB_PUBLICAR_PLATAFORMA("PUT", "/api/plataforma/escuelas/[^/]+/web/publicacion"),
+		/**
+		 * Pieza W12a: guardar el contenido de la web. ContenidoWebService#guardar registra todo 2xx (WEB
+		 * CONTENIDO_GUARDADO con recuentos y números de profesor, nunca textos). Caso en WebContenidoIntegrationTest.
+		 */
+		WEB_CONTENIDO_GUARDAR("PUT", "/api/escuela/web/contenido"),
 		// Pieza E7-9 (decisión 214): rutas del profesor y quitar un profesor de un grupo; el registro, entre paréntesis.
 		/** ProfesorService#actualizarApto (PROFESOR APTO_CAMBIADO). */
 		PROFESOR_APTO("PUT", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/apto"),
@@ -352,7 +364,8 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		}
 
 		String payloadOmitido = rutaSalud ? PAYLOAD_OMITIDO_SALUD
-				: esContrasenaDeMiembro(endpoint) ? PAYLOAD_OMITIDO_CONTRASENA : null;
+				: esContrasenaDeMiembro(endpoint) ? PAYLOAD_OMITIDO_CONTRASENA
+						: esContenidoDeLaWeb(endpoint) ? PAYLOAD_OMITIDO_CONTENIDO_WEB : null;
 		String payloadRaw = payloadOmitido != null ? "" : leerPayloadRequest(request);
 		String payloadSanitizado = payloadOmitido != null
 				? payloadOmitido
@@ -475,6 +488,10 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 
 	static boolean esContrasenaDeMiembro(String endpoint) {
 		return RUTA_CONTRASENA_MIEMBRO.matcher(normalizarParaComparar(endpoint)).matches();
+	}
+
+	static boolean esContenidoDeLaWeb(String endpoint) {
+		return RUTA_CONTENIDO_WEB.matcher(normalizarParaComparar(endpoint)).matches();
 	}
 
 	/** Decodifica (hasta dos veces), quita parámetros de ruta ({@code ;x}), une barras y pasa a minúsculas. */

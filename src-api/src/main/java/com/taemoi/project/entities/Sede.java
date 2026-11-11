@@ -66,6 +66,13 @@ public class Sede extends EntidadOrganizacion {
 	@Column(name = "foto2_imagen_id")
 	private Long foto2ImagenId;
 
+	/** W12a (V32_9, d523): descripción de cada foto; {@code null} = la del tema («Foto de la sede de X»). */
+	@Column(name = "foto_alt", length = 150)
+	private String fotoAlt;
+
+	@Column(name = "foto2_alt", length = 150)
+	private String foto2Alt;
+
 	public Long getId() {
 		return id;
 	}
@@ -180,5 +187,21 @@ public class Sede extends EntidadOrganizacion {
 
 	public void setFoto2ImagenId(Long foto2ImagenId) {
 		this.foto2ImagenId = foto2ImagenId;
+	}
+
+	public String getFotoAlt() {
+		return fotoAlt;
+	}
+
+	public void setFotoAlt(String fotoAlt) {
+		this.fotoAlt = fotoAlt;
+	}
+
+	public String getFoto2Alt() {
+		return foto2Alt;
+	}
+
+	public void setFoto2Alt(String foto2Alt) {
+		this.foto2Alt = foto2Alt;
 	}
 }

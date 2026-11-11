@@ -234,7 +234,7 @@ también a la lista `include` de Karma en `angular.json` (si el total no sube, n
 | W7 | Panel «Web · Tema» con vista previa en iframe | medium | no | `boceto-panel-tema-web.html` | entrada oculta para Moiskimdo | Karma: estados publicado/cambios/primera/cargando/error; diálogo; foco; revisión en navegador |
 | W8-W10 | Los otros tres temas (uno por PR, con su preinscripción) | medium | no | sus 7 bocetos | ídem W5 | ídem W5 |
 | W11 | nginx de plantilla (`index-plantilla.html`, `/robots.txt` y `/sitemap.xml` a la API) | careful (despliegue) | no | — | `nginx -T` del bloque moiskimdo.es igual | local con `docker-compose.pruebas.yml` y host de pruebas; `curl` de robots y sitemap |
-| W12 | Editor visual de bloques y campos nuevos de sede y evento en el panel. Depende de W4-W7: la vista previa reutiliza los componentes de la plantilla | medium | no | `boceto-panel-contenido-web-visual.html` (aprobado el 07/11) | solo pantallas nuevas | — |
+| W12 | Editor visual de bloques y campos nuevos de sede y evento en el panel. Depende de W4-W7: la vista previa reutiliza los componentes de la plantilla | medium | V32_9 (W12a) → `desplegar_migrar` + postcheck | `boceto-panel-contenido-web-visual.html` (aprobado el 07/11) | solo pantallas nuevas | — |
 | W13 | (opcional) Meta en servidor para vistas previas de redes | medium | no | — | solo hosts de plantilla | — |
 
 Dependencias: W1-W3 no esperan al dominio (404 para la 1). W4 en adelante se prueban en local con la configuración

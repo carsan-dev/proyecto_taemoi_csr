@@ -33,7 +33,7 @@ public class PublicacionWebService {
 
 	static final String MODULO_AUDITORIA = "web";
 	static final String WEB_PROPIA = "Esta escuela tiene su web propia: no usa la web por plantilla.";
-	private static final String NO_ENCONTRADA = "Escuela no encontrada.";
+	static final String NO_ENCONTRADA = "Escuela no encontrada.";
 
 	private final OrganizacionRepository organizaciones;
 	private final WebEscuelaRepository webs;
@@ -104,13 +104,13 @@ public class PublicacionWebService {
 		});
 	}
 
-	private static void comprobarId(Long organizacionId) {
+	static void comprobarId(Long organizacionId) {
 		if (organizacionId == null || organizacionId <= 0) {
 			throw new NoSuchElementException(NO_ENCONTRADA);
 		}
 	}
 
-	private static void comprobarPlantilla(Organizacion escuela) {
+	static void comprobarPlantilla(Organizacion escuela) {
 		if (Boolean.TRUE.equals(escuela.getComportamientoLegadoTaemoi())) {
 			throw new IllegalStateException(WEB_PROPIA);
 		}

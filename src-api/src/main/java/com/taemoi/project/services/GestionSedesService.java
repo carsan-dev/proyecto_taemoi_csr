@@ -32,7 +32,8 @@ import com.taemoi.project.repositories.SedeRepository;
  * {@code null}.</li>
  * <li>Web por plantilla (W2): {@code slug} en minúsculas sin tildes, cifras y guiones entre ellas, hasta 60 (400), y
  * único en la escuela (409, también por la clave única {@code uk_sede_organizacion_slug}); {@code lugar} (120) e
- * {@code indicacionesAcceso} (300). Al editar, si no llegan, se conservan.</li>
+ * {@code indicacionesAcceso} (300); W12a (d523): {@code fotoAlt} y {@code foto2Alt} (150). Al editar, si no llegan, se
+ * conservan.</li>
  * <li>Nunca sin sedes activas (409): activar y desactivar bloquean antes todas las sedes de la escuela, así que dos
  * desactivaciones a la vez no la dejan a cero. Desactivar no toca {@code membresia_sede} (D5-5).</li>
  * <li>Sin borrado: grupos, tarifas, entregas y movimientos la referencian (FK RESTRICT) y el historial se conserva.</li>
@@ -140,7 +141,8 @@ public class GestionSedesService {
 	public Edicion editar(Long id, SedeRequest solicitud, Set<String> recibidos) {
 		Sede sede = exigir(id);
 		Datos datos = Datos.de(solicitud == null ? null
-				: solicitud.conservandoWeb(recibidos, sede.getSlug(), sede.getLugar(), sede.getIndicacionesAcceso()));
+				: solicitud.conservandoWeb(recibidos, sede.getSlug(), sede.getLugar(), sede.getIndicacionesAcceso(),
+						sede.getFotoAlt(), sede.getFoto2Alt()));
 		if (sedes.existsByNombreAndIdNot(datos.nombre(), sede.getId())) {
 			throw new IllegalStateException(NOMBRE_REPETIDO);
 		}
@@ -254,7 +256,8 @@ public class GestionSedesService {
 
 	/** Los datos de la petición ya validados y normalizados. */
 	record Datos(String nombre, String direccion, String localidad, String codigoPostal, String telefono, String email,
-			String codigoClubFederacion, Integer aforoTurno, String slug, String lugar, String indicacionesAcceso) {
+			String codigoClubFederacion, Integer aforoTurno, String slug, String lugar, String indicacionesAcceso,
+			String fotoAlt, String foto2Alt) {
 
 		static Datos de(SedeRequest solicitud) {
 			if (solicitud == null) {
@@ -287,8 +290,10 @@ public class GestionSedesService {
 			}
 			String lugar = maximo(recortar(solicitud.lugar()), 120, "El lugar de la sede");
 			String acceso = maximo(recortar(solicitud.indicacionesAcceso()), 300, "Las indicaciones de acceso");
+			String fotoAlt = maximo(recortar(solicitud.fotoAlt()), 150, "La descripción de la foto 1");
+			String foto2Alt = maximo(recortar(solicitud.foto2Alt()), 150, "La descripción de la foto 2");
 			return new Datos(nombre, direccion, localidad, codigoPostal, telefono, email, club, aforo, slug, lugar,
-					acceso);
+					acceso, fotoAlt, foto2Alt);
 		}
 
 		void aplicar(Sede sede) {
@@ -303,6 +308,8 @@ public class GestionSedesService {
 			sede.setSlug(slug);
 			sede.setLugar(lugar);
 			sede.setIndicacionesAcceso(indicacionesAcceso);
+			sede.setFotoAlt(fotoAlt);
+			sede.setFoto2Alt(foto2Alt);
 		}
 
 		boolean igualQue(Sede sede) {
@@ -313,7 +320,8 @@ public class GestionSedesService {
 					&& Objects.equals(codigoClubFederacion, sede.getCodigoClubFederacion())
 					&& Objects.equals(aforoTurno, sede.getAforoTurno()) && Objects.equals(slug, sede.getSlug())
 					&& Objects.equals(lugar, sede.getLugar())
-					&& Objects.equals(indicacionesAcceso, sede.getIndicacionesAcceso());
+					&& Objects.equals(indicacionesAcceso, sede.getIndicacionesAcceso())
+					&& Objects.equals(fotoAlt, sede.getFotoAlt()) && Objects.equals(foto2Alt, sede.getFoto2Alt());
 		}
 
 		/** Recortada; vacía o en blanco, {@code null}. */

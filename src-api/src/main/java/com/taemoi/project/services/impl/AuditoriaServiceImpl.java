@@ -143,10 +143,17 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 	@Transactional(propagation = Propagation.MANDATORY)
 	public void registrarAccesoSensible(AuditoriaAccion accion, String modulo, String endpoint, Long recursoId,
 			String resumen) {
+		registrarAccesoSensible(accion, metodoDe(accion), modulo, endpoint, recursoId, resumen);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.MANDATORY)
+	public void registrarAccesoSensible(AuditoriaAccion accion, String metodoHttp, String modulo, String endpoint,
+			Long recursoId, String resumen) {
 		AuditoriaEvento evento = new AuditoriaEvento();
 		evento.setFechaEvento(new Date());
 		evento.setAccion(accion);
-		evento.setMetodoHttp(metodoDe(accion));
+		evento.setMetodoHttp(metodoHttp);
 		evento.setEndpoint(endpoint);
 		evento.setModulo(modulo);
 		evento.setRecursoId(recursoId);

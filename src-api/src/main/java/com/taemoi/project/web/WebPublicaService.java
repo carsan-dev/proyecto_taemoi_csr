@@ -220,7 +220,7 @@ public class WebPublicaService {
 				e.web() != null && e.web().isPublicada(),
 				vistaPrevia,
 				temporada,
-				bloques(bloques, urls),
+				bloques(bloques, urls, vistaPrevia),
 				sedes(activas, temporada, urls),
 				tarifas.stream().map(WebPublicaService::tarifa).toList(),
 				tarifasSede(idsTarifas, idsSedes, hoy),
@@ -246,12 +246,32 @@ public class WebPublicaService {
 		return urls;
 	}
 
-	private List<WebPublicaDTO.Bloque> bloques(List<WebBloque> bloques, Map<Long, String> urls) {
-		return bloques.stream()
-				.map(b -> new WebPublicaDTO.Bloque(b.getClave(), b.getTexto(),
-						b.getImagenId() == null ? null : urls.get(b.getImagenId()),
-						b.getOrden() == null ? 0 : b.getOrden()))
-				.toList();
+	/**
+	 * Pieza W12a: una sección oculta ({@code oculto} en su cabecera) no sale al público. Anónimo: de ella solo su
+	 * cabecera, marcada y sin texto ni imagen, para que el tema no la pinte con sus textos por defecto; ninguna de sus
+	 * filas de contenido. Vista previa de la gestión: todas, cada una con su marca. La constancia del permiso de los
+	 * profesores no sale nunca (no está en el DTO).
+	 */
+	private List<WebPublicaDTO.Bloque> bloques(List<WebBloque> bloques, Map<Long, String> urls, boolean vistaPrevia) {
+		Set<String> ocultas = bloques.stream().filter(WebBloque::isOculto).map(WebBloque::getClave)
+				.collect(Collectors.toSet());
+		List<WebPublicaDTO.Bloque> salida = new ArrayList<>();
+		for (WebBloque b : bloques) {
+			int orden = b.getOrden() == null ? 0 : b.getOrden();
+			if (!vistaPrevia && !ocultas.isEmpty()) {
+				if (ocultas.contains(b.getClave())) {
+					salida.add(new WebPublicaDTO.Bloque(b.getClave(), null, null, orden, true));
+					continue;
+				}
+				String seccion = ClavesWeb.seccionDe(b.getClave());
+				if (seccion != null && ocultas.contains(seccion)) {
+					continue;
+				}
+			}
+			salida.add(new WebPublicaDTO.Bloque(b.getClave(), b.getTexto(),
+					b.getImagenId() == null ? null : urls.get(b.getImagenId()), orden, b.isOculto()));
+		}
+		return salida;
 	}
 
 	/**
@@ -293,8 +313,8 @@ public class WebPublicaService {
 				.map(s -> new WebPublicaDTO.Sede(s.getId(), s.getNombre(), s.getDireccion(), s.getLocalidad(),
 						s.getCodigoPostal(), s.getTelefono(), s.getSlug(), s.getLugar(), s.getIndicacionesAcceso(),
 						s.getFotoImagenId() == null ? null : urls.get(s.getFotoImagenId()),
-						s.getFoto2ImagenId() == null ? null : urls.get(s.getFoto2ImagenId()),
-						gruposPorSede.getOrDefault(s.getId(), List.of())))
+						s.getFoto2ImagenId() == null ? null : urls.get(s.getFoto2ImagenId()), s.getFotoAlt(),
+						s.getFoto2Alt(), gruposPorSede.getOrDefault(s.getId(), List.of())))
 				.toList();
 	}
 
