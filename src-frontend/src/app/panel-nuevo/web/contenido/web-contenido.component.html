@@ -1,0 +1,92 @@
+<main class="pn web-contenido" pnAcento aria-labelledby="web-contenido-titulo">
+  <div class="web-contenido__pagina">
+    <nav class="migas" aria-label="Ruta"><span>Web</span><span aria-hidden="true">/</span></nav>
+    <header class="cabecera">
+      <div class="cabecera__texto">
+        <h1 id="web-contenido-titulo" tabindex="-1">Contenido</h1>
+        @if (estado() === 'listo') {
+        @if (publicada(); as nombre) {
+        <p class="estado-web es-publicada">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="m8 12.5 2.8 2.8L16.5 9.5"></path></svg>
+          <span>Publicada con <strong>{{ nombre }}</strong>.</span>
+        </p>
+        } @else {
+        <p class="estado-web">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.5h.01"></path></svg>
+          <span>Tu web aún no está publicada. Lo que guardes aquí saldrá cuando la publiques en <a class="enlace" routerLink="/web-tema">Tema</a>.</span>
+        </p>
+        }
+        }
+      </div>
+      @if (estado() === 'listo') {
+      <a class="ver-web" href="/" target="_blank" rel="noopener">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>Ver en la web<span class="oculto"> (se abre en otra pestaña)</span>
+      </a>
+      }
+    </header>
+
+    @if (estado() === 'cargando') {
+    <pn-esqueleto [etiqueta]="textos.cargando">
+      <div class="carga">
+        <span class="esq esq--linea"></span>
+        <span class="esq--fila"><span class="esq" style="width: 240px"></span><span class="esq" style="width: 180px"></span></span>
+        <span class="esq--marco"><span class="esq" style="width: 60%"></span><span class="esq esq--alta"></span><span class="esq"
+            style="width: 40%"></span><span class="esq" style="width: 72%"></span></span>
+      </div>
+    </pn-esqueleto>
+    } @else if (estado() === 'error') {
+    <pn-bloque-error [titulo]="textos.errorTitulo" [texto]="textos.errorTexto" (reintentar)="reintentar()" />
+    } @else {
+    <p class="ayuda-editor">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+        stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4Z"></path><path d="m13.5 6.5 4 4"></path></svg>
+      <span>{{ textos.ayuda }} {{ publicada() ? textos.ayudaPublicada : textos.ayudaNueva }}</span>
+    </p>
+    <div class="herramientas">
+      <div class="segmento" role="group" aria-label="Ancho de la vista previa">
+        @for (v of vistas; track v) {
+        <button type="button" [attr.data-vista]="v" [attr.aria-pressed]="v === vista()" (click)="cambiarVista(v)">
+          @if (v === 'movil') {
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"></rect><path d="M11 18h2"></path></svg>Móvil
+          } @else {
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+            stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"></rect><path d="M9 20h6M12 16v4"></path></svg>Escritorio
+          }
+        </button>
+        }
+      </div>
+    </div>
+
+    <section class="marco" aria-labelledby="marco-t">
+      <div class="marco__cab">
+        <span id="marco-t">{{ textos.marco }}<strong>{{ textos.pagina }}</strong></span>
+        <span class="marco__info">{{ info() }}</span>
+      </div>
+      <div class="marco__vista" #marcoVista tabindex="-1">
+        @if (carga() === 'error') {
+        <div class="fallo" role="alert">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+          <h2>{{ textosVista.errorVistaTitulo }}</h2>
+          <p>{{ textosVista.errorVistaTexto }}</p>
+          <button type="button" class="secundario" (click)="reintentarVista()">Reintentar</button>
+        </div>
+        } @else if (src(); as direccion) {
+        <div class="lienzo" [class.es-cargando]="esqueleto()" [style.width.px]="anchoLienzo()"
+          [style.height.px]="altoLienzo()">
+          <iframe #iframe [src]="direccion" [title]="textos.tituloIframe" [style.width.px]="ancho()" [style.height.px]="alto()"
+            [style.transform]="escala() < 1 ? 'scale(' + escala() + ')' : null" (load)="alCargar($event)"></iframe>
+          <div class="esq-vista" aria-hidden="true"><i class="e-cab"></i><i class="e-heroe"></i><i class="e-linea"></i><i
+            class="e-linea corta"></i></div>
+        </div>
+        }
+      </div>
+    </section>
+    <p class="oculto" role="status">{{ anuncio() }}</p>
+    }
+  </div>
+</main>

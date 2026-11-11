@@ -1,4 +1,5 @@
 import { adminOnlyGuard } from './guards/admin-only.guard';
+import { sinLegadoTaemoiGuard } from './guards/sin-legado-taemoi.guard';
 import { roleGuard } from './guards/role.guard';
 import { plataformaGuard } from './guards/plataforma.guard';
 import { profesorGuard } from './guards/profesor.guard';
@@ -450,4 +451,17 @@ describe('app routes', () => {
       });
     }
   }
+  // W12c: «Web · Contenido» con los guards de «Web · Tema» (propietario, nunca Moiskimdo) y perezosa.
+  it('web-contenido: perezosa, con los mismos guards que web-tema', async () => {
+    const tema = routes.find((ruta) => ruta.path === 'web-tema')!;
+    const contenido = routes.find((ruta) => ruta.path === 'web-contenido')!;
+    expect(contenido.canMatch).toEqual([estilosPanelGuard]);
+    expect(contenido.canActivate).toEqual([roleGuard, adminOnlyGuard, sinLegadoTaemoiGuard]);
+    expect(contenido.canActivate).toEqual(tema.canActivate as any);
+    expect(contenido.canDeactivate).toEqual([salirSinGuardarGuard]);
+    expect(contenido.data).toEqual(tema.data);
+    expect(contenido.resolve).toEqual({ catalogo: catalogoResolver });
+    const componente = await (contenido.loadComponent as () => Promise<unknown>)();
+    expect((componente as { name: string }).name).toContain('WebContenidoComponent');
+  });
 });

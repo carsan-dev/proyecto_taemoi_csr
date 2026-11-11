@@ -80,6 +80,8 @@
     "src/app/panel-nuevo/web/tema/web-tema-vista.spec.ts",
     "src/app/panel-nuevo/web/tema/web-tema.component.spec.ts",
     "src/app/panel-nuevo/web/tema/web-tema.service.spec.ts",
+    "src/app/panel-nuevo/web/contenido/web-contenido-vista.spec.ts",
+    "src/app/panel-nuevo/web/contenido/web-contenido.component.spec.ts",
     "src/app/panel-nuevo/escuela/configuracion/configuracion-vista.spec.ts",
     "src/app/panel-nuevo/escuela/configuracion/configuracion.component.spec.ts",
     "src/app/panel-nuevo/sedes/sedes-vista.spec.ts",
