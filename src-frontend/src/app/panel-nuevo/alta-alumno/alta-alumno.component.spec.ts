@@ -130,6 +130,19 @@ describe('AltaAlumnoComponent (8b-3l, alta de alumno del panel nuevo)', () => {
     quitarTokens();
   });
 
+  it('el NIF del alumno acepta DNI y NIE y rechaza lo demás', () => {
+    crear();
+    const nif = comp().form.get('nif')!;
+    for (const v of ['Y1234567X', 'y1234567x', '12345678Z', '']) {
+      nif.setValue(v);
+      expect(nif.valid).withContext(v).toBeTrue();
+    }
+    for (const v of ['X1234567', 'Y12345678E']) {
+      nif.setValue(v);
+      expect(nif.hasError('pattern')).withContext(v).toBeTrue();
+    }
+  });
+
   it('POST nunca incluye tipos ni Otra; PUT salud termina antes de navegar', () => {
     crear(); rellenar();
     comp().form.patchValue({ tieneDiscapacidad: true, discapacidadTipos: ['OTRA'], discapacidadOtra: 'Detalle ficticio' });

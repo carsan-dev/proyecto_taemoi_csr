@@ -87,7 +87,7 @@ describe('alta-alumno-vista (8b-3l)', () => {
       'Máximo 9 caracteres',
     ]);
     expect(mensajesPersona('email', { email: true })).toEqual(['Formato de email inválido']);
-    expect(mensajesPersona('nif', { pattern: true })).toEqual(['Formato inválido (8 números y una letra)']);
+    expect(mensajesPersona('nif', { pattern: true })).toEqual(['Introduce un DNI/NIE válido.']);
     expect(mensajesPersona('responsableLegalNif', { pattern: true })).toEqual(['Introduce un DNI/NIE válido.']);
     expect(mensajesPersona('sede', { required: true })).toEqual(['Indica la sede.']);
     expect(mensajesPersona('nif', { servidor: 'El alumno con NIF 1 ya existe.' })).toEqual(['El alumno con NIF 1 ya existe.']);
@@ -138,6 +138,7 @@ describe('alta-alumno-vista (8b-3l)', () => {
     expect(d.fechaAltaCompeticion).toBeNull();
     expect(d.fechaAltaCompetidorInicial).toBeNull();
     expect(d.peso).toBeNull();
+    expect(cuerpoAlta(crudo({ nif: ' y1234567x ' }), reglas, false)['nif']).toBe('Y1234567X');
     expect(cuerpoAlta(crudo({ nif: '  ', responsableLegalNif: '' }), reglas, false)['nif']).toBeNull();
   });
 
