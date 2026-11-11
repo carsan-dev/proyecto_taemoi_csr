@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 
 import { EstadoRecurso, EventoDetalleWeb, EventoListaWeb, SitioWeb } from '../datos/modelos';
 import { WebPublicaService } from '../datos/web-publica.service';
+import { EditorWebService, PARAMETRO_EDITOR } from './editor-web';
 import { PaginaWeb, SeoEscuelaService } from './seo-escuela.service';
 
 export interface PaginaWebEstado {
@@ -40,6 +41,7 @@ export function paginaWeb(
   const activa = inject(ActivatedRoute);
   const web = inject(WebPublicaService);
   const seo = inject(SeoEscuelaService);
+  const editor = inject(EditorWebService);
 
   const consulta = toSignal(activa.queryParamMap, { requireSync: true });
   const vistaPrevia = computed(() => consulta().get('vista-previa'));
@@ -51,7 +53,14 @@ export function paginaWeb(
   const estado = computed(() => recurso()().estado);
   const sitio = computed(() => {
     const actual = recurso()();
-    return actual.estado === 'listo' ? actual.datos : null;
+    return actual.estado === 'listo' ? editor.aplicar(actual.datos) : null;
+  });
+
+  // W12c: el modo editor de «Web · Contenido» (solo si la API confirma la vista previa de la gestión).
+  effect(() => {
+    const actual = recurso()();
+    const pedido = consulta().get(PARAMETRO_EDITOR);
+    untracked(() => editor.activarSiToca(pedido, actual.estado === 'listo' ? actual.datos : null));
   });
 
   effect(() => {

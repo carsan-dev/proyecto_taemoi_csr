@@ -562,6 +562,17 @@ export const routes: Routes = [
     resolve: CATALOGO_RESOLVE,
   },
   {
+    // Escuela → Web → Contenido (W12c): vista previa de la web en modo editor, con candados. Sin entrada de menú hasta
+    // W12d (una pantalla que no guarda no se enlaza). Mismos guards que Tema: solo el propietario y nunca Moiskimdo.
+    path: 'web-contenido',
+    canMatch: [estilosPanelGuard],
+    data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
+    loadComponent: () => import('./panel-nuevo/web/contenido/web-contenido.component').then(m => m.WebContenidoComponent),
+    canActivate: [roleGuard, adminOnlyGuard, sinLegadoTaemoiGuard],
+    canDeactivate: [salirSinGuardarGuard],
+    resolve: CATALOGO_RESOLVE,
+  },
+  {
     path: 'configuracion-sistema',
     canMatch: [estilosPanelGuard],
     data: privateRouteData(ROUTE_ROLE_SETS.adminOnly),
