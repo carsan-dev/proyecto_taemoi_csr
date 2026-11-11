@@ -15,6 +15,9 @@ import type { BloqueWeb } from '../datos/modelos';
  * memoria sobre los datos de la vista previa y nunca toca la API. La capa pide al panel que enseñe la parte del caso
  * (`mostrar`, solo un número).
  *
+ * W12c-ter: el selector «Paso» de la preinscripción manda al iframe el paso que se ve (`paso`, un entero de la lista
+ * cerrada 1-4); la capa enseña ese paso con datos de ejemplo en memoria, sin escribir en el navegador ni enviar nada.
+ *
  * Previsto para W12d (no implementado aquí): edición de textos (`texto` del editor al panel) y el guardado, que se
  * queda en el panel. Cada tipo nuevo se añade a su unión y a su comprobación.
  */
@@ -51,7 +54,20 @@ export interface MensajeBorrador {
  * Casos poco frecuentes que «Ver el caso» simula en la vista previa (d528; `CASOS` del boceto). Lista cerrada: el
  * panel no manda datos, solo el nombre del caso.
  */
-export const CASOS_VISTA = ['lleno', 'espera', 'sin-tarifas', 'sin-proximos', 'sin-eventos', 'un-evento', 'sin-anteriores', 'una-foto'] as const;
+export const CASOS_VISTA = [
+  'lleno',
+  'espera',
+  'sin-tarifas',
+  'sin-proximos',
+  'sin-eventos',
+  'un-evento',
+  'sin-anteriores',
+  'una-foto',
+  // W12c-ter: «Sin clases esta semana» de una sede y los de la preinscripción («Grupo completo» es `espera`, como el boceto).
+  'sin-clases',
+  'sin-grupo',
+  'fin-espera',
+] as const;
 export type CasoVista = (typeof CASOS_VISTA)[number];
 
 /** El caso que se ve (null: los datos reales). No es un cambio y no se guarda. */
@@ -61,7 +77,18 @@ export interface MensajeCaso {
   caso: CasoVista | null;
 }
 
-export type MensajeDelPanel = MensajeBorrador | MensajeCaso;
+/** Los pasos de la preinscripción del selector «Paso» (boceto `SUBS.preinscripcion`): 1 Pueblo … 4 Enviada. */
+export const PASOS_PREINSCRIPCION = [1, 2, 3, 4] as const;
+export type PasoPreinscripcion = (typeof PASOS_PREINSCRIPCION)[number];
+
+/** El paso de la preinscripción que se ve en la vista previa (W12c-ter). No es un cambio y no se guarda. */
+export interface MensajePaso {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'paso';
+  paso: PasoPreinscripcion;
+}
+
+export type MensajeDelPanel = MensajeBorrador | MensajeCaso | MensajePaso;
 
 // ------------------------------------------------------------------ del iframe al panel
 
@@ -108,6 +135,10 @@ export function esCasoVista(valor: unknown): valor is CasoVista {
   return typeof valor === 'string' && (CASOS_VISTA as readonly string[]).includes(valor);
 }
 
+export function esPasoPreinscripcion(valor: unknown): valor is PasoPreinscripcion {
+  return typeof valor === 'number' && (PASOS_PREINSCRIPCION as readonly number[]).includes(valor);
+}
+
 function textoONulo(valor: unknown): boolean {
   return valor === null || typeof valor === 'string';
 }
@@ -144,6 +175,8 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
       );
     case 'caso':
       return valor['caso'] === null || esCasoVista(valor['caso']);
+    case 'paso':
+      return esPasoPreinscripcion(valor['paso']);
     default:
       return false;
   }

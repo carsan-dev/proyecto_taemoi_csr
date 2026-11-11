@@ -2,6 +2,7 @@ import {
   Candado,
   HUECOS_FOTO_SEDE,
   NOMBRE_DESTINO,
+  NOTA_DE_PAGINA,
   NOMBRE_EQUIPO,
   Parte,
   SIN_ENLACE_LINEA_COMARCAL,
@@ -10,13 +11,14 @@ import {
   paginaDelDocumento,
   partesDe,
 } from './candados-linea-comarcal';
-import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDe } from './casos-vista';
+import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
 import {
   BloqueBorrador,
   CANAL_EDITOR_WEB,
   type CasoVista,
   type DestinoPanel,
+  type PasoPreinscripcion,
   MensajeDelEditor,
   enviarPorPuente,
   esDestinoPanel,
@@ -33,7 +35,8 @@ import {
  * - el envoltorio de cada bloque y de cada parte fija: nombre (botón que la elige) y, en las fijas, su nota;
  * - el contorno punteado de cada dato de otra pantalla, el aviso flotante «X · Se cambia en Y» con enlace (o «Lo
  *   cambia el equipo de Taemoi») y un enlace oculto por tipo de dato para el teclado;
- * - los enlaces y botones de la web, fuera del orden de tabulación y sin navegar.
+ * - los enlaces y botones de la web, fuera del orden de tabulación y sin navegar;
+ * - W12c-ter: los formularios de la web, inertes: no se escribe, no se marca, no se firma y no se envía.
  * Los enlaces de los candados no navegan aquí: piden el destino al panel por el puente.
  */
 
@@ -44,7 +47,10 @@ export interface OpcionesCapaEditor {
   padre?: Window;
   /** Llega un borrador del panel. */
   alBorrador: (bloques: BloqueBorrador[]) => void;
-  /** «Ver el caso» (W12c-bis): cómo cambiar los datos de la vista previa para ese caso; null, los datos reales. */
+  /**
+   * «Ver el caso» (W12c-bis) y el paso de la preinscripción (W12c-ter): cómo cambiar los datos de la vista previa;
+   * null, los datos reales.
+   */
   alCaso?: (simulador: SimuladorCaso | null) => void;
 }
 
@@ -95,6 +101,8 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   let ultimoAlto = -1;
   /** «Ver el caso»: el caso que se ve, para sus notas del editor. */
   let casoActual: CasoVista | null = null;
+  /** El paso de la preinscripción que se ve (selector «Paso», W12c-ter); null hasta que el panel lo manda. */
+  let pasoActual: PasoPreinscripcion | null = null;
 
   const enviar = (mensaje: MensajeDelEditor) => enviarPorPuente(ventana, padre, mensaje);
 
@@ -273,6 +281,26 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     parte.after(caja);
   }
 
+  /** La nota del editor fija de la página (boceto `ed-nota-parte`), al final de su sitio; una sola. */
+  function notaDePagina(pagina: ReturnType<typeof paginaDelDocumento>): void {
+    const def = NOTA_DE_PAGINA[pagina];
+    const dentro = def ? doc.querySelector<HTMLElement>(def.dentro) : null;
+    if (!def || !dentro) {
+      return;
+    }
+    const ya = dentro.querySelector<HTMLElement>(':scope > .ed-nota-pagina');
+    if (ya && ya === dentro.lastElementChild) {
+      return;
+    }
+    ya?.remove();
+    const p = doc.createElement('p');
+    p.className = 'ed ed-nota-parte ed-nota-pagina';
+    const texto = doc.createElement('span');
+    texto.textContent = def.texto;
+    p.append(icono(ICONO_INFO), texto);
+    dentro.appendChild(p);
+  }
+
   /** Enlaces ocultos puestos junto al control del tema que contiene su dato (no se anidan controles): su dato. */
   const datoDeEnlace = new WeakMap<HTMLElement, HTMLElement>();
 
@@ -355,6 +383,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       });
     }
     notasDelCaso();
+    notaDePagina(pagina);
     enlacesOcultos();
     sinTabulador();
     if (datoActivo && !datoActivo.isConnected) {
@@ -479,6 +508,28 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     }
   };
 
+  /**
+   * W12c-ter: los formularios de la web no escriben, no marcan, no firman ni envían en el editor (el tema no recibe
+   * esos eventos): nada llega al almacenamiento del navegador ni a la API.
+   */
+  const delFormulario = (evento: Event): boolean => {
+    const t = elemento(evento);
+    return !!t && !!t.closest('.lc') && !t.closest('.ed');
+  };
+  const alEscribir = (evento: Event) => {
+    if (delFormulario(evento)) {
+      evento.preventDefault();
+      evento.stopImmediatePropagation();
+    }
+  };
+  const alFirmar = (evento: Event) => {
+    if (delFormulario(evento) && elemento(evento)!.closest('canvas')) {
+      evento.preventDefault();
+      evento.stopImmediatePropagation();
+    }
+  };
+  const EVENTOS_FORMULARIO = ['beforeinput', 'input', 'change', 'submit'] as const;
+
   const alTeclear = (evento: KeyboardEvent) => {
     if (evento.key !== 'Escape') {
       return;
@@ -534,6 +585,10 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   doc.addEventListener('mouseover', alPasar);
   doc.addEventListener('focusin', alEnfocar);
   doc.addEventListener('focusout', alDesenfocar);
+  for (const tipo of EVENTOS_FORMULARIO) {
+    doc.addEventListener(tipo, alEscribir, true);
+  }
+  doc.addEventListener('pointerdown', alFirmar, true);
 
   // ------------------------------------------------------------------ observadores y puente
   // Lo que escribe la propia capa (aviso del candado, barras, enlaces ocultos) no vuelve a decorar la página.
@@ -593,9 +648,14 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   }
 
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
+    if (mensaje.tipo === 'paso') {
+      pasoActual = mensaje.paso;
+      alCaso?.(simuladorDeLaVista(casoActual, pasoActual));
+      return;
+    }
     if (mensaje.tipo === 'caso') {
       casoActual = mensaje.caso;
-      alCaso?.(mensaje.caso ? simuladorDe(mensaje.caso) : null);
+      alCaso?.(simuladorDeLaVista(casoActual, pasoActual));
       notasDelCaso();
       if (mensaje.caso) {
         mostrarParte(PARTE_DEL_CASO[mensaje.caso]);
@@ -628,6 +688,10 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     doc.removeEventListener('mouseover', alPasar);
     doc.removeEventListener('focusin', alEnfocar);
     doc.removeEventListener('focusout', alDesenfocar);
+    for (const tipo of EVENTOS_FORMULARIO) {
+      doc.removeEventListener(tipo, alEscribir, true);
+    }
+    doc.removeEventListener('pointerdown', alFirmar, true);
     estilos.remove();
     candado.remove();
   };

@@ -14,6 +14,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 
+import { EditorWebService } from '../../../comun/editor-web';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { RELOJ_WEB } from '../../../comun/reloj';
@@ -50,6 +51,7 @@ export class SedeLineaComarcalComponent {
   private readonly documento = inject(DOCUMENT);
   private readonly injector = inject(Injector);
   private readonly activa = inject(ActivatedRoute);
+  private readonly editor = inject(EditorWebService);
   private readonly fragmento = toSignal(this.activa.fragment, { initialValue: null });
   private readonly slug = toSignal(this.activa.paramMap.pipe(map((p) => p.get('slug'))), { requireSync: true });
 
@@ -62,7 +64,8 @@ export class SedeLineaComarcalComponent {
   protected readonly vista = computed(() => {
     const sitio = this.pagina.sitio();
     const sede = this.sede();
-    return sitio && sede ? vistaPaginaSede(sitio, sede, this.reloj()) : null;
+    // W12c-ter: «Sin clases esta semana» en el editor de la web; fuera de él, la vista tal cual.
+    return sitio && sede ? this.editor.aplicarVistaSede(vistaPaginaSede(sitio, sede, this.reloj())) : null;
   });
 
   constructor() {
