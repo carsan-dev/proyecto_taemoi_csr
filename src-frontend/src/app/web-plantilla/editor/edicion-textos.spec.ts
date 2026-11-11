@@ -121,6 +121,37 @@ describe('textos en el sitio (W12d, capa de edición)', () => {
     expect(mensajes('texto').at(-1)).toEqual(jasmine.objectContaining({ clave: 'texto_foto.3.rotulo', texto: 'Nuestra sala' }));
   });
 
+  it('el valor es el texto real, sin el `text-transform` del tema (el titular va en mayúsculas en la web)', () => {
+    tecla(q('.portada .titular'), 'Enter');
+    campo()!.style.textTransform = 'uppercase';
+    escribir('Taekwondo en seis pueblos');
+    expect(campo()!.innerText).toBe('TAEKWONDO EN SEIS PUEBLOS');
+    expect(mensajes('texto').at(-1)).toEqual(jasmine.objectContaining({ clave: 'portada.titular', texto: 'Taekwondo en seis pueblos' }));
+    expect(borradores.at(-1)).toContain(fila('portada.titular', 'Taekwondo en seis pueblos'));
+  });
+
+  it('varias líneas: los saltos (`<br>` o bloques del navegador) llegan como `\\n`', () => {
+    tecla(q('#presentacion .cuerpo'), 'Enter');
+    campo()!.style.textTransform = 'uppercase';
+    campo()!.innerHTML = 'Uno.<br>Dos.';
+    campo()!.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertLineBreak' }));
+    expect(mensajes('texto').at(-1)).toEqual(jasmine.objectContaining({ clave: 'presentacion.texto', texto: 'Uno.\nDos.' }));
+    campo()!.innerHTML = 'Uno.<div>Dos.</div><div><br></div><div>Tres.</div>';
+    campo()!.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertParagraph' }));
+    expect(mensajes('texto').at(-1)).toEqual(jasmine.objectContaining({ texto: 'Uno.\nDos.\n\nTres.' }));
+  });
+
+  it('el texto por defecto leído de la página no sale en mayúsculas con `text-transform`', () => {
+    desactivar();
+    doc.body.innerHTML = WEB.replace('<h1 class="titular"', '<h1 style="text-transform: uppercase" class="titular"');
+    enviados.calls.reset();
+    desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: (b) => borradores.push(b) });
+    const [defectos] = mensajes('defectos') as unknown as { textos: Record<string, string> }[];
+    expect(defectos.textos['portada.titular']).toBe('Taekwondo en seis pueblos');
+    tecla(q('.portada .titular'), 'Enter');
+    expect(campo()!.textContent).toBe('Taekwondo en seis pueblos');
+  });
+
   it('el «Escribe aquí…» de un vacío no entra nunca como texto por defecto', () => {
     desactivar();
     doc.body.innerHTML = WEB.replace('Grupos por edad desde los 4 años.', 'Escribe aquí una frase: para quién son las clases y qué hacer');

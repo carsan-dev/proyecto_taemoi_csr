@@ -323,8 +323,29 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     marcarErrores();
   }
 
+  /**
+   * El texto real del campo, sin `innerText`: este aplica el CSS del tema (`text-transform: uppercase` del titular) y lo
+   * guardaría en mayúsculas. Texto tal cual; `<br>` es un salto; un bloque (`div`/`p`) que meta el navegador, salto antes.
+   */
+  function textoReal(nodo: Node): string {
+    let v = '';
+    nodo.childNodes.forEach((n) => {
+      if (n.nodeType === Node.TEXT_NODE) {
+        v += n.nodeValue ?? '';
+      } else if (n.nodeName === 'BR') {
+        v += '\n';
+      } else if (n.nodeType === Node.ELEMENT_NODE) {
+        if ((n.nodeName === 'DIV' || n.nodeName === 'P') && v && !v.endsWith('\n')) {
+          v += '\n';
+        }
+        v += textoReal(n);
+      }
+    });
+    return v;
+  }
+
   function leer(campo: HTMLElement, multi: boolean): string {
-    let v = (campo.innerText ?? campo.textContent ?? '').replace(/ /g, ' ');
+    let v = textoReal(campo).replace(/ /g, ' ');
     v = multi ? v.replace(/\n$/, '') : v.replace(/\n/g, ' ');
     return v.trim() ? v : '';
   }
