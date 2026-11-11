@@ -171,7 +171,9 @@ public class CajaService {
 	 * Una consulta con los datos que se muestran (sin cargar entidades). Solo cargos con {@code alumno_id} (los que el
 	 * profesor puede cobrar) y no cancelados (pieza 6b-2c). Sin grupos en el alcance (o con alcance total), lista vacía.
 	 * Pieza 8b-3p: cada cargo dice si está vencido y lleva los grupos del profesor en los que está el alumno, con dos
-	 * consultas más por lote (no por alumno).
+	 * consultas más por lote (no por alumno). Decisión 516: esos {@code grupos} solo incluyen aquellos en cuya disciplina
+	 * el alumno tiene la inscripción activa (mismo criterio que {@link #alumnosDeMisGrupos()}); qué cargos se listan no
+	 * cambia, y si el alumno ya no está activo en ninguna disciplina de sus grupos, el cargo sale con {@code grupos} vacío.
 	 */
 	public List<CajaDTOs.CargoPendienteProfesor> cargosPendientesDelProfesor() {
 		Set<Long> grupos = gruposDelProfesor();
@@ -205,8 +207,11 @@ public class CajaService {
 	}
 
 	/**
-	 * Por alumno, los nombres de los grupos indicados en los que está. Una consulta con los datos que se muestran (sin
-	 * cargar entidades ni turnos). El filtro por escuela de {@code @TenantId} lo aplican {@code Grupo} y {@code Alumno}.
+	 * Por alumno, los nombres de los grupos indicados en los que está. Decisión 516: solo cuentan los grupos cuya
+	 * disciplina tiene el alumno con inscripción activa; si no tiene ninguna inscripción, cuentan todos (criterio de las
+	 * decisiones 310 y 515, por cada par alumno-grupo). No filtra por {@code Alumno#activo}. Una consulta con los datos
+	 * que se muestran (sin cargar entidades ni turnos). El filtro por escuela de {@code @TenantId} lo aplican
+	 * {@code Grupo} y {@code Alumno}.
 	 */
 	private Map<Long, List<String>> nombresDeGrupos(Set<Long> grupos, Set<Long> alumnosConCargos) {
 		Map<Long, List<String>> porAlumno = new HashMap<>();
@@ -214,6 +219,9 @@ public class CajaService {
 				SELECT a.id, g.nombre
 				FROM Grupo g JOIN g.alumnos a
 				WHERE g.id IN :grupos AND a.id IN :alumnos
+				  AND (NOT EXISTS (SELECT ad.id FROM AlumnoDeporte ad WHERE ad.alumno = a) OR EXISTS (SELECT ad2.id
+				  FROM AlumnoDeporte ad2 WHERE ad2.alumno = a AND ad2.activo = TRUE
+				  AND ad2.disciplina.codigo = g.disciplina.codigo))
 				ORDER BY g.nombre, g.id""", Object[].class)
 				.setParameter("grupos", grupos).setParameter("alumnos", alumnosConCargos).getResultList()) {
 			porAlumno.computeIfAbsent((Long) f[0], id -> new ArrayList<>()).add((String) f[1]);

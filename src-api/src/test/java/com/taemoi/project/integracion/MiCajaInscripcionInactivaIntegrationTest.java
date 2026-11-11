@@ -143,7 +143,43 @@ class MiCajaInscripcionInactivaIntegrationTest extends MySqlIntegrationTest {
 		}
 	}
 
+	@Test
+	void cargosPendientes_losGruposSoloIncluyenLosDeLaDisciplinaActivaDelAlumno() throws Exception {
+		long cBaja = cargo(bajaEnTkdActivoEnKick, "CARGO MCB");
+		long cTodo = cargo(bajaEnTodo, "CARGO MCD");
+		long cAmbos = cargo(activoEnAmbos, "CARGO MCC");
+		try {
+			JsonNode cargos = json.readTree(mvc.perform(get("/api/caja/profesor/cargos-pendientes")
+					.cookie(new Cookie("jwt", tProf))).andReturn().getResponse().getContentAsString());
+			// Baja en Taekwondo y activo en Kickboxing: solo el grupo de Kickboxing.
+			assertEquals(List.of(nombre(gKick)), textos(cargoDe(cargos, cBaja).get("grupos")));
+			// Baja en todo: el cargo sigue listado, sin grupos.
+			assertEquals(List.of(), textos(cargoDe(cargos, cTodo).get("grupos")));
+			// Activo en las dos: los dos grupos, por nombre.
+			assertEquals(List.of(nombre(gKick), nombre(gTkd)), textos(cargoDe(cargos, cAmbos).get("grupos")));
+		} finally {
+			jdbc.update("DELETE FROM producto_alumno WHERE id IN (?, ?, ?)", cBaja, cTodo, cAmbos);
+		}
+	}
+
 	// ------------------------------------------------------------------ apoyo
+
+	private long cargo(long alumno, String concepto) {
+		jdbc.update("""
+				INSERT INTO producto_alumno (alumno_id, concepto, precio, cantidad, pagado, fecha_asignacion,
+				  organizacion_id, sede_id)
+				VALUES (?, ?, 30, 1, 0, '2026-02-01 12:00:00', ?, ?)""", alumno, concepto, e.org, e.sA);
+		return jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE organizacion_id = ?", Long.class, e.org);
+	}
+
+	private static JsonNode cargoDe(JsonNode lista, long cargoId) {
+		for (JsonNode n : lista) {
+			if (n.get("cargoId").asLong() == cargoId) {
+				return n;
+			}
+		}
+		throw new AssertionError("El cargo " + cargoId + " no está en los pendientes: " + lista);
+	}
 
 	private long grupo(String nombre, String deporte, long sede) {
 		GrupoConAlumnosDTO dto = new GrupoConAlumnosDTO();
