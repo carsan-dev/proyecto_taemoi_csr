@@ -14,6 +14,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 
+import { EditorWebService } from '../../../comun/editor-web';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { EstadoRecurso, EventoDetalleWeb } from '../../../datos/modelos';
@@ -51,6 +52,8 @@ const NO_ENCONTRADO: EstadoRecurso<EventoDetalleWeb> = { estado: 'no-encontrado'
 })
 export class EventoLineaComarcalComponent {
   private readonly web = inject(WebPublicaService);
+  /** «Web · Contenido» (W12c-bis): en el editor, «Ver el caso» puede cambiar el evento en memoria. */
+  private readonly editor = inject(EditorWebService);
   private readonly id = toSignal(
     inject(ActivatedRoute).paramMap.pipe(
       map((p) => {
@@ -71,7 +74,10 @@ export class EventoLineaComarcalComponent {
     const previa = this.pagina.vistaPrevia();
     return id === null ? null : untracked(() => this.web.evento(id, previa));
   });
-  private readonly evento = computed(() => this.recurso()?.() ?? NO_ENCONTRADO);
+  private readonly evento = computed<EstadoRecurso<EventoDetalleWeb>>(() => {
+    const actual = this.recurso()?.() ?? NO_ENCONTRADO;
+    return actual.estado === 'listo' ? { estado: 'listo', datos: this.editor.aplicarEvento(actual.datos) } : actual;
+  });
   protected readonly pagina = paginaWeb('evento', () => `/eventos/${this.id() ?? ''}`, { evento: this.evento });
   protected readonly estadoEvento = computed(() => this.evento().estado);
   protected readonly vista = computed(() => {

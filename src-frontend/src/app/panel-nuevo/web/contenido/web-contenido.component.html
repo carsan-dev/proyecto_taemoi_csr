@@ -46,6 +46,28 @@
       <span>{{ textos.ayuda }} {{ publicada() ? textos.ayudaPublicada : textos.ayudaNueva }}</span>
     </p>
     <div class="herramientas">
+      <div class="controles">
+        <div class="control">
+          <label class="control__etiqueta" for="web-contenido-pagina">{{ textos.etiquetaPagina }}</label>
+          <select class="selector" id="web-contenido-pagina" (change)="cambiarPagina($event)">
+            @for (p of paginas; track p.id) {
+            <option [value]="p.id" [selected]="p.id === pagina()"
+              [disabled]="(p.id === 'sede' && !paginaDisponible().sede) || (p.id === 'evento' && !paginaDisponible().evento)">{{ p.opcion }}</option>
+            }
+          </select>
+        </div>
+        @if (conSub()) {
+        <div class="control">
+          <label class="control__etiqueta" for="web-contenido-sub">{{ etiquetaSub() }}</label>
+          <select class="selector" id="web-contenido-sub" (change)="cambiarSub($event)">
+            @for (o of opcionesSub(); track $index) {
+            <option [value]="o.valor" [selected]="o.valor === sub() && !o.desactivada" [disabled]="o.desactivada">{{ o.texto }}</option>
+            }
+          </select>
+        </div>
+        }
+      </div>
+      <div class="vista-ctrl">
       <div class="segmento" role="group" aria-label="Ancho de la vista previa">
         @for (v of vistas; track v) {
         <button type="button" [attr.data-vista]="v" [attr.aria-pressed]="v === vista()" (click)="cambiarVista(v)">
@@ -59,13 +81,60 @@
         </button>
         }
       </div>
+      <div class="ver-caso__ancla">
+        <button type="button" #botonCasos class="ver-caso" [class.es-activo]="!!casoActivo()" aria-haspopup="menu"
+          [attr.aria-expanded]="menuCasos()" aria-describedby="caso-voz" (click)="alternarMenuCasos()">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M2.5 12C3.5 10 7 6 12 6s8.5 4 9.5 6c-1 2-4.5 6-9.5 6s-8.5-4-9.5-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>{{ textos.verCaso }}<svg
+            class="ver-caso__flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+        </button>
+        @if (menuCasos()) {
+        <div class="flot flot--casos" #menu (keydown)="alTeclearMenu($event)">
+          <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m"></div></div>
+          <p class="flot__titulo" id="casos-t">{{ tituloMenu() }}</p>
+          <p class="flot__ayuda flot__ayuda--casos" id="casos-a">{{ casos().length ? textos.ayudaCasos : textos.ayudaSinCasos }}</p>
+          <div class="flot__lista" role="menu" aria-labelledby="casos-t" aria-describedby="casos-a">
+            <button type="button" role="menuitemradio" class="flot__op flot__op--radio" [attr.aria-checked]="caso() === null" (click)="elegirCaso(null)">
+              <span class="flot__marca" aria-hidden="true"></span><span>{{ textos.datosReales }}<small>{{ textos.datosRealesCuando }}</small></span>
+            </button>
+            @if (casos().length) {
+            <div class="flot__sep" role="separator"></div>
+            }
+            @for (c of casos(); track c.id) {
+            <button type="button" role="menuitemradio" class="flot__op flot__op--radio" [attr.aria-checked]="caso() === c.id" [attr.data-caso]="c.id"
+              (click)="elegirCaso(c.id)">
+              <span class="flot__marca" aria-hidden="true"></span><span>{{ c.nombre }}<small>{{ c.cuando }}</small></span>
+            </button>
+            }
+          </div>
+        </div>
+        }
+      </div>
+      <span class="oculto" id="caso-voz">{{ casoActivo() ? 'Viendo: ' + casoActivo()!.nombre : '' }}</span>
+      </div>
     </div>
+    @if (nota(); as n) {
+    <p class="nota-pagina">
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5.5M12 7.5h.01"></path></svg>
+      <span>{{ n }}</span>
+    </p>
+    }
 
     <section class="marco" aria-labelledby="marco-t">
       <div class="marco__cab">
-        <span id="marco-t">{{ textos.marco }}<strong>{{ textos.pagina }}</strong></span>
+        <span id="marco-t">{{ textos.marco }}<strong>{{ rotuloPagina() }}</strong></span>
         <span class="marco__info">{{ info() }}</span>
       </div>
+      @if (casoActivo(); as c) {
+      <div class="caso-activo" #casoActivoEl>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><path d="M2.5 12C3.5 10 7 6 12 6s8.5 4 9.5 6c-1 2-4.5 6-9.5 6s-8.5-4-9.5-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        <p class="caso-activo__texto"><strong>Viendo: {{ c.nombre }}</strong><span>{{ c.cuando }}. {{ textos.casoNoGuarda }}</span></p>
+        <button type="button" class="secundario caso-activo__volver" (click)="volverADatosReales()">{{ textos.volverReales }}</button>
+      </div>
+      }
       <div class="marco__vista" #marcoVista tabindex="-1">
         @if (carga() === 'error') {
         <div class="fallo" role="alert">

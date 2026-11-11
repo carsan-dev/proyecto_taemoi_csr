@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, inject
 import { RouterLink } from '@angular/router';
 
 import { irAlAncla } from '../../../comun/ancla';
+import { EditorWebService } from '../../../comun/editor-web';
 import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { WebPublicaService } from '../../../datos/web-publica.service';
@@ -28,6 +29,8 @@ import { vistaEventos } from './eventos';
 })
 export class EventosLineaComarcalComponent {
   private readonly web = inject(WebPublicaService);
+  /** «Web · Contenido» (W12c-bis): en el editor, «Ver el caso» puede cambiar la lista en memoria. */
+  private readonly editor = inject(EditorWebService);
 
   protected readonly textos = TEXTOS_PAGINAS_LINEA_COMARCAL;
   /** La petición se lanza (o se reutiliza de la caché) fuera del contexto reactivo: escribe en signals. */
@@ -37,7 +40,7 @@ export class EventosLineaComarcalComponent {
   });
   private readonly eventos = computed(() => {
     const actual = this.recurso()();
-    return actual.estado === 'listo' ? actual.datos : null;
+    return actual.estado === 'listo' ? this.editor.aplicarEventos(actual.datos) : null;
   });
   protected readonly pagina = paginaWeb('eventos', () => '/eventos', {
     eventos: computed(() => this.eventos()?.proximos ?? null),

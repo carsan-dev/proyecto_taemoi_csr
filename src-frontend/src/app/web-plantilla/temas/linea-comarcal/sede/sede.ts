@@ -38,6 +38,8 @@ export interface FilaFicha {
   texto: string;
   nota: string | null;
   enlace: string | null;
+  /** Qué dato es (`data-dato`, neutro): la capa de edición de «Web · Contenido» le pone su candado. */
+  dato: 'lugar' | 'acceso' | 'telefono';
 }
 
 export interface VistaPaginaSede {
@@ -148,15 +150,15 @@ function tramo(sedes: SedeWeb[], sede: SedeWeb): VistaTramo {
 function llegar(sede: SedeWeb, lugar: string | null, direccion: string | null, localidad: string): VistaPaginaSede['llegar'] {
   const filas: FilaFicha[] = [];
   if (lugar || direccion) {
-    filas.push({ rotulo: P.fichaLugar, texto: lugar ?? direccion!, nota: lugar ? direccion : null, enlace: null });
+    filas.push({ rotulo: P.fichaLugar, texto: lugar ?? direccion!, nota: lugar ? direccion : null, enlace: null, dato: 'lugar' });
   }
   const acceso = sede.indicacionesAcceso?.trim();
   if (acceso) {
-    filas.push({ rotulo: P.fichaEntrada, texto: acceso, nota: null, enlace: null });
+    filas.push({ rotulo: P.fichaEntrada, texto: acceso, nota: null, enlace: null, dato: 'acceso' });
   }
   const telefono = sede.telefono?.trim();
   if (telefono) {
-    filas.push({ rotulo: P.fichaTelefono, texto: telefonoVisible(telefono), nota: null, enlace: telefonoEnlace(telefono) });
+    filas.push({ rotulo: P.fichaTelefono, texto: telefonoVisible(telefono), nota: null, enlace: telefonoEnlace(telefono), dato: 'telefono' });
   }
   const mapa = lugar || sede.direccion?.trim() ? enlaceMapa([sede.lugar, sede.direccion, localidad]) : null;
   const foto = sede.foto2Url ? { url: sede.foto2Url, alt: altFotoSede(sede, 2) } : null;

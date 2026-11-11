@@ -1,7 +1,8 @@
 import { InjectionToken } from '@angular/core';
 
-import { TemaWeb } from '../../../web-plantilla/datos/modelos';
-import type { AcentoEditor, BloqueBorrador, DestinoPanel } from '../../../web-plantilla/editor/puente-editor';
+import { EventoListaWeb, SedeWeb, TemaWeb } from '../../../web-plantilla/datos/modelos';
+import type { PaginaEditor } from '../../../web-plantilla/editor/candados-linea-comarcal';
+import type { AcentoEditor, BloqueBorrador, CasoVista, DestinoPanel } from '../../../web-plantilla/editor/puente-editor';
 import { EstadoWebEscuela, nombreTema, temaInicial, temaPublicado } from '../tema/web-tema-vista';
 
 /**
@@ -50,10 +51,131 @@ export function nombrePublicada(estado: EstadoWebEscuela): string | null {
  */
 export const ORIGEN_EDITOR = new InjectionToken<string>('ORIGEN_EDITOR', { factory: () => '' });
 
-/** `/?vista-previa=<tema>&editor=1`: la plantilla activa la capa de edición solo si la API confirma la gestión. */
-export function direccionEditor(tema: TemaWeb): string {
-  return `/?vista-previa=${encodeURIComponent(tema)}&editor=1`;
+/**
+ * `/<ruta>?vista-previa=<tema>&editor=1`: la plantilla activa la capa de edición solo si la API confirma la gestión.
+ * «Una sede» y «Un evento» necesitan cuál (`sub`, el slug o el id); sin él, null.
+ */
+export function direccionEditor(tema: TemaWeb, pagina: PaginaEditor = 'inicio', sub: string | null = null): string | null {
+  const consulta = `?vista-previa=${encodeURIComponent(tema)}&editor=1`;
+  switch (pagina) {
+    case 'inicio':
+      return `/${consulta}`;
+    case 'sede':
+      return sub ? `/sedes/${encodeURIComponent(sub)}${consulta}` : null;
+    case 'evento':
+      return sub ? `/eventos/${encodeURIComponent(sub)}${consulta}` : null;
+    default:
+      return `/${pagina}${consulta}`;
+  }
 }
+
+// ------------------------------------------------------------------ selector de página (d519)
+
+export interface PaginaContenido {
+  id: PaginaEditor;
+  /** La opción del selector (`PAGINAS` del boceto). */
+  opcion: string;
+  /** En el rótulo del marco, el anuncio y el menú de casos (`nombrePagina` del boceto). */
+  nombre: string;
+}
+
+export const PAGINAS_CONTENIDO: readonly PaginaContenido[] = [
+  { id: 'inicio', opcion: 'Inicio, con cabecera y pie', nombre: 'Inicio' },
+  { id: 'sede', opcion: 'Una sede', nombre: 'Una sede' },
+  { id: 'tarifas', opcion: 'Tarifas', nombre: 'Tarifas' },
+  { id: 'eventos', opcion: 'Eventos', nombre: 'Eventos' },
+  { id: 'evento', opcion: 'Un evento', nombre: 'Un evento' },
+  { id: 'legales', opcion: 'Legales', nombre: 'Legales' },
+  { id: 'preinscripcion', opcion: 'Preinscripción', nombre: 'Preinscripción' },
+];
+
+export function esPaginaContenido(valor: unknown): valor is PaginaEditor {
+  return PAGINAS_CONTENIDO.some((p) => p.id === valor);
+}
+
+export function nombrePagina(pagina: PaginaEditor): string {
+  return PAGINAS_CONTENIDO.find((p) => p.id === pagina)!.nombre;
+}
+
+/** Una opción del segundo selector («Sede» o «Evento»). */
+export interface OpcionSub {
+  valor: string;
+  texto: string;
+  desactivada: boolean;
+}
+
+/** Las sedes de la escuela; la que no tiene dirección de página sale «(sin página)» y no se elige (boceto `SUBS`). */
+export function opcionesSede(sedes: readonly Pick<SedeWeb, 'nombre' | 'slug'>[]): OpcionSub[] {
+  return sedes.map((s) => ({
+    valor: s.slug ?? '',
+    texto: s.slug ? s.nombre : `${s.nombre} (sin página)`,
+    desactivada: !s.slug,
+  }));
+}
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const FECHA = /^\d{4}-(\d{2})-(\d{2})$/;
+
+/** «Examen de cinturones (14 nov)» (boceto `SUBS`). */
+export function opcionesEvento(eventos: readonly Pick<EventoListaWeb, 'id' | 'titulo' | 'fecha'>[]): OpcionSub[] {
+  return eventos.map((e) => {
+    const partes = FECHA.exec(e.fecha ?? '');
+    const fecha = partes ? ` (${Number(partes[2])} ${MESES[Number(partes[1]) - 1]})` : '';
+    return { valor: String(e.id), texto: `${e.titulo}${fecha}`, desactivada: false };
+  });
+}
+
+/** La primera que se puede elegir; null si no hay ninguna. */
+export function primeraOpcion(opciones: readonly OpcionSub[]): string | null {
+  return opciones.find((o) => !o.desactivada)?.valor ?? null;
+}
+
+/** La nota bajo el selector (boceto `pintarSelector`); en la de sede, los nombres reales de las sedes sin página. */
+export function notaPagina(pagina: PaginaEditor, sedesSinPagina: readonly string[]): string | null {
+  if (pagina === 'sede') {
+    const cuales = sedesSinPagina.length ? ` (${sedesSinPagina.join(', ')})` : '';
+    return `Sus textos valen para todas las sedes. Una sede sin dirección de página${cuales} no tiene página: se la pones en Sedes.`;
+  }
+  if (pagina === 'evento') {
+    return 'Sus textos valen para todos los eventos. El nombre, la fecha, las fotos y los documentos se cambian en Eventos.';
+  }
+  return null;
+}
+
+// ------------------------------------------------------------------ «Ver el caso» (d528)
+
+export interface CasoPagina {
+  id: CasoVista;
+  nombre: string;
+  /** Cuándo pasa. */
+  cuando: string;
+}
+
+/**
+ * Los casos de cada página (`CASOS` del boceto) que el tema construido puede enseñar con sus datos. Fuera: «Sin clases
+ * esta semana» de una sede (el tema solo lo pinta sin turnos) y los tres de la preinscripción (dependen de lo escrito
+ * en el formulario y del envío).
+ */
+export const CASOS_PAGINA: Readonly<Record<PaginaEditor, readonly CasoPagina[]>> = {
+  inicio: [
+    { id: 'lleno', nombre: 'Grupo lleno', cuando: 'Un grupo sin plazas libres' },
+    { id: 'espera', nombre: 'Lista de espera', cuando: 'Un grupo que ya tiene lista de espera' },
+  ],
+  sede: [
+    { id: 'lleno', nombre: 'Grupo lleno', cuando: 'Un grupo sin plazas libres' },
+    { id: 'espera', nombre: 'Lista de espera', cuando: 'Un grupo que ya tiene lista de espera' },
+  ],
+  tarifas: [{ id: 'sin-tarifas', nombre: 'Sin tarifas publicadas', cuando: 'Aún no hay mensualidad en Tesorería' }],
+  eventos: [
+    { id: 'sin-proximos', nombre: 'Sin eventos próximos', cuando: 'Hay eventos pasados, ninguno por venir' },
+    { id: 'sin-eventos', nombre: 'Sin eventos', cuando: 'Todavía no hay ninguno' },
+    { id: 'un-evento', nombre: 'Un solo evento', cuando: 'La cuenta dice «1 evento»' },
+    { id: 'sin-anteriores', nombre: 'Sin eventos anteriores', cuando: 'Hay próximos, ninguno pasado' },
+  ],
+  evento: [{ id: 'una-foto', nombre: 'Una sola foto', cuando: 'La galería tiene una foto' }],
+  legales: [],
+  preinscripcion: [],
+};
 
 // ------------------------------------------------------------------ Móvil | Escritorio
 
@@ -92,6 +214,7 @@ export const RUTA_DESTINO: Readonly<Record<DestinoPanel, string>> = {
   eventos: '/eventosListar',
   productos: '/productosListar',
   'datos-escuela': '/datos-escuela',
+  plantillas: '/preinscripciones?tab=plantillas',
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -118,4 +241,19 @@ export const TEXTOS_WEB_CONTENIDO = {
   marco: 'Vista previa de tu web · ',
   pagina: 'Inicio',
   tituloIframe: 'Vista previa editable de tu web',
+  etiquetaPagina: 'Página',
+  etiquetaSede: 'Sede',
+  etiquetaEvento: 'Evento',
+  verCaso: 'Ver el caso',
+  datosReales: 'Datos reales',
+  datosRealesCuando: 'Tu web como está ahora',
+  ayudaCasos: 'Textos que solo salen en casos poco frecuentes. Elige uno para verlo y cambiar sus textos.',
+  ayudaSinCasos: 'Esta página no tiene textos de casos poco frecuentes.',
+  casoNoGuarda: 'Solo para ver y cambiar sus textos: no es un cambio y no se guarda.',
+  volverReales: 'Volver a datos reales',
+  vozReales: 'Vuelves a los datos reales.',
 } as const;
+
+export const tituloMenuCasos = (pagina: PaginaEditor) => `Ver un caso de ${nombrePagina(pagina)}`;
+export const vozPagina = (pagina: PaginaEditor) => `Vista previa de ${nombrePagina(pagina)}.`;
+export const vozCaso = (caso: CasoPagina) => `Viendo: ${caso.nombre}. No es un cambio y no se guarda.`;

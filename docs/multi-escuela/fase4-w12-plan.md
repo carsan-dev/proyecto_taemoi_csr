@@ -47,7 +47,7 @@ Nota: la fila W12 del §8 dice «Migración: no». `oculto` exige una (V32_9): W
 
 ## 2. Piezas, en orden (cada una se fusiona y se despliega sola)
 
-Orden: W12a → W12b → W12c → W12d → W12e → W12f. W12g es independiente (su interfaz está en el
+Orden: W12a → W12b → W12c → W12c-bis → W12d → W12e → W12f. W12g es independiente (su interfaz está en el
 boceto aprobado, d524) y puede ir en cualquier momento. Entrada de menú «Contenido» visible a partir de W12d (antes,
 la ruta existe pero no se enlaza: una pantalla que no guarda no debe verse; decisión 341: lo que se despliega se ve).
 
@@ -141,6 +141,18 @@ la ruta existe pero no se enlaza: una pantalla que no guarda no debe verse; deci
 - **Moiskimdo igual**: `sinLegadoTaemoiGuard` y sin entrada. **Bundle**: solo la ruta perezosa. **Tamaño**:
   ~900-1.200 líneas.
 
+### W12c-bis · Selector de página y «Ver el caso» (medium)
+
+- **Frontend**: selector «Página» con las 7 páginas (d519) y, en «Una sede» y «Un evento», segundo selector con las
+  sedes y los eventos de la vista previa de gestión (sedes sin página, desactivadas); `?pagina=` en la dirección, voz
+  «Vista previa de X.», sin «· N cambios» (W12d). Candados y partes fijas de las otras 6 páginas en la capa (atributos
+  `data-dato` neutros en el tema; destino nuevo Preinscripciones · Plantillas). «Ver el caso» (d528): menú por página
+  (hoja inferior en < 768 px), franja del caso activo y «Volver a datos reales»; el caso viaja por el puente (lista
+  cerrada) y la capa lo simula en memoria. Fuera: «Sin clases esta semana», los casos y el paso de la preinscripción.
+- **Tests**: Karma de selector, URL, voz, candados por página, menú de casos, teclado, puente y que nada va a la API.
+- **Boceto**: `PAGINAS`, `SUBS`, `pintarSelector`, `CASOS`, `abrirMenuCasos`, `ponerCaso`, `dato()` de cada página.
+- **Moiskimdo igual**: misma ruta y guards de W12c; bundle inicial sin cambios. **Tamaño**: ~1.900 líneas con tests.
+
 ### W12d · Textos en el sitio y guardar (medium; careful en la revisión del guardado)
 
 - **Frontend**: textos editables (`contenteditable="plaintext-only"`, rol `button` → `textbox`, Intro/F2 entra,
@@ -212,6 +224,7 @@ Cierran las ocho preguntas que dejaba abiertas el primer desglose. El boceto apr
 | d528 | Botón «Ver el caso». | — |
 | d529 | Fila del tema en la vista previa de Eventos. | — |
 | d530 | El aviso de conflicto solo dice «otra persona» (ni nombre ni hora de quien guardó). | n.º 7 |
+| d532 | El selector de página (d519) y «Ver el caso» (d528) van en pieza propia, W12c-bis, antes de W12d (11/11). | — |
 
 Con d519 y d518, el alcance de W12c-W12f crece respecto a la estimación del §2: selector de página, bloques «Fotos de
 las sedes» y «Texto con foto», sedes del profesor y estado de conflicto. W12g (d524) ya no espera boceto.

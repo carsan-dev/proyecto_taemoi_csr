@@ -53,7 +53,133 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
 // Ayuda y Móvil | Escritorio
 .ayuda-editor { display: flex; align-items: flex-start; gap: 8px; max-width: 72ch; color: var(--pn-tinta); font: var(--pn-cuerpo); }
 .ayuda-editor svg { flex: none; width: 18px; height: 18px; margin-top: 2px; color: var(--pn-acento); }
-.herramientas { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-end; gap: 12px 24px; margin-top: 14px; }
+.herramientas { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-top: 14px; }
+
+// Selector de página (W12c-bis, d519): como «Página» de «Web · Tema» y `.controles` del boceto
+.controles { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; }
+.control { display: grid; gap: 6px; }
+.control__etiqueta { color: var(--pn-tinta); font: var(--pn-etiqueta); }
+.selector {
+  min-width: 220px;
+  height: 42px;
+  padding: 0 36px 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235d6573' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 16px;
+  appearance: none;
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  cursor: pointer;
+}
+.selector:hover { border-color: var(--pn-tinta-2); }
+.selector:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+.nota-pagina { display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.nota-pagina svg { flex: none; width: 16px; height: 16px; margin-top: 1px; color: var(--pn-tinta-3); }
+
+// «Ver el caso» (d528): junto a Móvil | Escritorio, con su menú; el caso activo, fijo encima de la vista previa
+.vista-ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ver-caso__ancla { position: relative; }
+.ver-caso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 10px 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta-2);
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ver-caso svg { flex: none; width: 16px; height: 16px; }
+.ver-caso .ver-caso__flecha { width: 14px; height: 14px; margin-left: 2px; }
+.ver-caso:hover { background: var(--pn-marca-primario-suave); color: var(--pn-tinta); }
+.ver-caso:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+.ver-caso[aria-expanded='true'] { border-color: var(--pn-acento-borde); background: var(--pn-acento-suave); color: var(--pn-acento); }
+.ver-caso[aria-expanded='true'] .ver-caso__flecha { transform: rotate(180deg); }
+.ver-caso.es-activo {
+  border-color: color-mix(in srgb, var(--pn-atencion) 55%, var(--pn-linea-fuerte));
+  background: var(--pn-atencion-suave);
+  color: var(--pn-atencion);
+}
+
+// El menú: bajo el botón, alineado a su derecha; en < 768 px, hoja inferior (como los menús del boceto)
+.flot {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 58;
+  width: 340px;
+  max-width: calc(100vw - 16px);
+  padding: 6px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  box-shadow: var(--pn-sombra-menu);
+}
+.flot__asa { display: none; }
+.flot__asa-m { width: 36px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: var(--pn-linea-fuerte); }
+.flot__titulo { margin: 6px 10px 8px; color: var(--pn-tinta-2); font: var(--pn-etiqueta); }
+.flot__ayuda--casos { margin: -2px 10px 8px; color: var(--pn-tinta-2); font: var(--pn-secundario); font-size: 0.8125rem; }
+.flot__lista { display: grid; gap: 2px; }
+.flot__op {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: none;
+  color: var(--pn-tinta);
+  font: 600 0.9375rem / 1.3 var(--pn-fuente-cuerpo);
+  text-align: left;
+  cursor: pointer;
+}
+.flot__op small { display: block; margin-top: 2px; color: var(--pn-tinta-2); font: var(--pn-secundario); font-size: 0.8125rem; }
+.flot__op:hover { background: var(--pn-marca-primario-suave); }
+.flot__op:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: -3px; background: var(--pn-acento-suave); }
+.flot__sep { height: 1px; margin: 4px 6px; background: var(--pn-linea); }
+.flot__marca {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1.5px solid var(--pn-borde-control);
+  border-radius: 50%;
+  background: var(--pn-superficie);
+}
+.flot__op--radio[aria-checked='true'] .flot__marca { border: 5px solid var(--pn-acento); }
+
+.caso-activo {
+  position: sticky;
+  top: 64px;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 10px 14px;
+  // Boceto #ecd3b5: el ámbar sobre el fondo de la franja da #e9d0b8 (cada canal a 3 o menos del boceto).
+  border-bottom: 1px solid color-mix(in srgb, var(--pn-atencion) 21%, var(--pn-atencion-suave));
+  background: var(--pn-atencion-suave);
+  color: var(--pn-tinta);
+}
+.caso-activo > svg { flex: none; width: 18px; height: 18px; color: var(--pn-atencion); }
+.caso-activo__texto { flex: 1 1 280px; font: var(--pn-secundario); }
+.caso-activo__texto strong { display: block; color: var(--pn-atencion); font-weight: 700; }
+.caso-activo__texto span { color: var(--pn-tinta-2); font-size: 0.8125rem; }
+.secundario.caso-activo__volver {
+  min-height: 36px;
+  margin-top: 0;
+  border-color: color-mix(in srgb, var(--pn-atencion) 55%, var(--pn-linea-fuerte));
+  color: var(--pn-atencion);
+}
+.secundario.caso-activo__volver:hover { background: color-mix(in srgb, var(--pn-atencion) 10%, var(--pn-superficie)); }
 .segmento { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--pn-borde-control); border-radius: var(--pn-radio-m); background: var(--pn-superficie); }
 .segmento button {
   display: inline-flex;
@@ -117,7 +243,10 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
 
 @media (prefers-reduced-motion: no-preference) {
   .ver-web,
-  .segmento button { transition: background-color var(--pn-transicion), border-color var(--pn-transicion); }
+  .segmento button,
+  .flot__op { transition: background-color var(--pn-transicion), border-color var(--pn-transicion); }
+  .ver-caso { transition: background-color var(--pn-transicion), color var(--pn-transicion), border-color var(--pn-transicion); }
+  .ver-caso .ver-caso__flecha { transition: transform var(--pn-transicion); }
   .esq-vista i { animation: pulso 1.6s ease-in-out infinite; }
 }
 @keyframes pulso { 50% { opacity: 0.55; } }
@@ -128,6 +257,32 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
   .cabecera { flex-direction: column; align-items: stretch; }
   .ver-web { align-self: flex-start; min-height: 44px; }
   .herramientas { flex-direction: column; align-items: stretch; }
+  .controles { flex-direction: column; align-items: stretch; width: 100%; }
+  .selector { width: 100%; min-height: 44px; }
+  .vista-ctrl { align-self: stretch; }
+  .ver-caso { min-height: 46px; }
+  .ver-caso__ancla { position: static; }
+  .flot {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-width: none;
+    max-height: 82vh;
+    overflow: auto;
+    padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
+    border: 0;
+    // Por encima de la barra inferior del panel (z-index 1001), como la hoja de cargos de Alumnos (1020).
+    z-index: 1020;
+    border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+    box-shadow: var(--pn-sombra-hoja);
+  }
+  .flot__asa { display: block; }
+  .flot__op { min-height: 48px; }
+  .caso-activo { top: 56px; padding: 10px 16px; }
+  .secundario.caso-activo__volver { min-height: 44px; }
   .segmento { align-self: flex-start; }
   .segmento button { min-height: 40px; }
   .marco { margin: 12px -16px 0; border-right: 0; border-left: 0; border-radius: 0; }

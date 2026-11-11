@@ -11,6 +11,10 @@ import type { BloqueWeb } from '../datos/modelos';
  *   forma conocida; lo demás se ignora en silencio;
  * - el iframe nunca da URL ni rutas: pide un destino de una lista cerrada y el panel decide adónde navega.
  *
+ * W12c-bis: «Ver el caso» (d528) manda al iframe uno de los casos de una lista cerrada (`caso`); la capa lo simula en
+ * memoria sobre los datos de la vista previa y nunca toca la API. La capa pide al panel que enseñe la parte del caso
+ * (`mostrar`, solo un número).
+ *
  * Previsto para W12d (no implementado aquí): edición de textos (`texto` del editor al panel) y el guardado, que se
  * queda en el panel. Cada tipo nuevo se añade a su unión y a su comprobación.
  */
@@ -19,7 +23,7 @@ import type { BloqueWeb } from '../datos/modelos';
 export const CANAL_EDITOR_WEB = 'taemoi-editor-web';
 
 /** Pantallas del panel a las que lleva un candado (d517). El panel traduce cada una a su ruta. */
-export const DESTINOS_PANEL = ['sedes', 'grupos', 'eventos', 'productos', 'datos-escuela'] as const;
+export const DESTINOS_PANEL = ['sedes', 'grupos', 'eventos', 'productos', 'datos-escuela', 'plantillas'] as const;
 export type DestinoPanel = (typeof DESTINOS_PANEL)[number];
 
 /** Una fila del borrador tal como la pinta el tema (`BloqueWeb`); sin la constancia del permiso de los profesores. */
@@ -43,7 +47,21 @@ export interface MensajeBorrador {
   acento?: AcentoEditor;
 }
 
-export type MensajeDelPanel = MensajeBorrador;
+/**
+ * Casos poco frecuentes que «Ver el caso» simula en la vista previa (d528; `CASOS` del boceto). Lista cerrada: el
+ * panel no manda datos, solo el nombre del caso.
+ */
+export const CASOS_VISTA = ['lleno', 'espera', 'sin-tarifas', 'sin-proximos', 'sin-eventos', 'un-evento', 'sin-anteriores', 'una-foto'] as const;
+export type CasoVista = (typeof CASOS_VISTA)[number];
+
+/** El caso que se ve (null: los datos reales). No es un cambio y no se guarda. */
+export interface MensajeCaso {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'caso';
+  caso: CasoVista | null;
+}
+
+export type MensajeDelPanel = MensajeBorrador | MensajeCaso;
 
 // ------------------------------------------------------------------ del iframe al panel
 
@@ -67,7 +85,14 @@ export interface MensajeIr {
   destino: DestinoPanel;
 }
 
-export type MensajeDelEditor = MensajeListo | MensajeAlto | MensajeIr;
+/** Tras pintar un caso, dónde empieza su parte (px CSS desde arriba del documento del iframe), para enseñarla. */
+export interface MensajeMostrar {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'mostrar';
+  arriba: number;
+}
+
+export type MensajeDelEditor = MensajeListo | MensajeAlto | MensajeIr | MensajeMostrar;
 
 // ------------------------------------------------------------------ comprobaciones
 
@@ -77,6 +102,10 @@ function esObjeto(valor: unknown): valor is Record<string, unknown> {
 
 export function esDestinoPanel(valor: unknown): valor is DestinoPanel {
   return typeof valor === 'string' && (DESTINOS_PANEL as readonly string[]).includes(valor);
+}
+
+export function esCasoVista(valor: unknown): valor is CasoVista {
+  return typeof valor === 'string' && (CASOS_VISTA as readonly string[]).includes(valor);
 }
 
 function textoONulo(valor: unknown): boolean {
@@ -106,12 +135,18 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
   if (!esObjeto(valor) || valor['canal'] !== CANAL_EDITOR_WEB) {
     return false;
   }
-  return (
-    valor['tipo'] === 'borrador' &&
-    Array.isArray(valor['bloques']) &&
-    valor['bloques'].every(esBloqueBorrador) &&
-    (valor['acento'] === undefined || esAcento(valor['acento']))
-  );
+  switch (valor['tipo']) {
+    case 'borrador':
+      return (
+        Array.isArray(valor['bloques']) &&
+        valor['bloques'].every(esBloqueBorrador) &&
+        (valor['acento'] === undefined || esAcento(valor['acento']))
+      );
+    case 'caso':
+      return valor['caso'] === null || esCasoVista(valor['caso']);
+    default:
+      return false;
+  }
 }
 
 /** Lo que el panel acepta del iframe. */
@@ -126,6 +161,8 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
       return typeof valor['alto'] === 'number' && Number.isFinite(valor['alto']) && valor['alto'] >= 0;
     case 'ir':
       return esDestinoPanel(valor['destino']);
+    case 'mostrar':
+      return typeof valor['arriba'] === 'number' && Number.isFinite(valor['arriba']) && valor['arriba'] >= 0;
     default:
       return false;
   }

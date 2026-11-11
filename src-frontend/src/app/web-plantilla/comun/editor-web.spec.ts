@@ -2,7 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 
 import { sitioDePrueba } from '../datos/datos-de-prueba';
-import { SitioWeb } from '../datos/modelos';
+import { EventoDetalleWeb, EventoListaWeb, EventosWeb, SitioWeb } from '../datos/modelos';
 import { CARGAR_CAPA_EDITOR, EditorWebService } from './editor-web';
 
 describe('EditorWebService (W12c)', () => {
@@ -83,5 +83,32 @@ describe('EditorWebService (W12c)', () => {
     activar.calls.mostRecent().args[0].alBorrador(bloques);
     expect(editor.aplicar(sitio(true)).bloques).toEqual(bloques);
     expect(editor.aplicar(sitio(false)).bloques).toEqual(sitio(false).bloques);
+  });
+
+  it('W12c-bis: «Ver el caso» cambia en memoria el sitio, los eventos y el evento; con null, los datos reales', async () => {
+    const editor = crear();
+    const eventos: EventosWeb = { proximos: [{ id: 1 } as EventoListaWeb], anteriores: [] };
+    const evento = { id: 1, fotos: [{ id: 1 }, { id: 2 }] } as EventoDetalleWeb;
+    // Sin capa: nada cambia.
+    expect(editor.aplicarEventos(eventos)).toBe(eventos);
+    expect(editor.aplicarEvento(evento)).toBe(evento);
+
+    editor.activarSiToca('1', sitio(true));
+    await Promise.resolve();
+    await Promise.resolve();
+    const opciones = activar.calls.mostRecent().args[0];
+    opciones.alCaso({
+      sitio: (s: SitioWeb) => ({ ...s, tarifas: [] }),
+      eventos: () => ({ proximos: [], anteriores: [] }),
+      evento: (e: EventoDetalleWeb) => ({ ...e, fotos: e.fotos.slice(0, 1) }),
+    });
+    expect(editor.aplicar(sitio(true)).tarifas).toEqual([]);
+    expect(editor.aplicar(sitio(false)).tarifas).toEqual(sitio(false).tarifas);
+    expect(editor.aplicarEventos(eventos)).toEqual({ proximos: [], anteriores: [] });
+    expect(editor.aplicarEvento(evento).fotos).toEqual([{ id: 1 }]);
+
+    opciones.alCaso(null);
+    expect(editor.aplicar(sitio(true)).tarifas).toEqual(sitio(true).tarifas);
+    expect(editor.aplicarEventos(eventos)).toBe(eventos);
   });
 });
