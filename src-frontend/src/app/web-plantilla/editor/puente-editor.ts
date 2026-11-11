@@ -22,7 +22,14 @@ import type { BloqueWeb } from '../datos/modelos';
  * por defecto que pinta el tema para las claves que no están guardadas (`defectos`); el panel guarda el borrador, valida
  * y guarda en la API. El panel manda los errores que hay que señalar en la página (`errores`) y pide llevar el foco a un
  * texto desde el resumen de errores (`ir-texto`). Cada tipo nuevo se añade a su unión y a su comprobación.
+ *
+ * W12f-1: fotos sueltas (portada, presentación y «Texto con foto»). La capa elige el fichero y lo pasa al panel
+ * (`subir-foto`, un `File`), que lo sube a la API y le devuelve el estado de cada subida (`fotos`); la capa nunca llama a
+ * la API. La descripción (`descripcion`), «Volver a la anterior», «Quitar foto» y «Cancelar subida» (`foto`) también los
+ * guarda el panel en el borrador. Al terminar una subida, el panel pide a la capa abrir el diálogo de describir
+ * (`describir`).
  */
+import { MAX_DESCRIPCION_FOTO, esFotoSuelta, fotoDeDescripcion } from './fotos-sueltas';
 import { esTextoEditable } from './textos-editor';
 
 /** Marca de los mensajes de este puente: los de otras librerías o extensiones no la llevan. */
@@ -105,7 +112,38 @@ export interface MensajeIrTexto {
   clave: string;
 }
 
-export type MensajeDelPanel = MensajeBorrador | MensajeCaso | MensajePaso | MensajeErrores | MensajeIrTexto;
+/** W12f-1: una subida en curso o fallida (boceto `s.subidas`). */
+export type EstadoSubidaFoto =
+  | { estado: 'subiendo'; pct: number; nombre: string }
+  | { estado: 'error'; titulo: string; msg: string };
+
+/**
+ * W12f-1: el estado de las fotos sueltas que no está en el borrador: las cambiadas respecto a lo guardado («Nueva, sin
+ * guardar»), las que tienen una anterior a la que volver y las subidas.
+ */
+export interface MensajeFotos {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'fotos';
+  cambiadas: string[];
+  anteriores: string[];
+  subidas: Record<string, EstadoSubidaFoto>;
+}
+
+/** W12f-1: la subida terminó; la capa abre «Foto subida: describe la foto…». */
+export interface MensajeDescribir {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'describir';
+  clave: string;
+}
+
+export type MensajeDelPanel =
+  | MensajeBorrador
+  | MensajeCaso
+  | MensajePaso
+  | MensajeErrores
+  | MensajeIrTexto
+  | MensajeFotos
+  | MensajeDescribir;
 
 // ------------------------------------------------------------------ del iframe al panel
 
@@ -151,7 +189,43 @@ export interface MensajeDefectos {
   textos: Record<string, string>;
 }
 
-export type MensajeDelEditor = MensajeListo | MensajeAlto | MensajeIr | MensajeMostrar | MensajeTexto | MensajeDefectos;
+/** W12f-1: el fichero elegido para una foto suelta; lo sube el panel. */
+export interface MensajeSubirFoto {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'subir-foto';
+  clave: string;
+  archivo: File;
+}
+
+/** W12f-1: acciones del menú y de la subida de una foto suelta. */
+export const ACCIONES_FOTO = ['cancelar-subida', 'anterior', 'quitar'] as const;
+export type AccionFoto = (typeof ACCIONES_FOTO)[number];
+
+export interface MensajeAccionFoto {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'foto';
+  clave: string;
+  accion: AccionFoto;
+}
+
+/** W12f-1: la descripción de una foto (cada cambio del diálogo). */
+export interface MensajeDescripcion {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'descripcion';
+  clave: string;
+  texto: string;
+}
+
+export type MensajeDelEditor =
+  | MensajeListo
+  | MensajeAlto
+  | MensajeIr
+  | MensajeMostrar
+  | MensajeTexto
+  | MensajeDefectos
+  | MensajeSubirFoto
+  | MensajeAccionFoto
+  | MensajeDescripcion;
 
 /** Más largo que el mayor de los textos editables (1200): lo que pase de aquí no es de la capa. */
 const LARGO_MAXIMO = 5000;
@@ -202,6 +276,24 @@ function esAcento(valor: unknown): valor is AcentoEditor {
   return esObjeto(valor) && [valor['acento'], valor['borde'], valor['suave']].every((c) => typeof c === 'string' && HEX.test(c));
 }
 
+const esListaDeFotos = (valor: unknown) => Array.isArray(valor) && valor.length <= 100 && valor.every(esFotoSuelta);
+const esTextoDeSubida = (valor: unknown) => typeof valor === 'string' && valor.length <= 500;
+
+function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
+  if (!esObjeto(valor)) {
+    return false;
+  }
+  if (valor['estado'] === 'subiendo') {
+    const pct = valor['pct'];
+    return typeof pct === 'number' && Number.isFinite(pct) && pct >= 0 && pct <= 100 && esTextoDeSubida(valor['nombre']);
+  }
+  return valor['estado'] === 'error' && esTextoDeSubida(valor['titulo']) && esTextoDeSubida(valor['msg']);
+}
+
+/** Las claves a las que lleva un enlace del resumen: un texto, una foto suelta o su descripción. */
+const esClaveIrA = (clave: unknown) =>
+  typeof clave === 'string' && (esTextoEditable(clave) || esFotoSuelta(clave) || fotoDeDescripcion(clave) !== null);
+
 /** Lo que el iframe acepta del panel. */
 export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
   if (!esObjeto(valor) || valor['canal'] !== CANAL_EDITOR_WEB) {
@@ -221,7 +313,16 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
     case 'errores':
       return esMapaDeTextos(valor['errores'], (k) => k.length <= 120);
     case 'ir-texto':
-      return typeof valor['clave'] === 'string' && (valor['clave'] === 'portada.foto' || esTextoEditable(valor['clave']));
+      return esClaveIrA(valor['clave']);
+    case 'fotos':
+      return (
+        esListaDeFotos(valor['cambiadas']) &&
+        esListaDeFotos(valor['anteriores']) &&
+        esObjeto(valor['subidas']) &&
+        Object.entries(valor['subidas']).every(([k, v]) => esFotoSuelta(k) && esEstadoSubida(v))
+      );
+    case 'describir':
+      return esFotoSuelta(valor['clave']);
     default:
       return false;
   }
@@ -245,6 +346,17 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
       return typeof valor['clave'] === 'string' && esTextoEditable(valor['clave']) && esTextoCorto(valor['texto']);
     case 'defectos':
       return esMapaDeTextos(valor['textos'], esTextoEditable);
+    case 'subir-foto': {
+      // El `File` llega clonado a esta ventana (`postMessage`): es un `Blob` de aquí con su nombre.
+      const archivo = valor['archivo'];
+      return esFotoSuelta(valor['clave']) && archivo instanceof Blob && typeof (archivo as File).name === 'string';
+    }
+    case 'foto':
+      return esFotoSuelta(valor['clave']) && (ACCIONES_FOTO as readonly unknown[]).includes(valor['accion']);
+    case 'descripcion': {
+      const texto = valor['texto'];
+      return esFotoSuelta(valor['clave']) && typeof texto === 'string' && texto.length <= MAX_DESCRIPCION_FOTO;
+    }
     default:
       return false;
   }

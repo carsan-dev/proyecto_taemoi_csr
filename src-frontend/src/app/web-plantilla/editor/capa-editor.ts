@@ -14,6 +14,7 @@ import {
 import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
 import { activarEdicionTextos } from './edicion-textos';
+import { activarFotosEditor } from './fotos-editor';
 import {
   BloqueBorrador,
   CANAL_EDITOR_WEB,
@@ -38,7 +39,8 @@ import {
  *   cambia el equipo de Taemoi») y un enlace oculto por tipo de dato para el teclado;
  * - los enlaces y botones de la web, fuera del orden de tabulación y sin navegar;
  * - W12c-ter: los formularios de la web, inertes: no se escribe, no se marca, no se firma y no se envía;
- * - W12d: los textos que se cambian en el sitio (`edicion-textos.ts`).
+ * - W12d: los textos que se cambian en el sitio (`edicion-textos.ts`);
+ * - W12f-1: las fotos sueltas (portada, presentación y «Texto con foto»: `fotos-editor.ts`).
  * Los enlaces de los candados no navegan aquí: piden el destino al panel por el puente.
  */
 
@@ -123,6 +125,8 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
 
   // W12d: textos en el sitio. El tema recibe el borrador por aquí (con los vacíos marcados para el editor).
   const textos = activarEdicionTextos({ ventana, enviar: (m) => enviar(m), alTema: alBorrador, seleccionar: (id) => seleccionar(id) });
+  // W12f-1: fotos sueltas. El panel sube el fichero; la capa solo lo elige y pinta el estado.
+  const fotos = activarFotosEditor({ ventana, enviar: (m) => enviar(m) });
 
   // ------------------------------------------------------------------ anotar el DOM del tema
   function nombreDe(parte: Parte, el: HTMLElement): string {
@@ -395,6 +399,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     notasDelCaso();
     notaDePagina(pagina);
     textos.decorar(pagina);
+    fotos.decorar(pagina);
     enlacesOcultos();
     sinTabulador();
     if (datoActivo && !datoActivo.isConnected) {
@@ -661,10 +666,19 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
     if (mensaje.tipo === 'errores') {
       textos.errores(mensaje.errores);
+      fotos.errores(mensaje.errores);
+      return;
+    }
+    if (mensaje.tipo === 'fotos') {
+      fotos.estado(mensaje);
+      return;
+    }
+    if (mensaje.tipo === 'describir') {
+      fotos.describir(mensaje.clave);
       return;
     }
     if (mensaje.tipo === 'ir-texto') {
-      const arriba = textos.irA(mensaje.clave);
+      const arriba = fotos.irA(mensaje.clave) ?? textos.irA(mensaje.clave);
       if (arriba !== null) {
         enviar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba });
       }
@@ -691,6 +705,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       raiz.setProperty('--pn-acento-suave', mensaje.acento.suave);
     }
     textos.borrador(mensaje.bloques);
+    fotos.borrador(mensaje.bloques);
   });
 
   decorar();
@@ -715,6 +730,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     }
     doc.removeEventListener('pointerdown', alFirmar, true);
     textos.quitar();
+    fotos.quitar();
     estilos.remove();
     candado.remove();
   };

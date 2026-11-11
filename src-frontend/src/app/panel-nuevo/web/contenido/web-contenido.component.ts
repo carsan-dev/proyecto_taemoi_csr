@@ -13,21 +13,25 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 import { TemaWeb } from '../../../web-plantilla/datos/modelos';
 import type { PaginaEditor } from '../../../web-plantilla/editor/candados-linea-comarcal';
 import {
   CANAL_EDITOR_WEB,
+  AccionFoto,
   CasoVista,
+  EstadoSubidaFoto,
   MensajeDelEditor,
   PasoPreinscripcion,
   enviarPorPuente,
   esMensajeDelEditor,
   escucharPuente,
 } from '../../../web-plantilla/editor/puente-editor';
+import { claveDescripcion, fotoOpcional } from '../../../web-plantilla/editor/fotos-sueltas';
 import { defTexto, defectoDeLaPagina } from '../../../web-plantilla/editor/textos-editor';
 import { AcentoEscuelaDirective } from '../../acento-escuela.directive';
 import { AvisosService } from '../../avisos/avisos.service';
@@ -84,6 +88,18 @@ import {
   tituloSalir,
   valorTexto,
 } from './web-contenido-guardar';
+import {
+  TEXTOS_FOTOS,
+  comprobarArchivo,
+  conFotosCambiadasDesde,
+  describirFoto,
+  estadoFotos,
+  falloDeSubida,
+  fotosCambiadas,
+  ponerFoto,
+  quitarFoto,
+  volverALaAnterior,
+} from './web-contenido-fotos';
 import { ListasVista, WebContenidoService } from './web-contenido.service';
 
 /** La barra superior del panel (`navegacion/cabecera-panel`): 64 px y 56 en móvil; la franja del caso va debajo. */
@@ -113,6 +129,11 @@ const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
  * guardar» con Descartar y Guardar, resumen «Faltan N datos para guardar» con enlaces al dato (también los errores 400
  * de la API), avisos de guardado y de error con «Reintentar», conflicto (409, d522 y d530) con «Recargar la página» y
  * diálogo al salir con cambios (`salirSinGuardarGuard`, también desde un candado) y `beforeunload`.
+ *
+ * W12f-1: fotos sueltas (portada, presentación y «Texto con foto»; `web-contenido-fotos.ts`). La capa elige el fichero y
+ * lo manda; aquí se comprueba, se sube a la API con su progreso («Cancelar subida» la corta) y la foto subida entra en el
+ * borrador sin descripción, con el diálogo de describir abierto en la capa. Poner, cambiar, quitar, volver a la anterior
+ * y describir cuentan como cambios. Mientras sube algo no se guarda.
  */
 @Component({
   selector: 'pn-web-contenido',
@@ -136,6 +157,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
 
   readonly textos = TEXTOS_WEB_CONTENIDO;
   readonly textosGuardar = TEXTOS_GUARDAR;
+  readonly textosFotos = TEXTOS_FOTOS;
   readonly textoCambios = textoCambios;
   readonly tituloResumen = tituloResumen;
   readonly textoConflicto = textoConflicto;
@@ -163,7 +185,11 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly conflicto = signal(false);
 
   readonly cambiadas = computed(() => clavesCambiadas(this.guardado(), this.borrador(), this.defectos()));
-  readonly nCambios = computed(() => this.cambiadas().length);
+  /** W12f-1: subidas en curso o fallidas, por foto (boceto `s.subidas`). */
+  readonly subidas = signal<Record<string, EstadoSubidaFoto>>({});
+  readonly subiendo = computed(() => Object.values(this.subidas()).some((s) => s.estado === 'subiendo'));
+  readonly fotosCambiadas = computed(() => fotosCambiadas(this.guardado(), this.borrador()));
+  readonly nCambios = computed(() => this.cambiadas().length + this.fotosCambiadas().length);
   readonly erroresVisibles = computed<Record<string, string>>(() =>
     this.mostrarErrores() ? { ...erroresContenido(this.borrador(), this.defectos()), ...this.erroresServidor() } : {},
   );
@@ -173,7 +199,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       entradaResumen(clave, mensaje, this.borrador(), clave in this.erroresServidor()),
     ),
   );
-  readonly barraVisible = computed(() => this.estado() === 'listo' && (this.nCambios() > 0 || this.conflicto()));
+  readonly barraVisible = computed(
+    () => this.estado() === 'listo' && (this.nCambios() > 0 || this.subiendo() || this.conflicto()),
+  );
   readonly vista = signal<AnchoVista>(vistaInicial(this.ventana));
   readonly carga = signal<'cargando' | 'listo' | 'error'>('cargando');
   readonly esqueleto = signal(false);
@@ -286,6 +314,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private irPendiente: string | null = null;
   /** El aviso de error con «Reintentar» que sigue abierto (se cierra al guardar bien o al descartar). */
   private avisoError: number | null = null;
+  /** W12f-1: la petición de cada subida en curso (se corta al cancelar, descartar, recargar o salir). */
+  private readonly peticiones = new Map<string, Subscription>();
   private observador: ResizeObserver | null = null;
   private temporizadorEsqueleto: ReturnType<typeof setTimeout> | null = null;
   private temporizadorLimite: ReturnType<typeof setTimeout> | null = null;
@@ -294,6 +324,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     effect(() => this.observar(this.marcoVista()?.nativeElement ?? null));
     // Los errores que se ven en el resumen, también señalados en la página.
     effect(() => this.enviarErrores(this.erroresVisibles()));
+    // W12f-1: «Nueva, sin guardar», «Volver a la anterior» y las subidas, en la capa.
+    effect(() => this.enviarFotos());
     const dejarDeEscuchar = this.ventana
       ? escucharPuente(this.ventana, () => this.iframe()?.nativeElement.contentWindow ?? null, esMensajeDelEditor, (m) =>
           this.alRecibir(m),
@@ -301,6 +333,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       : () => undefined;
     inject(DestroyRef).onDestroy(() => {
       dejarDeEscuchar();
+      this.cancelarSubidas();
       this.pararTemporizadores();
       this.observador?.disconnect();
     });
@@ -312,6 +345,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   }
 
   cargar(anunciar = false): void {
+    this.cancelarSubidas();
     this.estado.set('cargando');
     this.servicio.obtener().subscribe({
       next: ({ estado, contenido }) => {
@@ -529,6 +563,10 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       case 'listo':
         this.vistaLista();
         this.enviarBorrador();
+        // La capa nueva empieza sin fotos cambiadas ni subidas: solo si hay algo.
+        if (this.fotosCambiadas().length || Object.keys(this.subidas()).length) {
+          this.enviarFotos();
+        }
         if (Object.keys(this.erroresVisibles()).length) {
           this.enviarErrores(this.erroresVisibles());
         }
@@ -566,6 +604,16 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
           this.ensenar(mensaje.arriba);
         }
         break;
+      case 'subir-foto':
+        this.subirFoto(mensaje.clave, mensaje.archivo);
+        break;
+      case 'foto':
+        this.accionFoto(mensaje.clave, mensaje.accion);
+        break;
+      case 'descripcion':
+        this.borrador.update((filas) => describirFoto(filas, mensaje.clave, mensaje.texto));
+        this.limpiarErrores([mensaje.clave, claveDescripcion(mensaje.clave)]);
+        break;
     }
   }
 
@@ -576,21 +624,146 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     const max = defTexto(clave)?.max;
     const recortado = max !== undefined && texto.length > max ? texto.slice(0, max) : texto;
     this.borrador.update((filas) => ponerTexto(filas, clave, recortado));
-    if (clave in this.erroresServidor()) {
+    this.limpiarErrores([clave]);
+  }
+
+  /** Lo cambiado ya no lleva el error de la API; el resumen se va cuando ya no falta nada (boceto `refrescar`). */
+  private limpiarErrores(claves: readonly string[]): void {
+    if (claves.some((clave) => clave in this.erroresServidor())) {
       this.erroresServidor.update((errores) => {
         const resto = { ...errores };
-        delete resto[clave];
+        claves.forEach((clave) => delete resto[clave]);
         return resto;
       });
     }
-    // Boceto `refrescar`: el resumen se va cuando ya no falta nada.
     if (this.mostrarErrores() && !Object.keys(this.erroresVisibles()).length) {
       this.mostrarErrores.set(false);
     }
   }
 
+  // ------------------------------------------------------------------ fotos sueltas (W12f-1)
+
+  /** Boceto `simularSubida`: comprobar, subir con progreso y, al terminar, al borrador y a describirla. */
+  private subirFoto(clave: string, archivo: File): void {
+    this.cancelarPeticion(clave);
+    const fallo = comprobarArchivo(archivo);
+    if (fallo) {
+      this.ponerSubida(clave, fallo);
+      return;
+    }
+    this.ponerSubida(clave, { estado: 'subiendo', pct: 0, nombre: archivo.name });
+    this.anuncio.set(this.textosFotos.vozSubiendo);
+    const peticion = this.servicio.subirImagen(archivo).subscribe({
+      next: (evento) => {
+        if (evento.type === HttpEventType.UploadProgress) {
+          const pct = evento.total ? Math.min(100, Math.round((100 * evento.loaded) / evento.total)) : 0;
+          const actual = this.subidas()[clave];
+          if (actual?.estado === 'subiendo' && actual.pct !== pct) {
+            this.ponerSubida(clave, { ...actual, pct });
+          }
+        } else if (evento.type === HttpEventType.Response) {
+          this.peticiones.delete(clave);
+          const imagen = evento.body;
+          if (!imagen) {
+            this.ponerSubida(clave, falloDeSubida(archivo, null));
+            return;
+          }
+          this.quitarSubida(clave);
+          this.cambiarFotos([clave], (filas) => ponerFoto(filas, clave, imagen.imagenId, imagen.url));
+          this.anuncio.set(this.textosFotos.vozSubida);
+          if (this.ventana) {
+            enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, {
+              canal: CANAL_EDITOR_WEB,
+              tipo: 'describir',
+              clave,
+            });
+          }
+        }
+      },
+      error: (error: unknown) => {
+        this.peticiones.delete(clave);
+        this.ponerSubida(clave, falloDeSubida(archivo, error));
+      },
+    });
+    if (!peticion.closed) {
+      this.peticiones.set(clave, peticion);
+    }
+  }
+
+  private accionFoto(clave: string, accion: AccionFoto): void {
+    switch (accion) {
+      case 'cancelar-subida': {
+        const estaba = this.subidas()[clave];
+        this.cancelarPeticion(clave);
+        this.quitarSubida(clave);
+        if (estaba?.estado === 'subiendo') {
+          this.anuncio.set(this.textosFotos.vozCancelada);
+        }
+        break;
+      }
+      case 'anterior':
+        this.cambiarFotos([clave], (filas) => volverALaAnterior(filas, this.guardado(), clave));
+        this.anuncio.set(this.textosFotos.vozAnterior);
+        break;
+      case 'quitar':
+        // La foto de portada es obligatoria: no se quita (boceto `abrirMenuFoto`).
+        if (fotoOpcional(clave)) {
+          this.cambiarFotos([clave], (filas) => quitarFoto(filas, clave));
+          this.anuncio.set(this.textosFotos.vozQuitada);
+        }
+        break;
+    }
+  }
+
+  /** Un cambio de foto: al borrador y a la vista previa (el tema la pinta antes de guardar). */
+  private cambiarFotos(claves: readonly string[], cambio: (filas: BloqueContenido[]) => BloqueContenido[]): void {
+    this.borrador.update(cambio);
+    this.limpiarErrores(claves.flatMap((clave) => [clave, claveDescripcion(clave)]));
+    this.enviarBorrador();
+  }
+
+  private ponerSubida(clave: string, estado: EstadoSubidaFoto): void {
+    this.subidas.update((s) => ({ ...s, [clave]: estado }));
+  }
+
+  private quitarSubida(clave: string): void {
+    if (clave in this.subidas()) {
+      this.subidas.update((s) => {
+        const resto = { ...s };
+        delete resto[clave];
+        return resto;
+      });
+    }
+  }
+
+  private cancelarPeticion(clave: string): void {
+    this.peticiones.get(clave)?.unsubscribe();
+    this.peticiones.delete(clave);
+  }
+
+  private cancelarSubidas(): void {
+    this.peticiones.forEach((p) => p.unsubscribe());
+    this.peticiones.clear();
+    this.subidas.set({});
+  }
+
+  private enviarFotos(): void {
+    const { cambiadas, anteriores } = estadoFotos(this.guardado(), this.borrador());
+    const subidas = this.subidas();
+    if (this.ventana) {
+      enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, {
+        canal: CANAL_EDITOR_WEB,
+        tipo: 'fotos',
+        cambiadas,
+        anteriores,
+        subidas,
+      });
+    }
+  }
+
   guardar(): void {
-    if (this.guardando() || this.conflicto()) {
+    // Boceto `pintarBarra`: mientras sube una foto, Guardar no se puede pulsar.
+    if (this.guardando() || this.conflicto() || this.subiendo()) {
       return;
     }
     if (Object.keys(erroresContenido(this.borrador(), this.defectos())).length) {
@@ -615,6 +788,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         if (tecleado.length) {
           this.borrador.update((filas) => tecleado.reduce((f, [clave, texto]) => ponerTexto(f, clave, texto), filas));
         }
+        // W12f-1: igual con las fotos subidas, quitadas o descritas mientras se guardaba.
+        this.borrador.update((filas) => conFotosCambiadasDesde(filas, enviado, actual));
         this.enviarBorrador();
         this.enfocarTitulo();
         this.avisos.exito(this.publicada() ? this.textosGuardar.guardadoPublicada : this.textosGuardar.guardadoNueva);
@@ -648,6 +823,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.guardando()) {
       return;
     }
+    this.cancelarSubidas();
     this.borrador.set(this.guardado());
     this.cerrarAvisoError();
     this.mostrarErrores.set(false);
