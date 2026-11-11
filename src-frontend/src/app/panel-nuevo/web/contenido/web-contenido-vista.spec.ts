@@ -65,6 +65,7 @@ describe('web-contenido-vista (W12c)', () => {
       eventos: '/eventosListar',
       productos: '/productosListar',
       'datos-escuela': '/datos-escuela',
+      plantillas: '/preinscripciones?tab=plantillas',
     });
     expect(Object.keys(RUTA_DESTINO).sort()).toEqual([...DESTINOS_PANEL].sort());
   });

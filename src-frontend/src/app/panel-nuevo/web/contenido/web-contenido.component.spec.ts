@@ -11,6 +11,7 @@ import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
 const URL_CONTENIDO = `${URL}/contenido`;
+const URL_PUBLICA = `${environment.apiUrl}/publico/web`;
 /** El iframe de las pruebas no carga la página de Karma: un documento vacío del mismo origen. */
 const ORIGEN = 'about:blank#';
 
@@ -68,7 +69,14 @@ describe('WebContenidoComponent (W12c)', () => {
     fixture.detectChanges();
     http.expectOne(URL).flush(estado);
     http.expectOne(URL_CONTENIDO).flush(contenido);
+    listas();
     fixture.detectChanges();
+  }
+
+  /** Sedes y eventos de la vista previa de gestión (W12c-bis), para «Una sede» y «Un evento». */
+  function listas(): void {
+    http.expectOne((r) => r.url === URL_PUBLICA).flush({ sedes: [] });
+    http.expectOne((r) => r.url === `${URL_PUBLICA}/eventos`).flush({ proximos: [], anteriores: [] });
   }
 
   /** Un mensaje que llega a la ventana del panel. */
@@ -89,6 +97,7 @@ describe('WebContenidoComponent (W12c)', () => {
       expect(iframe()).toBeNull();
       http.expectOne(URL).flush(estadoWeb());
       http.expectOne(URL_CONTENIDO).flush(CONTENIDO);
+      listas();
     });
 
     it('error: el bloque de error con sus textos y «Reintentar» vuelve a leer', () => {
@@ -105,6 +114,7 @@ describe('WebContenidoComponent (W12c)', () => {
       q<HTMLButtonElement>('.pn-bloque-error__reintentar')!.click();
       http.expectOne(URL).flush(estadoWeb());
       http.expectOne(URL_CONTENIDO).flush(CONTENIDO);
+      listas();
       fixture.detectChanges();
       expect(iframe()).not.toBeNull();
       expect(anuncio()).toBe('Contenido cargado.');
@@ -274,6 +284,8 @@ describe('WebContenidoComponent (W12c)', () => {
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'abrir', url: 'https://otra.example' });
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'alto', alto: 'mucho' });
       llegar('listo');
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'caso', caso: 'lleno' });
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: 'arriba' });
       expect(enviar).not.toHaveBeenCalled();
       expect(navegar).not.toHaveBeenCalled();
       expect(iframe()!.style.height).toBe('800px');
@@ -285,6 +297,7 @@ describe('WebContenidoComponent (W12c)', () => {
       ['eventos', '/eventosListar'],
       ['productos', '/productosListar'],
       ['datos-escuela', '/datos-escuela'],
+      ['plantillas', '/preinscripciones?tab=plantillas'],
     ] as const) {
       it(`un candado de ${destino} lleva a ${ruta}`, () => {
         abrir();

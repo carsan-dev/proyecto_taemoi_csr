@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  HostListener,
   Injector,
   OnInit,
   afterNextRender,
@@ -13,11 +14,13 @@ import {
   viewChild,
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { TemaWeb } from '../../../web-plantilla/datos/modelos';
+import type { PaginaEditor } from '../../../web-plantilla/editor/candados-linea-comarcal';
 import {
   CANAL_EDITOR_WEB,
+  CasoVista,
   MensajeDelEditor,
   enviarPorPuente,
   esMensajeDelEditor,
@@ -32,19 +35,35 @@ import {
   ANCHO_VISTA,
   AnchoVista,
   BloqueContenido,
+  CASOS_PAGINA,
+  CasoPagina,
   ORIGEN_EDITOR,
+  OpcionSub,
+  PAGINAS_CONTENIDO,
   RUTA_DESTINO,
   TEXTOS_WEB_CONTENIDO,
   acentoDe,
   bloquesParaVistaPrevia,
   direccionEditor,
   escalaVista,
+  esPaginaContenido,
+  nombrePagina,
   nombrePublicada,
+  notaPagina,
+  opcionesEvento,
+  opcionesSede,
+  primeraOpcion,
   temaDeLaVista,
   textoMarco,
+  tituloMenuCasos,
   vistaInicial,
+  vozCaso,
+  vozPagina,
 } from './web-contenido-vista';
-import { WebContenidoService } from './web-contenido.service';
+import { ListasVista, WebContenidoService } from './web-contenido.service';
+
+/** Alto de la barra superior del panel: la franja del caso activo se queda debajo (boceto: `top: 64px`). */
+const ALTO_CABECERA_PANEL = 64;
 
 const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
 
@@ -57,6 +76,10 @@ const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
  * Puente con el iframe (`web-plantilla/editor/puente-editor.ts`): solo atiende mensajes del mismo origen, de su
  * iframe y con forma conocida; manda el borrador (lo leído de la API) cuando la capa avisa de que está lista, ajusta
  * el alto del marco y navega a la pantalla que pide un candado.
+ *
+ * W12c-bis: selector de página (d519, con su segundo selector en «Una sede» y «Un evento»; la página va en la dirección,
+ * `?pagina=`) y «Ver el caso» (d528): el caso se manda por el puente y lo simula la capa dentro del iframe; ni la página
+ * ni el caso llegan a la API.
  */
 @Component({
   selector: 'pn-web-contenido',
@@ -74,10 +97,12 @@ export class WebContenidoComponent implements OnInit {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly ventana = inject(DOCUMENT).defaultView;
+  private readonly ruta = inject(ActivatedRoute);
 
   readonly textos = TEXTOS_WEB_CONTENIDO;
   readonly textosVista = TEXTOS_WEB_TEMA;
   readonly vistas = VISTAS;
+  readonly paginas = PAGINAS_CONTENIDO;
 
   readonly estado = signal<'cargando' | 'error' | 'listo'>('cargando');
   /** «Publicada con «tema»» o null si la web aún no está publicada (estado «nueva»). */
@@ -92,6 +117,61 @@ export class WebContenidoComponent implements OnInit {
   readonly disponible = signal(0);
   readonly alto = signal(ALTO_INICIAL);
 
+  // ------------------------------------------------------------------ página y caso (W12c-bis)
+  readonly pagina = signal<PaginaEditor>(this.paginaDeLaDireccion());
+  /** Sedes y eventos para «Una sede» y «Un evento»; undefined mientras se leen, null si fallan. */
+  readonly listas = signal<ListasVista | null | undefined>(undefined);
+  private readonly elegida = signal<Partial<Record<'sede' | 'evento', string>>>({});
+  readonly caso = signal<CasoVista | null>(null);
+  readonly menuCasos = signal(false);
+
+  readonly opcionesSub = computed<OpcionSub[]>(() => {
+    const listas = this.listas();
+    switch (this.pagina()) {
+      case 'sede':
+        return listas ? opcionesSede(listas.sedes) : [];
+      case 'evento':
+        return listas ? opcionesEvento(listas.eventos) : [];
+      default:
+        return [];
+    }
+  });
+  readonly conSub = computed(() => this.pagina() === 'sede' || this.pagina() === 'evento');
+  readonly etiquetaSub = computed(() => (this.pagina() === 'sede' ? this.textos.etiquetaSede : this.textos.etiquetaEvento));
+  /** La sede o el evento que se ve: el elegido o, si no, el primero (boceto: la primera sede y el primer evento). */
+  readonly sub = computed<string | null>(() => {
+    const pagina = this.pagina();
+    if (pagina !== 'sede' && pagina !== 'evento') {
+      return null;
+    }
+    const opciones = this.opcionesSub();
+    const elegida = this.elegida()[pagina];
+    return opciones.some((o) => o.valor === elegida && !o.desactivada) ? elegida! : primeraOpcion(opciones);
+  });
+  /** «Una sede» y «Un evento» no se eligen sin ninguna sede con página o ningún evento (como «Una sede» en «Web · Tema»). */
+  readonly paginaDisponible = computed(() => {
+    const listas = this.listas();
+    return {
+      sede: !!listas && primeraOpcion(opcionesSede(listas.sedes)) !== null,
+      evento: !!listas && listas.eventos.length > 0,
+    };
+  });
+  readonly rotuloPagina = computed(() => {
+    const nombre = nombrePagina(this.pagina());
+    const sub = this.opcionesSub().find((o) => o.valor === this.sub());
+    return sub ? `${nombre} · ${sub.texto}` : nombre;
+  });
+  readonly nota = computed(() => {
+    const sedes = this.listas()?.sedes ?? [];
+    return notaPagina(
+      this.pagina(),
+      sedes.filter((s) => !s.slug).map((s) => s.nombre),
+    );
+  });
+  readonly casos = computed<readonly CasoPagina[]>(() => CASOS_PAGINA[this.pagina()]);
+  readonly casoActivo = computed(() => this.casos().find((c) => c.id === this.caso()) ?? null);
+  readonly tituloMenu = computed(() => tituloMenuCasos(this.pagina()));
+
   readonly ancho = computed(() => ANCHO_VISTA[this.vista()]);
   readonly escala = computed(() => escalaVista(this.disponible(), this.ancho()));
   readonly anchoLienzo = computed(() => Math.floor(this.ancho() * this.escala()));
@@ -99,12 +179,18 @@ export class WebContenidoComponent implements OnInit {
   readonly info = computed(() => textoMarco(this.vista(), this.escala()));
   readonly src = computed<SafeResourceUrl | null>(() => {
     const tema = this.tema();
-    // Ruta relativa del mismo origen construida aquí, nunca con datos del usuario sin codificar.
-    return tema === null ? null : this.sanitizer.bypassSecurityTrustResourceUrl(this.origen + direccionEditor(tema));
+    // Ruta relativa del mismo origen construida aquí; el slug y el id van codificados (`direccionEditor`).
+    const direccion = tema === null ? null : direccionEditor(tema, this.pagina(), this.sub());
+    return direccion === null ? null : this.sanitizer.bypassSecurityTrustResourceUrl(this.origen + direccion);
   });
 
   private readonly iframe = viewChild<ElementRef<HTMLIFrameElement>>('iframe');
   private readonly marcoVista = viewChild<ElementRef<HTMLElement>>('marcoVista');
+  private readonly botonCasos = viewChild<ElementRef<HTMLButtonElement>>('botonCasos');
+  private readonly menu = viewChild<ElementRef<HTMLElement>>('menu');
+  private readonly casoActivoEl = viewChild<ElementRef<HTMLElement>>('casoActivoEl');
+  /** Tras elegir un caso, se enseña su parte cuando la capa dice dónde está. */
+  private mostrarCaso = false;
   private observador: ResizeObserver | null = null;
   private temporizadorEsqueleto: ReturnType<typeof setTimeout> | null = null;
   private temporizadorLimite: ReturnType<typeof setTimeout> | null = null;
@@ -134,6 +220,7 @@ export class WebContenidoComponent implements OnInit {
       next: ({ estado, contenido }) => {
         this.publicada.set(nombrePublicada(estado));
         this.tema.set(temaDeLaVista(estado));
+        this.leerListas(temaDeLaVista(estado));
         this.borrador.set(contenido.bloques);
         this.alto.set(ALTO_INICIAL);
         this.estado.set('listo');
@@ -157,6 +244,145 @@ export class WebContenidoComponent implements OnInit {
     this.vista.set(vista);
   }
 
+  // ------------------------------------------------------------------ selector de página (d519)
+
+  private paginaDeLaDireccion(): PaginaEditor {
+    const pedida = this.ruta.snapshot.queryParamMap.get('pagina');
+    return esPaginaContenido(pedida) ? pedida : 'inicio';
+  }
+
+  private leerListas(tema: TemaWeb): void {
+    this.listas.set(undefined);
+    this.servicio.listas(tema).subscribe((listas) => {
+      this.listas.set(listas);
+      // Llegó de la dirección a una página que no se puede ver: Inicio.
+      const pagina = this.pagina();
+      if ((pagina === 'sede' || pagina === 'evento') && !this.paginaDisponible()[pagina]) {
+        this.ponerPagina('inicio');
+      }
+    });
+  }
+
+  /** Al cambiar de página: se quita la selección (el iframe se recarga) y el caso; se dice la página por voz. */
+  cambiarPagina(evento: Event): void {
+    const valor = (evento.target as HTMLSelectElement).value;
+    if (!esPaginaContenido(valor) || valor === this.pagina()) {
+      return;
+    }
+    this.ponerPagina(valor);
+    this.anuncio.set(vozPagina(valor));
+  }
+
+  cambiarSub(evento: Event): void {
+    const pagina = this.pagina();
+    if (pagina !== 'sede' && pagina !== 'evento') {
+      return;
+    }
+    const valor = (evento.target as HTMLSelectElement).value;
+    if (!this.opcionesSub().some((o) => o.valor === valor && !o.desactivada) || valor === this.sub()) {
+      return;
+    }
+    this.elegida.update((e) => ({ ...e, [pagina]: valor }));
+    this.recargarVista();
+  }
+
+  private ponerPagina(pagina: PaginaEditor): void {
+    this.pagina.set(pagina);
+    this.caso.set(null);
+    this.menuCasos.set(false);
+    this.recargarVista();
+    // Como el boceto, la página va en la dirección (sin guardarse en la API).
+    void this.router.navigate([], {
+      relativeTo: this.ruta,
+      queryParams: { pagina: pagina === 'inicio' ? null : pagina },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private recargarVista(): void {
+    this.alto.set(ALTO_INICIAL);
+    if (this.estado() === 'listo') {
+      this.iniciarCarga();
+    }
+  }
+
+  // ------------------------------------------------------------------ «Ver el caso» (d528)
+
+  alternarMenuCasos(): void {
+    if (this.menuCasos()) {
+      this.cerrarMenuCasos(true);
+    } else {
+      this.menuCasos.set(true);
+      afterNextRender(
+        () => this.menu()?.nativeElement.querySelector<HTMLElement>('[aria-checked="true"]')?.focus({ preventScroll: true }),
+        { injector: this.injector },
+      );
+    }
+  }
+
+  cerrarMenuCasos(devolverFoco: boolean): void {
+    if (!this.menuCasos()) {
+      return;
+    }
+    this.menuCasos.set(false);
+    if (devolverFoco) {
+      this.botonCasos()?.nativeElement.focus({ preventScroll: true });
+    }
+  }
+
+  elegirCaso(id: CasoVista | null): void {
+    this.cerrarMenuCasos(true);
+    this.ponerCaso(id);
+  }
+
+  volverADatosReales(): void {
+    this.ponerCaso(null);
+    this.botonCasos()?.nativeElement.focus({ preventScroll: true });
+  }
+
+  private ponerCaso(id: CasoVista | null): void {
+    const caso = this.casos().find((c) => c.id === id) ?? null;
+    this.caso.set(caso?.id ?? null);
+    this.mostrarCaso = !!caso;
+    this.enviarCaso();
+    this.anuncio.set(caso ? vozCaso(caso) : this.textos.vozReales);
+  }
+
+  /** Teclado del menú (como el boceto): flechas, Inicio y Fin entre opciones; Escape y Tab lo cierran. */
+  alTeclearMenu(evento: KeyboardEvent): void {
+    if (evento.key === 'Escape' || evento.key === 'Tab') {
+      evento.preventDefault();
+      evento.stopPropagation();
+      this.cerrarMenuCasos(true);
+      return;
+    }
+    const opciones = Array.from(this.menu()?.nativeElement.querySelectorAll<HTMLElement>('[role="menuitemradio"]') ?? []);
+    const i = opciones.indexOf(this.host.nativeElement.ownerDocument.activeElement as HTMLElement);
+    if (i === -1) {
+      return;
+    }
+    const destino: Record<string, number> = {
+      ArrowDown: (i + 1) % opciones.length,
+      ArrowUp: (i - 1 + opciones.length) % opciones.length,
+      Home: 0,
+      End: opciones.length - 1,
+    };
+    if (evento.key in destino) {
+      evento.preventDefault();
+      opciones[destino[evento.key]].focus();
+    }
+  }
+
+  /** Pulsar fuera del menú (y fuera de su botón, que ya lo alterna) lo cierra sin mover el foco. */
+  @HostListener('document:mousedown', ['$event'])
+  alPulsarFuera(evento: MouseEvent): void {
+    const t = evento.target as Element | null;
+    if (this.menuCasos() && !t?.closest?.('.flot--casos, .ver-caso')) {
+      this.cerrarMenuCasos(false);
+    }
+  }
+
   // ------------------------------------------------------------------ puente
 
   private alRecibir(mensaje: MensajeDelEditor): void {
@@ -164,6 +390,10 @@ export class WebContenidoComponent implements OnInit {
       case 'listo':
         this.vistaLista();
         this.enviarBorrador();
+        // Al recargar (otra sede u otro evento) el caso sigue: la capa nueva lo recibe.
+        if (this.caso()) {
+          this.enviarCaso();
+        }
         break;
       case 'alto':
         this.alto.set(Math.max(1, Math.ceil(mensaje.alto)));
@@ -171,6 +401,37 @@ export class WebContenidoComponent implements OnInit {
       case 'ir':
         void this.router.navigateByUrl(RUTA_DESTINO[mensaje.destino]);
         break;
+      case 'mostrar':
+        if (this.mostrarCaso) {
+          this.mostrarCaso = false;
+          this.ensenar(mensaje.arriba);
+        }
+        break;
+    }
+  }
+
+  private enviarCaso(): void {
+    if (this.ventana) {
+      enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, {
+        canal: CANAL_EDITOR_WEB,
+        tipo: 'caso',
+        caso: this.caso(),
+      });
+    }
+  }
+
+  /** Lleva a la vista la parte del caso (boceto `ponerCaso`), bajo la barra del panel y la franja del caso. */
+  private ensenar(arriba: number): void {
+    const ventana = this.ventana;
+    const iframe = this.iframe()?.nativeElement;
+    if (!ventana || !iframe || typeof ventana.scrollTo !== 'function') {
+      return;
+    }
+    const y = iframe.getBoundingClientRect().top + ventana.scrollY + arriba * this.escala();
+    const tapa = ALTO_CABECERA_PANEL + (this.casoActivoEl()?.nativeElement.offsetHeight ?? 0) + 16;
+    if (y < ventana.scrollY + tapa || y > ventana.scrollY + ventana.innerHeight * 0.6) {
+      const reducir = ventana.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
+      ventana.scrollTo({ top: Math.max(0, y - tapa), behavior: reducir ? 'auto' : 'smooth' });
     }
   }
 
