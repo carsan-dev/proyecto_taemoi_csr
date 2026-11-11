@@ -308,11 +308,12 @@ describe('PortadaLineaComarcalComponent', () => {
       const raiz = await abrir(
         sitioConSedes(6, {
           bloques: [
-            bloque('portada.foto', null, 0, 'https://cdn/portada.jpg'),
-            bloque('portada.alt', 'Niños en fila en el tatami'),
+            // La descripción de la foto es el texto de su bloque (W12b; `portada.alt` ya no existe).
+            bloque('portada.foto', 'Niños en fila en el tatami', 0, 'https://cdn/portada.jpg'),
+            bloque('portada.alt', 'No se lee'),
             bloque('profesor.1.nombre', 'Antonio Ruiz Carmona'),
             bloque('profesor.1.cargo', 'Cinturón negro 5.º dan'),
-            bloque('profesor.1.foto', null, 0, 'https://cdn/antonio.jpg'),
+            bloque('profesor.1.foto', 'Retrato de un maestro con cinturón negro', 0, 'https://cdn/antonio.jpg'),
             bloque('profesor.2.nombre', 'Manuel Ortega Pozo'),
             bloque('galeria.1', 'Clase', 0, 'https://cdn/g1.jpg'),
             bloque('galeria.2', 'Patada', 0, 'https://cdn/g2.jpg'),
@@ -322,6 +323,8 @@ describe('PortadaLineaComarcalComponent', () => {
       const foto = raiz.querySelector<HTMLImageElement>('.portada-foto img')!;
       expect(foto.getAttribute('src')).toBe('https://cdn/portada.jpg');
       expect(foto.getAttribute('alt')).toBe('Niños en fila en el tatami');
+      expect(raiz.querySelector('.profe-foto img')!.getAttribute('alt')).toBe('Retrato de un maestro con cinturón negro');
+      expect(Array.from(raiz.querySelectorAll('.galeria img')).map((i) => i.getAttribute('alt'))).toEqual(['Clase', 'Patada']);
       expect(textos(raiz, '.profe-nombre')).toEqual(['Antonio Ruiz Carmona', 'Manuel Ortega Pozo']);
       expect(textos(raiz, '.profe-grado')).toEqual(['Cinturón negro 5.º dan']);
       expect(textos(raiz, '.monograma')).toEqual(['MO']);
@@ -351,6 +354,178 @@ describe('PortadaLineaComarcalComponent', () => {
         'contacto',
       ]);
       expect(textos(raiz, '#presentacion .cuerpo p')).toEqual(['Texto propio.']);
+    });
+  });
+
+  describe('modelo del editor (W12b)', () => {
+    const cabecera = (clave: string, orden: number, oculto = false): BloqueWeb => ({ clave, texto: null, imagenUrl: null, orden, oculto });
+    const ids = (raiz: HTMLElement) => Array.from(raiz.querySelectorAll('main > section')).map((s) => s.id);
+    const conProfesYGaleria = [
+      bloque('profesor.1.nombre', 'Antonio Ruiz'),
+      bloque('galeria.1', 'Clase', 0, 'https://cdn/g1.jpg'),
+    ];
+
+    it('una sección oculta no sale y no gasta número; las fijas no se ocultan', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: [
+            ...conProfesYGaleria,
+            cabecera('presentacion', 0, true),
+            cabecera('disciplinas', 1, true),
+            cabecera('profesores', 2),
+            cabecera('galeria', 3),
+            cabecera('tarifas', 4),
+          ],
+        }),
+      );
+      expect(ids(raiz)).toEqual(['portada', 'disciplinas', 'profesores', 'galeria', 'tarifas', 'contacto']);
+      expect(textos(raiz, '#disciplinas .rotulo')).toEqual(['02 · Disciplinas']);
+      expect(textos(raiz, '#profesores .rotulo')).toEqual(['03 · Profesores']);
+    });
+
+    it('una sección vacía no sale: presentación sin texto ni foto, texto con foto sin nada', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: [cabecera('presentacion', 0), bloque('presentacion.texto', ''), cabecera('texto_foto.1', 1), bloque('texto_foto.1.titulo', '')],
+        }),
+      );
+      expect(ids(raiz)).toEqual(['portada', 'disciplinas', 'tarifas', 'contacto']);
+    });
+
+    it('orden por las cabeceras: las movibles saltan sobre las fijas, que conservan su orden relativo', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: [
+            ...conProfesYGaleria,
+            cabecera('galeria', 0),
+            cabecera('disciplinas', 1),
+            cabecera('presentacion', 2),
+            cabecera('eventos', 3),
+            cabecera('tarifas', 4),
+            cabecera('profesores', 5),
+          ],
+        }),
+      );
+      // Galería antes de Disciplinas y Profesores detrás de Tarifas; Eventos, sin eventos, no sale.
+      expect(ids(raiz)).toEqual(['portada', 'galeria', 'disciplinas', 'presentacion', 'tarifas', 'profesores', 'contacto']);
+      expect(textos(raiz, '#galeria-titulo')).toEqual(['02 · Galería']);
+      expect(textos(raiz, '.contacto-principal .rotulo')).toEqual(['07 · Contacto']);
+      // Fondo alterno del boceto: entre las que salen, sin tarifas, una sí y otra no desde la segunda.
+      expect(Array.from(raiz.querySelectorAll('main > section.seccion--anden')).map((s) => s.id)).toEqual(['disciplinas', 'profesores']);
+    });
+
+    it('sin cabeceras, el fondo es el de siempre con todas las secciones', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: conProfesYGaleria,
+          proximosEventos: [evento(1, 'Examen', '2026-11-14')],
+        }),
+      );
+      expect(ids(raiz)).toEqual(['portada', 'presentacion', 'disciplinas', 'profesores', 'galeria', 'eventos', 'tarifas', 'contacto']);
+      expect(Array.from(raiz.querySelectorAll('main > section.seccion--anden')).map((s) => s.id)).toEqual(['disciplinas', 'galeria', 'contacto']);
+    });
+
+    it('texto con foto: ninguno', async () => {
+      const raiz = await abrir(sitioConSedes(6, { bloques: [cabecera('presentacion', 0)] }));
+      expect(raiz.querySelector('.tf')).toBeNull();
+    });
+
+    it('texto con foto: uno, con rótulo, título, párrafos y foto con su descripción', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: [
+            cabecera('texto_foto.1', 0),
+            bloque('texto_foto.1.rotulo', 'Primer día'),
+            bloque('texto_foto.1.titulo', 'Qué traer el primer día'),
+            bloque('texto_foto.1.texto', 'Ropa cómoda.\n\nUna botella de agua.'),
+            bloque('texto_foto.1.foto', 'Cinturón blanco anudado sobre un dobok', 0, 'https://cdn/tf1.jpg'),
+          ],
+        }),
+      );
+      const seccion = raiz.querySelector<HTMLElement>('#texto-foto-1')!;
+      expect(ids(raiz)).toEqual(['portada', 'presentacion', 'texto-foto-1', 'disciplinas', 'tarifas', 'contacto']);
+      expect(textos(seccion, '.rotulo')).toEqual(['03 · Primer día']);
+      expect(textos(seccion, 'h2')).toEqual(['Qué traer el primer día']);
+      expect(seccion.getAttribute('aria-labelledby')).toBe('texto-foto-1-titulo');
+      expect(textos(seccion, '.cuerpo p')).toEqual(['Ropa cómoda.', 'Una botella de agua.']);
+      expect(seccion.querySelector('.tf-foto img')!.getAttribute('alt')).toBe('Cinturón blanco anudado sobre un dobok');
+      expect(seccion.querySelector('.datos')).toBeNull();
+    });
+
+    it('texto con foto: tres, cada uno en su puesto; sin rótulo, solo el número; sin foto, sin figura', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: [
+            cabecera('presentacion', 0),
+            cabecera('texto_foto.2', 1),
+            bloque('texto_foto.2.titulo', 'Dos'),
+            cabecera('disciplinas', 2),
+            cabecera('texto_foto.1', 3),
+            bloque('texto_foto.1.titulo', 'Uno'),
+            cabecera('eventos', 4),
+            cabecera('tarifas', 5),
+            cabecera('texto_foto.3', 6),
+            bloque('texto_foto.3.texto', 'Solo texto.'),
+          ],
+        }),
+      );
+      expect(ids(raiz)).toEqual(['portada', 'presentacion', 'texto-foto-2', 'disciplinas', 'texto-foto-1', 'tarifas', 'texto-foto-3', 'contacto']);
+      expect(textos(raiz, '.tf .rotulo')).toEqual(['03', '05', '07']);
+      expect(raiz.querySelectorAll('.tf-foto').length).toBe(0);
+      expect(raiz.querySelector('#texto-foto-3')!.getAttribute('aria-labelledby')).toBeNull();
+    });
+
+    it('fotos de las sedes: la foto 1 de cada sede con su descripción o la del tema', async () => {
+      const sitio = sitioConSedes(3);
+      sitio.sedes[0] = { ...sitio.sedes[0], fotoUrl: 'https://cdn/herrera.jpg', fotoAlt: 'Pabellón deportivo de Herrera' };
+      sitio.sedes[1] = { ...sitio.sedes[1], fotoUrl: 'https://cdn/estepa.jpg', fotoAlt: '  ' };
+      sitio.sedes[2] = { ...sitio.sedes[2], slug: null };
+      sitio.bloques = [cabecera('sedes', 0), cabecera('presentacion', 1), bloque('sedes.titulo', 'Un tatami en cada pueblo')];
+      const raiz = await abrir(sitio);
+      const seccion = raiz.querySelector<HTMLElement>('#fotos-sedes')!;
+      expect(ids(raiz)[1]).toBe('fotos-sedes');
+      expect(textos(seccion, '.rotulo')).toEqual(['02 · Las sedes']);
+      expect(textos(seccion, '.fs-nombre')).toEqual(['Herrera', 'Estepa', 'Casariche']);
+      expect(Array.from(seccion.querySelectorAll('.fs-foto img')).map((i) => i.getAttribute('alt'))).toEqual([
+        'Pabellón deportivo de Herrera',
+        'Foto de la sede de Estepa',
+      ]);
+      expect(Array.from(seccion.querySelectorAll<HTMLAnchorElement>('.fs-parada a')).map((a) => a.getAttribute('href'))).toEqual([
+        '/sedes/herrera',
+        '/sedes/estepa',
+      ]);
+    });
+
+    it('fotos de las sedes: sin ninguna foto 1, no sale', async () => {
+      const sinFotos = await abrir(sitioConSedes(3, { bloques: [cabecera('sedes', 0)] }));
+      expect(sinFotos.querySelector('#fotos-sedes')).toBeNull();
+    });
+
+    it('fotos de las sedes: sin su cabecera (no añadida), no sale aunque las sedes tengan foto', async () => {
+      const sitio = sitioConSedes(2);
+      sitio.sedes[0] = { ...sitio.sedes[0], fotoUrl: 'https://cdn/herrera.jpg' };
+      const raiz = await abrir(sitio);
+      expect(raiz.querySelector('#fotos-sedes')).toBeNull();
+    });
+
+    it('rótulos y textos de las secciones desde sus claves; sin bloque, los del tema', async () => {
+      const raiz = await abrir(
+        sitioConSedes(6, {
+          bloques: [
+            bloque('presentacion.rotulo', 'Nosotros'),
+            bloque('contacto.rotulo', ''),
+            bloque('tarifas.al_mes', 'mensuales'),
+            bloque('tarifas.igual', 'La misma en todas'),
+            bloque('portada.enlace_tarifas', 'Cuánto cuesta'),
+          ],
+        }),
+      );
+      expect(textos(raiz, '#presentacion .rotulo')).toEqual(['02 · Nosotros']);
+      expect(textos(raiz, '.contacto-principal .rotulo')).toEqual(['05']);
+      expect(textos(raiz, '.tarifa-mes')).toEqual(['mensuales']);
+      expect(textos(raiz, '.tarifa-igual')).toEqual(['La misma en todas']);
+      expect(textos(raiz, '.acciones .enlace-flecha')).toEqual(['Cuánto cuesta']);
+      expect(textos(raiz, '#disciplinas .rotulo')).toEqual(['03 · Disciplinas']);
     });
   });
 

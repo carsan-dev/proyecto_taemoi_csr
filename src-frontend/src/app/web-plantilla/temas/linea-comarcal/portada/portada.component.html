@@ -37,7 +37,7 @@
       }
     </section>
 
-    @for (seccion of v.secciones; track seccion.tipo) {
+    @for (seccion of v.secciones; track seccion.id) {
       @if (seccion.tipo === 'presentacion') {
         <!-- 2. Presentación -->
         <section class="presentacion" id="presentacion" aria-labelledby="presentacion-titulo">
@@ -45,7 +45,7 @@
             @if (seccion.foto) {<img [src]="seccion.foto.url" [alt]="seccion.foto.alt" loading="lazy">}
             <div class="presentacion-velo">
               <div class="envoltura">
-                <p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>
+                <p class="rotulo">{{ seccion.rotulo ? seccion.numero + ' · ' + seccion.rotulo : seccion.numero }}</p>
                 @if (seccion.titulo) {<h2 class="titulo-seccion" id="presentacion-titulo">{{ seccion.titulo }}</h2>}
               </div>
             </div>
@@ -69,7 +69,7 @@
         </section>
       } @else if (seccion.tipo === 'disciplinas') {
         <!-- 3. Disciplinas -->
-        <section class="seccion seccion--anden" id="disciplinas" [attr.aria-label]="seccion.rotulo || null">
+        <section class="seccion" [class.seccion--anden]="seccion.anden" id="disciplinas" [attr.aria-label]="seccion.rotulo || null">
           @for (disciplina of seccion.disciplinas; track disciplina.codigo; let primera = $first) {
             <div class="envoltura disciplina">
               <figure class="foto disciplina-foto">
@@ -77,7 +77,7 @@
               </figure>
               <div class="disciplina-texto">
                 <div class="cabeza-seccion">
-                  @if (primera && seccion.rotulo) {<p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>}
+                  @if (primera && seccion.rotulo) {<p class="rotulo">{{ seccion.rotulo ? seccion.numero + ' · ' + seccion.rotulo : seccion.numero }}</p>}
                   <h2 class="titulo-seccion">{{ disciplina.nombre }}</h2>
                 </div>
                 @if (disciplina.parrafos.length) {
@@ -98,10 +98,10 @@
         </section>
       } @else if (seccion.tipo === 'profesores') {
         <!-- 4. Profesores -->
-        <section class="seccion" id="profesores" aria-labelledby="profesores-titulo">
+        <section class="seccion" [class.seccion--anden]="seccion.anden" id="profesores" aria-labelledby="profesores-titulo">
           <div class="envoltura">
             <div class="cabeza-seccion">
-              <p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>
+              <p class="rotulo">{{ seccion.rotulo ? seccion.numero + ' · ' + seccion.rotulo : seccion.numero }}</p>
               @if (seccion.titulo) {<h2 class="titulo-seccion" id="profesores-titulo">{{ seccion.titulo }}</h2>}
             </div>
             <ul class="profes">
@@ -121,10 +121,10 @@
         </section>
       } @else if (seccion.tipo === 'galeria') {
         <!-- 5. Galería -->
-        <section class="seccion seccion--anden" id="galeria" aria-labelledby="galeria-titulo">
+        <section class="seccion" [class.seccion--anden]="seccion.anden" id="galeria" aria-labelledby="galeria-titulo">
           <div class="envoltura">
             <div class="cabeza-seccion">
-              <h2 class="rotulo" id="galeria-titulo">{{ seccion.numero }} · {{ seccion.rotulo }}</h2>
+              <h2 class="rotulo" id="galeria-titulo">{{ seccion.rotulo ? seccion.numero + ' · ' + seccion.rotulo : seccion.numero }}</h2>
             </div>
             <ol class="galeria">
               @for (foto of seccion.fotos; track foto.n) {
@@ -136,12 +136,56 @@
             </ol>
           </div>
         </section>
-      } @else if (seccion.tipo === 'eventos') {
-        <!-- 6. Eventos -->
-        <section class="seccion" id="eventos" aria-labelledby="eventos-titulo">
+      } @else if (seccion.tipo === 'sedes') {
+        <!-- Fotos de las sedes (W12b, d518): la línea en fotos; cada sede es una parada -->
+        <section class="seccion" [class.seccion--anden]="seccion.anden" [id]="seccion.id" [attr.aria-labelledby]="seccion.titulo ? seccion.id + '-titulo' : null" [attr.aria-label]="seccion.titulo ? null : 'Fotos de las sedes'">
           <div class="envoltura">
             <div class="cabeza-seccion">
-              <p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>
+              <p class="rotulo">{{ seccion.rotulo ? seccion.numero + ' · ' + seccion.rotulo : seccion.numero }}</p>
+              @if (seccion.titulo) {<h2 class="titulo-seccion" [id]="seccion.id + '-titulo'">{{ seccion.titulo }}</h2>}
+            </div>
+            <ol class="fs-lista">
+              @for (sede of seccion.sedes; track sede.clave) {
+                <li class="fs-parada">
+                  <span class="fs-circulo" aria-hidden="true"></span>
+                  <h3 class="fs-titulo"><span class="fs-nombre">{{ sede.nombre }}</span>@if (sede.lugar) {<span class="fs-lugar">{{ sede.lugar }}</span>}</h3>
+                  @if (sede.foto) {
+                    <figure class="foto fs-foto"><img [src]="sede.foto.url" [alt]="sede.foto.alt" loading="lazy"></figure>
+                  }
+                  @if (sede.enlace && seccion.verSede) {
+                    <a class="enlace-flecha" [routerLink]="sede.enlace" [queryParams]="null | vistaPrevia">{{ seccion.verSede }}<span class="oculto">: {{ sede.nombre }}</span><ng-container *ngTemplateOutlet="flecha" /></a>
+                  }
+                </li>
+              }
+            </ol>
+          </div>
+        </section>
+      } @else if (seccion.tipo === 'texto_foto') {
+        <!-- Texto con foto (W12b, d518): titular de cartel y foto 4:5 a sangre, como la portada; sin cifras -->
+        <section class="seccion" [class.seccion--anden]="seccion.anden" [id]="seccion.id" [attr.aria-labelledby]="seccion.titulo ? seccion.id + '-titulo' : null">
+          <div class="envoltura tf">
+            <div class="tf-texto">
+              <div class="cabeza-seccion">
+                <p class="rotulo">{{ seccion.rotulo ? seccion.numero + ' · ' + seccion.rotulo : seccion.numero }}</p>
+                @if (seccion.titulo) {<h2 class="titulo-seccion" [id]="seccion.id + '-titulo'">{{ seccion.titulo }}</h2>}
+              </div>
+              @if (seccion.parrafos.length) {
+                <div class="cuerpo">
+                  @for (parrafo of seccion.parrafos; track $index) {<p>{{ parrafo }}</p>}
+                </div>
+              }
+            </div>
+            @if (seccion.foto) {
+              <figure class="foto tf-foto"><img [src]="seccion.foto.url" [alt]="seccion.foto.alt" loading="lazy"></figure>
+            }
+          </div>
+        </section>
+      } @else if (seccion.tipo === 'eventos') {
+        <!-- 6. Eventos -->
+        <section class="seccion" [class.seccion--anden]="seccion.anden" id="eventos" aria-labelledby="eventos-titulo">
+          <div class="envoltura">
+            <div class="cabeza-seccion">
+              <p class="rotulo">{{ seccion.rotulo ? seccion.numero + ' · ' + seccion.rotulo : seccion.numero }}</p>
               @if (seccion.titulo) {<h2 class="titulo-seccion" id="eventos-titulo">{{ seccion.titulo }}</h2>}
             </div>
             <ol class="eventos">
@@ -185,10 +229,10 @@
         </section>
       } @else if (seccion.tipo === 'contacto') {
         <!-- 8. Contacto -->
-        <section class="seccion seccion--anden" id="contacto" aria-labelledby="contacto-titulo">
+        <section class="seccion" [class.seccion--anden]="seccion.anden" id="contacto" aria-labelledby="contacto-titulo">
           <div class="envoltura contacto-rejilla">
             <div class="contacto-principal">
-              <p class="rotulo">{{ seccion.numero }} · {{ seccion.rotulo }}</p>
+              <p class="rotulo">{{ seccion.rotulo ? seccion.numero + ' · ' + seccion.rotulo : seccion.numero }}</p>
               @if (seccion.titulo) {<h2 class="titulo-seccion contacto-titulo" id="contacto-titulo">{{ seccion.titulo }}</h2>}
               @if (seccion.correo || seccion.telefono) {
                 <dl class="contacto-datos">

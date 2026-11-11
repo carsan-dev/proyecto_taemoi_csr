@@ -21,7 +21,13 @@ import {
   textoPlazas,
 } from '../../comun/horario';
 import { EventoWeb, SedeWeb, SitioWeb } from '../../datos/modelos';
-import { ClaveTexto, DISCIPLINA_TAEKWONDO, TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS, TEXTOS_LINEA_COMARCAL } from './textos';
+import {
+  ClaveTexto,
+  DISCIPLINA_TAEKWONDO,
+  TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS,
+  TEXTOS_LINEA_COMARCAL,
+  TEXTOS_PAGINAS_LINEA_COMARCAL,
+} from './textos';
 
 /**
  * Lo que pinta el tema «La línea comarcal» a partir de `GET /api/publico/web` (boceto
@@ -242,11 +248,22 @@ export interface VistaDato {
   etiqueta: string;
 }
 
-export type VistaSeccion =
+/** Una sede en «Fotos de las sedes» (boceto del editor, `sedesFotosHtml`): su foto 1 con su descripción. */
+export interface VistaSedeFoto {
+  clave: string;
+  nombre: string;
+  lugar: string | null;
+  foto: ImagenBloque | null;
+  enlace: string | null;
+}
+
+type CuerpoSeccion =
   | { tipo: 'presentacion'; numero: string; rotulo: string; titulo: string; parrafos: string[]; foto: ImagenBloque | null; datos: VistaDato[] }
   | { tipo: 'disciplinas'; numero: string; rotulo: string; disciplinas: VistaDisciplina[] }
   | { tipo: 'profesores'; numero: string; rotulo: string; titulo: string; profesores: (ProfesorBloque & { monograma: string })[] }
   | { tipo: 'galeria'; numero: string; rotulo: string; fotos: (FotoGaleria & { forma: string; numero: string })[] }
+  | { tipo: 'sedes'; numero: string; rotulo: string; titulo: string; verSede: string; sedes: VistaSedeFoto[] }
+  | { tipo: 'texto_foto'; numero: string; rotulo: string; titulo: string; parrafos: string[]; foto: ImagenBloque | null }
   | { tipo: 'eventos'; numero: string; rotulo: string; titulo: string; enlace: string; eventos: VistaEvento[] }
   | {
       tipo: 'tarifas';
@@ -269,6 +286,13 @@ export type VistaSeccion =
       sedes: { clave: string; nombre: string; enlace: string | null; detalle: string }[];
     };
 
+/**
+ * Una sección de la portada: `id` es su ancla y su clave en el `@for` (`texto-foto-<n>` en las repetibles); `anden`,
+ * el fondo alterno del boceto del editor (`numerar`/`fondo`: entre las que se pintan, sin horarios ni tarifas, una sí y
+ * otra no, empezando por la segunda).
+ */
+export type VistaSeccion = CuerpoSeccion & { id: string; anden: boolean };
+
 export interface VistaPortada {
   una: boolean;
   rotulo: string;
@@ -283,16 +307,46 @@ export interface VistaPortada {
 
 type TipoSeccion = VistaSeccion['tipo'];
 
-/** Orden del boceto: las movibles (presentación, profesores, galería) cambian entre sí por `orden` (§9 n.º 4 y 11). */
-const SECCIONES: { clave: TipoSeccion; movible: boolean; prefijo?: string }[] = [
-  { clave: 'presentacion', movible: true },
-  { clave: 'disciplinas', movible: false },
-  { clave: 'profesores', movible: true, prefijo: 'profesor' },
-  { clave: 'galeria', movible: true },
-  { clave: 'eventos', movible: false },
-  { clave: 'tarifas', movible: false },
-  { clave: 'contacto', movible: false },
-];
+interface SeccionTema {
+  /** La clave de su fila de cabecera (`texto_foto.<n>` en las repetibles). */
+  clave: string;
+  tipo: TipoSeccion;
+  movible: boolean;
+  prefijo?: string;
+  /** Contacto: no tiene cabecera ni se mueve; va siempre al final. */
+  sinCabecera?: boolean;
+}
+
+/**
+ * Secciones de la portada en el orden del tema (§9 n.º 4 y 11; W12b). Sin filas de cabecera, las movibles (presentación,
+ * profesores, galería) cambian entre sí por `orden` y las fijas siguen en su sitio; con cabeceras, cada una va por la
+ * suya (`ordenarSecciones`). «Fotos de las sedes» solo sale si la escuela la ha añadido (su cabecera) y «Texto con
+ * foto», si tiene filas.
+ */
+function seccionesDelTema(bloques: BloquesWeb): SeccionTema[] {
+  return [
+    { clave: 'presentacion', tipo: 'presentacion', movible: true },
+    { clave: 'disciplinas', tipo: 'disciplinas', movible: false },
+    ...(bloques.tiene('sedes') ? [{ clave: 'sedes', tipo: 'sedes', movible: true } as SeccionTema] : []),
+    { clave: 'profesores', tipo: 'profesores', movible: true, prefijo: 'profesor' },
+    { clave: 'galeria', tipo: 'galeria', movible: true },
+    ...bloques.numeros('texto_foto').map((n): SeccionTema => ({ clave: `texto_foto.${n}`, tipo: 'texto_foto', movible: true })),
+    { clave: 'eventos', tipo: 'eventos', movible: false },
+    { clave: 'tarifas', tipo: 'tarifas', movible: false },
+    { clave: 'contacto', tipo: 'contacto', movible: false, sinCabecera: true },
+  ];
+}
+
+/** Las que se pueden ocultar (las fijas y contacto, nunca). */
+const OCULTABLES = new Set<TipoSeccion>(['presentacion', 'profesores', 'galeria', 'sedes', 'texto_foto']);
+
+/** El ancla de la sección: `#sedes` ya es la lista de sedes del contacto (menú «Sedes»). */
+function idSeccion(tipo: TipoSeccion, clave: string): string {
+  if (tipo === 'texto_foto') {
+    return clave.replace(/[_.]/g, '-');
+  }
+  return tipo === 'sedes' ? 'fotos-sedes' : tipo;
+}
 
 /** Formas de la galería del boceto, en ciclo de seis. */
 const FORMAS_GALERIA = ['g-grande', '', 'g-alta', '', 'g-ancha', 'g-ancha'];
@@ -329,10 +383,15 @@ export function vistaPortada(sitio: SitioWeb, ahora: Date): VistaPortada {
   let numero = horarios ? 1 : 0;
   const siguiente = () => String(++numero).padStart(2, '0');
   const secciones: VistaSeccion[] = [];
-  for (const { clave } of ordenarSecciones(SECCIONES, bloques)) {
-    const seccion = construirSeccion(clave, { sitio, textos, ahora, una, edad, disciplinas, tarifa, siguiente, lugares });
+  let conFondo = 0;
+  for (const { clave, tipo } of ordenarSecciones(seccionesDelTema(bloques), bloques)) {
+    if (OCULTABLES.has(tipo) && bloques.oculto(clave)) {
+      continue;
+    }
+    const seccion = construirSeccion(tipo, clave, { sitio, textos, ahora, una, edad, disciplinas, tarifa, siguiente, lugares });
     if (seccion) {
-      secciones.push(seccion);
+      const anden = tipo !== 'tarifas' && conFondo++ % 2 === 1;
+      secciones.push({ ...seccion, id: idSeccion(tipo, clave), anden });
     }
   }
 
@@ -344,8 +403,9 @@ export function vistaPortada(sitio: SitioWeb, ahora: Date): VistaPortada {
     botonHorarios: horarios
       ? bloques.texto('portada.boton_horarios', una ? FIJOS.botonHorariosUnaSede : TEXTOS_LINEA_COMARCAL['portada.boton_horarios'])
       : '',
-    enlaceTarifas: tarifa ? FIJOS.enlaceTarifas : null,
-    foto: bloques.imagen('portada.foto', bloques.textoPropio('portada.alt') ?? ''),
+    enlaceTarifas: tarifa ? textos.t('portada.enlace_tarifas') || null : null,
+    // La descripción es el texto del bloque de la foto (W12a; `portada.alt` ya no existe).
+    foto: bloques.imagen('portada.foto'),
     horarios: horarios ? { ...horarios, numero: '01' } : null,
     secciones,
   };
@@ -363,8 +423,11 @@ interface Contexto {
   lugares: string;
 }
 
-/** Cada sección, o null si no tiene nada que pintar (§9 n.º 11). El número solo se gasta si se pinta. */
-function construirSeccion(tipo: TipoSeccion, x: Contexto): VistaSeccion | null {
+/**
+ * Cada sección, o null si no tiene nada que pintar (§9 n.º 11; vacía como `estaVacio()` del boceto del editor). El
+ * número solo se gasta si se pinta.
+ */
+function construirSeccion(tipo: TipoSeccion, clave: string, x: Contexto): CuerpoSeccion | null {
   const { sitio, textos } = x;
   const { bloques } = textos;
   switch (tipo) {
@@ -377,17 +440,18 @@ function construirSeccion(tipo: TipoSeccion, x: Contexto): VistaSeccion | null {
         'examinan en el propio club, y quien quiere compite en campeonatos de la provincia; quien no, entrena igual, a ' +
         'su ritmo y con su grupo.';
       const parrafos = enParrafos(bloques.texto('presentacion.texto', sitio.sedes.length ? porDefecto : ''));
-      const titulo = textos.t('presentacion.titulo');
-      if (!parrafos.length && !titulo) {
+      const foto = bloques.imagen('presentacion.foto');
+      // Vacía (boceto del editor, `estaVacio`): sin texto y sin foto.
+      if (!parrafos.length && !foto) {
         return null;
       }
       return {
         tipo,
         numero: x.siguiente(),
-        rotulo: FIJOS.rotuloPresentacion,
-        titulo,
+        rotulo: textos.t('presentacion.rotulo'),
+        titulo: textos.t('presentacion.titulo'),
         parrafos,
-        foto: bloques.imagen('presentacion.foto'),
+        foto,
         datos: datosDelClub(sitio, x),
       };
     }
@@ -400,7 +464,7 @@ function construirSeccion(tipo: TipoSeccion, x: Contexto): VistaSeccion | null {
     case 'profesores': {
       const profesores = bloques.profesores().map((p) => ({ ...p, monograma: monograma(p.nombre) }));
       return profesores.length
-        ? { tipo, numero: x.siguiente(), rotulo: FIJOS.rotuloProfesores, titulo: textos.t('profesores.titulo'), profesores }
+        ? { tipo, numero: x.siguiente(), rotulo: textos.t('profesores.rotulo'), titulo: textos.t('profesores.titulo'), profesores }
         : null;
     }
     case 'galeria': {
@@ -409,7 +473,37 @@ function construirSeccion(tipo: TipoSeccion, x: Contexto): VistaSeccion | null {
         forma: FORMAS_GALERIA[i % FORMAS_GALERIA.length],
         numero: String(i + 1).padStart(2, '0'),
       }));
-      return fotos.length ? { tipo, numero: x.siguiente(), rotulo: FIJOS.rotuloGaleria, fotos } : null;
+      return fotos.length ? { tipo, numero: x.siguiente(), rotulo: textos.t('galeria.rotulo'), fotos } : null;
+    }
+    case 'sedes': {
+      // Vacía si ninguna sede tiene su foto 1 (boceto del editor, `estaVacio`).
+      if (!sitio.sedes.some((s) => s.fotoUrl)) {
+        return null;
+      }
+      return {
+        tipo,
+        numero: x.siguiente(),
+        rotulo: textos.t('sedes.rotulo'),
+        titulo: textos.t('sedes.titulo'),
+        verSede: textos.t('sedes.ver_sede'),
+        sedes: sitio.sedes.map((s) => ({
+          clave: claveSede(s),
+          nombre: s.nombre,
+          lugar: s.lugar?.trim() || null,
+          foto: s.fotoUrl ? { url: s.fotoUrl, alt: altFotoSede(s, 1) } : null,
+          enlace: s.slug ? `/sedes/${s.slug}` : null,
+        })),
+      };
+    }
+    case 'texto_foto': {
+      // Repetible y sin textos por defecto (boceto del editor, `nuevoBloque`); vacío sin título, texto ni foto.
+      const titulo = bloques.textoPropio(`${clave}.titulo`) ?? '';
+      const parrafos = enParrafos(bloques.textoPropio(`${clave}.texto`) ?? '');
+      const foto = bloques.imagen(`${clave}.foto`);
+      if (!titulo && !parrafos.length && !foto) {
+        return null;
+      }
+      return { tipo, numero: x.siguiente(), rotulo: bloques.textoPropio(`${clave}.rotulo`) ?? '', titulo, parrafos, foto };
     }
     case 'eventos': {
       const eventos = sitio.proximosEventos.filter((e) => e.fecha).slice(0, 3).map(vistaEvento);
@@ -417,7 +511,7 @@ function construirSeccion(tipo: TipoSeccion, x: Contexto): VistaSeccion | null {
         ? {
             tipo,
             numero: x.siguiente(),
-            rotulo: FIJOS.rotuloEventos,
+            rotulo: textos.t('eventos.rotulo'),
             titulo: textos.t('eventos.titulo'),
             enlace: textos.t('eventos.enlace_ver'),
             eventos,
@@ -437,8 +531,10 @@ function construirSeccion(tipo: TipoSeccion, x: Contexto): VistaSeccion | null {
         numero: x.siguiente(),
         titulo: textos.t('tarifas.titulo'),
         importe: importeEnTexto(x.tarifa.importe),
-        alMes: FIJOS.alMes,
-        igual: x.tarifa.igual ? (x.una ? FIJOS.igualUnaSede : FIJOS.igualEnTodasLasSedes) : null,
+        alMes: textos.t('tarifas.al_mes'),
+        igual: x.tarifa.igual
+          ? bloques.texto('tarifas.igual', x.una ? FIJOS.igualUnaSede : FIJOS.igualEnTodasLasSedes) || null
+          : null,
         puntos: puntos.filter(Boolean),
         boton: textos.t('tarifas.boton_preinscripcion'),
       };
@@ -452,7 +548,7 @@ function construirSeccion(tipo: TipoSeccion, x: Contexto): VistaSeccion | null {
       return {
         tipo,
         numero: x.siguiente(),
-        rotulo: FIJOS.rotuloContacto,
+        rotulo: textos.t('contacto.rotulo'),
         titulo: textos.t('contacto.titulo'),
         correo: email ? { rotulo: textos.t('contacto.correo_rotulo'), texto: email, enlace: `mailto:${email}` } : null,
         telefono: telefono
@@ -647,6 +743,12 @@ export const CLAVE_SEDE_RECORDADA = 'linea-comarcal:sede';
 
 export function claveSede(sede: SedeWeb): string {
   return sede.slug ?? `sede-${sede.id}`;
+}
+
+/** Descripción de la foto 1 o 2 de una sede (d523): la suya o, vacía, «Foto de la sede de {nombre}». */
+export function altFotoSede(sede: SedeWeb, n: 1 | 2): string {
+  const propia = (n === 1 ? sede.fotoAlt : sede.foto2Alt)?.trim();
+  return propia || TEXTOS_PAGINAS_LINEA_COMARCAL.fotoSede.replace('{x}', sede.nombre);
 }
 
 function enParrafos(texto: string): string[] {

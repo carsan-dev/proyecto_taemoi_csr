@@ -107,6 +107,20 @@ describe('SedeLineaComarcalComponent', () => {
       expect(raiz.querySelector('.sede-texto .acciones a.enlace-flecha')!.getAttribute('href')).toBe('/sedes/estepa#horarios');
     });
 
+    it('fotos 1 y 2 sin descripción (W12b, d523): «Foto de la sede de …»', async () => {
+      const sinDescripcion = await abrir(seisSedes(), '/sedes/estepa');
+      expect(sinDescripcion.querySelector('.sede-foto img')!.getAttribute('alt')).toBe('Foto de la sede de Estepa');
+      expect(sinDescripcion.querySelector('.llegar-foto img')!.getAttribute('alt')).toBe('Foto de la sede de Estepa');
+    });
+
+    it('fotos 1 y 2 con su descripción', async () => {
+      const sitio = seisSedes();
+      sitio.sedes[1] = { ...sitio.sedes[1], fotoAlt: 'Fachada del pabellón cubierto', foto2Alt: 'Puerta lateral junto al aparcamiento' };
+      const conDescripcion = await abrir(sitio, '/sedes/estepa');
+      expect(conDescripcion.querySelector('.sede-foto img')!.getAttribute('alt')).toBe('Fachada del pabellón cubierto');
+      expect(conDescripcion.querySelector('.llegar-foto img')!.getAttribute('alt')).toBe('Puerta lateral junto al aparcamiento');
+    });
+
     it('primera y última sede: el trazo acaba en un terminal y falta la vecina de ese lado', async () => {
       const raiz = await abrir(seisSedes(), '/sedes/herrera');
       expect(textos(raiz, '.tramo-parada--actual')).toEqual(['Parada 1 de 6']);

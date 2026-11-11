@@ -330,3 +330,39 @@
   .lc .red.preparada.dibujar .terminales { opacity: 1; transition: opacity 200ms ease-out 700ms; }
   .lc .red.preparada.dibujar .parada { opacity: 1; transform: none; transition: opacity 280ms ease-out, transform 280ms ease-out; transition-delay: calc(220ms + var(--i) * 40ms); }
 }
+
+/* W12b · Texto con foto (d518; boceto del editor, `textoFotoHtml`): titular de cartel a la izquierda y foto 4:5 a
+   sangre a la derecha, como la portada; sin cifras */
+.lc .tf { display: grid; gap: 36px; }
+.lc .tf-foto { aspect-ratio: 4 / 5; margin-inline: calc(-1 * var(--m)); }
+.lc .tf .cuerpo { font-size: 1.125rem; }
+@media (min-width: 900px) {
+  .lc .tf { grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--hueco); align-items: center; }
+  .lc .tf-texto { grid-column: 1 / 7; }
+  .lc .tf-foto { grid-column: 8 / 13; margin: 0; margin-right: calc((100vw - min(100vw, 1360px)) / -2 - var(--m)); aspect-ratio: auto; height: 560px; }
+}
+
+/* W12b · Fotos de las sedes (d518; boceto del editor, `sedesFotosHtml`): la línea en fotos. Cada sede es una parada;
+   el trazo une sus fotos */
+.lc .fs-lista { display: grid; gap: 0; }
+.lc .fs-parada { position: relative; padding: 0 0 40px 48px; }
+.lc .fs-parada::before { content: ""; position: absolute; left: 6px; top: 0; bottom: 0; width: 12px; background: var(--escuela-trazo); }
+.lc .fs-parada:first-child::before { top: 12px; border-radius: 6px 6px 0 0; }
+.lc .fs-parada:last-child { padding-bottom: 0; }
+.lc .fs-parada:last-child::before { bottom: auto; height: 24px; border-radius: 0 0 6px 6px; }
+.lc .fs-circulo { position: absolute; left: 0; top: 0; z-index: 1; width: 24px; height: 24px; border-radius: 50%; background: var(--blanco); border: 4px solid var(--escuela-trazo); }
+.lc .fs-titulo { font: inherit; }
+.lc .fs-nombre { display: block; font: 800 1.75rem/0.95 var(--display); text-transform: uppercase; text-wrap: balance; }
+.lc .fs-lugar { display: block; margin-top: 6px; color: var(--tinta-2); font-size: 0.9375rem; }
+.lc .fs-foto { aspect-ratio: 3 / 4; margin-top: 16px; }
+.lc .fs-parada .enlace-flecha { margin-top: 8px; }
+@media (min-width: 900px) {
+  .lc .fs-lista { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--hueco); row-gap: 64px; }
+  .lc .fs-parada { padding: 56px 0 0; }
+  .lc .fs-parada::before { left: 0; right: calc(-1 * var(--hueco)); top: 6px; bottom: auto; width: auto; height: 12px; border-radius: 0; }
+  .lc .fs-parada:nth-child(3n)::before { right: 0; border-radius: 0 6px 6px 0; }
+  .lc .fs-parada:nth-child(3n+1)::before { left: 12px; border-radius: 6px 0 0 6px; }
+  .lc .fs-parada:last-child::before { right: 0; height: 12px; border-radius: 0 6px 6px 0; }
+  .lc .fs-parada:first-child::before { top: 6px; }
+  .lc .fs-foto { margin-top: 20px; }
+}
