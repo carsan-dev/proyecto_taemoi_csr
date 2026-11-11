@@ -240,6 +240,7 @@ Cierran las ocho preguntas que dejaba abiertas el primer desglose. El boceto apr
 | d530 | El aviso de conflicto solo dice «otra persona» (ni nombre ni hora de quien guardó). | n.º 7 |
 | d532 | El selector de página (d519) y «Ver el caso» (d528) van en pieza propia, W12c-bis, antes de W12d (11/11). | — |
 | d533 | El selector «Paso» y los casos de Preinscripción y el caso «Sin clases esta semana» van en pieza aparte, W12c-ter, tras W12c-bis (11/11). | — |
+| d534 | En el editor, el paso «Enviada» de Preinscripción no muestra las fichas «Alumno» y «Contacto» (el boceto no las dibuja); en la web real siguen saliendo (11/11). | — |
 
 Con d519 y d518, el alcance de W12c-W12f crece respecto a la estimación del §2: selector de página, bloques «Fotos de
 las sedes» y «Texto con foto», sedes del profesor y estado de conflicto. W12g (d524) ya no espera boceto.
