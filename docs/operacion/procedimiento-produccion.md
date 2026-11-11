@@ -84,10 +84,10 @@ docker compose -f docker-compose.production.yml down
 4. Levantar descargando las imágenes del `.env` (`--build` no hace nada aquí):
 
 ```bash
-docker compose -f docker-compose.production.yml up -d --build backend frontend
+docker compose -f docker-compose.production.yml up -d --build backend frontend certbot
 ```
 
-Debe salir: `database`, `backend` y `frontend` creados/`Started` (la base de datos arranca como dependencia). Si da error de imagen o de `pull`: parar y revisar el `.env` (sección 1, paso 3).
+Debe salir: `database`, `backend`, `frontend` y `certbot` creados/`Started` (la base de datos arranca como dependencia). Sin `certbot`, el `down` del paso 3 deja parada la renovación de certificados. Si da error de imagen o de `pull`: parar y revisar el `.env` (sección 1, paso 3).
 
 > `bash scripts/deploy.sh` sigue en el repositorio como alternativa (verifica, hace `down`/`up -d` y espera a los servicios), pero este procedimiento no lo usa.
 
