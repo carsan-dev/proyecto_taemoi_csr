@@ -227,8 +227,8 @@ public class CajaService {
 	 * de SUS grupos (los del profesor) en los que está, por nombre. Mismo criterio que Mis grupos y Grupos en gestión
 	 * (decisiones 310 y 515): un alumno cuenta en un grupo si está activo y, si tiene alguna inscripción, la tiene activa
 	 * en la disciplina del grupo (sin ninguna inscripción, cuenta). El criterio se aplica por cada par alumno-grupo: sus
-	 * {@code grupos} y {@code sedes} solo incluyen los grupos donde se cumple, y quien no cumple en ninguno no sale. Una consulta con los datos que se muestran (sin
-	 * cargar entidades). Sin grupos en el alcance (o con alcance total), lista vacía.
+	 * {@code grupos} y {@code sedes} solo incluyen los grupos donde se cumple, y quien no cumple en ninguno no sale. Una
+	 * consulta con los datos que se muestran (sin cargar entidades). Sin grupos en el alcance (o con alcance total), lista vacía.
 	 */
 	public List<CajaDTOs.AlumnoDeMisGrupos> alumnosDeMisGrupos() {
 		Set<Long> grupos = gruposDelProfesor();
