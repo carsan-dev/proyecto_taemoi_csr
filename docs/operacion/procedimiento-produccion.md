@@ -84,10 +84,10 @@ docker compose -f docker-compose.production.yml down
 4. Levantar descargando las imágenes del `.env` (`--build` no hace nada aquí):
 
 ```bash
-docker compose -f docker-compose.production.yml up -d --build backend frontend
+docker compose -f docker-compose.production.yml up -d --build backend frontend certbot
 ```
 
-Debe salir: `database`, `backend` y `frontend` creados/`Started` (la base de datos arranca como dependencia). Si da error de imagen o de `pull`: parar y revisar el `.env` (sección 1, paso 3).
+Debe salir: `database`, `backend`, `frontend` y `certbot` creados/`Started` (la base de datos arranca como dependencia). Sin `certbot`, el `down` del paso 3 deja parada la renovación de certificados. Si da error de imagen o de `pull`: parar y revisar el `.env` (sección 1, paso 3).
 
 > `bash scripts/deploy.sh` sigue en el repositorio como alternativa (verifica, hace `down`/`up -d` y espera a los servicios), pero este procedimiento no lo usa.
 
@@ -184,10 +184,10 @@ docker compose -f docker-compose.production.yml down
 ```
 
 ```bash
-docker compose -f docker-compose.production.yml up -d --build backend frontend
+docker compose -f docker-compose.production.yml up -d --build backend frontend certbot
 ```
 
-Debe salir: los tres servicios `Started`. Si la descarga de la imagen falla: parar y revisar el `.env`. (`deploy.sh` queda como alternativa, no se usa.)
+Debe salir: los cuatro servicios `Started` (también `certbot`). Si la descarga de la imagen falla: parar y revisar el `.env`. (`deploy.sh` queda como alternativa, no se usa.)
 
 **Espera a Flyway.** El arranque puede tardar hasta el `start_period` del healthcheck (180 s) mientras Flyway migra. No relance nada ni reinicie el backend con una migración en curso (MySQL no deshace el DDL a medias). Siga el log:
 
@@ -452,9 +452,8 @@ cd /opt/taemoi && docker compose -f docker-compose.production.yml run --rm --no-
 Debe salir: `Domains: <dominio> www.<dominio>` y la fecha de caducidad. El host aún no se sirve: todavía no hay fichero de
 nginx. El contenedor `certbot` ya renueva este certificado con el resto (`certbot renew` cada 12 h).
 
-> Pendiente de comprobar en el servidor: las secciones 2 (:87) y 3 (:233) se contradicen sobre el contenedor `certbot`
-> (`up -d --build backend frontend` no lo nombra; la comprobación de :233 espera verlo `Up`). Antes del primer alta,
-> confirmar con `docker ps` que existe y está levantado; no se resuelve aquí.
+> Los `up` de las secciones 2 y 3 ya levantan `certbot`; los atajos `desplegar` y `desplegar_migrar` del servidor
+> deben hacer lo mismo. Antes del primer alta, confirmar con `docker ps` que `taemoi-certbot` está `Up`.
 
 3. Una sola PR a `develop` (no se toca el servidor) con las dos cosas juntas. El nombre del fichero es el dominio
    principal en minúsculas, igual que `--cert-name`:

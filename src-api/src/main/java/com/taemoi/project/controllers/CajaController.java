@@ -81,7 +81,8 @@ public class CajaController {
 
 	/**
 	 * Pieza 6b-3b-1: alumnos ACTIVOS de sus grupos (para «Vender» en «Mi caja»), por apellidos y nombre, con los nombres
-	 * de sus grupos. Sin datos sensibles.
+	 * de sus grupos. Sin datos sensibles. Mismo criterio que Mis grupos (decisión 515): en cada grupo, solo el alumno
+	 * activo que, si tiene alguna inscripción, la tiene activa en la disciplina del grupo.
 	 */
 	@GetMapping("/profesor/alumnos")
 	@PreAuthorize("hasAuthority('ROLE_PROFESOR')")
