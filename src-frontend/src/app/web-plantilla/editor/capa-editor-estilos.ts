@@ -52,6 +52,13 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .ed-candado svg{color:var(--pn-tinta-2)}
 .ed-candado a{color:var(--pn-acento);font-weight:600;text-decoration:underline;text-underline-offset:2px}
 .ed-candado > span + span{font-weight:600}
+/* Una sede sin foto (el hueco solo sale en el editor) y notas del editor en los casos */
+.fs-foto--vacia{display:grid;place-items:center;aspect-ratio:3/4;margin-top:16px;background:var(--anden)}
+@media (min-width:900px){.fs-foto--vacia{margin-top:20px}}
+.ed-vacia-sede{display:grid;justify-items:center;align-content:center;gap:8px;height:100%;padding:12px;text-align:center;color:var(--pn-tinta-2)}
+.ed-vacia-sede svg{width:24px;height:24px}
+.ed-nota-parte{display:flex;align-items:flex-start;gap:6px;max-width:62ch;margin:20px 0 0;padding:8px 10px;border-radius:8px;background:var(--pn-superficie);border:1px solid var(--pn-linea);color:var(--pn-tinta-2)}
+.ed-nota-parte svg{margin-top:1px}
 /* En móvil el nombre de «Horarios» va a la derecha: a la izquierda taparía su título, que empieza arriba del todo */
 @media (max-width:767.98px){.ed-fija[data-bloque="horarios"] > .ed-barra .ed-fila{flex-direction:row-reverse}}
 ::selection{background:#cfe3fb;color:#12161c}

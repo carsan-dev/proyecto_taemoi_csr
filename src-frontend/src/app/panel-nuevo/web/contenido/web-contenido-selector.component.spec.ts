@@ -319,6 +319,28 @@ describe('WebContenidoComponent: selector de página y «Ver el caso» (W12c-bis
       expect(desplazar).toHaveBeenCalledTimes(1);
     });
 
+    it('al enseñar la parte, descuenta el alto real de la barra superior del panel (56 px en móvil), no 64 fijo', () => {
+      const cabecera = document.createElement('header');
+      cabecera.className = 'pn-cab';
+      cabecera.style.cssText = 'position:fixed;top:0;left:0;right:0;height:56px';
+      document.body.appendChild(cabecera);
+      try {
+        abrir();
+        const desplazar = spyOn(window, 'scrollTo');
+        abrirMenu();
+        q<HTMLButtonElement>('[data-caso="lleno"]')!.click();
+        fixture.detectChanges();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: 5000 });
+        expect(desplazar).toHaveBeenCalledTimes(1);
+        const y = iframe()!.getBoundingClientRect().top + window.scrollY + 5000 * fixture.componentInstance.escala();
+        const tapa = 56 + q('.caso-activo')!.offsetHeight + 16;
+        const destino = desplazar.calls.mostRecent().args[0] as unknown as ScrollToOptions;
+        expect(destino.top).toBeCloseTo(Math.max(0, y - tapa), 3);
+      } finally {
+        cabecera.remove();
+      }
+    });
+
     it('teclado: flechas, Inicio y Fin entre opciones; Escape cierra y devuelve el foco; pulsar fuera lo cierra', async () => {
       abrir();
       abrirMenu();
@@ -369,6 +391,9 @@ describe('WebContenidoComponent: selector de página y «Ver el caso» (W12c-bis
       expect(hoja).withContext('regla .flot de la hoja inferior').toBeDefined();
       expect(hoja!.style.bottom).toBe('0px');
       expect(hoja!.style.left).toBe('0px');
+      // Por encima de la barra inferior del panel (navegacion/barra-inferior.component.scss: z-index 1001), que si no
+      // tapa sus últimas opciones (precedente: la hoja de cargos de Alumnos, z-index 1020).
+      expect(Number(hoja!.style.zIndex)).toBeGreaterThan(1001);
       expect(q('.flot__asa')).not.toBeNull();
     });
   });

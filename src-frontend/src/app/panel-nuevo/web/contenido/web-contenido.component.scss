@@ -164,7 +164,8 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
   align-items: center;
   gap: 10px 16px;
   padding: 10px 14px;
-  border-bottom: 1px solid color-mix(in srgb, var(--pn-atencion) 25%, var(--pn-linea));
+  // Boceto #ecd3b5: el ámbar sobre el fondo de la franja da #e9d0b8 (cada canal a 3 o menos del boceto).
+  border-bottom: 1px solid color-mix(in srgb, var(--pn-atencion) 21%, var(--pn-atencion-suave));
   background: var(--pn-atencion-suave);
   color: var(--pn-tinta);
 }
@@ -273,6 +274,8 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
     overflow: auto;
     padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
     border: 0;
+    // Por encima de la barra inferior del panel (z-index 1001), como la hoja de cargos de Alumnos (1020).
+    z-index: 1020;
     border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
     box-shadow: var(--pn-sombra-hoja);
   }

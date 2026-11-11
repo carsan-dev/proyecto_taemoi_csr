@@ -25,13 +25,17 @@ const PAGINAS: Record<string, string> = {
     <section class="seccion" id="horarios"><div class="tablero"><p class="proxima"><span class="proxima-rotulo">Próxima clase</span><span class="proxima-cuando">Lunes <span class="hora">17:00</span></span></p>
       <ol class="salidas"><li class="salida"><p class="salida-hora">17:00</p><div class="salida-grupo"><p class="grupo-nombre">Peques</p></div>
       <div class="salida-detalle"><p class="dias-p">L X</p><p class="plazas plazas--quedan">Quedan 3</p></div></li></ol></div></section>
-    <section class="seccion" id="llegar"><dl class="ficha"><div class="ficha-fila"><dt>Lugar</dt><dd data-dato="lugar">Pabellón</dd></div>
+    <section class="seccion" id="llegar"><div class="envoltura llegar"><div class="llegar-texto"><dl class="ficha"><div class="ficha-fila"><dt>Lugar</dt><dd data-dato="lugar">Pabellón</dd></div>
       <div class="ficha-fila"><dt>Entrada</dt><dd data-dato="acceso">Puerta lateral</dd></div>
-      <div class="ficha-fila"><dt>Teléfono</dt><dd data-dato="telefono"><a class="cifras" href="tel:955">955</a></dd></div></dl></section>
+      <div class="ficha-fila"><dt>Teléfono</dt><dd data-dato="telefono"><a class="cifras" href="tel:955">955</a></dd></div></dl></div>
+      <figure class="foto llegar-foto"><img alt=""></figure></div></section>
     <section class="tarifas" id="tarifas"><p class="tarifa-cifra"><span class="tarifa-importe">25 €</span></p></section>
     <section class="seccion" id="sedes"><ol class="ruta"><li class="ruta-sede"><a class="ruta-nombre" href="/sedes/estepa">Estepa</a><span class="ruta-dir">C/ Deporte</span></li>
       <li class="ruta-sede ruta-sede--actual"><span class="ruta-nombre">Herrera</span></li></ol></section>
   </div>`,
+  get 'sede-sin-fotos'() {
+    return this['sede'].replace('<figure class="foto sede-foto"><img alt=""></figure>', '').replace('<figure class="foto llegar-foto"><img alt=""></figure>', '');
+  },
   tarifas: `<div class="p-tarifas">
     <section class="tarifas" id="tarifas"><h1 class="rotulo">Tarifas</h1><p class="tarifa-cifra"><span class="tarifa-importe">25 €</span></p></section>
     <section class="seccion" id="cuadro"><table class="cuadro"><tbody><tr><th scope="row">General</th><td class="quien">Cada alumno</td><td class="importe cifras">25 €<small>al mes</small></td></tr></tbody></table></section>
@@ -57,7 +61,8 @@ const PAGINAS: Record<string, string> = {
   legales: `<div class="p-legales"><div class="envoltura legal-cabeza"><h1 class="legal-titular">Legales</h1><p class="actualizado">Última actualización: <time>11 de noviembre de 2026</time></p></div>
     <div class="envoltura legal-rejilla"><div class="legal-texto"><section class="legal-seccion"><dl class="ficha">
       <div class="ficha-fila"><dt>Titular</dt><dd data-dato="titular">Club</dd></div><div class="ficha-fila"><dt>CIF</dt><dd data-dato="cif"><span class="cifras">G0</span></dd></div>
-      <div class="ficha-fila"><dt>Domicilio</dt><dd data-dato="domicilio">C/ Deporte</dd></div><div class="ficha-fila"><dt>Correo</dt><dd data-dato="correo"><a href="mailto:a@b.es">a@b.es</a></dd></div></dl></section>
+      <div class="ficha-fila"><dt>Domicilio</dt><dd data-dato="domicilio">C/ Deporte</dd></div><div class="ficha-fila"><dt>Correo</dt><dd data-dato="correo"><a href="mailto:a@b.es">a@b.es</a></dd></div>
+      <div class="ficha-fila"><dt>Teléfono</dt><dd><a class="cifras" href="tel:600">600</a></dd></div></dl></section>
       <section class="legal-seccion" id="normas"><ol class="normas-lista"><li><span>Respeto</span></li></ol></section></div></div>
   </div>`,
   preinscripcion: `<div class="p-preinscripcion"><div class="flujo"><div class="envoltura flujo-rejilla"><div class="flujo-principal">
@@ -141,7 +146,12 @@ describe('capa de edición en las otras seis páginas (W12c-bis)', () => {
     expect(fija('.p-tarifas > #aparte')).toEqual(['tp-aparte', 'Licencia y exámenes']);
     expect(candado('.tarifa-importe')).toEqual(['Importe de la mensualidad', 'productos']);
     expect(candado('.cuadro th')).toEqual(['Nombre de la tarifa', 'productos']);
-    expect(candado('.cuadro td.importe')).toEqual(['Importe de la tarifa', 'productos']);
+    // Solo el importe, como el boceto: «al mes» queda fuera del candado.
+    expect(q('.cuadro td.importe').classList).not.toContain('ed-dato');
+    expect(candado('.cuadro td.importe > .ed-dato')).toEqual(['Importe de la tarifa', 'productos']);
+    expect(q('.cuadro td.importe > .ed-dato').firstChild!.textContent).toBe('25 €');
+    expect(q('.cuadro td.importe > .ed-dato').childNodes.length).toBe(2); // el importe y su enlace oculto
+    expect(q('.cuadro td.importe > small').closest('.ed-dato')).toBeNull();
     expect(candado('.lt-nombre')).toEqual(['Nombre de la sede', 'sedes']);
     expect(candado('.lt-importe')).toEqual(['Mensualidad en la sede', 'productos']);
     expect(candado('[data-dato="licencia"]')).toEqual(['Precio de la licencia', 'productos']);
@@ -201,6 +211,7 @@ describe('capa de edición en las otras seis páginas (W12c-bis)', () => {
     expect(candado('[data-dato="cif"]')).toEqual(['CIF', 'datos-escuela']);
     expect(candado('[data-dato="domicilio"]')).toEqual(['Domicilio', 'datos-escuela']);
     expect(candado('[data-dato="correo"]')).toEqual(['Correo de contacto', 'datos-escuela']);
+    expect(candado('.ficha dd:has(> a.cifras)')).toEqual(['Teléfono de contacto', 'datos-escuela']);
     expect(candado('.normas-lista')).toEqual(['Normas del club', 'plantillas']);
     // «Lo pone la web»: sin enlace oculto.
     expect(q('.actualizado time .ed-dato__ir')).toBeNull();
@@ -220,9 +231,33 @@ describe('capa de edición en las otras seis páginas (W12c-bis)', () => {
   it('Preinscripción: la parte del flujo y la sede, a Sedes; el resumen sin elegir no lleva candado', () => {
     abrir('preinscripcion');
     expect(fija('.p-preinscripcion > .flujo')).toEqual(['pr-flujo', 'Preinscripción']);
-    expect(candado('.sel-nombre')).toEqual(['Sede, grupos y próxima clase', 'sedes']);
-    expect(candado('.sel-dato')).toEqual(['Sede, grupos y próxima clase', 'sedes']);
+    // Un solo candado que envuelve el nombre y el dato de la sede, como el boceto.
+    const datos = Array.from(doc.querySelectorAll<HTMLElement>('.selector-linea .ed-dato'));
+    expect(datos.length).toBe(1);
+    expect(candado('.selector-linea .ed-dato')).toEqual(['Sede, grupos y próxima clase', 'sedes']);
+    expect(datos[0].querySelector(':scope > .sel-nombre')).not.toBeNull();
+    expect(datos[0].querySelector(':scope > .sel-dato')).not.toBeNull();
+    expect(datos[0].querySelector('input')).toBeNull();
     expect(q('.resumen-vacio').classList).not.toContain('ed-dato');
+  });
+
+  it('Una sede sin fotos: el hueco «Sin foto. Se pone en Sedes.» con su candado, en el cartel y en «Cómo llegar»', () => {
+    abrir('sede-sin-fotos');
+    const huecos = Array.from(doc.querySelectorAll<HTMLElement>('.fs-foto--vacia'));
+    expect(huecos.length).toBe(2);
+    expect(huecos[0].classList).toContain('sede-foto');
+    expect(huecos[0].previousElementSibling!.classList).toContain('sede-texto');
+    expect(huecos[1].classList).toContain('llegar-foto');
+    expect(huecos[1].previousElementSibling!.classList).toContain('llegar-texto');
+    for (const h of huecos) {
+      expect(h.classList).toContain('ed');
+      expect(h.querySelector('.ed-vacia-sede > span')!.textContent).toBe('Sin foto. Se pone en Sedes.');
+      expect([h.dataset['que'], h.dataset['donde']]).toEqual(['Foto de la sede', 'sedes']);
+    }
+    desactivar();
+    iframe.remove();
+    abrir2('sede');
+    expect(doc.querySelector('.fs-foto--vacia')).toBeNull();
   });
 
   describe('«Ver el caso» por el puente', () => {
@@ -240,6 +275,24 @@ describe('capa de edición en las otras seis páginas (W12c-bis)', () => {
       expect(simuladores[0]!.eventos({ proximos: [{} as never], anteriores: [{} as never] })).toEqual({ proximos: [], anteriores: [] });
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'caso', caso: null });
       expect(simuladores[1]).toBeNull();
+    });
+
+    it('notas del editor en los casos, con el texto del boceto; al volver a los datos reales, se quitan', () => {
+      abrir('tarifas');
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'caso', caso: 'sin-tarifas' });
+      const nota = q('.p-tarifas > #tarifas + .ed .ed-nota-parte');
+      expect(nota.textContent).toBe('Sin tarifas publicadas no salen el cuadro, «Por sede» ni «Licencia y exámenes».');
+      expect(nota.querySelector('svg')).not.toBeNull();
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'caso', caso: null });
+      expect(doc.querySelector('.ed-nota-parte')).toBeNull();
+      desactivar();
+      iframe.remove();
+      abrir2('eventos');
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'caso', caso: 'sin-proximos' });
+      expect(doc.querySelector('.ed-nota-parte')).toBeNull();
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'caso', caso: 'sin-eventos' });
+      expect(q('.p-eventos > #proximos + .ed .ed-nota-parte').textContent).toBe('Sin ningún evento tampoco sale «Anteriores».');
+      expect(doc.querySelectorAll('.ed-nota-parte').length).toBe(1);
     });
 
     it('tras el caso, dice al panel dónde empieza su parte (solo un número)', async () => {

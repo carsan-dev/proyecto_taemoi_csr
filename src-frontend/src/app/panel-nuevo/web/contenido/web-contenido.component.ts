@@ -62,8 +62,8 @@ import {
 } from './web-contenido-vista';
 import { ListasVista, WebContenidoService } from './web-contenido.service';
 
-/** Alto de la barra superior del panel: la franja del caso activo se queda debajo (boceto: `top: 64px`). */
-const ALTO_CABECERA_PANEL = 64;
+/** La barra superior del panel (`navegacion/cabecera-panel`): 64 px y 56 en móvil; la franja del caso va debajo. */
+const CABECERA_PANEL = '.pn-cab';
 
 const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
 
@@ -428,11 +428,22 @@ export class WebContenidoComponent implements OnInit {
       return;
     }
     const y = iframe.getBoundingClientRect().top + ventana.scrollY + arriba * this.escala();
-    const tapa = ALTO_CABECERA_PANEL + (this.casoActivoEl()?.nativeElement.offsetHeight ?? 0) + 16;
+    const tapa = this.altoCabeceraPanel() + (this.casoActivoEl()?.nativeElement.offsetHeight ?? 0) + 16;
     if (y < ventana.scrollY + tapa || y > ventana.scrollY + ventana.innerHeight * 0.6) {
       const reducir = ventana.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
       ventana.scrollTo({ top: Math.max(0, y - tapa), behavior: reducir ? 'auto' : 'smooth' });
     }
+  }
+
+  /** El alto real de la barra superior del panel, medido en el DOM (sin ella, el `top` fijo de la franja del caso). */
+  private altoCabeceraPanel(): number {
+    const cabecera = this.host.nativeElement.ownerDocument.querySelector<HTMLElement>(CABECERA_PANEL);
+    if (cabecera) {
+      return cabecera.getBoundingClientRect().height;
+    }
+    const franja = this.casoActivoEl()?.nativeElement;
+    const top = franja ? parseFloat(getComputedStyle(franja).top) : NaN;
+    return Number.isFinite(top) ? top : 0;
   }
 
   private enviarBorrador(): void {

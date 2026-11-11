@@ -62,3 +62,15 @@ export const PARTE_DEL_CASO: Readonly<Record<CasoVista, readonly string[]>> = {
   'sin-anteriores': ['ep-anteriores'],
   'una-foto': ['ev-galeria'],
 };
+
+/**
+ * Notas del editor que acompañan a un caso (boceto: `tarifasPagHtml` y `eventosPagHtml`, `ed-nota-parte`): van tras la
+ * parte que se ve en el caso y solo mientras se ve.
+ */
+export const NOTA_DEL_CASO: Readonly<Partial<Record<CasoVista, { tras: string; texto: string }>>> = {
+  'sin-tarifas': {
+    tras: '.p-tarifas > #tarifas',
+    texto: 'Sin tarifas publicadas no salen el cuadro, «Por sede» ni «Licencia y exámenes».',
+  },
+  'sin-eventos': { tras: '.p-eventos > #proximos', texto: 'Sin ningún evento tampoco sale «Anteriores».' },
+};

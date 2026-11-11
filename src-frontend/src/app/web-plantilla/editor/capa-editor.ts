@@ -1,18 +1,21 @@
 import {
   Candado,
+  HUECOS_FOTO_SEDE,
   NOMBRE_DESTINO,
   NOMBRE_EQUIPO,
   Parte,
   SIN_ENLACE_LINEA_COMARCAL,
+  TEXTO_SIN_FOTO_SEDE,
   candadosDe,
   paginaDelDocumento,
   partesDe,
 } from './candados-linea-comarcal';
-import { PARTE_DEL_CASO, SimuladorCaso, simuladorDe } from './casos-vista';
+import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDe } from './casos-vista';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
 import {
   BloqueBorrador,
   CANAL_EDITOR_WEB,
+  type CasoVista,
   type DestinoPanel,
   MensajeDelEditor,
   enviarPorPuente,
@@ -53,6 +56,30 @@ const RETRASO_OCULTAR = 160;
 const CONTROL_DEL_TEMA = 'a, button';
 /** Partes plegadas del tema: sin enlace oculto, ni dentro ni al lado. */
 const OCULTO_DEL_TEMA = '.horario:not(.abierto)';
+/** Envoltorio que pone la capa alrededor de una parte de un elemento del tema para darle su candado (`dato()`). */
+const ENVOLTORIO = 'ed-envoltorio';
+
+/** Iconos del boceto (`#i-info`, `#i-foto`): trazo y figuras. */
+type Figura = readonly [string, Readonly<Record<string, string>>];
+interface Icono {
+  trazo: string;
+  figuras: readonly Figura[];
+}
+const ICONO_INFO: Icono = {
+  trazo: '2',
+  figuras: [
+    ['circle', { cx: '12', cy: '12', r: '9' }],
+    ['path', { d: 'M12 11v5.5M12 7.5h.01' }],
+  ],
+};
+const ICONO_FOTO: Icono = {
+  trazo: '1.8',
+  figuras: [
+    ['rect', { x: '3', y: '5', width: '18', height: '14', rx: '2' }],
+    ['circle', { cx: '9', cy: '10', r: '1.8' }],
+    ['path', { d: 'm4 17 5-5 4 4 2.5-2.5L20 17' }],
+  ],
+};
 
 function recorta(texto: string, maximo: number): string {
   return texto.length > maximo ? `${texto.slice(0, maximo - 1).trimEnd()}…` : texto;
@@ -66,6 +93,8 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   let datoActivo: HTMLElement | null = null;
   let temporizador: ReturnType<typeof setTimeout> | null = null;
   let ultimoAlto = -1;
+  /** «Ver el caso»: el caso que se ve, para sus notas del editor. */
+  let casoActual: CasoVista | null = null;
 
   const enviar = (mensaje: MensajeDelEditor) => enviarPorPuente(ventana, padre, mensaje);
 
@@ -145,6 +174,105 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     el.dataset['donde'] = typeof candadoDef.donde === 'string' ? candadoDef.donde : candadoDef.donde.pantalla;
   }
 
+  /** El candado de una parte del elemento (`envolver`): la envuelve una vez en un `span` y el candado va en él. */
+  function envoltorio(candadoDef: Candado, el: HTMLElement): HTMLElement | null {
+    const envolver = candadoDef.envolver;
+    if (!envolver) {
+      return el;
+    }
+    const ya = el.querySelector<HTMLElement>(`:scope > .${ENVOLTORIO}`);
+    if (ya) {
+      return ya;
+    }
+    const nodos: ChildNode[] =
+      'texto' in envolver
+        ? Array.from(el.childNodes).filter((n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== '')
+        : Array.from(el.children).filter((h) => h.matches(envolver.hijos));
+    if (!nodos.length) {
+      return null;
+    }
+    const span = doc.createElement('span');
+    span.className = ENVOLTORIO;
+    nodos[0].before(span);
+    span.append(...nodos);
+    return span;
+  }
+
+  function icono(def: Icono): SVGSVGElement {
+    const svg = doc.createElementNS(SVG, 'svg');
+    const atributos: [string, string][] = [
+      ['viewBox', '0 0 24 24'],
+      ['fill', 'none'],
+      ['stroke', 'currentColor'],
+      ['stroke-width', def.trazo],
+      ['stroke-linecap', 'round'],
+      ['stroke-linejoin', 'round'],
+      ['aria-hidden', 'true'],
+    ];
+    for (const [k, v] of atributos) {
+      svg.setAttribute(k, v);
+    }
+    for (const [etiqueta, propios] of def.figuras) {
+      const figura = doc.createElementNS(SVG, etiqueta);
+      for (const [k, v] of Object.entries(propios)) {
+        figura.setAttribute(k, v);
+      }
+      svg.appendChild(figura);
+    }
+    return svg;
+  }
+
+  /** Una sede sin foto (boceto `fotoSedeHtml`): el hueco «Sin foto. Se pone en Sedes.»; si llega la foto, se quita. */
+  function huecosFoto(): void {
+    for (const def of HUECOS_FOTO_SEDE) {
+      doc.querySelectorAll<HTMLElement>(def.caja).forEach((caja) => {
+        const hueco = caja.querySelector<HTMLElement>(`:scope > .fs-foto--vacia.${def.clase}`);
+        const foto = caja.querySelector(`:scope > .${def.clase}:not(.fs-foto--vacia)`);
+        const tras = caja.querySelector(`:scope > ${def.tras}`);
+        if (foto || !tras) {
+          hueco?.remove();
+          return;
+        }
+        if (hueco) {
+          return;
+        }
+        const nuevo = doc.createElement('div');
+        nuevo.className = `ed ${def.clase} fs-foto--vacia`;
+        const dentro = doc.createElement('span');
+        dentro.className = 'ed ed-vacia-sede';
+        const texto = doc.createElement('span');
+        texto.textContent = TEXTO_SIN_FOTO_SEDE;
+        dentro.append(icono(ICONO_FOTO), texto);
+        nuevo.appendChild(dentro);
+        tras.after(nuevo);
+      });
+    }
+  }
+
+  /** Las notas del editor del caso que se ve (boceto `ed-nota-parte`), tras su parte; sin caso, ninguna. */
+  function notasDelCaso(): void {
+    const nota = casoActual ? NOTA_DEL_CASO[casoActual] : undefined;
+    doc.querySelectorAll<HTMLElement>('.ed-nota-caso').forEach((el) => {
+      if (!nota || el.dataset['caso'] !== casoActual || !el.previousElementSibling?.matches(nota.tras)) {
+        el.remove();
+      }
+    });
+    const parte = nota ? doc.querySelector<HTMLElement>(nota.tras) : null;
+    if (!nota || !parte || parte.nextElementSibling?.classList.contains('ed-nota-caso')) {
+      return;
+    }
+    const caja = doc.createElement('div');
+    caja.className = 'envoltura ed ed-nota-caso';
+    caja.dataset['caso'] = casoActual!;
+    const p = doc.createElement('p');
+    p.className = 'ed ed-nota-parte';
+    const texto = doc.createElement('span');
+    texto.textContent = nota.texto;
+    p.append(icono(ICONO_INFO), texto);
+    caja.appendChild(p);
+    parte.after(caja);
+  }
+
   /** Enlaces ocultos puestos junto al control del tema que contiene su dato (no se anidan controles): su dato. */
   const datoDeEnlace = new WeakMap<HTMLElement, HTMLElement>();
 
@@ -215,9 +343,18 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     for (const parte of partesDe(pagina)) {
       doc.querySelectorAll<HTMLElement>(parte.selector).forEach((el) => envolver(parte, el));
     }
-    for (const def of candadosDe(pagina)) {
-      doc.querySelectorAll<HTMLElement>(def.selector).forEach((el) => marcarDato(def, el));
+    if (pagina === 'sede') {
+      huecosFoto();
     }
+    for (const def of candadosDe(pagina)) {
+      doc.querySelectorAll<HTMLElement>(def.selector).forEach((el) => {
+        const dato = envoltorio(def, el);
+        if (dato) {
+          marcarDato(def, dato);
+        }
+      });
+    }
+    notasDelCaso();
     enlacesOcultos();
     sinTabulador();
     if (datoActivo && !datoActivo.isConnected) {
@@ -401,7 +538,8 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   // ------------------------------------------------------------------ observadores y puente
   // Lo que escribe la propia capa (aviso del candado, barras, enlaces ocultos) no vuelve a decorar la página.
   const esNodoDeLaCapa = (nodo: Node) =>
-    nodo.nodeType === Node.ELEMENT_NODE && ((nodo as Element).classList.contains('ed') || (nodo as Element).classList.contains('ed-dato__ir'));
+    nodo.nodeType === Node.ELEMENT_NODE &&
+    ['ed', 'ed-dato__ir', ENVOLTORIO].some((clase) => (nodo as Element).classList.contains(clase));
   const esDeLaCapa = (cambio: MutationRecord) => {
     if ((cambio.target as Element).closest?.('.ed')) {
       return true;
@@ -456,7 +594,9 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
 
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
     if (mensaje.tipo === 'caso') {
+      casoActual = mensaje.caso;
       alCaso?.(mensaje.caso ? simuladorDe(mensaje.caso) : null);
+      notasDelCaso();
       if (mensaje.caso) {
         mostrarParte(PARTE_DEL_CASO[mensaje.caso]);
       }

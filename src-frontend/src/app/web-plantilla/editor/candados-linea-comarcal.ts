@@ -53,6 +53,12 @@ export interface Candado {
   donde: DondeDato;
   /** Dato en línea que necesita caja (`ed-dato--caja` del boceto). */
   caja?: boolean;
+  /**
+   * El dato es solo una parte de lo que casa el selector: la capa la envuelve en un `span` (como `dato()` del boceto) y
+   * el candado va en ese envoltorio. `texto`: los textos sueltos del elemento (el importe, sin «al mes»); `hijos`: los
+   * hijos que casan con ese selector, juntos (un solo candado).
+   */
+  envolver?: { texto: true } | { hijos: string };
 }
 
 const SEDES: DondeDato = { pantalla: 'sedes' };
@@ -139,7 +145,7 @@ const CANDADOS_PAGINAS: Readonly<Record<PaginaInterior, readonly Candado[]>> = {
     { selector: '.p-tarifas .tarifa-contacto dd:has(> a[href^="mailto:"])', que: 'Correo de contacto', donde: ESCUELA },
     { selector: '.p-tarifas .tarifa-contacto dd:has(> a.cifras)', que: 'Teléfono de contacto', donde: ESCUELA },
     { selector: '.p-tarifas .cuadro tbody th', que: 'Nombre de la tarifa', donde: PRODUCTOS },
-    { selector: '.p-tarifas .cuadro td.importe', que: 'Importe de la tarifa', donde: PRODUCTOS },
+    { selector: '.p-tarifas .cuadro td.importe', que: 'Importe de la tarifa', donde: PRODUCTOS, envolver: { texto: true } },
     { selector: '.p-tarifas .lt-nombre', que: 'Nombre de la sede', donde: SEDES },
     { selector: '.p-tarifas .lt-importe', que: 'Mensualidad en la sede', donde: PRODUCTOS },
     { selector: '.p-tarifas .aparte [data-dato="licencia"]', que: 'Precio de la licencia', donde: PRODUCTOS },
@@ -169,13 +175,16 @@ const CANDADOS_PAGINAS: Readonly<Record<PaginaInterior, readonly Candado[]>> = {
     { selector: '.p-legales .ficha [data-dato="cif"]', que: 'CIF', donde: ESCUELA },
     { selector: '.p-legales .ficha [data-dato="domicilio"]', que: 'Domicilio', donde: ESCUELA },
     { selector: '.p-legales .ficha [data-dato="correo"]', que: 'Correo de contacto', donde: ESCUELA },
+    // El boceto no tiene la fila; el tema sí: como el teléfono de contacto de Inicio y de Tarifas (d517).
+    { selector: '.p-legales .ficha dd:has(> a.cifras)', que: 'Teléfono de contacto', donde: ESCUELA },
     { selector: '.p-legales .normas-lista', que: 'Normas del club', donde: PLANTILLAS },
   ],
   preinscripcion: [
     {
-      selector: '.p-preinscripcion .selector-linea .sel-nombre, .p-preinscripcion .selector-linea .sel-dato',
+      selector: '.p-preinscripcion .selector-linea .sel > label',
       que: 'Sede, grupos y próxima clase',
       donde: SEDES,
+      envolver: { hijos: '.sel-nombre, .sel-dato' },
     },
     { selector: '.p-preinscripcion .contexto > span', que: 'Sede elegida', donde: SEDES },
     {
@@ -185,6 +194,24 @@ const CANDADOS_PAGINAS: Readonly<Record<PaginaInterior, readonly Candado[]>> = {
     },
   ],
 };
+
+/**
+ * Una sede sin foto (`fotoSedeHtml` del boceto): en el editor, en el sitio de la foto, el hueco «Sin foto. Se pone en
+ * Sedes.» con el candado de la foto. Solo en la capa; la web no pinta nada. `caja`: donde va; `tras`: su hijo después
+ * del que va; `clase`: la clase de la foto del tema (le da su sitio y su tamaño).
+ */
+export interface HuecoFoto {
+  caja: string;
+  tras: string;
+  clase: string;
+}
+
+export const HUECOS_FOTO_SEDE: readonly HuecoFoto[] = [
+  { caja: '.p-sede .sede-rejilla', tras: '.sede-texto', clase: 'sede-foto' },
+  { caja: '.p-sede #llegar .llegar', tras: '.llegar-texto', clase: 'llegar-foto' },
+];
+
+export const TEXTO_SIN_FOTO_SEDE = 'Sin foto. Se pone en Sedes.';
 
 /** Los candados de una página, con la cabecera y el pie. */
 export function candadosDe(pagina: PaginaEditor): readonly Candado[] {
