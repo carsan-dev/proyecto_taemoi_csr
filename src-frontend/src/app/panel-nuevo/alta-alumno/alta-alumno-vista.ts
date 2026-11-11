@@ -110,7 +110,7 @@ export function mensajesPersona(campo: CampoPersona, errores: ValidationErrors |
       if (errores['required']) m.push('La fecha de nacimiento es obligatoria');
       break;
     case 'nif':
-      if (errores['pattern']) m.push('Formato inválido (8 números y una letra)');
+      if (errores['pattern']) m.push('Introduce un DNI/NIE válido.');
       break;
     case 'sede':
       if (errores['required']) m.push('Indica la sede.');
