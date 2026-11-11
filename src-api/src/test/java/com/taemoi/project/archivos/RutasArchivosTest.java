@@ -137,6 +137,25 @@ class RutasArchivosTest {
 		assertFalse(RutasArchivos.esDocumentoPublico("org-2/web/sedes/foto.pdf"));
 	}
 
+	/** Pieza W12a: las fotos de los bloques de la web, públicas solo en {@code org-<id>/web/bloques/…}, sin alumnos. */
+	@Test
+	void clasificaFotosDeBloquesDeLaWeb() {
+		assertEquals("web/bloques", RutasArchivos.CARPETA_WEB_BLOQUES);
+		assertTrue(RutasArchivos.esImagenPublica("org-2/web/bloques/web-1.webp"));
+		assertTrue(RutasArchivos.esImagenPublica("ORG-2/WEB/BLOQUES/web-1.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("web/bloques/web-1.webp"), "sin prefijo de escuela");
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/bloques"), "sin fichero debajo");
+		assertFalse(RutasArchivos.esImagenPublica("org-2/bloques/web-1.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/x/web/bloques/web-1.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/bloque/web-1.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/bloques/alumnos/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/alumnos/web/bloques/foto.webp"));
+		// El resto de web/ sigue privado.
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/foto.webp"));
+		assertFalse(RutasArchivos.esImagenPublica("org-2/web/otra/foto.webp"));
+		assertFalse(RutasArchivos.esDocumentoPublico("org-2/web/bloques/foto.pdf"));
+	}
+
 	@Test
 	void clasificaDocumentos() {
 		assertTrue(RutasArchivos.esDocumentoPublico("Documentos_Eventos/3_Torneo/bases.pdf"));
