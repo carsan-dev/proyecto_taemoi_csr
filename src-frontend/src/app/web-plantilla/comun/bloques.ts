@@ -61,6 +61,21 @@ export class BloquesWeb {
     return { url: bloque.imagenUrl, alt: (alt ?? bloque.texto ?? '').trim() };
   }
 
+  /** W12a: si la sección está oculta (lo dice su fila de cabecera, la clave de la sección sola). */
+  oculto(seccion: string): boolean {
+    return this.porClave.get(seccion)?.oculto === true;
+  }
+
+  /** Si hay alguna fila de cabecera de sección (contenido guardado con el editor de W12). */
+  hayCabeceras(): boolean {
+    return this.bloques.some((b) => esCabecera(b.clave));
+  }
+
+  /** El `orden` de la fila de cabecera de la sección; null si no la tiene. */
+  ordenCabecera(seccion: string): number | null {
+    return esCabecera(seccion) ? (this.porClave.get(seccion)?.orden ?? null) : null;
+  }
+
   /** El menor `orden` de las claves con ese prefijo (`presentacion` casa con `presentacion.texto`); null si no hay. */
   orden(prefijo: string): number | null {
     const ordenes = this.bloques.filter((b) => casa(b.clave, prefijo)).map((b) => b.orden);
@@ -90,7 +105,8 @@ export class BloquesWeb {
               n,
               nombre,
               cargo: this.textoPropio(`profesor.${n}.cargo`),
-              foto: this.imagen(`profesor.${n}.foto`, nombre),
+              // La descripción de su bloque (W12); sin ella (datos de antes), el nombre.
+              foto: this.imagen(`profesor.${n}.foto`, this.textoPropio(`profesor.${n}.foto`) ?? nombre),
             }
           : null;
       })
@@ -114,16 +130,30 @@ function casa(clave: string, prefijo: string): boolean {
   return clave === prefijo || clave.startsWith(`${prefijo}.`);
 }
 
+/** Claves de las filas de cabecera de sección (`ClavesWeb`: movibles, repetibles y fijas). */
+const CABECERAS = new Set(['presentacion', 'profesores', 'galeria', 'sedes', 'disciplinas', 'eventos', 'tarifas']);
+
+function esCabecera(clave: string): boolean {
+  return CABECERAS.has(clave) || /^texto_foto\.[1-9][0-9]?$/.test(clave);
+}
+
 /**
- * Ordena las secciones de una página (§9 n.º 11; sus bloques, por `prefijo` o, si no, por `clave`): las fijas se
- * quedan en su hueco; las movibles ocupan los huecos de
- * las movibles, por su `orden` (la que no tiene bloques toma como orden su posición en el tema; al empatar, la del
- * tema).
+ * Ordena las secciones de una página (§9 n.º 11; sus bloques, por `prefijo` o, si no, por `clave`).
+ *
+ * - Sin filas de cabecera (contenido de antes de W12): las fijas se quedan en su hueco; las movibles ocupan los huecos
+ *   de las movibles, por su `orden` (la que no tiene bloques toma como orden su posición en el tema; al empatar, la del
+ *   tema).
+ * - Con filas de cabecera (W12b, boceto del editor, `FIJOS`): una lista única por el `orden` de cada cabecera, en la
+ *   que las movibles pueden quedar entre las fijas y las fijas conservan su orden relativo. La que no tiene cabecera
+ *   toma su posición en el tema; las marcadas `sinCabecera` (contacto) se quedan en su hueco.
  */
-export function ordenarSecciones<T extends { clave: string; movible: boolean; prefijo?: string }>(
+export function ordenarSecciones<T extends { clave: string; movible: boolean; prefijo?: string; sinCabecera?: boolean }>(
   secciones: readonly T[],
   bloques: BloquesWeb,
 ): T[] {
+  if (bloques.hayCabeceras()) {
+    return ordenarPorCabeceras(secciones, bloques);
+  }
   const movibles = secciones
     .map((s, indice) => ({ s, indice, orden: bloques.orden(s.prefijo ?? s.clave) }))
     .filter((x) => x.s.movible)
@@ -131,4 +161,20 @@ export function ordenarSecciones<T extends { clave: string; movible: boolean; pr
     .map((x) => x.s);
   let siguiente = 0;
   return secciones.map((s) => (s.movible ? movibles[siguiente++] : s));
+}
+
+function ordenarPorCabeceras<T extends { clave: string; movible: boolean; sinCabecera?: boolean }>(
+  secciones: readonly T[],
+  bloques: BloquesWeb,
+): T[] {
+  const ordenadas = secciones
+    .map((s, indice) => ({ s, indice, orden: bloques.ordenCabecera(s.clave) }))
+    .filter((x) => !x.s.sinCabecera)
+    .sort((a, b) => (a.orden ?? a.indice) - (b.orden ?? b.indice) || a.indice - b.indice);
+  // Las fijas ocupan los huecos que les tocan, pero en el orden del tema (no se adelantan entre sí).
+  const fijas = secciones.filter((s) => !s.movible && !s.sinCabecera);
+  let fija = 0;
+  const lista = ordenadas.map((x) => (x.s.movible ? x.s : fijas[fija++]));
+  let siguiente = 0;
+  return secciones.map((s) => (s.sinCabecera ? s : lista[siguiente++]));
 }

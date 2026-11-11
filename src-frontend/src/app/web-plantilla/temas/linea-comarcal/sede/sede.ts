@@ -1,7 +1,7 @@
 import { enlaceMapa, edadesEnTexto, importeEnTexto, proximaClaseConGrupo, telefonoEnlace, telefonoVisible } from '../../../comun/horario';
 import { tarifaPorSede } from '../../../comun/tarifas';
 import { SedeWeb, SitioWeb } from '../../../datos/modelos';
-import { TextosTema, VistaSalida, claveSede, tarifaPrincipal, vistaSalidas } from '../contenido';
+import { TextosTema, VistaSalida, altFotoSede, claveSede, tarifaPrincipal, vistaSalidas } from '../contenido';
 import { TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS, TEXTOS_PAGINAS_LINEA_COMARCAL as P } from '../textos';
 
 /**
@@ -86,7 +86,7 @@ export function vistaPaginaSede(sitio: SitioWeb, sede: SedeWeb, ahora: Date): Vi
     consulta: { sede: sede.slug ?? String(sede.id) },
     preinscribirme,
     preinscribirmeEtiqueta: `${preinscribirme} en ${sede.nombre}`,
-    foto: sede.fotoUrl ? { url: sede.fotoUrl, alt: t(P.fotoSede, { x: sede.nombre }) } : null,
+    foto: sede.fotoUrl ? { url: sede.fotoUrl, alt: altFotoSede(sede, 1) } : null,
     tramo: tramo(sedes, sede),
     horarios: {
       rotulo: sitio.temporada ? t(P.rotuloHorariosCurso, { x: sitio.temporada }) : P.rotuloHorarios,
@@ -159,7 +159,7 @@ function llegar(sede: SedeWeb, lugar: string | null, direccion: string | null, l
     filas.push({ rotulo: P.fichaTelefono, texto: telefonoVisible(telefono), nota: null, enlace: telefonoEnlace(telefono) });
   }
   const mapa = lugar || sede.direccion?.trim() ? enlaceMapa([sede.lugar, sede.direccion, localidad]) : null;
-  const foto = sede.foto2Url ? { url: sede.foto2Url, alt: t(P.fotoSede, { x: sede.nombre }) } : null;
+  const foto = sede.foto2Url ? { url: sede.foto2Url, alt: altFotoSede(sede, 2) } : null;
   return filas.length || mapa ? { filas, mapa, foto } : null;
 }
 
@@ -180,7 +180,7 @@ function tarifaDeSede(sitio: SitioWeb, sede: SedeWeb, textos: TextosTema, una: b
   }
   return {
     importe: importeEnTexto(enSede?.importe ?? principal.importe),
-    alMes: FIJOS.alMes,
+    alMes: textos.t('tarifas.al_mes'),
     igual: principal.igual ? (una ? FIJOS.igualUnaSede : FIJOS.igualEnTodasLasSedes) : null,
     puntos: puntos.filter(Boolean),
     boton: textos.t('tarifas.boton_preinscripcion'),

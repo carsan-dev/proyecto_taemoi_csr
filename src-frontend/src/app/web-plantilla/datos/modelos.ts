@@ -31,6 +31,11 @@ export interface BloqueWeb {
   /** Absoluta (la API antepone el host); null sin imagen. */
   imagenUrl: string | null;
   orden: number;
+  /**
+   * W12a: sección oculta, en su fila de cabecera (`presentacion`, `profesores`, `galeria`, `sedes`, `texto_foto.<n>`).
+   * Al público solo le llega la cabecera; la vista previa de la gestión recibe también las filas, marcadas.
+   */
+  oculto?: boolean;
 }
 
 /** `PlazasWeb`: solo el estado y, con plazas, cuántas quedan. */
@@ -76,6 +81,9 @@ export interface SedeWeb {
   indicacionesAcceso: string | null;
   fotoUrl: string | null;
   foto2Url: string | null;
+  /** W12a (d523): descripción de cada foto; null o vacía = la del tema. */
+  fotoAlt?: string | null;
+  foto2Alt?: string | null;
   grupos: GrupoWeb[];
 }
 

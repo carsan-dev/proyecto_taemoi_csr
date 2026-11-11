@@ -3,8 +3,8 @@
  * de `web_bloque` (fase4-web-plan.md §9, lista bajo la tabla). Si la escuela guarda la clave, manda la suya; si la
  * guarda vacía, no se pinta.
  *
- * Las claves de título de sección que la lista aún no fija (`presentacion.titulo`, `profesores.titulo`) siguen el
- * patrón de `disciplinas.titulo` y `eventos.titulo`; las fija W12.
+ * Los nombres de las claves son los de `ClavesWeb` (API, W12a). Los de «Fotos de las sedes» (`sedes.*`) son los del
+ * boceto del editor (`boceto-panel-contenido-web-comarcal.html`, `TX` y `nuevoBloque`).
  */
 export const TEXTOS_LINEA_COMARCAL = {
   'menu.horarios': 'Horarios',
@@ -15,6 +15,7 @@ export const TEXTOS_LINEA_COMARCAL = {
   'cabecera.boton': 'Preinscribirme',
 
   'portada.boton_horarios': 'Busca tu pueblo',
+  'portada.enlace_tarifas': 'Ver tarifas',
 
   'horarios.titulo': 'Horarios',
   'horarios.ver_sede': 'Ver la sede',
@@ -25,20 +26,31 @@ export const TEXTOS_LINEA_COMARCAL = {
   'horarios.boton_espera': 'Apuntarme a la lista de espera',
   'sedes.proxima_rotulo': 'Próxima clase',
 
+  'presentacion.rotulo': 'El club',
   'presentacion.titulo': 'Clases cerca de casa',
 
   'disciplinas.titulo': 'Disciplinas',
 
+  'sedes.rotulo': 'Las sedes',
+  'sedes.titulo': 'Un tatami en cada pueblo',
+  'sedes.ver_sede': 'Ver la sede',
+
+  'profesores.rotulo': 'Profesores',
   'profesores.titulo': 'Quién da la clase',
 
+  'galeria.rotulo': 'Galería',
+
+  'eventos.rotulo': 'Eventos',
   'eventos.titulo': 'Próximos eventos',
   'eventos.enlace_ver': 'Ver evento',
 
   'tarifas.titulo': 'Tarifas',
+  'tarifas.al_mes': 'al mes',
   'tarifas.punto1': 'Mensualidad por alumno',
   'tarifas.punto2': 'Licencia y exámenes aparte, se informan en la sede',
   'tarifas.boton_preinscripcion': 'Preinscribirme',
 
+  'contacto.rotulo': 'Contacto',
   'contacto.titulo': '¿Hablamos?',
   'contacto.correo_rotulo': 'Correo',
   'contacto.telefono_rotulo': 'Teléfono',
@@ -52,20 +64,14 @@ export const TEXTOS_LINEA_COMARCAL = {
 export type ClaveTexto = keyof typeof TEXTOS_LINEA_COMARCAL;
 
 /**
- * Textos del boceto que aún no tienen clave en la lista del plan (o que cambian con los datos): fijos del tema hasta
- * que W12 los haga editables. `horarios.apoyo` tiene dos por defecto (móvil y escritorio); si la escuela lo guarda,
- * vale para los dos.
+ * Textos del boceto sin clave propia (o con un valor por defecto que cambia con los datos). `horarios.apoyo` tiene dos
+ * por defecto (móvil y escritorio); si la escuela lo guarda, vale para los dos. `tarifas.igual` cambia con una o varias
+ * sedes; si la escuela lo guarda, vale para las dos.
  */
 export const TEXTOS_FIJOS_LINEA_COMARCAL = {
   botonHorariosUnaSede: 'Ver horarios',
-  enlaceTarifas: 'Ver tarifas',
   apoyoHorariosMovil: 'Toca tu pueblo para ver sus grupos',
   apoyoHorariosEscritorio: 'Pulsa en tu pueblo para ver sus grupos y horarios',
-  rotuloPresentacion: 'El club',
-  rotuloProfesores: 'Profesores',
-  rotuloGaleria: 'Galería',
-  rotuloEventos: 'Eventos',
-  rotuloContacto: 'Contacto',
   alMes: 'al mes',
   igualEnTodasLasSedes: 'Igual en todas las sedes',
   igualUnaSede: 'Para todos los grupos',
