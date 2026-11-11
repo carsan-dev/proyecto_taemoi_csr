@@ -2,7 +2,7 @@ import { InjectionToken } from '@angular/core';
 
 import { EventoListaWeb, SedeWeb, TemaWeb } from '../../../web-plantilla/datos/modelos';
 import type { PaginaEditor } from '../../../web-plantilla/editor/candados-linea-comarcal';
-import type { AcentoEditor, BloqueBorrador, CasoVista, DestinoPanel } from '../../../web-plantilla/editor/puente-editor';
+import type { AcentoEditor, BloqueBorrador, CasoVista, DestinoPanel, PasoPreinscripcion } from '../../../web-plantilla/editor/puente-editor';
 import { EstadoWebEscuela, nombreTema, temaInicial, temaPublicado } from '../tema/web-tema-vista';
 
 /**
@@ -125,6 +125,14 @@ export function opcionesEvento(eventos: readonly Pick<EventoListaWeb, 'id' | 'ti
   });
 }
 
+/** Los pasos de la preinscripción del selector «Paso» (boceto `SUBS.preinscripcion`). Ninguno se desactiva. */
+export const PASOS_CONTENIDO: readonly (OpcionSub & { paso: PasoPreinscripcion })[] = [
+  { paso: 1, valor: '1', texto: '1 · Pueblo', desactivada: false },
+  { paso: 2, valor: '2', texto: '2 · Grupo', desactivada: false },
+  { paso: 3, valor: '3', texto: '3 · Datos y firma', desactivada: false },
+  { paso: 4, valor: '4', texto: 'Enviada', desactivada: false },
+];
+
 /** La primera que se puede elegir; null si no hay ninguna. */
 export function primeraOpcion(opciones: readonly OpcionSub[]): string | null {
   return opciones.find((o) => !o.desactivada)?.valor ?? null;
@@ -149,12 +157,13 @@ export interface CasoPagina {
   nombre: string;
   /** Cuándo pasa. */
   cuando: string;
+  /** El paso de la preinscripción en el que sale (al elegirlo, el selector «Paso» va a él). */
+  paso?: PasoPreinscripcion;
 }
 
 /**
- * Los casos de cada página (`CASOS` del boceto) que el tema construido puede enseñar con sus datos. Fuera: «Sin clases
- * esta semana» de una sede (el tema solo lo pinta sin turnos) y los tres de la preinscripción (dependen de lo escrito
- * en el formulario y del envío).
+ * Los casos de cada página (`CASOS` del boceto). W12c-ter: «Sin clases esta semana» de una sede y los tres de la
+ * preinscripción, cada uno con su paso; «Grupo completo» es el caso `espera`, como el boceto.
  */
 export const CASOS_PAGINA: Readonly<Record<PaginaEditor, readonly CasoPagina[]>> = {
   inicio: [
@@ -164,6 +173,7 @@ export const CASOS_PAGINA: Readonly<Record<PaginaEditor, readonly CasoPagina[]>>
   sede: [
     { id: 'lleno', nombre: 'Grupo lleno', cuando: 'Un grupo sin plazas libres' },
     { id: 'espera', nombre: 'Lista de espera', cuando: 'Un grupo que ya tiene lista de espera' },
+    { id: 'sin-clases', nombre: 'Sin clases esta semana', cuando: 'Vacaciones o festivos: no hay próxima clase' },
   ],
   tarifas: [{ id: 'sin-tarifas', nombre: 'Sin tarifas publicadas', cuando: 'Aún no hay mensualidad en Tesorería' }],
   eventos: [
@@ -174,7 +184,11 @@ export const CASOS_PAGINA: Readonly<Record<PaginaEditor, readonly CasoPagina[]>>
   ],
   evento: [{ id: 'una-foto', nombre: 'Una sola foto', cuando: 'La galería tiene una foto' }],
   legales: [],
-  preinscripcion: [],
+  preinscripcion: [
+    { id: 'sin-grupo', nombre: 'Sin grupo para su edad', cuando: 'Paso 2: su sede no tiene grupo para esa edad', paso: 2 },
+    { id: 'espera', nombre: 'Grupo completo', cuando: 'Paso 3: se apunta a la lista de espera', paso: 3 },
+    { id: 'fin-espera', nombre: 'En la lista de espera', cuando: 'Paso 4: enviada a la lista de espera', paso: 4 },
+  ],
 };
 
 // ------------------------------------------------------------------ Móvil | Escritorio
@@ -244,6 +258,7 @@ export const TEXTOS_WEB_CONTENIDO = {
   etiquetaPagina: 'Página',
   etiquetaSede: 'Sede',
   etiquetaEvento: 'Evento',
+  etiquetaPaso: 'Paso',
   verCaso: 'Ver el caso',
   datosReales: 'Datos reales',
   datosRealesCuando: 'Tu web como está ahora',

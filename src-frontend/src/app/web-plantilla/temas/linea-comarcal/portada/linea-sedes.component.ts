@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { EditorWebService } from '../../../comun/editor-web';
 import { VistaPreviaPipe } from '../../../comun/vista-previa';
 
 import { CLAVE_SEDE_RECORDADA, VistaHorarios, VistaSede } from '../contenido';
@@ -42,6 +43,7 @@ export class LineaSedesComponent {
   readonly foto = input<HTMLElement | null>(null);
 
   private readonly documento = inject(DOCUMENT);
+  private readonly editor = inject(EditorWebService);
   private readonly red = viewChild.required<ElementRef<HTMLElement>>('red');
   private readonly lista = viewChild.required<ElementRef<HTMLElement>>('lista');
   private readonly svg = viewChild.required<ElementRef<SVGSVGElement>>('svg');
@@ -116,6 +118,10 @@ export class LineaSedesComponent {
   }
 
   private guardar(clave: string): void {
+    // En el editor de la web no se toca el navegador.
+    if (this.editor.enEditor()) {
+      return;
+    }
     try {
       this.documento.defaultView?.localStorage.setItem(CLAVE_SEDE_RECORDADA, clave);
     } catch {

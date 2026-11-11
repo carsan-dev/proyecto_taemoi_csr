@@ -16,12 +16,14 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Title } from '@angular/platform-browser';
-import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink, convertToParamMap } from '@angular/router';
 
+import { EditorWebService } from '../../../comun/editor-web';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { borrarBorrador, guardarBorrador, guardarValor, leerBorrador, leerValor } from '../../../comun/preinscripcion/almacen';
 import { enlaceDocumento, envioPreinscripcion, normasPreinscripcion } from '../../../comun/preinscripcion/envio';
 import {
+  DATOS_VACIOS,
   DatosPreinscripcion,
   ErrorCampo,
   MAX_APELLIDOS,
@@ -50,6 +52,7 @@ import {
 } from '../../../comun/preinscripcion/preinscripcion';
 import { RELOJ_WEB } from '../../../comun/reloj';
 import { Salida } from '../../../comun/horario';
+import type { EjemploPreinscripcion } from '../../../editor/casos-vista';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
 import { CLAVE_SEDE_RECORDADA, claveSede } from '../contenido';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
@@ -110,7 +113,8 @@ export class PreinscripcionLineaComarcalComponent {
   private readonly router = inject(Router);
   private readonly titulo = inject(Title);
   private readonly activa = inject(ActivatedRoute);
-  private readonly consulta = toSignal(this.activa.queryParamMap, { requireSync: true });
+  private readonly editor = inject(EditorWebService);
+  private readonly direccion = toSignal(this.activa.queryParamMap, { requireSync: true });
   private readonly lienzo = viewChild<ElementRef<HTMLCanvasElement>>('lienzo');
   private readonly envio = envioPreinscripcion();
   private readonly cargaNormas = normasPreinscripcion();
@@ -130,8 +134,27 @@ export class PreinscripcionLineaComarcalComponent {
   } as const;
   protected readonly pagina = paginaWeb('preinscripcion', () => '/preinscripcion');
 
+  /**
+   * W12c-ter: en el editor de la web («Web · Contenido»), el paso de ejemplo que da la capa de edición, en memoria;
+   * fuera del editor, siempre null y manda la dirección.
+   */
+  private readonly ejemplo = computed(() => {
+    const sitio = this.pagina.sitio();
+    return sitio ? this.editor.preinscripcion(sitio, this.reloj()) : null;
+  });
+  /** Los parámetros de la dirección o, en el editor, los del ejemplo (con la vista previa de la dirección). */
+  private readonly consulta = computed(() => {
+    const ejemplo = this.ejemplo();
+    const direccion = this.direccion();
+    if (!ejemplo) {
+      return direccion;
+    }
+    const previa = direccion.get('vista-previa');
+    return convertToParamMap(previa === null ? ejemplo.consulta : { ...ejemplo.consulta, 'vista-previa': previa });
+  });
+
   /** Vista previa del panel (`?vista-previa=`, o la API la confirma): se usa el formulario, pero no se envía. */
-  private readonly enPrevia = this.consulta().get('vista-previa') !== null;
+  private readonly enPrevia = this.direccion().get('vista-previa') !== null;
   private readonly claveBorrador = this.enPrevia ? CLAVE_BORRADOR_PREINSCRIPCION_PREVIA : CLAVE_BORRADOR_PREINSCRIPCION;
   protected readonly vistaPrevia = computed(() => this.enPrevia || this.pagina.sitio()?.vistaPrevia === true);
 
@@ -265,10 +288,11 @@ export class PreinscripcionLineaComarcalComponent {
     effect(() => {
       const sitio = this.pagina.sitio();
       const consulta = this.consulta();
+      const ejemplo = this.ejemplo();
       if (!sitio) {
         return;
       }
-      untracked(() => this.resolverPaso(consulta.get('paso')));
+      untracked(() => (ejemplo ? this.verEjemplo(ejemplo) : this.resolverPaso(consulta.get('paso'))));
     });
     // Los días marcados, los de la dirección.
     effect(() => {
@@ -279,10 +303,10 @@ export class PreinscripcionLineaComarcalComponent {
         this.sinDias.set(false);
       });
     });
-    // La sede vista se recuerda (como la portada y la página de sede).
+    // La sede vista se recuerda (como la portada y la página de sede); en el editor de la web no se toca el navegador.
     effect(() => {
       const sede = this.sede();
-      if (sede) {
+      if (sede && !this.editor.enEditor()) {
         untracked(() => guardarValor(this.almacen('localStorage'), CLAVE_SEDE_RECORDADA, claveSede(sede)));
       }
     });
@@ -319,23 +343,7 @@ export class PreinscripcionLineaComarcalComponent {
 
   private resolverPaso(pedido: string | null): void {
     const sede = this.sede();
-    const una = this.una();
-    let paso = Number(pedido) as Paso;
-    if (!(paso >= 1 && paso <= 3)) {
-      paso = sede && !una ? 2 : 1;
-    }
-    if (una && paso === 1) {
-      paso = 2;
-    }
-    if (paso >= 2 && !sede) {
-      paso = 1;
-    }
-    if (paso >= 3 && !this.salidaUrl()) {
-      paso = 2;
-    }
-    if (paso === 3 && !fechaNacimiento(this.datos(), this.reloj())) {
-      paso = 2;
-    }
+    const paso = this.pasoPara(pedido);
     const cambia = paso !== this.paso() || this.fin() !== null;
     this.paso.set(paso);
     if (paso === 1) {
@@ -353,6 +361,55 @@ export class PreinscripcionLineaComarcalComponent {
           this.enfocar('.p-preinscripcion .pregunta-titulo');
         });
       }
+    }
+  }
+
+  /** El paso pedido, o el que toca con lo que falta (sede, grupo y fecha), como el boceto. */
+  private pasoPara(pedido: string | null): Paso {
+    const sede = this.sede();
+    const una = this.una();
+    let paso = Number(pedido) as Paso;
+    if (!(paso >= 1 && paso <= 3)) {
+      paso = sede && !una ? 2 : 1;
+    }
+    if (una && paso === 1) {
+      paso = 2;
+    }
+    if (paso >= 2 && !sede) {
+      paso = 1;
+    }
+    if (paso >= 3 && !this.salidaUrl()) {
+      paso = 2;
+    }
+    if (paso === 3 && !fechaNacimiento(this.datos(), this.reloj())) {
+      paso = 2;
+    }
+    return paso;
+  }
+
+  /**
+   * W12c-ter: el paso de ejemplo del editor de la web, en memoria: sin tocar la dirección, sin guardar en el navegador,
+   * sin mover el foco y sin enviar. El paso 4 pinta la confirmación con la respuesta simulada que da la capa.
+   */
+  private verEjemplo(ejemplo: EjemploPreinscripcion): void {
+    this.datos.set({ ...DATOS_VACIOS, ...ejemplo.datos });
+    const paso = this.pasoPara(String(Math.min(ejemplo.paso, 3)));
+    this.paso.set(paso);
+    this.fin.set(null);
+    this.limpiarErrores();
+    const sede = this.sede();
+    const salida = this.salida();
+    if (ejemplo.respuesta && paso === 3 && sede && salida) {
+      const dias = diasElegidos(salida, diasDeParametro(ejemplo.consulta.dias));
+      const vista = vistaFin(ejemplo.respuesta, { sede, salida, dias }, this.datos(), this.menor());
+      // d534: el boceto no dibuja las fichas «Alumno» y «Contacto» en el editor (saldrían vacías); en la web real siguen.
+      const sinDatosPersonales: string[] = [this.t.fichaAlumno, this.t.fichaContacto];
+      this.fin.set({
+        ...vista,
+        ficha: vista.ficha.filter((fila) => !sinDatosPersonales.includes(fila.rotulo)),
+        documento: enlaceDocumento(ejemplo.respuesta),
+      });
+      this.paso.set(4);
     }
   }
 
@@ -398,7 +455,9 @@ export class PreinscripcionLineaComarcalComponent {
       this.mostrarErrores(opciones.length ? [{ id: `s-${opciones[0].clave}`, campo: 'sede', msg: MENSAJES.elegirSede }] : []);
       return;
     }
-    guardarValor(this.almacen('localStorage'), CLAVE_SEDE_RECORDADA, marcada.clave);
+    if (!this.editor.enEditor()) {
+      guardarValor(this.almacen('localStorage'), CLAVE_SEDE_RECORDADA, marcada.clave);
+    }
     this.ir(2, { sede: marcada.parametro, grupo: null, dias: null });
   }
 
@@ -492,7 +551,10 @@ export class PreinscripcionLineaComarcalComponent {
 
   protected actualizar<K extends keyof DatosPreinscripcion>(campo: K, valor: DatosPreinscripcion[K]): void {
     this.datos.update((d) => ({ ...d, [campo]: valor }));
-    guardarBorrador(this.almacen('sessionStorage'), this.claveBorrador, this.datos());
+    // W12c-ter: en el editor de la web no se guarda nada en el navegador.
+    if (!this.editor.enEditor()) {
+      guardarBorrador(this.almacen('sessionStorage'), this.claveBorrador, this.datos());
+    }
   }
 
   protected escribir(campo: CampoTexto, evento: Event): void {

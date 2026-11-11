@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { sitioDePrueba } from '../datos/datos-de-prueba';
 import { EventoDetalleWeb, EventoListaWeb, EventosWeb, SitioWeb } from '../datos/modelos';
+import type { EjemploPreinscripcion } from '../editor/casos-vista';
 import { CARGAR_CAPA_EDITOR, EditorWebService } from './editor-web';
 
 describe('EditorWebService (W12c)', () => {
@@ -110,5 +111,52 @@ describe('EditorWebService (W12c)', () => {
     opciones.alCaso(null);
     expect(editor.aplicar(sitio(true)).tarifas).toEqual(sitio(true).tarifas);
     expect(editor.aplicarEventos(eventos)).toBe(eventos);
+  });
+
+  it('W12c-ter: sin capa, ni ejemplo de preinscripción ni cambio en la sede; con ella, los del simulador', async () => {
+    const editor = crear();
+    const vista = { horarios: { proxima: { hora: '17:00' } } };
+    const ahora = new Date(2026, 10, 7);
+    expect(editor.enEditor()).toBeFalse();
+    expect(editor.preinscripcion(sitio(true), ahora)).toBeNull();
+    expect(editor.aplicarVistaSede(vista)).toBe(vista);
+
+    editor.activarSiToca('1', sitio(true));
+    expect(editor.enEditor()).toBeTrue();
+    await Promise.resolve();
+    await Promise.resolve();
+    const opciones = activar.calls.mostRecent().args[0];
+    const ejemplo: EjemploPreinscripcion = { paso: 3, consulta: { sede: 'estepa' }, datos: {}, respuesta: null };
+    const preinscripcion = jasmine.createSpy('preinscripcion').and.returnValue(ejemplo);
+    opciones.alCaso({
+      sitio: (s: SitioWeb) => s,
+      eventos: (e: EventosWeb) => e,
+      evento: (e: EventoDetalleWeb) => e,
+      preinscripcion,
+      vistaSede: (v: typeof vista) => ({ ...v, horarios: { ...v.horarios, proxima: null } }),
+    });
+    expect(editor.preinscripcion(sitio(true), ahora)).toBe(ejemplo);
+    expect(preinscripcion).toHaveBeenCalledWith(sitio(true), ahora);
+    expect(editor.aplicarVistaSede(vista).horarios.proxima).toBeNull();
+    opciones.alCaso(null);
+    expect(editor.preinscripcion(sitio(true), ahora)).toBeNull();
+    expect(editor.aplicarVistaSede(vista)).toBe(vista);
+  });
+
+  it('W12c-ter: fuera del editor (sin editor=1, sin la confirmación de la API o fuera de un iframe) no está en el editor', () => {
+    const editor = crear(false);
+    editor.activarSiToca('1', sitio(true));
+    editor.activarSiToca(null, sitio(true));
+    expect(editor.enEditor()).toBeFalse();
+  });
+
+  it('W12c-ter: si no llega el chunk de la capa, deja de estar en el editor', async () => {
+    const editor = crear();
+    cargar.and.rejectWith(new Error('sin red'));
+    editor.activarSiToca('1', sitio(true));
+    expect(editor.enEditor()).toBeTrue();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(editor.enEditor()).toBeFalse();
   });
 });

@@ -192,6 +192,12 @@ const CANDADOS_PAGINAS: Readonly<Record<PaginaInterior, readonly Candado[]>> = {
       que: 'Sede elegida',
       donde: SEDES,
     },
+    // W12c-ter: los pasos 2 a 4 (selector «Paso» y sus casos).
+    { selector: '.p-preinscripcion .vacio .otra > a', que: 'Sede con grupo para su edad', donde: GRUPOS },
+    { selector: '.p-preinscripcion .vacio-contacto > a.cifras', que: 'Teléfono de la sede', donde: SEDES },
+    { selector: '.p-preinscripcion .banda-ref > strong', que: 'Referencia de la solicitud', donde: 'web' },
+    { selector: '.p-preinscripcion .resumen [data-dato="grupo"]', que: 'Grupo elegido', donde: GRUPOS },
+    { selector: '.p-preinscripcion .resumen [data-dato="dias"]', que: 'Días y hora del grupo', donde: GRUPOS },
   ],
 };
 
@@ -227,6 +233,8 @@ export const SIN_ENLACE_LINEA_COMARCAL = 'a, button, .horario:not(.abierto)';
 
 export const NOTA_FIJA = 'Su sitio lo pone el tema. Pulsa un texto para cambiarlo.';
 export const NOTA_FIJA_FOTO = 'Su sitio lo pone el tema. Pulsa un texto o la foto para cambiarlos.';
+/** La de la preinscripción, con el selector «Paso» (boceto `preinscripcionHtml`). */
+export const NOTA_FIJA_PASO = 'Su sitio lo pone el tema. Elige el paso arriba para ver sus textos.';
 
 export interface Parte {
   selector: string;
@@ -289,7 +297,18 @@ const PARTES_PAGINAS: Readonly<Record<PaginaInterior, readonly Parte[]>> = {
     fija('.p-legales > .legal-cabeza', 'lg-cabeza', 'Cabeza de la página'),
     fija('.p-legales > .legal-rejilla', 'lg-texto', 'Texto legal', 'Su sitio lo pone el tema. El índice repite los títulos de las secciones.'),
   ],
-  preinscripcion: [fija('.p-preinscripcion > .flujo', 'pr-flujo', 'Preinscripción')],
+  preinscripcion: [fija('.p-preinscripcion > .flujo', 'pr-flujo', 'Preinscripción', NOTA_FIJA_PASO)],
+};
+
+/**
+ * Nota del editor fija de una página (boceto `ed-nota-parte`): al final de `dentro`, siempre. En la preinscripción, la de
+ * los avisos de error del formulario (d527: no tienen clave y no se cambian).
+ */
+export const NOTA_DE_PAGINA: Readonly<Partial<Record<PaginaEditor, { dentro: string; texto: string }>>> = {
+  preinscripcion: {
+    dentro: '.p-preinscripcion .flujo-principal',
+    texto: 'Los avisos de error del formulario («Escribe el nombre», «El DNI no es válido»…) son los comunes de todas las webs: no se cambian aquí.',
+  },
 };
 
 /** Las partes y bloques de una página, con la cabecera y el pie. */

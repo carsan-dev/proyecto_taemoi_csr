@@ -1,6 +1,7 @@
 import {
   CANAL_EDITOR_WEB,
   CASOS_VISTA,
+  PASOS_PREINSCRIPCION,
   enviarPorPuente,
   esMensajeDelEditor,
   esMensajeDelPanel,
@@ -42,7 +43,35 @@ describe('puente del editor de la web (W12c)', () => {
       expect(esMensajeDelPanel(caso('desconocido'))).toBeFalse();
       expect(esMensajeDelPanel(caso({ tarifas: [] }))).toBeFalse();
       expect(esMensajeDelPanel({ canal: CANAL_EDITOR_WEB, tipo: 'caso' })).toBeFalse();
-      expect(CASOS_VISTA).toEqual(['lleno', 'espera', 'sin-tarifas', 'sin-proximos', 'sin-eventos', 'un-evento', 'sin-anteriores', 'una-foto']);
+      expect(CASOS_VISTA).toEqual([
+        'lleno',
+        'espera',
+        'sin-tarifas',
+        'sin-proximos',
+        'sin-eventos',
+        'un-evento',
+        'sin-anteriores',
+        'una-foto',
+        // W12c-ter
+        'sin-clases',
+        'sin-grupo',
+        'fin-espera',
+      ]);
+    });
+
+    it('W12c-ter: el paso de la preinscripción, un entero de la lista cerrada 1-4; nada de datos libres', () => {
+      const paso = (valor: unknown) => ({ canal: CANAL_EDITOR_WEB, tipo: 'paso', paso: valor });
+      for (const n of PASOS_PREINSCRIPCION) {
+        expect(esMensajeDelPanel(paso(n))).toBeTrue();
+      }
+      expect(PASOS_PREINSCRIPCION).toEqual([1, 2, 3, 4]);
+      for (const malo of [0, 5, -1, 2.5, Number.NaN, Number.POSITIVE_INFINITY, '2', null, undefined, [3], { paso: 3 }, true]) {
+        expect(esMensajeDelPanel(paso(malo))).withContext(String(malo)).toBeFalse();
+      }
+      expect(esMensajeDelPanel({ canal: CANAL_EDITOR_WEB, tipo: 'paso' })).toBeFalse();
+      expect(esMensajeDelPanel({ canal: 'otro', tipo: 'paso', paso: 3 })).toBeFalse();
+      // El iframe no lo acepta del lado contrario.
+      expect(esMensajeDelEditor(paso(3))).toBeFalse();
     });
 
     it('W12c-bis: «mostrar» con un número y el destino de Preinscripciones · Plantillas', () => {

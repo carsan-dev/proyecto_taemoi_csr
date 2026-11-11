@@ -2,7 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { DestroyRef, Injectable, InjectionToken, inject, signal } from '@angular/core';
 
 import type { OpcionesCapaEditor } from '../editor/capa-editor';
-import type { SimuladorCaso } from '../editor/casos-vista';
+import type { EjemploPreinscripcion, SimuladorCaso, VistaConProxima } from '../editor/casos-vista';
 import type { BloqueBorrador } from '../editor/puente-editor';
 import { EventoDetalleWeb, EventosWeb, SitioWeb } from '../datos/modelos';
 
@@ -27,6 +27,7 @@ export const CARGAR_CAPA_EDITOR = new InjectionToken<CargarCapaEditor>('CARGAR_C
  * Guarda el borrador que manda el panel por el puente: con él, el tema pinta sus datos públicos y esos bloques.
  * W12c-bis: «Ver el caso» (d528) cambia en memoria los datos de la vista previa con el simulador que da la capa (su
  * código vive en el chunk de la capa); nunca toca la API.
+ * W12c-ter: el paso de la preinscripción y «Sin clases esta semana», con el mismo simulador; fuera del editor, nada.
  */
 @Injectable({ providedIn: 'root' })
 export class EditorWebService {
@@ -34,6 +35,7 @@ export class EditorWebService {
   private readonly documento = inject(DOCUMENT);
   private readonly bloques = signal<BloqueBorrador[] | null>(null);
   private readonly simulador = signal<SimuladorCaso | null>(null);
+  private readonly activo = signal(false);
   private activado = false;
   private destruido = false;
   /** Quita la capa (oyentes, observadores y puente); null si no está puesta. */
@@ -41,6 +43,11 @@ export class EditorWebService {
 
   /** Los bloques del borrador del panel; null mientras no llega (o fuera del editor). */
   readonly borrador = this.bloques.asReadonly();
+  /**
+   * La página está en el editor de la web (W12c-ter): se cumplen las tres condiciones y la capa se está cargando o ya
+   * está puesta. Lo que se escriba en ella no se guarda en el navegador.
+   */
+  readonly enEditor = this.activo.asReadonly();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
@@ -58,6 +65,7 @@ export class EditorWebService {
       return;
     }
     this.activado = true;
+    this.activo.set(true);
     this.cargar().then(
       (capa) => {
         if (this.destruido) {
@@ -72,6 +80,7 @@ export class EditorWebService {
       },
       () => {
         this.activado = false;
+        this.activo.set(false);
       },
     );
   }
@@ -104,5 +113,15 @@ export class EditorWebService {
   /** Un evento con el caso que se esté viendo (solo con la capa de edición activa). */
   aplicarEvento(evento: EventoDetalleWeb): EventoDetalleWeb {
     return this.simulador()?.evento(evento) ?? evento;
+  }
+
+  /** El paso de la preinscripción de ejemplo que se esté viendo (solo con la capa de edición activa); si no, null. */
+  preinscripcion(sitio: SitioWeb, ahora: Date): EjemploPreinscripcion | null {
+    return this.simulador()?.preinscripcion(sitio, ahora) ?? null;
+  }
+
+  /** Lo que pinta la página de una sede con el caso que se esté viendo (solo con la capa de edición activa). */
+  aplicarVistaSede<T extends VistaConProxima>(vista: T): T {
+    return this.simulador()?.vistaSede(vista) ?? vista;
   }
 }

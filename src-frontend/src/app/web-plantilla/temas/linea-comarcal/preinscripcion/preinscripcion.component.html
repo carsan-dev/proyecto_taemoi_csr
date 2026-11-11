@@ -331,14 +331,14 @@
                 }
                 <div class="resumen-fila">
                   <dt>{{ t.resumenGrupo }}</dt>
-                  @if (r.grupo) {<dd>{{ r.grupo }}</dd>} @else {<dd class="resumen-vacio">{{ t.sinElegir }}</dd>}
+                  @if (r.grupo) {<dd data-dato="grupo">{{ r.grupo }}</dd>} @else {<dd class="resumen-vacio">{{ t.sinElegir }}</dd>}
                   @if (r.grupo && paso() > 2) {
                     <dd class="resumen-cambiar"><a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(2)">{{ t.cambiar }}<span class="oculto"> {{ t.cambiarGrupo }}</span></a></dd>
                   }
                 </div>
                 <div class="resumen-fila">
                   <dt>{{ t.resumenDias }}</dt>
-                  @if (r.horario) {<dd>{{ r.horario }}@if (r.resto) {<br><span class="opcional">{{ r.resto }}</span>}</dd>} @else {<dd class="resumen-vacio">{{ t.sinElegir }}</dd>}
+                  @if (r.horario) {<dd data-dato="dias">{{ r.horario }}@if (r.resto) {<br><span class="opcional">{{ r.resto }}</span>}</dd>} @else {<dd class="resumen-vacio">{{ t.sinElegir }}</dd>}
                   @if (r.grupo && paso() > 2) {
                     <dd class="resumen-cambiar"><a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(2)">{{ t.cambiar }}<span class="oculto"> {{ t.cambiarDias }}</span></a></dd>
                   }

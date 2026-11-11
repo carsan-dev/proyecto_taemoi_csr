@@ -47,7 +47,7 @@ Nota: la fila W12 del §8 dice «Migración: no». `oculto` exige una (V32_9): W
 
 ## 2. Piezas, en orden (cada una se fusiona y se despliega sola)
 
-Orden: W12a → W12b → W12c → W12c-bis → W12d → W12e → W12f. W12g es independiente (su interfaz está en el
+Orden: W12a → W12b → W12c → W12c-bis → W12c-ter → W12d → W12e → W12f. W12g es independiente (su interfaz está en el
 boceto aprobado, d524) y puede ir en cualquier momento. Entrada de menú «Contenido» visible a partir de W12d (antes,
 la ruta existe pero no se enlaza: una pantalla que no guarda no debe verse; decisión 341: lo que se despliega se ve).
 
@@ -148,10 +148,24 @@ la ruta existe pero no se enlaza: una pantalla que no guarda no debe verse; deci
   «Vista previa de X.», sin «· N cambios» (W12d). Candados y partes fijas de las otras 6 páginas en la capa (atributos
   `data-dato` neutros en el tema; destino nuevo Preinscripciones · Plantillas). «Ver el caso» (d528): menú por página
   (hoja inferior en < 768 px), franja del caso activo y «Volver a datos reales»; el caso viaja por el puente (lista
-  cerrada) y la capa lo simula en memoria. Fuera: «Sin clases esta semana», los casos y el paso de la preinscripción.
+  cerrada) y la capa lo simula en memoria. Fuera: «Sin clases esta semana», los casos y el paso de la preinscripción
+  (W12c-ter, d533).
 - **Tests**: Karma de selector, URL, voz, candados por página, menú de casos, teclado, puente y que nada va a la API.
 - **Boceto**: `PAGINAS`, `SUBS`, `pintarSelector`, `CASOS`, `abrirMenuCasos`, `ponerCaso`, `dato()` de cada página.
 - **Moiskimdo igual**: misma ruta y guards de W12c; bundle inicial sin cambios. **Tamaño**: ~1.900 líneas con tests.
+
+### W12c-ter · Pasos y casos de Preinscripción, «Sin clases esta semana» (careful)
+
+- **Frontend**: en Preinscripción, segundo selector «Paso» (1 · Pueblo, 2 · Grupo, 3 · Datos y firma, Enviada); el
+  paso viaja por el puente (entero de la lista cerrada 1-4) sin recargar el iframe. Casos «Sin grupo para su edad»,
+  «Grupo completo» y «En la lista de espera», cada uno con su paso, y «Sin clases esta semana» en Una sede. La capa
+  arma en memoria un ejemplo con datos de la escuela (sede, grupo, días, fecha de nacimiento, respuesta simulada) y
+  deja el formulario inerte; notas «Elige el paso arriba…» y de los avisos de error (d527) y candados de los pasos 2-4.
+- **Por qué careful**: ganchos en componentes públicos del tema (el formulario real de preinscripción, con datos de
+  menores y envío real, y la vista de la sede). Sin el editor activo, comportamiento idéntico; en el editor, nada en
+  `sessionStorage` ni llamadas de escritura.
+- **Tests**: Karma de la invariante (sin editor, ni paso 3-4 ni confirmación por dirección o puente), pasos y casos
+  con editor, puente, capa inerte y selector. **Moiskimdo igual**: bundle inicial +8 bytes (1.209.901 → 1.209.909).
 
 ### W12d · Textos en el sitio y guardar (medium; careful en la revisión del guardado)
 
@@ -225,6 +239,8 @@ Cierran las ocho preguntas que dejaba abiertas el primer desglose. El boceto apr
 | d529 | Fila del tema en la vista previa de Eventos. | — |
 | d530 | El aviso de conflicto solo dice «otra persona» (ni nombre ni hora de quien guardó). | n.º 7 |
 | d532 | El selector de página (d519) y «Ver el caso» (d528) van en pieza propia, W12c-bis, antes de W12d (11/11). | — |
+| d533 | El selector «Paso» y los casos de Preinscripción y el caso «Sin clases esta semana» van en pieza aparte, W12c-ter, tras W12c-bis (11/11). | — |
+| d534 | En el editor, el paso «Enviada» de Preinscripción no muestra las fichas «Alumno» y «Contacto» (el boceto no las dibuja); en la web real siguen saliendo (11/11). | — |
 
 Con d519 y d518, el alcance de W12c-W12f crece respecto a la estimación del §2: selector de página, bloques «Fotos de
 las sedes» y «Texto con foto», sedes del profesor y estado de conflicto. W12g (d524) ya no espera boceto.
