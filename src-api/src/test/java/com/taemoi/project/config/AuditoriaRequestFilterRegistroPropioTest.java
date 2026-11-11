@@ -53,6 +53,7 @@ class AuditoriaRequestFilterRegistroPropioTest {
 			Map.entry(EscrituraConRegistroPropio.WEB_PUBLICAR, new Ejemplo("PUT", "/api/escuela/web/publicacion")),
 			Map.entry(EscrituraConRegistroPropio.WEB_PUBLICAR_PLATAFORMA,
 					new Ejemplo("PUT", "/api/plataforma/escuelas/7/web/publicacion")),
+			Map.entry(EscrituraConRegistroPropio.WEB_CONTENIDO_GUARDAR, new Ejemplo("PUT", "/api/escuela/web/contenido")),
 			Map.entry(EscrituraConRegistroPropio.PROFESOR_APTO,
 					new Ejemplo("PUT", "/api/profesor/alumnos/12/deportes/TAEKWONDO/apto")),
 			Map.entry(EscrituraConRegistroPropio.PROFESOR_FECHA_GRADO,

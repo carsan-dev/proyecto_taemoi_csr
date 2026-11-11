@@ -88,6 +88,7 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 			EscrituraConRegistroPropio.LOGO_ESCUELA_CAMBIAR, EscrituraConRegistroPropio.LOGO_ESCUELA_QUITAR,
 			EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR, EscrituraConRegistroPropio.ESCUELA_CREAR,
 			EscrituraConRegistroPropio.WEB_PUBLICAR, EscrituraConRegistroPropio.WEB_PUBLICAR_PLATAFORMA,
+			EscrituraConRegistroPropio.WEB_CONTENIDO_GUARDAR,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_SUBIR,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_SUSTITUIR, EscrituraConRegistroPropio.MATERIAL_VIDEO_TITULO,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_ORDEN, EscrituraConRegistroPropio.MATERIAL_VIDEO_ELIMINAR,

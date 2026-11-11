@@ -122,6 +122,11 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		 */
 		WEB_PUBLICAR("PUT", "/api/escuela/web/publicacion"),
 		WEB_PUBLICAR_PLATAFORMA("PUT", "/api/plataforma/escuelas/[^/]+/web/publicacion"),
+		/**
+		 * Pieza W12a: guardar el contenido de la web. ContenidoWebService#guardar registra todo 2xx (WEB
+		 * CONTENIDO_GUARDADO con recuentos y números de profesor, nunca textos). Caso en WebContenidoIntegrationTest.
+		 */
+		WEB_CONTENIDO_GUARDAR("PUT", "/api/escuela/web/contenido"),
 		// Pieza E7-9 (decisión 214): rutas del profesor y quitar un profesor de un grupo; el registro, entre paréntesis.
 		/** ProfesorService#actualizarApto (PROFESOR APTO_CAMBIADO). */
 		PROFESOR_APTO("PUT", "/api/profesor/alumnos/[^/]+/deportes/[^/]+/apto"),

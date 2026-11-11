@@ -38,6 +38,11 @@ public final class RutasArchivos {
 	public static final String CARPETA_WEB = "web";
 	/** Web por plantilla: fotos de las sedes ({@code org-<id>/web/sedes/…}), PÚBLICAS (ver {@link #esImagenPublica}). */
 	public static final String CARPETA_WEB_SEDES = CARPETA_WEB + "/sedes";
+	/**
+	 * Pieza W12a: fotos de los bloques de la web ({@code org-<id>/web/bloques/…}: portada, presentación, profesores,
+	 * galería…), PÚBLICAS (ver {@link #esImagenPublica}).
+	 */
+	public static final String CARPETA_WEB_BLOQUES = CARPETA_WEB + "/bloques";
 	/** Carpetas heredadas (sin prefijo de escuela). */
 	public static final String CARPETA_DOCUMENTOS_ALUMNOS_LEGADO = "Documentos_Alumnos_Moiskimdo";
 	public static final String CARPETA_DOCUMENTOS_EVENTOS_LEGADO = "Documentos_Eventos";
@@ -176,19 +181,22 @@ public final class RutasArchivos {
 
 	/**
 	 * LISTA BLANCA: una imagen solo es PÚBLICA si es de un evento, {@code eventos/…} (heredada, sin prefijo)
-	 * u {@code org-<id>/eventos/…}, o una foto de sede de la web, {@code org-<id>/web/sedes/…} (solo con prefijo), y no
-	 * tiene ningún segmento {@code alumnos}. Todo lo demás (fotos de alumnos, ficheros sueltos en la raíz, carpetas
-	 * desconocidas, el resto de {@code web/}) es privado.
+	 * u {@code org-<id>/eventos/…}, una foto de sede de la web, {@code org-<id>/web/sedes/…}, o una foto de un bloque de
+	 * la web, {@code org-<id>/web/bloques/…} (estas dos, solo con prefijo), y no tiene ningún segmento {@code alumnos}.
+	 * Todo lo demás (fotos de alumnos, ficheros sueltos en la raíz, carpetas desconocidas, el resto de {@code web/}) es
+	 * privado.
 	 */
 	public static boolean esImagenPublica(String rutaRelativa) {
-		return esDeEventos(rutaRelativa, CARPETA_EVENTOS) || esFotoDeSede(rutaRelativa);
+		return esDeEventos(rutaRelativa, CARPETA_EVENTOS) || esDeLaWeb(rutaRelativa, CARPETA_WEB_SEDES)
+				|| esDeLaWeb(rutaRelativa, CARPETA_WEB_BLOQUES);
 	}
 
 	/**
-	 * Web por plantilla: {@code org-<id>/web/sedes/…}, con al menos un nivel por debajo y sin ningún segmento de alumnos.
-	 * Sin prefijo de escuela no vale: ninguna versión anterior guardó ahí nada.
+	 * Web por plantilla: {@code org-<id>/<carpeta>/…} ({@code web/sedes} o {@code web/bloques}), con al menos un nivel
+	 * por debajo y sin ningún segmento de alumnos. Sin prefijo de escuela no vale: ninguna versión anterior guardó ahí
+	 * nada.
 	 */
-	private static boolean esFotoDeSede(String rutaRelativa) {
+	private static boolean esDeLaWeb(String rutaRelativa, String carpetaWeb) {
 		if (organizacionDeRuta(rutaRelativa) == null) {
 			return false;
 		}
@@ -196,7 +204,7 @@ public final class RutasArchivos {
 		if (segmentos.size() < 4 || tieneSegmentoDeAlumnos(segmentos)) {
 			return false;
 		}
-		String[] carpeta = CARPETA_WEB_SEDES.split("/");
+		String[] carpeta = carpetaWeb.split("/");
 		return segmentos.get(1).equalsIgnoreCase(carpeta[0]) && segmentos.get(2).equalsIgnoreCase(carpeta[1]);
 	}
 

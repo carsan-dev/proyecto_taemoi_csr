@@ -65,6 +65,9 @@ public class ImagenServiceImpl implements ImagenService {
 	private static final String MENSAJE_FOTO_SEDE_FORMATO = "La foto de la sede tiene que ser JPG, PNG o WebP.";
 	/** Formatos de la foto de una sede, por el lector de ImageIO que reconoce el contenido (en minúsculas). */
 	private static final Set<String> FORMATOS_FOTO_SEDE = Set.of("jpeg", "jpg", "png", "webp");
+	private static final String NOMBRE_BASE_FOTO_BLOQUE = "web";
+	private static final String MENSAJE_FOTO_BLOQUE_ILEGIBLE = "No se pudo leer la foto.";
+	private static final String MENSAJE_FOTO_BLOQUE_FORMATO = "La foto tiene que ser JPG, PNG o WebP.";
 
 	@Value("${app.imagenes.directorio.linux}")
 	private String directorioImagenesLinux;
@@ -147,16 +150,29 @@ public class ImagenServiceImpl implements ImagenService {
 
 	@Override
 	public Imagen guardarFotoSede(MultipartFile archivo) throws IOException {
+		return guardarFotoPublicaDeLaWeb(archivo, RutasArchivos.CARPETA_WEB_SEDES, NOMBRE_BASE_FOTO_SEDE,
+				MENSAJE_FOTO_SEDE_ILEGIBLE, MENSAJE_FOTO_SEDE_FORMATO);
+	}
+
+	@Override
+	public Imagen guardarFotoBloqueWeb(MultipartFile archivo) throws IOException {
+		return guardarFotoPublicaDeLaWeb(archivo, RutasArchivos.CARPETA_WEB_BLOQUES, NOMBRE_BASE_FOTO_BLOQUE,
+				MENSAJE_FOTO_BLOQUE_ILEGIBLE, MENSAJE_FOTO_BLOQUE_FORMATO);
+	}
+
+	/** Foto de la web en una carpeta PÚBLICA de la escuela activa: la misma conversión para sedes y bloques. */
+	private Imagen guardarFotoPublicaDeLaWeb(MultipartFile archivo, String categoria, String nombreBase,
+			String mensajeIlegible, String mensajeFormato) throws IOException {
 		DocumentoSecurityUtils.rechazarHeic(archivo.getOriginalFilename(), archivo.getContentType());
-		String carpetaRelativa = carpetaDeEscuela(RutasArchivos.CARPETA_WEB_SEDES);
+		String carpetaRelativa = carpetaDeEscuela(categoria);
 		Path directorio = RutasArchivos.resolverDentroDe(obtenerRutaImagenesBase(), carpetaRelativa);
 
-		comprobarCabecera(archivo, FORMATOS_FOTO_SEDE, MENSAJE_FOTO_SEDE_ILEGIBLE, MENSAJE_FOTO_SEDE_FORMATO);
+		comprobarCabecera(archivo, FORMATOS_FOTO_SEDE, mensajeIlegible, mensajeFormato);
 		Files.createDirectories(directorio);
 
-		BufferedImage original = leerImagen(archivo, MENSAJE_FOTO_SEDE_ILEGIBLE);
+		BufferedImage original = leerImagen(archivo, mensajeIlegible);
 		BufferedImage reducida = redimensionarParaEvento(OrientacionExif.aplicar(original, leerOrientacion(archivo)));
-		return guardarImagenProcesadaConFallback(reducida, directorio, NOMBRE_BASE_FOTO_SEDE, carpetaRelativa,
+		return guardarImagenProcesadaConFallback(reducida, directorio, nombreBase, carpetaRelativa,
 				EVENTO_WEBP_QUALITY);
 	}
 

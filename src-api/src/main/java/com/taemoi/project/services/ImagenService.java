@@ -38,6 +38,13 @@ public interface ImagenService {
 	Imagen guardarFotoSede(MultipartFile archivo) throws IOException;
 
 	/**
+	 * Pieza W12a: foto de un bloque de la web de la escuela activa, en {@code org-<id>/web/bloques/}, una carpeta PÚBLICA y
+	 * nunca la de alumnos. Las mismas reglas y la misma conversión que {@link #guardarFotoSede}. Devuelve la imagen sin
+	 * guardar en base de datos.
+	 */
+	Imagen guardarFotoBloqueWeb(MultipartFile archivo) throws IOException;
+
+	/**
 	 * Pieza E7-7a: escribe el PNG ya validado del logo de una escuela EXPLÍCITA (no la activa: lo sube el superadmin)
 	 * en {@code org-<id>/logo/<uuid>_logo.png}. Devuelve la imagen sin guardar en base de datos; el nombre del fichero
 	 * subido no se usa.

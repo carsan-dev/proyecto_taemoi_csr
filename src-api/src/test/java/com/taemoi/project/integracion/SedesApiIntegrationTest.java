@@ -77,7 +77,7 @@ class SedesApiIntegrationTest extends MySqlIntegrationTest {
 	private static final String SIN_ACTIVAS = "La escuela se quedaría sin sedes activas.";
 	private static final Set<String> CLAVES_DTO = Set.of("id", "nombre", "direccion", "localidad", "codigoPostal",
 			"telefono", "email", "codigoClubFederacion", "aforoTurno", "activa", "slug", "lugar", "indicacionesAcceso",
-			"fotoImagenId", "foto2ImagenId");
+			"fotoImagenId", "foto2ImagenId", "fotoAlt", "foto2Alt");
 	private static final String SLUG_REPETIDO = "Ya hay una sede con esa dirección web.";
 	/** Resumen de la fila genérica del filtro HTTP ({@code AuditoriaServiceImpl#construirResumen}). */
 	private static final String RESUMEN_GENERICO = "^(CREATE|UPDATE|DELETE|READ|OPERACION) \\S+( #\\d+)? -> \\d+$";
