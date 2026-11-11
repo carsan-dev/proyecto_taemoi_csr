@@ -254,6 +254,58 @@ describe('PreinscripcionLineaComarcalComponent con el editor de la web (W12c-ter
       expect(sessionStorage.getItem(CLAVE_BORRADOR_PREINSCRIPCION)).toBeNull();
     });
 
+    it('el formulario válido (fecha, campos, normas y firma) no sale: ni POST ni borrador, y avisa de que es vista previa', async () => {
+      const setItem = spyOn(Storage.prototype, 'setItem').and.callThrough();
+      await abrir(seisSedes(true), EDITOR);
+      await ver(null, 3);
+      normas();
+      await estable();
+      // La capa inerte del editor impide escribir y firmar con el ratón: se rellena y se envía llamando al componente directamente.
+      const componente = harness.routeDebugElement!.componentInstance as {
+        datos: { set(valor: unknown): void };
+        firmado: { set(valor: boolean): void };
+        enviarDatos(evento: Event): void;
+      };
+      componente.datos.set({
+        nombre: 'Lucía',
+        apellidos: 'Pérez Gil',
+        dia: '14',
+        mes: '3',
+        anio: '2021',
+        dni: '12345678Z',
+        direccion: 'Calle Real 1',
+        discapacidad: 'no',
+        tutorNombre: 'Lucía Pérez Gil',
+        tutorDni: '12345678Z',
+        telefono: '600000000',
+        telefono2: '',
+        email: 'lucia@ejemplo.es',
+        observaciones: '',
+        normas: true,
+        fotos: false,
+        firmante: 'Lucía Pérez Gil',
+      });
+      componente.firmado.set(true);
+      await estable();
+      componente.enviarDatos(new Event('submit'));
+      await estable();
+      http.expectNone((r) => r.method !== 'GET');
+      expect(texto('#envio-error')).toBe('Es una vista previa: la preinscripción no se envía.');
+      expect(escrituras(setItem)).toBe(0);
+    });
+
+    it('la sede del ejemplo no pisa la sede recordada del gestor, ni al verla ni al pasar por el paso 1', async () => {
+      localStorage.setItem(CLAVE_SEDE_RECORDADA, 'casariche');
+      await abrir(seisSedes(true), EDITOR);
+      await ver(null, 2);
+      expect(texto('.contexto > span')).toBe('En Herrera · Pabellón municipal');
+      expect(localStorage.getItem(CLAVE_SEDE_RECORDADA)).toBe('casariche');
+      await ver(null, 1);
+      raiz().querySelector<HTMLButtonElement>('form button[type="submit"]')?.click();
+      await estable();
+      expect(localStorage.getItem(CLAVE_SEDE_RECORDADA)).toBe('casariche');
+    });
+
     it('sin paso ni caso (null), vuelve a mandar la dirección', async () => {
       await abrir(seisSedes(true), EDITOR);
       await ver(null, 2);

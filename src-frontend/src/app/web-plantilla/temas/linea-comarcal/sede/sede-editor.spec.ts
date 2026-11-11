@@ -111,4 +111,11 @@ describe('SedeLineaComarcalComponent con el editor de la web (W12c-ter)', () => 
     expect(texto('.proxima .proxima-rotulo')).toBe('Próxima clase');
     expect(salidas()).toBe(antes);
   });
+
+  it('con el editor: ver la sede no pisa la sede recordada del gestor en el navegador', async () => {
+    localStorage.setItem(CLAVE_SEDE_RECORDADA, 'casariche');
+    await abrir(sitioConSedes(6, { vistaPrevia: true }), '/sedes/estepa?vista-previa=linea-comarcal&editor=1');
+    expect(opciones).withContext('la capa de edición no se activó').not.toBeNull();
+    expect(localStorage.getItem(CLAVE_SEDE_RECORDADA)).toBe('casariche');
+  });
 });

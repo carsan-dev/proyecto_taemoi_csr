@@ -71,7 +71,8 @@ export class SedeLineaComarcalComponent {
   constructor() {
     effect(() => {
       const sede = this.sede();
-      if (sede) {
+      // En el editor de la web no se toca el navegador.
+      if (sede && !this.editor.enEditor()) {
         untracked(() => this.recordar(claveSede(sede)));
       }
     });

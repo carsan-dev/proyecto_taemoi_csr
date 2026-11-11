@@ -303,10 +303,10 @@ export class PreinscripcionLineaComarcalComponent {
         this.sinDias.set(false);
       });
     });
-    // La sede vista se recuerda (como la portada y la página de sede).
+    // La sede vista se recuerda (como la portada y la página de sede); en el editor de la web no se toca el navegador.
     effect(() => {
       const sede = this.sede();
-      if (sede) {
+      if (sede && !this.editor.enEditor()) {
         untracked(() => guardarValor(this.almacen('localStorage'), CLAVE_SEDE_RECORDADA, claveSede(sede)));
       }
     });
@@ -451,7 +451,9 @@ export class PreinscripcionLineaComarcalComponent {
       this.mostrarErrores(opciones.length ? [{ id: `s-${opciones[0].clave}`, campo: 'sede', msg: MENSAJES.elegirSede }] : []);
       return;
     }
-    guardarValor(this.almacen('localStorage'), CLAVE_SEDE_RECORDADA, marcada.clave);
+    if (!this.editor.enEditor()) {
+      guardarValor(this.almacen('localStorage'), CLAVE_SEDE_RECORDADA, marcada.clave);
+    }
     this.ir(2, { sede: marcada.parametro, grupo: null, dias: null });
   }
 
