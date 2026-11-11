@@ -90,6 +90,10 @@ describe('HerramientaPanelComponent (8b-D1, herramientas de alumnos en el panel 
   function hoy(): { comp: HerramientasAlumnosComponent; informes: InformePdfService } {
     const informes = TestBed.inject(InformePdfService);
     const comp = TestBed.runInInjectionContext(() => new HerramientasAlumnosComponent());
+    // El componente de hoy avisa con un toast real de SweetAlert2 (3 s de temporizador) que sobrevive al spec y rompe
+    // a los que comprueban después que no hay aviso. Aquí solo se anotan sus peticiones: los toasts se silencian.
+    spyOn(comp as unknown as { avisarExito(texto: string): void }, 'avisarExito');
+    spyOn(comp as unknown as { avisarError(texto: string): void }, 'avisarError');
     return { comp, informes };
   }
 
