@@ -159,6 +159,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       { etiqueta: 'Registro de acciones', ruta: '/auditoriaSistema', icono: 'bi-journal-text', condicion: 'propietario' },
       { etiqueta: 'Ver la web', ruta: '/', icono: 'bi-globe2', grupo: 'Web', verWeb: true },
       { etiqueta: 'Tema', ruta: '/web-tema', icono: 'bi-palette2', condicion: 'webPlantilla' },
+      { etiqueta: 'Contenido', ruta: '/web-contenido', icono: 'bi-pencil-square', condicion: 'webPlantilla' },
       {
         etiqueta: 'Errores de plataforma',
         ruta: '/plataformaErrores',
@@ -180,6 +181,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       '/configuracion-sistema',
       '/auditoriaSistema',
       '/web-tema',
+      '/web-contenido',
       '/plataformaErrores',
       '/plataformaLogos',
       '/plataformaNuevaEscuela',

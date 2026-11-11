@@ -1,5 +1,5 @@
 <main class="pn web-contenido" pnAcento aria-labelledby="web-contenido-titulo">
-  <div class="web-contenido__pagina">
+  <div class="web-contenido__pagina" [class.con-barra]="barraVisible()">
     <nav class="migas" aria-label="Ruta"><span>Web</span><span aria-hidden="true">/</span></nav>
     <header class="cabecera">
       <div class="cabecera__texto">
@@ -28,6 +28,27 @@
       }
     </header>
 
+    @if (estado() === 'listo') {
+    @if (conflicto()) {
+    <div class="conflicto" role="alert" tabindex="-1">
+      <h2><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>{{ textosGuardar.conflictoTitulo }}</h2>
+      <p>{{ textoConflicto(nCambios()) }}</p>
+    </div>
+    } @else if (resumen().length) {
+    <div class="resumen" role="alert" tabindex="-1">
+      <h2><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>{{ tituloResumen(resumen().length) }}</h2>
+      <p>{{ textosGuardar.resumenTexto }}</p>
+      <ul>
+        @for (e of resumen(); track e.clave) {
+        <li>@if (e.enlace) {<a href="#" [attr.data-ir]="e.clave" (click)="irAlDato($event, e.clave)">{{ e.texto }}</a>} @else {{{ e.texto }}}</li>
+        }
+      </ul>
+    </div>
+    }
+    }
+
     @if (estado() === 'cargando') {
     <pn-esqueleto [etiqueta]="textos.cargando">
       <div class="carga">
@@ -50,9 +71,9 @@
         <div class="control">
           <label class="control__etiqueta" for="web-contenido-pagina">{{ textos.etiquetaPagina }}</label>
           <select class="selector" id="web-contenido-pagina" (change)="cambiarPagina($event)">
-            @for (p of paginas; track p.id) {
+            @for (p of opcionesPagina(); track p.id) {
             <option [value]="p.id" [selected]="p.id === pagina()"
-              [disabled]="(p.id === 'sede' && !paginaDisponible().sede) || (p.id === 'evento' && !paginaDisponible().evento)">{{ p.opcion }}</option>
+              [disabled]="(p.id === 'sede' && !paginaDisponible().sede) || (p.id === 'evento' && !paginaDisponible().evento)">{{ p.texto }}</option>
             }
           </select>
         </div>
@@ -155,6 +176,32 @@
         }
       </div>
     </section>
+    }
+    @if (barraVisible()) {
+    <div class="barra" role="region" aria-label="Cambios sin guardar">
+      @if (conflicto()) {
+      <p class="barra__texto">
+        <svg class="barra__peligro" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5h.01"></path></svg>
+        <span><strong>{{ barraConflicto(nCambios()) }}</strong> Otra persona cambió la web antes.</span>
+      </p>
+      <div class="barra__acciones">
+        <button type="button" class="primario" (click)="recargar()">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>{{ textosGuardar.recargar }}
+        </button>
+      </div>
+      } @else {
+      <p class="barra__texto">
+        <span class="punto" aria-hidden="true"></span>
+        <span><strong>{{ textoCambios(nCambios()) }}</strong>{{ publicada() ? textosGuardar.publicaAlGuardar : '' }}</span>
+      </p>
+      <div class="barra__acciones">
+        <button type="button" class="secundario" [attr.aria-disabled]="guardando() ? 'true' : null" (click)="descartar()">{{ textosGuardar.descartar }}</button>
+        <button pnOcupado type="button" class="primario" [ocupado]="guardando()" [textoOcupado]="textosGuardar.guardando" (click)="guardar()">{{ textosGuardar.guardar }}</button>
+      </div>
+      }
+    </div>
     }
     <!-- Fuera de los estados: tiene que existir antes de que cambie su texto para que se anuncie («Contenido cargado.»). -->
     <p class="oculto" role="status">{{ anuncio() }}</p>

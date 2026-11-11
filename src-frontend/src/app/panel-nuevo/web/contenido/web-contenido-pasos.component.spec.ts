@@ -54,7 +54,8 @@ describe('WebContenidoComponent: selector «Paso» y casos de Preinscripción (W
     fixture.detectChanges();
     http.expectOne(URL).flush(ESTADO);
     http.expectOne(`${URL}/contenido`).flush(CONTENIDO);
-    http.expectOne((r) => r.url === URL_PUBLICA).flush({ sedes: [{ nombre: 'Herrera', slug: 'herrera' }] });
+    // Dos sedes: con una sola, el paso «Pueblo» no sale (web-contenido-guardar.component.spec.ts).
+    http.expectOne((r) => r.url === URL_PUBLICA).flush({ sedes: [{ nombre: 'Herrera', slug: 'herrera' }, { nombre: 'Estepa', slug: 'estepa' }] });
     http.expectOne((r) => r.url === `${URL_PUBLICA}/eventos`).flush({ proximos: [], anteriores: [] });
     fixture.detectChanges();
   }

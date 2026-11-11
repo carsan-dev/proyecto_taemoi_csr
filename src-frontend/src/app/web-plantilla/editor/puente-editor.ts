@@ -18,9 +18,12 @@ import type { BloqueWeb } from '../datos/modelos';
  * W12c-ter: el selector «Paso» de la preinscripción manda al iframe el paso que se ve (`paso`, un entero de la lista
  * cerrada 1-4); la capa enseña ese paso con datos de ejemplo en memoria, sin escribir en el navegador ni enviar nada.
  *
- * Previsto para W12d (no implementado aquí): edición de textos (`texto` del editor al panel) y el guardado, que se
- * queda en el panel. Cada tipo nuevo se añade a su unión y a su comprobación.
+ * W12d: los textos se cambian en el sitio. La capa manda cada cambio (`texto`: clave del catálogo y texto) y los textos
+ * por defecto que pinta el tema para las claves que no están guardadas (`defectos`); el panel guarda el borrador, valida
+ * y guarda en la API. El panel manda los errores que hay que señalar en la página (`errores`) y pide llevar el foco a un
+ * texto desde el resumen de errores (`ir-texto`). Cada tipo nuevo se añade a su unión y a su comprobación.
  */
+import { esTextoEditable } from './textos-editor';
 
 /** Marca de los mensajes de este puente: los de otras librerías o extensiones no la llevan. */
 export const CANAL_EDITOR_WEB = 'taemoi-editor-web';
@@ -88,7 +91,21 @@ export interface MensajePaso {
   paso: PasoPreinscripcion;
 }
 
-export type MensajeDelPanel = MensajeBorrador | MensajeCaso | MensajePaso;
+/** W12d: los errores de validación por clave (vacío: ninguno). La capa los señala en el primer sitio de cada texto. */
+export interface MensajeErrores {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'errores';
+  errores: Record<string, string>;
+}
+
+/** W12d: llevar el foco a un texto (enlace del resumen de errores). `portada.foto`: a la portada. */
+export interface MensajeIrTexto {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'ir-texto';
+  clave: string;
+}
+
+export type MensajeDelPanel = MensajeBorrador | MensajeCaso | MensajePaso | MensajeErrores | MensajeIrTexto;
 
 // ------------------------------------------------------------------ del iframe al panel
 
@@ -119,7 +136,31 @@ export interface MensajeMostrar {
   arriba: number;
 }
 
-export type MensajeDelEditor = MensajeListo | MensajeAlto | MensajeIr | MensajeMostrar;
+/** W12d: un texto cambiado en el sitio. */
+export interface MensajeTexto {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'texto';
+  clave: string;
+  texto: string;
+}
+
+/** W12d: lo que pinta el tema en las claves sin guardar cuyo texto por defecto depende de los datos (titular, frase…). */
+export interface MensajeDefectos {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'defectos';
+  textos: Record<string, string>;
+}
+
+export type MensajeDelEditor = MensajeListo | MensajeAlto | MensajeIr | MensajeMostrar | MensajeTexto | MensajeDefectos;
+
+/** Más largo que el mayor de los textos editables (1200): lo que pase de aquí no es de la capa. */
+const LARGO_MAXIMO = 5000;
+
+const esTextoCorto = (valor: unknown): valor is string => typeof valor === 'string' && valor.length <= LARGO_MAXIMO;
+
+function esMapaDeTextos(valor: unknown, clave: (k: string) => boolean): boolean {
+  return esObjeto(valor) && Object.entries(valor).every(([k, v]) => clave(k) && esTextoCorto(v));
+}
 
 // ------------------------------------------------------------------ comprobaciones
 
@@ -177,6 +218,10 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
       return valor['caso'] === null || esCasoVista(valor['caso']);
     case 'paso':
       return esPasoPreinscripcion(valor['paso']);
+    case 'errores':
+      return esMapaDeTextos(valor['errores'], (k) => k.length <= 120);
+    case 'ir-texto':
+      return typeof valor['clave'] === 'string' && (valor['clave'] === 'portada.foto' || esTextoEditable(valor['clave']));
     default:
       return false;
   }
@@ -196,6 +241,10 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
       return esDestinoPanel(valor['destino']);
     case 'mostrar':
       return typeof valor['arriba'] === 'number' && Number.isFinite(valor['arriba']) && valor['arriba'] >= 0;
+    case 'texto':
+      return typeof valor['clave'] === 'string' && esTextoEditable(valor['clave']) && esTextoCorto(valor['texto']);
+    case 'defectos':
+      return esMapaDeTextos(valor['textos'], esTextoEditable);
     default:
       return false;
   }

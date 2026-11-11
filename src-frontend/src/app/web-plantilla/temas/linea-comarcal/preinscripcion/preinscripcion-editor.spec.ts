@@ -200,11 +200,11 @@ describe('PreinscripcionLineaComarcalComponent con el editor de la web (W12c-ter
       expect(texto('.banda-ref strong')).toBe('TSS-2026-0142');
       expect(texto('.banda-estado')).toBe('Tu preinscripción ya cuenta en las plazas de Peques en Herrera.');
       expect(raiz().querySelector('.progreso')).toBeNull();
-      expect(raiz().textContent).toContain('Si falta algo, te llaman al 955000001.');
-      // d534: sin las fichas «Alumno» y «Contacto» (la web real las conserva: preinscripcion.component.spec.ts l.510).
-      expect(textos('.ficha-fila dt')).not.toContain('Alumno');
-      expect(textos('.ficha-fila dt')).not.toContain('Contacto');
-      expect(textos('.ficha-fila dt')).toContain('Grupo');
+      // Decisión del propietario (11/11): teléfono del solicitante de ejemplo, no el de la sede, y la ficha entera.
+      expect(raiz().textContent).toContain('Si falta algo, te llaman al 600 000 000.');
+      expect(raiz().textContent).not.toContain('955000001');
+      expect(textos('.ficha-fila dt')).toEqual(jasmine.arrayContaining(['Grupo', 'Alumno', 'Responsable', 'Contacto']));
+      expect(textos('.ficha-fila dd')).toEqual(jasmine.arrayContaining(['Lucía García Ruiz', 'Ana Ruiz Pérez', 'ana@ejemplo.es']));
 
       await ver(null, 2);
       expect(texto('h1.pregunta-titulo')).toBe('¿Qué grupo?');
@@ -239,9 +239,8 @@ describe('PreinscripcionLineaComarcalComponent con el editor de la web (W12c-ter
       await ver('fin-espera', 4);
       expect(texto('#fin-titulo')).toBe('Estás en la lista de espera');
       expect(texto('.banda-estado')).toContain('3');
-      expect(textos('.ficha-fila dt')).not.toContain('Alumno');
-      expect(textos('.ficha-fila dt')).not.toContain('Contacto');
-      expect(textos('.ficha-fila dt')).toContain('Grupo');
+      // La ficha entera, con el solicitante de ejemplo (decisión del propietario, 11/11).
+      expect(textos('.ficha-fila dt')).toEqual(jasmine.arrayContaining(['Grupo', 'Alumno', 'Responsable', 'Contacto']));
     });
 
     it('lo que se escriba o se envíe no se guarda ni sale: ni sessionStorage ni POST', async () => {

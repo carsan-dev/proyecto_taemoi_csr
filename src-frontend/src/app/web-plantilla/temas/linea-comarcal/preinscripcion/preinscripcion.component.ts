@@ -401,14 +401,9 @@ export class PreinscripcionLineaComarcalComponent {
     const salida = this.salida();
     if (ejemplo.respuesta && paso === 3 && sede && salida) {
       const dias = diasElegidos(salida, diasDeParametro(ejemplo.consulta.dias));
+      // Decisión del propietario (11/11): la ficha sale entera, con el solicitante de ejemplo de la capa.
       const vista = vistaFin(ejemplo.respuesta, { sede, salida, dias }, this.datos(), this.menor());
-      // d534: el boceto no dibuja las fichas «Alumno» y «Contacto» en el editor (saldrían vacías); en la web real siguen.
-      const sinDatosPersonales: string[] = [this.t.fichaAlumno, this.t.fichaContacto];
-      this.fin.set({
-        ...vista,
-        ficha: vista.ficha.filter((fila) => !sinDatosPersonales.includes(fila.rotulo)),
-        documento: enlaceDocumento(ejemplo.respuesta),
-      });
+      this.fin.set({ ...vista, documento: enlaceDocumento(ejemplo.respuesta) });
       this.paso.set(4);
     }
   }
