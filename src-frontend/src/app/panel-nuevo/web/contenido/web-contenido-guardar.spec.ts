@@ -1,6 +1,7 @@
 import {
   clavesCambiadas,
   cuerpoGuardar,
+  entradaResumen,
   erroresContenido,
   nombreError,
   ponerTexto,
@@ -8,6 +9,7 @@ import {
   tituloResumen,
   tituloSalir,
 } from './web-contenido-guardar';
+import { clavesPuntos, defTexto, defectoDeLaPagina } from '../../../web-plantilla/editor/textos-editor';
 import { BloqueContenido } from './web-contenido-vista';
 
 const fila = (clave: string, texto: string | null, extra: Partial<BloqueContenido> = {}): BloqueContenido => ({
@@ -127,6 +129,12 @@ describe('web-contenido-guardar (W12d)', () => {
         oculto: false,
       });
     });
+
+    it('sin fila de titular y sin texto del tema recibido: no se inventa titular (la API responde «Escribe el titular.»)', () => {
+      const b = GUARDADO.filter((f) => f.clave !== 'portada.titular');
+      expect(erroresContenido(b, {})).toEqual({});
+      expect(cuerpoGuardar(1, b, {}).bloques.map((x) => x.clave)).not.toContain('portada.titular');
+    });
   });
 
   it('nombres del resumen (boceto `nombreError`)', () => {
@@ -138,6 +146,46 @@ describe('web-contenido-guardar (W12d)', () => {
       'Texto con foto «Qué traer»: título',
     );
     expect(nombreError('profesor.1.permiso', GUARDADO)).toBeNull();
+  });
+
+  it('resumen: en la foto de portada, el mensaje de la API si lo hay', () => {
+    expect(entradaResumen('portada.foto', 'Añade la foto de portada.', GUARDADO, false)).toEqual({
+      clave: 'portada.foto',
+      texto: 'Portada: falta la foto',
+      enlace: true,
+    });
+    expect(entradaResumen('portada.foto', 'Describe la foto.', GUARDADO, true)).toEqual({
+      clave: 'portada.foto',
+      texto: 'Describe la foto.',
+      enlace: true,
+    });
+    expect(entradaResumen('menu.horarios', 'Máximo 20 caracteres.', GUARDADO, true).texto).toBe('Cabecera: enlace del menú «Horarios»');
+    expect(entradaResumen('profesor.1.permiso', 'Marca la casilla.', GUARDADO, true)).toEqual({
+      clave: 'profesor.1.permiso',
+      texto: 'Marca la casilla.',
+      enlace: false,
+    });
+  });
+
+  it('puntos de tarifas: del 1 al 9, como la API (`ClavesWeb`)', () => {
+    expect(defTexto('tarifas.punto9')).not.toBeNull();
+    expect(defTexto('tarifas.punto10')).toBeNull();
+    expect(defTexto('tarifas.punto20')).toBeNull();
+    expect(clavesPuntos(() => true).at(-1)).toBe('tarifas.punto9');
+  });
+
+  it('textos por defecto leídos de la página: solo los que dependen de los datos, y nunca el «Escribe aquí…»', () => {
+    expect(defectoDeLaPagina('portada.titular', 'Taekwondo en Herrera')).toBeTrue();
+    expect(defectoDeLaPagina('portada.frase', 'Grupos por edad.')).toBeTrue();
+    expect(defectoDeLaPagina('portada.boton_horarios', 'Ver horarios')).toBeTrue();
+    expect(defectoDeLaPagina('horarios.apoyo', 'Toca tu pueblo')).toBeTrue();
+    expect(defectoDeLaPagina('tarifas.igual', 'Para todos los grupos')).toBeTrue();
+    expect(defectoDeLaPagina('presentacion.texto', 'Uno.')).toBeTrue();
+    expect(defectoDeLaPagina('portada.frase', 'Escribe aquí una frase: para quién son las clases y qué hacer')).toBeFalse();
+    expect(defectoDeLaPagina('portada.titular', '')).toBeFalse();
+    expect(defectoDeLaPagina('texto_foto.2.rotulo', '02')).toBeFalse();
+    expect(defectoDeLaPagina('texto_foto.2.titulo', 'Escribe aquí el título')).toBeFalse();
+    expect(defectoDeLaPagina('menu.horarios', 'Horarios')).toBeFalse();
   });
 
   it('textos del boceto', () => {

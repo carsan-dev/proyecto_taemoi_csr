@@ -123,6 +123,23 @@ export function nombreError(clave: string, borrador: readonly BloqueContenido[])
   return `${nombreBloque(clave, def.parte, borrador)}: ${def.nombre.toLowerCase()}`;
 }
 
+/**
+ * Una línea del resumen «Faltan N datos»: el nombre del dato (con enlace al sitio) o, si no es de esta pantalla, el
+ * mensaje de la API. En la foto de portada, si el error viene de la API, su mensaje («Describe la foto.»).
+ */
+export function entradaResumen(
+  clave: string,
+  mensaje: string,
+  borrador: readonly BloqueContenido[],
+  delServidor: boolean,
+): { clave: string; texto: string; enlace: boolean } {
+  const nombre = nombreError(clave, borrador);
+  if (clave === 'portada.foto' && delServidor && mensaje) {
+    return { clave, texto: mensaje, enlace: true };
+  }
+  return { clave, texto: nombre ?? mensaje, enlace: nombre !== null };
+}
+
 function nombreBloque(clave: string, parte: string, borrador: readonly BloqueContenido[]): string {
   const bloque = bloqueTextoFoto(clave);
   if (!bloque) {

@@ -28,6 +28,7 @@ import {
   esMensajeDelEditor,
   escucharPuente,
 } from '../../../web-plantilla/editor/puente-editor';
+import { defTexto, defectoDeLaPagina } from '../../../web-plantilla/editor/textos-editor';
 import { AcentoEscuelaDirective } from '../../acento-escuela.directive';
 import { AvisosService } from '../../avisos/avisos.service';
 import { BloqueErrorComponent } from '../../carga/bloque-error.component';
@@ -73,14 +74,15 @@ import {
   barraConflicto,
   clavesCambiadas,
   cuerpoGuardar,
+  entradaResumen,
   erroresContenido,
-  nombreError,
   plural,
   ponerTexto,
   textoCambios,
   textoConflicto,
   tituloResumen,
   tituloSalir,
+  valorTexto,
 } from './web-contenido-guardar';
 import { ListasVista, WebContenidoService } from './web-contenido.service';
 
@@ -167,10 +169,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   );
   /** El resumen «Faltan N datos para guardar»: cada dato con su nombre (o el mensaje de la API) y si lleva al sitio. */
   readonly resumen = computed(() =>
-    Object.entries(this.erroresVisibles()).map(([clave, mensaje]) => {
-      const nombre = nombreError(clave, this.borrador());
-      return { clave, texto: nombre ?? mensaje, enlace: nombre !== null };
-    }),
+    Object.entries(this.erroresVisibles()).map(([clave, mensaje]) =>
+      entradaResumen(clave, mensaje, this.borrador(), clave in this.erroresServidor()),
+    ),
   );
   readonly barraVisible = computed(() => this.estado() === 'listo' && (this.nCambios() > 0 || this.conflicto()));
   readonly vista = signal<AnchoVista>(vistaInicial(this.ventana));
@@ -283,6 +284,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private mostrarDato = false;
   /** El dato del resumen al que ir cuando la capa de la página nueva esté lista. */
   private irPendiente: string | null = null;
+  /** El aviso de error con «Reintentar» que sigue abierto (se cierra al guardar bien o al descartar). */
+  private avisoError: number | null = null;
   private observador: ResizeObserver | null = null;
   private temporizadorEsqueleto: ReturnType<typeof setTimeout> | null = null;
   private temporizadorLimite: ReturnType<typeof setTimeout> | null = null;
@@ -544,9 +547,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       case 'texto':
         this.alCambiarTexto(mensaje.clave, mensaje.texto);
         break;
-      case 'defectos':
-        this.defectos.update((d) => ({ ...mensaje.textos, ...d }));
+      case 'defectos': {
+        // Solo los que dependen de los datos y nunca el «Escribe aquí…» de un vacío (como la capa).
+        const validos = Object.fromEntries(Object.entries(mensaje.textos).filter(([clave, texto]) => defectoDeLaPagina(clave, texto)));
+        this.defectos.update((d) => ({ ...validos, ...d }));
         break;
+      }
       case 'alto':
         this.alto.set(Math.max(1, Math.ceil(mensaje.alto)));
         break;
@@ -566,7 +572,10 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   // ------------------------------------------------------------------ textos y guardado (W12d)
 
   private alCambiarTexto(clave: string, texto: string): void {
-    this.borrador.update((filas) => ponerTexto(filas, clave, texto));
+    // Defensa: el panel no comprueba el máximo al guardar (el boceto no tiene ese error); la capa ya no deja pasarse.
+    const max = defTexto(clave)?.max;
+    const recortado = max !== undefined && texto.length > max ? texto.slice(0, max) : texto;
+    this.borrador.update((filas) => ponerTexto(filas, clave, recortado));
     if (clave in this.erroresServidor()) {
       this.erroresServidor.update((errores) => {
         const resto = { ...errores };
@@ -591,10 +600,21 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       return;
     }
     this.guardando.set(true);
-    this.servicio.guardar(cuerpoGuardar(this.version(), this.borrador(), this.defectos())).subscribe({
+    const enviado = this.borrador();
+    this.servicio.guardar(cuerpoGuardar(this.version(), enviado, this.defectos())).subscribe({
       next: (contenido) => {
         this.guardando.set(false);
+        this.cerrarAvisoError();
+        // Lo tecleado durante «Guardando…» se conserva (boceto: `s.guardado = copia(s.datos)`): sobre lo guardado se
+        // vuelven a poner los textos que cambiaron desde que salió el PUT.
+        const actual = this.borrador();
+        const tecleado = clavesCambiadas(enviado, actual, this.defectos()).map(
+          (clave) => [clave, valorTexto(actual, clave, this.defectos()) ?? ''] as const,
+        );
         this.ponerContenido(contenido.version, contenido.bloques);
+        if (tecleado.length) {
+          this.borrador.update((filas) => tecleado.reduce((f, [clave, texto]) => ponerTexto(f, clave, texto), filas));
+        }
         this.enviarBorrador();
         this.enfocarTitulo();
         this.avisos.exito(this.publicada() ? this.textosGuardar.guardadoPublicada : this.textosGuardar.guardadoNueva);
@@ -611,7 +631,14 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
           this.mostrarErrores.set(true);
           this.enfocarDespues('.resumen');
         } else {
-          this.avisos.error(this.textosGuardar.errorGuardar, { texto: this.textosGuardar.reintentar, alPulsar: () => this.guardar() });
+          this.cerrarAvisoError();
+          this.avisoError = this.avisos.error(this.textosGuardar.errorGuardar, {
+            texto: this.textosGuardar.reintentar,
+            alPulsar: () => {
+              this.avisoError = null;
+              this.guardar();
+            },
+          });
         }
       },
     });
@@ -622,11 +649,19 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       return;
     }
     this.borrador.set(this.guardado());
+    this.cerrarAvisoError();
     this.mostrarErrores.set(false);
     this.erroresServidor.set({});
     this.enviarBorrador();
     this.enfocarTitulo();
     this.anuncio.set(this.textosGuardar.descartados);
+  }
+
+  private cerrarAvisoError(): void {
+    if (this.avisoError !== null) {
+      this.avisos.cerrar(this.avisoError);
+      this.avisoError = null;
+    }
   }
 
   /** Conflicto (409): se vuelve a leer todo; lo que no se guardó se pierde (lo decía el aviso del conflicto). */

@@ -1,6 +1,6 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
 import { type BloqueBorrador, CANAL_EDITOR_WEB, type MensajeDelEditor } from './puente-editor';
-import { CAMPOS_TEXTO_MARCO, CampoTexto, bloqueTextoFoto, camposTextoInicio, defTexto, defectoFijo } from './textos-editor';
+import { CAMPOS_TEXTO_MARCO, CampoTexto, bloqueTextoFoto, camposTextoInicio, defTexto, defectoDeLaPagina, defectoFijo } from './textos-editor';
 
 /**
  * Textos en el sitio (W12d; boceto `boceto-panel-contenido-web-comarcal.html`: `texto()`, `entrarEdicion`, `salirEdicion`,
@@ -171,10 +171,13 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
           return;
         }
         marcar(el, clave, vistas.has(clave));
+        // Solo las claves cuyo defecto depende de los datos (nunca un texto con foto ni el «Escribe aquí…» de un vacío).
         if (!vistas.has(clave) && !fila(clave) && defectoFijo(clave) === null && !defectos.has(clave)) {
           const texto = textoDeLaPagina(el);
-          defectos.set(clave, texto);
-          nuevos[clave] = texto;
+          if (defectoDeLaPagina(clave, texto)) {
+            defectos.set(clave, texto);
+            nuevos[clave] = texto;
+          }
         }
         vistas.add(clave);
       });

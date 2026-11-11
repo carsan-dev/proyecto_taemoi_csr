@@ -25,6 +25,10 @@ const WEB = `
       <li class="fs-parada"><a class="enlace-flecha" href="/sedes/herrera">Ver la sede<span class="oculto">: Herrera</span></a></li>
       <li class="fs-parada"><a class="enlace-flecha" href="/sedes/estepa">Ver la sede<span class="oculto">: Estepa</span></a></li>
     </ol></div></section>
+    <section class="seccion" id="texto-foto-3"><div class="envoltura tf"><div class="tf-texto">
+      <div class="cabeza-seccion"><p class="rotulo">04</p><h2 class="titulo-seccion" id="texto-foto-3-titulo">Nuestra sala</h2></div>
+      <div class="cuerpo"><p>Tatami nuevo.</p></div>
+    </div></div></section>
     <section class="tarifas" id="tarifas"><div class="envoltura tarifas-rejilla">
       <h2 class="rotulo" id="tarifas-titulo">07 · Tarifas</h2>
       <div class="tarifa-lado"><ul class="tarifa-incluye"><li>Mensualidad por alumno</li><li>Licencia aparte</li><li>Punto tres</li></ul></div>
@@ -106,6 +110,26 @@ describe('textos en el sitio (W12d, capa de edición)', () => {
       'portada.frase': 'Grupos por edad desde los 4 años.',
       'presentacion.texto': 'Uno.\n\nDos.',
     });
+  });
+
+  it('texto con foto: nunca toma de la página su texto por defecto (el rótulo sin fila pinta solo el número)', () => {
+    const textos = (mensajes('defectos') as unknown as { textos: Record<string, string> }[]).map((m) => m.textos);
+    expect(textos.flatMap((t) => Object.keys(t)).filter((k) => k.startsWith('texto_foto.'))).toEqual([]);
+    tecla(q('#texto-foto-3 .rotulo'), 'Enter');
+    expect(campo()!.textContent).toBe('');
+    escribir('Nuestra sala');
+    expect(mensajes('texto').at(-1)).toEqual(jasmine.objectContaining({ clave: 'texto_foto.3.rotulo', texto: 'Nuestra sala' }));
+  });
+
+  it('el «Escribe aquí…» de un vacío no entra nunca como texto por defecto', () => {
+    desactivar();
+    doc.body.innerHTML = WEB.replace('Grupos por edad desde los 4 años.', 'Escribe aquí una frase: para quién son las clases y qué hacer');
+    enviados.calls.reset();
+    desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: (b) => borradores.push(b) });
+    const textos = (mensajes('defectos') as unknown as { textos: Record<string, string> }[]).map((m) => m.textos);
+    expect(textos.flatMap((t) => Object.keys(t))).not.toContain('portada.frase');
+    tecla(q('.portada .entrada'), 'Enter');
+    expect(campo()!.textContent).toBe('');
   });
 
   it('Intro entra a editar en una copia con el texto (sin el número de la sección); Escape sale y devuelve el foco', () => {

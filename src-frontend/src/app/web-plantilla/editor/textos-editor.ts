@@ -81,7 +81,8 @@ export const NOMBRE_PARTE: Readonly<Record<string, string>> = {
 };
 
 const TEXTO_FOTO = /^texto_foto\.([1-9][0-9]?)\.(rotulo|titulo|texto)$/;
-const PUNTO = /^tarifas\.punto([3-9]|1[0-9]|20)$/;
+/** Los puntos de la tarifa más allá del 2: hasta el 9, como la API (`ClavesWeb`, `tarifas.punto<n>` de 1 a 9). */
+const PUNTO = /^tarifas\.punto[3-9]$/;
 
 /** Los campos de los bloques (`CAMPOS` y `campoDef` del boceto). */
 function defCampo(clave: string): DefTexto | null {
@@ -172,6 +173,26 @@ export function defectoFijo(clave: string): string | null {
   return Object.prototype.hasOwnProperty.call(DEFECTO_FIJO, clave) ? DEFECTO_FIJO[clave] : null;
 }
 
+/**
+ * Las claves cuyo texto por defecto depende de los datos de la escuela y se lee de la página (sin fila). Solo estas: en
+ * las demás lo que enseña el tema no es un texto por defecto (el número de la sección en el rótulo de un texto con foto,
+ * el «Escribe aquí…» de un vacío).
+ */
+const CLAVES_DEFECTO_DE_LA_PAGINA: ReadonlySet<string> = new Set([
+  'portada.titular',
+  'portada.frase',
+  'portada.boton_horarios',
+  'horarios.apoyo',
+  'tarifas.igual',
+  'presentacion.texto',
+]);
+
+/** Si un texto leído de la página vale como texto por defecto de la clave: de la lista cerrada y nunca vacío ni su «Escribe aquí…». */
+export function defectoDeLaPagina(clave: string, texto: string): boolean {
+  const def = defTexto(clave);
+  return CLAVES_DEFECTO_DE_LA_PAGINA.has(clave) && !!def && !!texto.trim() && texto.trim() !== def.vacio;
+}
+
 /** El bloque de un texto con foto (`texto_foto.3`) o null. */
 export function bloqueTextoFoto(clave: string): string | null {
   const tf = TEXTO_FOTO.exec(clave);
@@ -218,7 +239,7 @@ const deSeccionTextoFoto = (campo: string) => (el: Element) => {
 /** Los puntos de la tarifa de Inicio, en el orden del tema: punto1, punto2 y los demás que tengan texto. */
 export function clavesPuntos(conTexto: (clave: string) => boolean): string[] {
   const claves = ['tarifas.punto1', 'tarifas.punto2'];
-  for (let n = 3; n <= 20; n++) {
+  for (let n = 3; n <= 9; n++) {
     if (conTexto(`tarifas.punto${n}`)) {
       claves.push(`tarifas.punto${n}`);
     }

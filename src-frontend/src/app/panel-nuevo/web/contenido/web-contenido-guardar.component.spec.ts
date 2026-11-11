@@ -1,12 +1,15 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 
 import { environment } from '../../../../environments/environment';
 import { CANAL_EDITOR_WEB } from '../../../web-plantilla/editor/puente-editor';
 import { AvisosService } from '../../avisos/avisos.service';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
+import { salirSinGuardarGuard } from '../../productos-alumno/salir-sin-guardar.guard';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
 import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR } from './web-contenido-vista';
 import { WebContenidoComponent } from './web-contenido.component';
@@ -46,6 +49,7 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
   let exito: jasmine.Spy;
   let error: jasmine.Spy;
   let info: jasmine.Spy;
+  let cerrar: jasmine.Spy;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -59,6 +63,7 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
     exito = spyOn(avisos, 'exito').and.returnValue(1);
     error = spyOn(avisos, 'error').and.returnValue(2);
     info = spyOn(avisos, 'info').and.returnValue(3);
+    cerrar = spyOn(avisos, 'cerrar');
   });
 
   afterEach(() => {
@@ -249,6 +254,102 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
     http.expectOne((r) => r.method === 'PUT').flush({ version: 6, bloques: BLOQUES });
   });
 
+  it('lo tecleado durante «Guardando…» se conserva al llegar el 200 y cuenta como cambio', () => {
+    abrir();
+    cambiar('menu.horarios', 'Horas');
+    boton('Guardar').click();
+    const peticion = http.expectOne((r) => r.method === 'PUT');
+    cambiar('cabecera.boton', 'Apúntate');
+    cambiar('menu.horarios', 'Horario');
+    const enviados = alIframe();
+    peticion.flush({ version: 6, bloques: [...BLOQUES, fila('menu.horarios', 'Horas')] });
+    fixture.detectChanges();
+    const c = fixture.componentInstance;
+    expect(c.version()).toBe(6);
+    expect(c.guardado().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horas');
+    expect(c.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horario');
+    expect(c.borrador().find((f) => f.clave === 'cabecera.boton')!.texto).toBe('Apúntate');
+    expect(texto('.barra__texto strong')).toBe('2 cambios sin guardar');
+    const borrador = enviados.calls.allArgs().map(([m]) => m as { tipo: string; bloques?: { clave: string; texto: string }[] }).filter((m) => m.tipo === 'borrador').at(-1)!;
+    expect(borrador.bloques).toContain(jasmine.objectContaining({ clave: 'menu.horarios', texto: 'Horario' }));
+  });
+
+  it('doble clic en Guardar durante «Guardando…»: un solo PUT', () => {
+    abrir();
+    cambiar('menu.horarios', 'Horas');
+    boton('Guardar').click();
+    fixture.detectChanges();
+    q<HTMLButtonElement>('.barra .primario')!.click();
+    fixture.componentInstance.guardar();
+    http.expectOne((r) => r.method === 'PUT').flush({ version: 6, bloques: BLOQUES });
+    http.expectNone((r) => r.method === 'PUT');
+  });
+
+  it('«Reintentar» durante otro guardado en curso: un solo PUT', () => {
+    abrir();
+    cambiar('menu.horarios', 'Horas');
+    boton('Guardar').click();
+    http.expectOne((r) => r.method === 'PUT').flush(null, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    boton('Guardar').click();
+    const reintentar = error.calls.mostRecent().args[1].alPulsar as () => void;
+    reintentar();
+    reintentar();
+    http.expectOne((r) => r.method === 'PUT').flush({ version: 6, bloques: BLOQUES });
+    http.expectNone((r) => r.method === 'PUT');
+  });
+
+  it('el aviso de error con «Reintentar» se cierra al guardar bien', () => {
+    abrir();
+    cambiar('menu.horarios', 'Horas');
+    boton('Guardar').click();
+    http.expectOne((r) => r.method === 'PUT').flush(null, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    expect(cerrar).not.toHaveBeenCalled();
+    boton('Guardar').click();
+    http.expectOne((r) => r.method === 'PUT').flush({ version: 6, bloques: BLOQUES });
+    expect(cerrar).toHaveBeenCalledOnceWith(2);
+  });
+
+  it('el aviso de error con «Reintentar» se cierra al descartar', () => {
+    abrir();
+    cambiar('menu.horarios', 'Horas');
+    boton('Guardar').click();
+    http.expectOne((r) => r.method === 'PUT').flush(null, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+    boton('Descartar').click();
+    expect(cerrar).toHaveBeenCalledOnceWith(2);
+  });
+
+  it('400 en la foto de portada: el resumen da el mensaje de la API', () => {
+    abrir();
+    cambiar('menu.horarios', 'Horas');
+    boton('Guardar').click();
+    http.expectOne((r) => r.method === 'PUT').flush(
+      { mensaje: 'Hay datos que no se pueden guardar.', errores: { 'portada.foto': 'La foto no es de la web de tu escuela.' } },
+      { status: 400, statusText: 'Bad Request' },
+    );
+    fixture.detectChanges();
+    fixture.detectChanges();
+    expect(Array.from(el().querySelectorAll('.resumen li')).map((li) => li.textContent!.trim())).toEqual(['La foto no es de la web de tu escuela.']);
+  });
+
+  it('un texto del puente más largo que su máximo se recorta al máximo', () => {
+    abrir();
+    cambiar('menu.horarios', 'x'.repeat(30));
+    expect(fixture.componentInstance.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('x'.repeat(20));
+  });
+
+  it('textos por defecto de la capa: se ignoran el «Escribe aquí…» y las claves que no dependen de los datos', () => {
+    abrir();
+    llegar({
+      canal: CANAL_EDITOR_WEB,
+      tipo: 'defectos',
+      textos: { 'portada.frase': 'Escribe aquí una frase: para quién son las clases y qué hacer', 'texto_foto.2.rotulo': '02', 'horarios.apoyo': 'Toca tu pueblo' },
+    });
+    expect(fixture.componentInstance.defectos()).toEqual({ 'horarios.apoyo': 'Toca tu pueblo' });
+  });
+
   it('Descartar: vuelve a lo guardado, manda el borrador a la vista previa y lo dice', () => {
     abrir();
     cambiar('menu.horarios', 'Horas');
@@ -318,5 +419,43 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
       expect(q<HTMLSelectElement>('#web-contenido-sub')!.value).toBe('2');
       expect(texto('#marco-t strong')).toBe('Preinscripción · 1 · Grupo');
     });
+  });
+});
+
+@Component({ template: '' })
+class PantallaVacia {}
+
+describe('WebContenidoComponent: salir desde un candado (W12d)', () => {
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('con cambios, el candado pasa por el diálogo «Tienes N cambios sin guardar» y, si se sigue editando, no sale', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([
+          { path: 'contenido', component: WebContenidoComponent, canDeactivate: [salirSinGuardarGuard] },
+          { path: 'sedes', component: PantallaVacia },
+        ]),
+        { provide: ORIGEN_EDITOR, useValue: ORIGEN },
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const confirmar = spyOn(TestBed.inject(ConfirmacionService), 'confirmar').and.resolveTo({ confirmado: false } as never);
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/contenido', WebContenidoComponent);
+    http.expectOne(URL).flush(PUBLICADA);
+    http.expectOne(URL_CONTENIDO).flush(CONTENIDO);
+    http.expectOne((r) => r.url === URL_PUBLICA).flush({ sedes: [] });
+    http.expectOne((r) => r.url === `${URL_PUBLICA}/eventos`).flush({ proximos: [], anteriores: [] });
+    harness.detectChanges();
+    const fuente = (harness.routeNativeElement!.querySelector('iframe') as HTMLIFrameElement).contentWindow;
+    const llegar = (data: unknown) => window.dispatchEvent(new MessageEvent('message', { data, origin: location.origin, source: fuente }));
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'texto', clave: 'menu.horarios', texto: 'Horas' });
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'ir', destino: 'sedes' });
+    await new Promise((r) => setTimeout(r));
+    await harness.fixture.whenStable();
+    expect(confirmar).toHaveBeenCalledOnceWith(jasmine.objectContaining({ titulo: 'Tienes 1 cambio sin guardar', accion: 'Salir sin guardar' }));
+    expect(TestBed.inject(Router).url).toBe('/contenido');
   });
 });
