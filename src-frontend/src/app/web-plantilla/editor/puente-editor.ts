@@ -314,6 +314,11 @@ export interface MensajeZonaVisible {
   tipo: 'zona-visible';
   top: number;
   alto: number;
+  /**
+   * d551: el teclado del móvil se acaba de abrir o de cambiar de alto. Si el texto que se edita queda fuera de la zona,
+   * la capa responde con `mostrar` y `campo`. Solo entonces: al desplazar la ventana no va (no se pelea con quien se mueve).
+   */
+  campo?: true;
 }
 
 /** Tope de la zona visible (top y alto): ningún documento de la web llega a tanto. */
@@ -363,6 +368,8 @@ export interface MensajeMostrar {
   canal: typeof CANAL_EDITOR_WEB;
   tipo: 'mostrar';
   arriba: number;
+  /** d551: es el texto en edición, en respuesta a una zona con `campo` (el teclado del móvil lo tapaba). */
+  campo?: true;
 }
 
 /** W12d: un texto cambiado en el sitio. */
@@ -674,7 +681,8 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
         top >= 0 &&
         top <= MAX_ZONA_VISIBLE &&
         alto > 0 &&
-        alto <= MAX_ZONA_VISIBLE
+        alto <= MAX_ZONA_VISIBLE &&
+        (valor['campo'] === undefined || valor['campo'] === true)
       );
     }
     case 'profesores': {
@@ -758,7 +766,12 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
     case 'ir':
       return esDestinoPanel(valor['destino']);
     case 'mostrar':
-      return typeof valor['arriba'] === 'number' && Number.isFinite(valor['arriba']) && valor['arriba'] >= 0;
+      return (
+        typeof valor['arriba'] === 'number' &&
+        Number.isFinite(valor['arriba']) &&
+        valor['arriba'] >= 0 &&
+        (valor['campo'] === undefined || valor['campo'] === true)
+      );
     case 'texto':
       return typeof valor['clave'] === 'string' && esTextoEditable(valor['clave']) && esTextoCorto(valor['texto']);
     case 'defectos':

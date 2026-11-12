@@ -345,6 +345,21 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
   .barra__acciones .secundario { flex: 0 0 auto; }
 }
 
+// d551: con el teclado del móvil abierto (solo < 768 px; lo decide el componente con el `visualViewport`), la barra va
+// siempre pegada al borde superior del teclado (`--alto-teclado`: lo que el visor deja tapado, medido en cada resize y
+// scroll del visor). Si Chrome desplaza el visor para enseñar el campo, la navegación inferior (`.pn-barra`, 1001) asoma
+// entre el teclado y la barra: la barra va por encima de ella y por debajo de las hojas inferiores y flotantes (1020).
+// El conflicto conserva su forma, con el mismo `bottom` y `z-index`.
+.barra.barra--teclado { bottom: var(--alto-teclado, 0px); z-index: 1002; }
+// Una sola línea de 52 px con el orden de la barra de escritorio: el contador a la izquierda y Descartar y Guardar a la
+// derecha. Los botones conservan su ancho (anula el `flex: 1` de < 768 px); si no cabe, se recorta el texto con elipsis.
+.barra.barra--compacta { flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 12px; }
+.barra--compacta .barra__texto { flex: 1; min-width: 0; max-width: none; }
+.barra--compacta .barra__acciones { flex: none; display: flex; gap: 8px; }
+.barra--compacta .barra__acciones button { flex: none; min-height: 44px; }
+// `position: relative`: el «sin guardar» oculto (absoluto) queda recortado con la frase y no ensancha la barra.
+.barra--compacta .barra__frase { position: relative; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
 // W12e: hoja inferior de acciones del bloque (panel < 768 px; boceto `.hoja`, `.hoja__*`, `body.con-hoja .barra`). Por
 // encima de la barra inferior del panel, como el menú «Ver el caso» en móvil.
 .hoja {

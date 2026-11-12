@@ -11,7 +11,7 @@ import { AvisosService } from '../../avisos/avisos.service';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { salirSinGuardarGuard } from '../../productos-alumno/salir-sin-guardar.guard';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
-import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR } from './web-contenido-vista';
+import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR, VISOR_VISUAL } from './web-contenido-vista';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
@@ -53,7 +53,7 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ORIGEN_EDITOR, useValue: ORIGEN }],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ORIGEN_EDITOR, useValue: ORIGEN }, { provide: VISOR_VISUAL, useValue: null }],
     });
     spyOnProperty(TestBed.inject(ActivatedRoute).snapshot, 'queryParamMap').and.returnValue(convertToParamMap({}));
     http = TestBed.inject(HttpTestingController);
@@ -181,7 +181,7 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
     }
   });
 
-  it('Descartar no lleva la página arriba: el foco va al título sin desplazar la vista', () => {
+  it('Descartar no lleva la página arriba: el foco va al título sin desplazar la vista', async () => {
     abrir();
     const relleno = document.createElement('div');
     relleno.style.height = '6000px';
@@ -192,8 +192,10 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
       window.scrollTo({ top: titulo.getBoundingClientRect().top + window.scrollY + 2000, behavior: 'auto' });
       const antes = window.scrollY;
       expect(antes).toBeGreaterThan(1000);
+      confirmar.and.resolveTo({ confirmado: true } as never);
       boton('Descartar').focus({ preventScroll: true });
       boton('Descartar').click();
+      await fixture.whenStable();
       fixture.detectChanges();
       expect(document.activeElement).toBe(titulo);
       expect(titulo.getBoundingClientRect().bottom).toBeLessThan(-1000);
@@ -362,13 +364,15 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
     expect(cerrar).toHaveBeenCalledOnceWith(2);
   });
 
-  it('el aviso de error con «Reintentar» se cierra al descartar', () => {
+  it('el aviso de error con «Reintentar» se cierra al descartar', async () => {
     abrir();
     cambiar('menu.horarios', 'Horas');
     boton('Guardar').click();
     http.expectOne((r) => r.method === 'PUT').flush(null, { status: 500, statusText: 'Error' });
     fixture.detectChanges();
+    confirmar.and.resolveTo({ confirmado: true } as never);
     boton('Descartar').click();
+    await fixture.whenStable();
     expect(cerrar).toHaveBeenCalledOnceWith(2);
   });
 
@@ -401,16 +405,110 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
     expect(fixture.componentInstance.defectos()).toEqual({ 'horarios.apoyo': 'Toca tu pueblo' });
   });
 
-  it('Descartar: vuelve a lo guardado, manda el borrador a la vista previa y lo dice', () => {
+  it('Descartar: vuelve a lo guardado, manda el borrador a la vista previa y lo dice', async () => {
     abrir();
     cambiar('menu.horarios', 'Horas');
     const enviados = alIframe();
+    confirmar.and.resolveTo({ confirmado: true } as never);
     boton('Descartar').click();
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(q('.barra')).toBeNull();
     expect(enviados.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo)).toContain('borrador');
     expect(texto('p.oculto[role="status"]')).toBe('Cambios descartados. Todo queda como en tu web.');
     expect(document.activeElement).toBe(q('h1'));
+  });
+
+  describe('d551: Descartar pide confirmación siempre', () => {
+    it('«¿Descartar el cambio?» / «¿Descartar los N cambios?», destructiva, con «Seguir editando»', async () => {
+      abrir();
+      cambiar('menu.horarios', 'Horas');
+      boton('Descartar').click();
+      await fixture.whenStable();
+      expect(confirmar).toHaveBeenCalledOnceWith({
+        titulo: '¿Descartar el cambio?',
+        mensaje: 'Se pierde lo que no has guardado.',
+        accion: 'Descartar',
+        cancelar: 'Seguir editando',
+        destructivo: true,
+        nombre: 'descartar-cambios',
+      });
+      cambiar('cabecera.boton', 'Apúntate');
+      cambiar('portada.titular', 'Otro titular');
+      boton('Descartar').click();
+      await fixture.whenStable();
+      expect(confirmar.calls.mostRecent().args[0].titulo).toBe('¿Descartar los 3 cambios?');
+    });
+
+    it('cancelar no cambia nada: siguen los cambios, no va borrador a la vista previa ni se anuncia', async () => {
+      abrir();
+      cambiar('menu.horarios', 'Horas');
+      const enviados = alIframe();
+      boton('Descartar').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+      expect(fixture.componentInstance.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horas');
+      expect(enviados.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo)).not.toContain('borrador');
+      expect(texto('p.oculto[role="status"]')).toBe('');
+    });
+
+    it('mientras guarda no pregunta ni hace nada', async () => {
+      abrir();
+      cambiar('menu.horarios', 'Horas');
+      boton('Guardar').click();
+      fixture.detectChanges();
+      boton('Descartar').click();
+      await fixture.whenStable();
+      expect(confirmar).not.toHaveBeenCalled();
+      http.expectOne((r) => r.method === 'PUT').flush({ version: 6, bloques: [...BLOQUES, fila('menu.horarios', 'Horas')] });
+    });
+
+    it('si empieza a guardar con el diálogo abierto, confirmar ya no descarta', async () => {
+      abrir();
+      cambiar('menu.horarios', 'Horas');
+      let responder!: (r: unknown) => void;
+      confirmar.and.returnValue(new Promise((r) => (responder = r)));
+      boton('Descartar').click();
+      fixture.componentInstance.guardando.set(true);
+      responder({ confirmado: true });
+      await fixture.whenStable();
+      expect(fixture.componentInstance.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horas');
+    });
+
+    it('si con el diálogo abierto ya no quedan cambios, confirmar no hace nada', async () => {
+      abrir();
+      cambiar('menu.horarios', 'Horas');
+      let responder!: (r: unknown) => void;
+      confirmar.and.returnValue(new Promise((r) => (responder = r)));
+      boton('Descartar').click();
+      // Vuelve al texto del tema: deja de ser un cambio.
+      cambiar('menu.horarios', 'Horarios');
+      expect(fixture.componentInstance.nCambios()).toBe(0);
+      const enviados = alIframe();
+      responder({ confirmado: true });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(enviados.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo)).not.toContain('borrador');
+      expect(texto('p.oculto[role="status"]')).toBe('');
+      expect(fixture.componentInstance.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horarios');
+    });
+
+    it('si llega un conflicto con el diálogo abierto, confirmar no descarta', async () => {
+      abrir();
+      cambiar('menu.horarios', 'Horas');
+      let responder!: (r: unknown) => void;
+      confirmar.and.returnValue(new Promise((r) => (responder = r)));
+      boton('Descartar').click();
+      fixture.componentInstance.conflicto.set(true);
+      const enviados = alIframe();
+      responder({ confirmado: true });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horas');
+      expect(enviados.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo)).not.toContain('borrador');
+      expect(texto('p.oculto[role="status"]')).toBe('');
+    });
   });
 
   it('salir con cambios: «Tienes N cambios sin guardar»; sin cambios, sale sin preguntar', async () => {
@@ -488,7 +586,7 @@ describe('WebContenidoComponent: salir desde un candado (W12d)', () => {
           { path: 'contenido', component: WebContenidoComponent, canDeactivate: [salirSinGuardarGuard] },
           { path: 'sedes', component: PantallaVacia },
         ]),
-        { provide: ORIGEN_EDITOR, useValue: ORIGEN },
+        { provide: ORIGEN_EDITOR, useValue: ORIGEN }, { provide: VISOR_VISUAL, useValue: null },
       ],
     });
     const http = TestBed.inject(HttpTestingController);

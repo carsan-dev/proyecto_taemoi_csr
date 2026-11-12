@@ -269,4 +269,115 @@ describe('capa de edición de la vista previa (W12c)', () => {
     ventana.dispatchEvent(new MessageEvent('message', { data: datos, origin: location.origin, source: window }));
     expect(borradores).toEqual([datos.bloques]);
   });
+
+  describe('d551: el texto que se edita, a la vista al abrirse el teclado del móvil', () => {
+    let campo: HTMLElement;
+
+    beforeEach(() => {
+      campo = doc.createElement('p');
+      campo.contentEditable = 'true';
+      campo.style.cssText = 'margin:0;position:absolute;top:900px;left:0;height:24px';
+      campo.textContent = 'Nombre del profesor';
+      doc.body.appendChild(campo);
+      campo.focus();
+      enviados.calls.reset();
+    });
+
+    afterEach(() => campo.remove());
+
+    const zona = (top: number, alto: number, campoPedido?: true) =>
+      ventana.dispatchEvent(
+        new MessageEvent('message', {
+          data: { canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top, alto, ...(campoPedido ? { campo: true } : {}) },
+          origin: location.origin,
+          source: window,
+        }),
+      );
+    const mostrar = () => mensajes().filter(([m]) => (m as { tipo: string }).tipo === 'mostrar').map(([m]) => m);
+    const arribaCampo = () => Math.round(campo.getBoundingClientRect().top + ventana.scrollY);
+
+    it('si el panel lo pide y el campo queda fuera de la zona, dice dónde está (`mostrar` con `campo`)', () => {
+      expect(doc.activeElement).toBe(campo);
+      zona(0, 400, true);
+      expect(mostrar()).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: arribaCampo(), campo: true }]);
+    });
+
+    it('también si queda por encima de la zona', () => {
+      zona(arribaCampo() + 100, 400, true);
+      expect(mostrar().length).toBe(1);
+    });
+
+    it('nada si el campo ya se ve entero dentro de la zona', () => {
+      zona(arribaCampo() - 100, 400, true);
+      expect(mostrar()).toEqual([]);
+    });
+
+    it('nada si el panel no lo pide (desplazar la ventana no devuelve el campo a la vista)', () => {
+      zona(0, 400);
+      expect(mostrar()).toEqual([]);
+    });
+
+    it('nada si no se está editando ningún texto', () => {
+      campo.blur();
+      zona(0, 400, true);
+      expect(mostrar()).toEqual([]);
+    });
+
+    it('también un campo cortado solo en parte por abajo', () => {
+      // La zona acaba 10 px por debajo del principio del campo (24 px de alto).
+      zona(arribaCampo() - 200, 210, true);
+      expect(mostrar()).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: arribaCampo(), campo: true }]);
+    });
+
+    for (const etiqueta of ['input', 'textarea'] as const) {
+      it(`con un ${etiqueta} activo: fuera de la zona lo dice; dentro, nada`, () => {
+        const otro = doc.createElement(etiqueta);
+        otro.style.cssText = 'margin:0;position:absolute;top:1200px;left:0;height:24px';
+        doc.body.appendChild(otro);
+        otro.focus();
+        expect(doc.activeElement).toBe(otro);
+        const arriba = Math.round(otro.getBoundingClientRect().top + ventana.scrollY);
+        zona(0, 400, true);
+        expect(mostrar()).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba, campo: true }]);
+        enviados.calls.reset();
+        zona(arriba - 100, 400, true);
+        expect(mostrar()).toEqual([]);
+        otro.remove();
+      });
+    }
+
+    describe('un campo más alto que la zona: manda el cursor', () => {
+      let ultima: HTMLElement;
+
+      beforeEach(() => {
+        campo.style.height = '';
+        campo.innerHTML = '<div>Primera línea</div><div style="height:1000px"></div><div>Última línea</div>';
+        ultima = campo.lastElementChild as HTMLElement;
+        campo.focus();
+      });
+
+      const cursorEn = (nodo: Node) => {
+        const rango = doc.createRange();
+        rango.setStart(nodo, 0);
+        rango.collapse(true);
+        const seleccion = doc.getSelection()!;
+        seleccion.removeAllRanges();
+        seleccion.addRange(rango);
+      };
+
+      it('con el cursor a la vista no envía nada, aunque el campo no quepa', () => {
+        cursorEn(campo.firstElementChild!.firstChild!);
+        zona(arribaCampo() - 100, 400, true);
+        expect(mostrar()).toEqual([]);
+      });
+
+      it('con el cursor fuera de la zona, dice dónde está el cursor (no el principio del campo)', () => {
+        cursorEn(ultima.firstChild!);
+        const arribaCursor = Math.round(doc.getSelection()!.getRangeAt(0).getBoundingClientRect().top + ventana.scrollY);
+        expect(arribaCursor).toBeGreaterThan(arribaCampo() + 900);
+        zona(arribaCampo() - 100, 400, true);
+        expect(mostrar()).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: arribaCursor, campo: true }]);
+      });
+    });
+  });
 });

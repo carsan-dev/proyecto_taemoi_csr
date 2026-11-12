@@ -9,7 +9,7 @@ import { AvisosService } from '../../avisos/avisos.service';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { CLIENTE_SUBIDAS } from '../../material-examen/material-examen-api.service';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
-import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR } from './web-contenido-vista';
+import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR, VISOR_VISUAL } from './web-contenido-vista';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
@@ -60,7 +60,7 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: ORIGEN_EDITOR, useValue: 'about:blank#' },
+        { provide: ORIGEN_EDITOR, useValue: 'about:blank#' }, { provide: VISOR_VISUAL, useValue: null },
         { provide: CLIENTE_SUBIDAS, useExisting: HttpClient },
       ],
     });
@@ -234,15 +234,16 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     fixture.detectChanges();
     // El orden cuenta una vez (boceto `cambios`): bajar + ocultar + quitar = 3.
     expect(texto('.barra__texto strong')).toBe('3 cambios sin guardar');
-    Array.from(el().querySelectorAll<HTMLButtonElement>('.barra button')).find((b) => b.textContent!.trim() === 'Descartar')!.click();
-    fixture.detectChanges();
+    await descartar();
     expect(q('.barra')).toBeNull();
     expect(ordenEnviado(enviados)).toEqual(PAGINA);
     expect(ultimo(enviados, 'estado-bloques')!['sinGuardar']).toEqual([]);
   });
 
-  const descartar = () => {
+  // d551: Descartar pide confirmación (aquí, aceptada) y descarta al resolverse.
+  const descartar = async () => {
     Array.from(el().querySelectorAll<HTMLButtonElement>('.barra button')).find((b) => b.textContent!.trim() === 'Descartar')!.click();
+    await fixture.whenStable();
     fixture.detectChanges();
   };
 
@@ -277,7 +278,7 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(texto('.barra__texto strong')).toBe('3 cambios sin guardar');
-    descartar();
+    await descartar();
     expect(q('.barra')).toBeNull();
     const resumen = (filas: { clave: string; texto: string | null; orden: number; oculto: boolean }[]) =>
       filas.map((b) => `${b.clave}|${b.texto}|${b.orden}|${b.oculto}`).sort();

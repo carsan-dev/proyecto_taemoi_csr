@@ -78,6 +78,7 @@ import {
   PAGINAS_CONTENIDO,
   RUTA_DESTINO,
   TEXTOS_WEB_CONTENIDO,
+  VISOR_VISUAL,
   acentoDe,
   bloquesParaVistaPrevia,
   direccionEditor,
@@ -109,7 +110,9 @@ import {
   plural,
   ponerTexto,
   textoCambios,
+  textoCambiosCorto,
   textoConflicto,
+  tituloDescartar,
   tituloResumen,
   tituloSalir,
   valorTexto,
@@ -170,6 +173,20 @@ const PROFESORES_INICIAL = JSON.stringify({ lista: [], sedes: [] });
 
 /** Panel estrecho (boceto `estrecho()`): las acciones de un bloque salen en la hoja inferior. */
 const CONSULTA_ESTRECHO = '(max-width: 767.98px)';
+/**
+ * d551: lo que el visor (`visualViewport`) tiene que quedar tapado por abajo para que sea el teclado del móvil y no la
+ * barra de direcciones del navegador que se esconde (unos 56 px en Chrome de Android).
+ */
+const UMBRAL_TECLADO = 120;
+/** d551: con el teclado abierto, lo que se deja entre el campo que se enseña y el borde de la barra (una línea de texto). */
+const MARGEN_CAMPO = 56;
+/**
+ * d551: por encima de esta escala del visor hay zoom de pellizco: el visor mide `innerHeight / scale` sin teclado, así
+ * que se ignora del todo (como antes de la pieza).
+ */
+const ESCALA_ZOOM = 1.01;
+/** d551: lo que el alto del teclado tiene que quedarse quieto (animación de apertura) antes de pedir el texto en edición. */
+const ESPERA_TECLADO_MS = 150;
 /** Lo que tiene una capa recién puesta: sin pastillas, sin quitables y ancha. */
 const ESTADO_BLOQUES_INICIAL = JSON.stringify([[], [], false]);
 
@@ -245,12 +262,15 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
   private readonly ventana = inject(DOCUMENT).defaultView;
+  /** d551: la parte de la ventana que se ve (encoge con el teclado del móvil); null si el navegador no la da. */
+  private readonly visor = inject(VISOR_VISUAL);
   private readonly ruta = inject(ActivatedRoute);
 
   readonly textos = TEXTOS_WEB_CONTENIDO;
   readonly textosGuardar = TEXTOS_GUARDAR;
   readonly textosFotos = TEXTOS_FOTOS;
   readonly textoCambios = textoCambios;
+  readonly textoCambiosCorto = textoCambiosCorto;
   readonly tituloResumen = tituloResumen;
   readonly textoConflicto = textoConflicto;
   readonly barraConflicto = barraConflicto;
@@ -314,6 +334,18 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly presentes = signal<ReadonlySet<string> | null>(null);
   readonly vacios = signal<ReadonlySet<string>>(new Set());
   readonly estrecho = signal(this.ventana?.matchMedia?.(CONSULTA_ESTRECHO).matches ?? false);
+  /**
+   * d551: lo que el visor deja tapado por abajo (`innerHeight − (offsetTop + height)`), en px de la ventana; 0 sin visor
+   * o con zoom. Da el `bottom` de la barra con el teclado abierto.
+   */
+  readonly tapadoAbajo = signal(0);
+  /**
+   * d551: el alto del teclado del móvil (`innerHeight − visor.height`, sin offsetTop); 0 sin visor o con zoom. No depende
+   * de dónde esté el visor: Chrome lo desplaza para enseñar el campo enfocado y lo tapado puede quedar en 0.
+   */
+  readonly altoTeclado = signal(0);
+  /** d551: teclado del móvil abierto: panel estrecho y el alto del teclado por encima del umbral. */
+  readonly teclado = computed(() => this.estrecho() && this.altoTeclado() > UMBRAL_TECLADO);
   /** El bloque de la hoja inferior abierta (panel estrecho), o null. */
   readonly hoja = signal<string | null>(null);
   /** d541: el menú de la vista previa (foto, «Añadir bloque») abierto como hoja inferior, o null. */
@@ -529,6 +561,10 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private zonaEnviada = '';
   /** El fotograma en que se medirá la zona (como mucho un envío por fotograma). */
   private zonaPedida: number | null = null;
+  /** d551: el teclado se abrió o cambió de alto y ya se asentó: la próxima zona pide a la capa el texto en edición. */
+  private campoPedido = false;
+  /** d551: la espera a que el teclado deje de cambiar de alto antes de pedir el campo. */
+  private temporizadorTeclado: ReturnType<typeof setTimeout> | null = null;
   private observador: ResizeObserver | null = null;
   private temporizadorEsqueleto: ReturnType<typeof setTimeout> | null = null;
   private temporizadorLimite: ReturnType<typeof setTimeout> | null = null;
@@ -570,11 +606,18 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       this.casoActivo();
       this.vistaHoja();
       this.estrecho();
+      this.tapadoAbajo();
+      this.altoTeclado();
       this.pedirZona();
     });
     const alMoverVentana = () => this.pedirZona();
     this.ventana?.addEventListener('scroll', alMoverVentana, { passive: true });
     this.ventana?.addEventListener('resize', alMoverVentana);
+    // d551: el visor encoge con el teclado del móvil (sin `interactive-widget`, la ventana no cambia de alto).
+    const alMoverVisor = () => this.medirVisor();
+    this.visor?.addEventListener('resize', alMoverVisor);
+    this.visor?.addEventListener('scroll', alMoverVisor, { passive: true });
+    this.medirVisor();
     const consulta = this.ventana?.matchMedia?.(CONSULTA_ESTRECHO);
     const alCambiarAncho = (e: MediaQueryListEvent) => this.estrecho.set(e.matches);
     consulta?.addEventListener?.('change', alCambiarAncho);
@@ -587,6 +630,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       dejarDeEscuchar();
       this.ventana?.removeEventListener('scroll', alMoverVentana);
       this.ventana?.removeEventListener('resize', alMoverVentana);
+      this.visor?.removeEventListener('resize', alMoverVisor);
+      this.visor?.removeEventListener('scroll', alMoverVisor);
       if (this.zonaPedida !== null) {
         this.ventana?.cancelAnimationFrame?.(this.zonaPedida);
         this.zonaPedida = null;
@@ -930,6 +975,13 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         void this.router.navigateByUrl(RUTA_DESTINO[mensaje.destino]);
         break;
       case 'mostrar':
+        if (mensaje.campo) {
+          // d551: la capa responde a la zona que lo pidió: el texto en edición quedaba tapado por el teclado o la barra.
+          if (this.teclado()) {
+            this.ensenar(mensaje.arriba, true);
+          }
+          break;
+        }
         if (this.mostrarCaso || this.mostrarDato || this.mostrarBloque) {
           this.mostrarCaso = false;
           this.mostrarDato = false;
@@ -1367,8 +1419,24 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     });
   }
 
-  descartar(): void {
+  /**
+   * d551: con confirmación siempre (móvil y escritorio): «¿Descartar los N cambios?». Cancelar no cambia nada y el foco
+   * vuelve al botón (`ConfirmacionService`). Mientras guarda, nada (tampoco si empezó a guardar con el diálogo abierto).
+   */
+  async descartar(): Promise<void> {
     if (this.guardando()) {
+      return;
+    }
+    // Lo que pasa con el diálogo abierto: guardar, quedarse sin cambios o un conflicto (409) dejan sin nada que descartar.
+    const r = await this.confirmacion.confirmar({
+      titulo: tituloDescartar(this.nCambios()),
+      mensaje: this.textosGuardar.descartarTexto,
+      accion: this.textosGuardar.descartar,
+      cancelar: this.textosGuardar.seguir,
+      destructivo: true,
+      nombre: 'descartar-cambios',
+    });
+    if (!r.confirmado || this.guardando() || this.nCambios() === 0 || this.conflicto()) {
       return;
     }
     this.cancelarSubidas();
@@ -1901,11 +1969,98 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       return;
     }
     const firma = `${zona.top}:${zona.alto}`;
-    if (firma === this.zonaEnviada) {
+    const campo = this.campoPedido && this.teclado();
+    if (firma === this.zonaEnviada && !campo) {
       return;
     }
     this.zonaEnviada = firma;
-    enviarPorPuente(ventana, destino, { canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top: zona.top, alto: zona.alto });
+    this.campoPedido = false;
+    enviarPorPuente(ventana, destino, {
+      canal: CANAL_EDITOR_WEB,
+      tipo: 'zona-visible',
+      top: zona.top,
+      alto: zona.alto,
+      ...(campo ? { campo: true as const } : {}),
+    });
+  }
+
+  /**
+   * d551: el visor que cuenta, o null si no hay o si hay zoom de pellizco (entonces todo es como antes de la pieza).
+   * Un visor sin `scale` cuenta como sin zoom.
+   */
+  private visorSinZoom(): VisualViewport | null {
+    const visor = this.visor;
+    return visor && !((visor.scale ?? 1) > ESCALA_ZOOM) ? visor : null;
+  }
+
+  /**
+   * d551: lo que el visor deja tapado por abajo (`innerHeight − (offsetTop + height)`). Con el teclado abierto, cuando su
+   * alto (sin offsetTop) cambia, al abrirse o después, se espera a que se asiente y entonces se pide a la capa el texto en
+   * edición con la zona; nunca por mover el visor o desplazar la ventana. La zona sin más se manda al momento.
+   */
+  private medirVisor(): void {
+    const ventana = this.ventana;
+    if (!ventana || !this.visor) {
+      return;
+    }
+    const visor = this.visorSinZoom();
+    const tapado = visor ? Math.max(0, Math.round(ventana.innerHeight - (visor.offsetTop + visor.height))) : 0;
+    this.tapadoAbajo.set(tapado);
+    const altoAntes = this.altoTeclado();
+    this.altoTeclado.set(visor ? Math.max(0, Math.round(ventana.innerHeight - visor.height)) : 0);
+    if (!this.teclado()) {
+      this.campoPedido = false;
+      this.pararEsperaTeclado();
+    } else if (this.altoTeclado() !== altoAntes) {
+      this.pararEsperaTeclado();
+      this.temporizadorTeclado = setTimeout(() => {
+        this.temporizadorTeclado = null;
+        this.campoPedido = true;
+        this.pedirZona();
+      }, ESPERA_TECLADO_MS);
+    }
+    this.pedirZona();
+  }
+
+  private pararEsperaTeclado(): void {
+    if (this.temporizadorTeclado !== null) {
+      clearTimeout(this.temporizadorTeclado);
+      this.temporizadorTeclado = null;
+    }
+  }
+
+  /**
+   * La parte de la ventana que se ve, en px de la ventana: el visor (sin él, la ventana entera) menos lo que el panel
+   * pone fijo encima (cabecera y franja del caso arriba; barra de cambios y navegación del móvil abajo).
+   */
+  private limitesVisibles(ventana: Window): { arriba: number; abajo: number } {
+    const doc = this.host.nativeElement.ownerDocument;
+    const visor = this.visorSinZoom();
+    const visorArriba = visor ? visor.offsetTop : 0;
+    const visorAbajo = visor ? visor.offsetTop + visor.height : ventana.innerHeight;
+    const mitad = (visorArriba + visorAbajo) / 2;
+    const tapa = (el: Element | null): DOMRect | null => {
+      if (!el) {
+        return null;
+      }
+      const r = el.getBoundingClientRect();
+      return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' ? r : null;
+    };
+    let arriba = visorArriba;
+    let abajo = visorAbajo;
+    [...TAPAS_ARRIBA.map((s) => doc.querySelector(s)), this.casoActivoEl()?.nativeElement ?? null].forEach((el) => {
+      const r = tapa(el);
+      if (r && r.top < mitad) {
+        arriba = Math.max(arriba, r.bottom);
+      }
+    });
+    [...TAPAS_ABAJO.map((s) => doc.querySelector(s)), this.host.nativeElement.querySelector('.barra')].forEach((el) => {
+      const r = tapa(el);
+      if (r && r.bottom > mitad) {
+        abajo = Math.min(abajo, r.top);
+      }
+    });
+    return { arriba, abajo };
   }
 
   /**
@@ -1919,44 +2074,35 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (!(escala > 0)) {
       return null;
     }
-    const doc = this.host.nativeElement.ownerDocument;
-    const mitad = ventana.innerHeight / 2;
-    const tapa = (el: Element | null): DOMRect | null => {
-      if (!el) {
-        return null;
-      }
-      const r = el.getBoundingClientRect();
-      return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' ? r : null;
-    };
-    let arriba = Math.max(marco.top, 0);
-    let abajo = Math.min(marco.bottom, ventana.innerHeight);
-    [...TAPAS_ARRIBA.map((s) => doc.querySelector(s)), this.casoActivoEl()?.nativeElement ?? null].forEach((el) => {
-      const r = tapa(el);
-      if (r && r.top < mitad) {
-        arriba = Math.max(arriba, r.bottom);
-      }
-    });
-    [...TAPAS_ABAJO.map((s) => doc.querySelector(s)), this.host.nativeElement.querySelector('.barra')].forEach((el) => {
-      const r = tapa(el);
-      if (r && r.bottom > mitad) {
-        abajo = Math.min(abajo, r.top);
-      }
-    });
+    // d551: con el visor (el teclado del móvil lo encoge) en lugar de 0 e `innerHeight`.
+    const limites = this.limitesVisibles(ventana);
+    const arriba = Math.max(marco.top, limites.arriba);
+    const abajo = Math.min(marco.bottom, limites.abajo);
     const top = Math.round((arriba - marco.top) / escala);
     const alto = Math.round((abajo - arriba) / escala);
     return alto >= 1 ? { top: Math.max(0, top), alto } : null;
   }
 
-  /** Lleva a la vista la parte del caso (boceto `ponerCaso`), bajo la barra del panel y la franja del caso. */
-  private ensenar(arriba: number): void {
+  /**
+   * Lleva a la vista la parte del caso (boceto `ponerCaso`), bajo la barra del panel y la franja del caso. d551: con el
+   * teclado del móvil abierto, el límite de abajo es el borde de lo que se ve (la barra compacta o el teclado), no el 60 %
+   * de la ventana; `forzar`: el texto en edición que la capa ya vio tapado.
+   */
+  private ensenar(arriba: number, forzar = false): void {
     const ventana = this.ventana;
     const iframe = this.iframe()?.nativeElement;
     if (!ventana || !iframe || typeof ventana.scrollTo !== 'function') {
       return;
     }
     const y = iframe.getBoundingClientRect().top + ventana.scrollY + arriba * this.escala();
-    const tapa = this.altoCabeceraPanel() + (this.casoActivoEl()?.nativeElement.offsetHeight ?? 0) + 16;
-    if (y < ventana.scrollY + tapa || y > ventana.scrollY + ventana.innerHeight * 0.6) {
+    let tapa = this.altoCabeceraPanel() + (this.casoActivoEl()?.nativeElement.offsetHeight ?? 0) + 16;
+    let limite = ventana.innerHeight * 0.6;
+    if (this.teclado()) {
+      const visible = this.limitesVisibles(ventana);
+      tapa = Math.max(tapa, visible.arriba + 16);
+      limite = visible.abajo - MARGEN_CAMPO;
+    }
+    if (forzar || y < ventana.scrollY + tapa || y > ventana.scrollY + limite) {
       const reducir = ventana.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
       ventana.scrollTo({ top: Math.max(0, y - tapa), behavior: reducir ? 'auto' : 'smooth' });
     }
@@ -2042,6 +2188,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       clearTimeout(this.temporizadorLimite);
       this.temporizadorLimite = null;
     }
+    this.pararEsperaTeclado();
   }
 
   private observar(elemento: HTMLElement | null): void {

@@ -178,7 +178,9 @@
     </section>
     }
     @if (barraVisible()) {
-    <div class="barra" role="region" aria-label="Cambios sin guardar">
+    <!-- d551: con el teclado del móvil abierto, pegada a su borde superior y (salvo el conflicto) en una sola línea -->
+    <div class="barra" [class.barra--teclado]="teclado()" [class.barra--compacta]="teclado() && !conflicto()"
+      [style.--alto-teclado]="teclado() ? tapadoAbajo() + 'px' : null" role="region" aria-label="Cambios sin guardar">
       @if (conflicto()) {
       <p class="barra__texto">
         <svg class="barra__peligro" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -196,12 +198,16 @@
       <p class="barra__texto">
         <svg class="barra__girando" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
           stroke-linecap="round"><path d="M12 3a9 9 0 1 1-9 9"></path></svg>
-        <span>{{ textosFotos.barraSubiendo }}</span>
+        <span class="barra__frase">{{ textosFotos.barraSubiendo }}</span>
       </p>
       } @else {
       <p class="barra__texto">
         <span class="punto" aria-hidden="true"></span>
+        @if (teclado()) {
+        <span class="barra__frase"><strong>{{ textoCambiosCorto(nCambios()) }}</strong><span class="oculto">{{ textosGuardar.sinGuardar }}</span></span>
+        } @else {
         <span><strong>{{ textoCambios(nCambios()) }}</strong>{{ publicada() ? textosGuardar.publicaAlGuardar : '' }}</span>
+        }
       </p>
       }
       <div class="barra__acciones">
