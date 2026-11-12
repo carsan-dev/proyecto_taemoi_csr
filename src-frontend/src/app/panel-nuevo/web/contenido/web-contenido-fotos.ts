@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
-import { MAX_DESCRIPCION_FOTO, esFotoSuelta, queFoto as queFotoDe } from '../../../web-plantilla/editor/fotos-sueltas';
+import { esFotoGaleria } from '../../../web-plantilla/editor/fotos-galeria';
+import { MAX_DESCRIPCION_FOTO, esFotoEditable, esFotoSuelta, queFoto as queFotoDe } from '../../../web-plantilla/editor/fotos-sueltas';
 import type { EstadoSubidaFoto } from '../../../web-plantilla/editor/puente-editor';
+import { cambiosGaleria, puestoGaleria } from './web-contenido-galeria';
 import type { BloqueContenido } from './web-contenido-vista';
 
 /**
@@ -96,7 +98,7 @@ export function quitarFoto(filas: readonly BloqueContenido[], clave: string): Bl
   return filas.filter((f) => f.clave !== clave);
 }
 
-/** «Volver a la anterior»: la foto guardada con su descripción. */
+/** «Volver a la anterior»: la foto guardada con su descripción (en la galería, en el puesto que tiene ahora). */
 export function volverALaAnterior(
   filas: readonly BloqueContenido[],
   guardado: readonly BloqueContenido[],
@@ -106,7 +108,7 @@ export function volverALaAnterior(
   if (!anterior) {
     return [...filas];
   }
-  return fila(filas, clave) ? filas.map((f) => (f.clave === clave ? anterior : f)) : [...filas, anterior];
+  return fila(filas, clave) ? filas.map((f) => (f.clave === clave ? { ...anterior, orden: f.orden } : f)) : [...filas, anterior];
 }
 
 /** La descripción (en la fila: `texto`), como mucho 150. Sin foto no hay nada que describir. */
@@ -115,13 +117,16 @@ export function describirFoto(filas: readonly BloqueContenido[], clave: string, 
   return filas.map((f) => (f.clave === clave && f.imagenId !== null ? { ...f, texto: recortado } : f));
 }
 
-const clavesDeFotos = (a: readonly BloqueContenido[], b: readonly BloqueContenido[]) =>
-  [...new Set([...a, ...b].map((f) => f.clave).filter(esFotoSuelta))];
+const clavesDeFotos = (a: readonly BloqueContenido[], b: readonly BloqueContenido[], esDeAqui: (clave: string) => boolean = esFotoEditable) =>
+  [...new Set([...a, ...b].map((f) => f.clave).filter(esDeAqui))];
 
-/** Boceto `cambios`: cada foto cuenta uno si cambia la foto y otro si cambia su descripción (`clave` y `clave.alt`). */
+/**
+ * Boceto `cambios`: cada foto suelta cuenta uno si cambia la foto y otro si cambia su descripción (`clave` y
+ * `clave.alt`); la galería, como dice `cambiosGaleria` (añadidas, quitadas, orden, foto y descripción).
+ */
 export function fotosCambiadas(guardado: readonly BloqueContenido[], borrador: readonly BloqueContenido[]): string[] {
   const cambios: string[] = [];
-  for (const clave of clavesDeFotos(guardado, borrador)) {
+  for (const clave of clavesDeFotos(guardado, borrador, esFotoSuelta)) {
     const g = fila(guardado, clave);
     const b = fila(borrador, clave);
     if ((g?.imagenId ?? null) !== (b?.imagenId ?? null)) {
@@ -131,7 +136,7 @@ export function fotosCambiadas(guardado: readonly BloqueContenido[], borrador: r
       cambios.push(`${clave}.alt`);
     }
   }
-  return cambios;
+  return [...cambios, ...cambiosGaleria(guardado, borrador)];
 }
 
 /**
@@ -170,19 +175,25 @@ export function conFotosCambiadasDesde(
   for (const clave of clavesDeFotos(enviado, actual)) {
     const e = fila(enviado, clave);
     const a = fila(actual, clave);
-    if (e?.imagenId === a?.imagenId && e?.texto === a?.texto && e?.imagenUrl === a?.imagenUrl) {
+    // En la galería también cuenta el puesto (movida o reordenada al quitar otra).
+    const galeria = esFotoGaleria(clave);
+    if (e?.imagenId === a?.imagenId && e?.texto === a?.texto && e?.imagenUrl === a?.imagenUrl && (!galeria || e?.orden === a?.orden)) {
       continue;
     }
     filas = filas.filter((f) => f.clave !== clave);
     if (a) {
       const g = fila(base, clave);
-      filas.push(g ? { ...g, imagenId: a.imagenId, imagenUrl: a.imagenUrl, texto: a.texto } : a);
+      filas.push(g ? { ...g, imagenId: a.imagenId, imagenUrl: a.imagenUrl, texto: a.texto, ...(galeria ? { orden: a.orden } : {}) } : a);
     }
   }
   return filas;
 }
 
-/** Boceto `queFoto` sobre el borrador (el título del «Texto con foto»). */
+/** Boceto `queFoto` sobre el borrador (el título del «Texto con foto», el puesto en la galería). */
 export function queFoto(clave: string, borrador: readonly BloqueContenido[]): string {
-  return queFotoDe(clave, (bloque) => fila(borrador, `${bloque}.titulo`)?.texto ?? '');
+  return queFotoDe(
+    clave,
+    (bloque) => fila(borrador, `${bloque}.titulo`)?.texto ?? '',
+    (foto) => puestoGaleria(borrador, foto),
+  );
 }

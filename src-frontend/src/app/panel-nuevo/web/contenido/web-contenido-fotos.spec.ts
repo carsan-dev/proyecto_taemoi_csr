@@ -40,11 +40,12 @@ const archivo = (name: string, type: string, size = 1000) => ({ name, type, size
 
 /** W12f-1: fotos sueltas (boceto `fotoCapa`, `subidaHtml`, `abrirMenuFoto`, `abrirDescribir`, `cambios`, `errores`). */
 describe('web-contenido-fotos (W12f-1)', () => {
-  it('fotos sueltas: portada, presentación y «Texto con foto»; ni galería ni profesores', () => {
+  it('fotos sueltas: portada, presentación y «Texto con foto»; ni galería ni profesores (la galería, W12f-2a, aparte)', () => {
     expect(['portada.foto', 'presentacion.foto', 'texto_foto.1.foto', 'texto_foto.12.foto'].every(esFotoSuelta)).toBeTrue();
     expect(['galeria.1', 'profesor.1.foto', 'disciplina.tkd.foto', 'texto_foto.0.foto', 'portada.alt', 'sedes.foto'].some(esFotoSuelta)).toBeFalse();
     expect(fotoDeDescripcion('presentacion.foto.alt')).toBe('presentacion.foto');
-    expect(fotoDeDescripcion('galeria.1.alt')).toBeNull();
+    expect(fotoDeDescripcion('galeria.1.alt')).toBe('galeria.1');
+    expect(fotoDeDescripcion('profesor.1.foto.alt')).toBeNull();
   });
 
   it('queFoto: como el boceto', () => {
@@ -144,14 +145,14 @@ describe('web-contenido-fotos (W12f-1)', () => {
       expect(describirFoto(sin, 'texto_foto.3.foto', 'algo')).toEqual(sin);
     });
 
-    it('cambios: la foto y su descripción cuentan uno cada uno; la galería no cuenta aquí', () => {
+    it('cambios: la foto y su descripción cuentan uno cada uno; una foto de la galería quitada, uno (W12f-2a)', () => {
       expect(fotosCambiadas(GUARDADO, GUARDADO)).toEqual([]);
       const subida = ponerFoto(GUARDADO, 'portada.foto', 30, 'https://x/o.webp');
       expect(fotosCambiadas(GUARDADO, subida)).toEqual(['portada.foto', 'portada.foto.alt']);
       expect(fotosCambiadas(GUARDADO, describirFoto(subida, 'portada.foto', 'Niños en fila'))).toEqual(['portada.foto']);
       expect(fotosCambiadas(GUARDADO, describirFoto(GUARDADO, 'portada.foto', 'Otra'))).toEqual(['portada.foto.alt']);
       expect(fotosCambiadas(GUARDADO, quitarFoto(GUARDADO, 'texto_foto.3.foto'))).toEqual(['texto_foto.3.foto', 'texto_foto.3.foto.alt']);
-      expect(fotosCambiadas(GUARDADO, GUARDADO.filter((f) => f.clave !== 'galeria.1'))).toEqual([]);
+      expect(fotosCambiadas(GUARDADO, GUARDADO.filter((f) => f.clave !== 'galeria.1'))).toEqual(['galeria.1']);
     });
 
     it('estadoFotos: «Nueva, sin guardar» y «Volver a la anterior» solo con una guardada', () => {

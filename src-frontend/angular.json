@@ -302,6 +302,7 @@
               "src/app/panel-nuevo/web/contenido/web-contenido-textos-paginas.component.spec.ts",
               "src/app/panel-nuevo/web/contenido/web-contenido-fotos.spec.ts",
               "src/app/panel-nuevo/web/contenido/web-contenido-fotos.component.spec.ts",
+              "src/app/panel-nuevo/web/contenido/web-contenido-galeria.spec.ts",
               "src/app/panel-nuevo/web/contenido/web-contenido-bloques.spec.ts",
               "src/app/panel-nuevo/web/contenido/web-contenido-bloques.component.spec.ts",
               "src/app/panel-nuevo/escuela/configuracion/configuracion-vista.spec.ts",

@@ -327,12 +327,124 @@ describe('WebContenidoComponent: fotos sueltas (W12f-1)', () => {
     expect(confirmar).toHaveBeenCalledWith(jasmine.objectContaining({ titulo: 'Tienes 2 cambios sin guardar' }));
   });
 
-  it('el puente no acepta subir ni tocar fotos de la galería o de profesores', () => {
+  it('el puente no acepta subir ni tocar fotos de profesores (W12f-2b)', () => {
     abrir();
-    elegir('galeria.1', foto());
+    elegir('profesor.1.foto', foto());
     accion('profesor.1.foto', 'quitar');
-    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'descripcion', clave: 'galeria.1', texto: 'Otra' });
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'descripcion', clave: 'profesor.1.foto', texto: 'Otra' });
     http.expectNone(URL_IMAGENES);
+    expect(q('.barra')).toBeNull();
+  });
+
+  // ------------------------------------------------------------------ galería (W12f-2a)
+  const galeria = (n: number, orden: number, texto = `Foto ${n}`) =>
+    fila(`galeria.${n}`, texto, { imagenId: 100 + n, imagenUrl: `https://x/g${n}.webp`, orden });
+  const conGaleria = (...fotos: BloqueContenido[]): ContenidoWeb => ({
+    version: 5,
+    bloques: [...BLOQUES.filter((f) => !f.clave.startsWith('galeria.')), fila('galeria', null, { orden: 4 }), ...fotos],
+  });
+  const putGaleria = (put: TestRequest) =>
+    (put.request.body.bloques as { clave: string }[]).filter((b) => /^galeria\.\d+$/.test(b.clave));
+
+  it('galería: añadir sube como `galeria.nueva`, entra la última con el número siguiente y se describe', () => {
+    abrir(conGaleria(galeria(1, 1), galeria(4, 2)));
+    elegir('galeria.nueva', foto('entrenamiento-mollina.jpg'));
+    const peticion = subida();
+    expect(ultimoFotos()['subidas']).toEqual({ 'galeria.nueva': { estado: 'subiendo', pct: 0, nombre: 'entrenamiento-mollina.jpg' } });
+    expect(boton('Guardar').disabled).toBeTrue();
+    peticion.flush({ imagenId: 70, url: 'https://x/n.webp' }, { status: 201, statusText: 'Created' });
+    fixture.detectChanges();
+    // Número: el mayor (4) + 1, sin rellenar el hueco del 2.
+    expect(enviados).toHaveBeenCalledWith({ canal: CANAL_EDITOR_WEB, tipo: 'describir', clave: 'galeria.5' }, location.origin);
+    expect(ultimoFotos()).toEqual(jasmine.objectContaining({ cambiadas: ['galeria.5'], anteriores: [], subidas: {} }));
+    expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+
+    // Sin describir no se guarda: «Foto n.º 3 de la galería: falta describirla».
+    boton('Guardar').click();
+    fixture.detectChanges();
+    http.expectNone((r) => r.method === 'PUT');
+    expect(texto('.resumen li')).toBe('Foto n.º 3 de la galería: falta describirla');
+    expect(enviados).toHaveBeenCalledWith(
+      { canal: CANAL_EDITOR_WEB, tipo: 'errores', errores: { 'galeria.5.alt': 'Describe la foto.' } },
+      location.origin,
+    );
+    describir('galeria.5', 'Clase de los pequeños en Mollina');
+    expect(q('.resumen')).toBeNull();
+    expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+
+    boton('Guardar').click();
+    const put = http.expectOne((r) => r.method === 'PUT');
+    expect(putGaleria(put)).toEqual([
+      { clave: 'galeria.1', texto: 'Foto 1', imagenId: 101, orden: 1, oculto: false },
+      { clave: 'galeria.4', texto: 'Foto 4', imagenId: 104, orden: 2, oculto: false },
+      { clave: 'galeria.5', texto: 'Clase de los pequeños en Mollina', imagenId: 70, orden: 3, oculto: false },
+    ] as never);
+    put.flush(conGaleria(galeria(1, 1), galeria(4, 2), galeria(5, 3)));
+  });
+
+  it('galería: un número quitado sin guardar no se repite en la misma sesión', () => {
+    abrir(conGaleria(galeria(1, 1)));
+    subir('galeria.nueva', 71);
+    expect(mensajes('describir').at(-1)!['clave']).toBe('galeria.2');
+    accion('galeria.2', 'quitar');
+    subir('galeria.nueva', 72);
+    expect(mensajes('describir').at(-1)!['clave']).toBe('galeria.3');
+  });
+
+  it('galería: con 6 fotos no se sube otra', () => {
+    abrir(conGaleria(...[1, 2, 3, 4, 5, 6].map((n) => galeria(n, n))));
+    elegir('galeria.nueva', foto());
+    http.expectNone(URL_IMAGENES);
+    expect(mensajes('fotos').every((m) => !Object.keys(m['subidas'] as object).length)).toBeTrue();
+    expect(q('.barra')).toBeNull();
+  });
+
+  it('galería: mover cambia el puesto con la vecina, lo anuncia y cuenta un cambio; en los extremos no hace nada', () => {
+    abrir(conGaleria(galeria(1, 1), galeria(2, 2), galeria(3, 3)));
+    accion('galeria.1', 'antes');
+    accion('galeria.3', 'despues');
+    expect(q('.barra')).toBeNull();
+    accion('galeria.3', 'antes');
+    expect(texto('[role=status].oculto')).toBe('La foto pasa al puesto 2 de 3.');
+    expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+    // Volver a su sitio deja de ser un cambio.
+    accion('galeria.3', 'despues');
+    expect(q('.barra')).toBeNull();
+    accion('galeria.1', 'despues');
+    boton('Guardar').click();
+    const put = http.expectOne((r) => r.method === 'PUT');
+    expect(putGaleria(put)).toEqual([
+      jasmine.objectContaining({ clave: 'galeria.1', orden: 2 }),
+      jasmine.objectContaining({ clave: 'galeria.2', orden: 1 }),
+      jasmine.objectContaining({ clave: 'galeria.3', orden: 3 }),
+    ] as never);
+    put.flush(conGaleria(galeria(1, 2), galeria(2, 1), galeria(3, 3)));
+  });
+
+  it('galería: quitar saca la foto entera del PUT y las demás suben de puesto; Descartar la recupera', () => {
+    abrir(conGaleria(galeria(1, 1), galeria(2, 2), galeria(3, 3)));
+    accion('galeria.1', 'quitar');
+    expect(texto('[role=status].oculto')).toBe('Foto quitada. Se quita de la web al guardar.');
+    expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+    boton('Descartar').click();
+    fixture.detectChanges();
+    expect(q('.barra')).toBeNull();
+    accion('galeria.2', 'quitar');
+    boton('Guardar').click();
+    const put = http.expectOne((r) => r.method === 'PUT');
+    expect(putGaleria(put)).toEqual([
+      jasmine.objectContaining({ clave: 'galeria.1', orden: 1 }),
+      jasmine.objectContaining({ clave: 'galeria.3', orden: 2 }),
+    ] as never);
+    put.flush(conGaleria(galeria(1, 1), galeria(3, 2)));
+  });
+
+  it('galería: cambiar una foto la marca nueva con su anterior; «Volver a la anterior» la deja como estaba', () => {
+    abrir(conGaleria(galeria(1, 1), galeria(2, 2)));
+    subir('galeria.2', 80);
+    expect(ultimoFotos()).toEqual(jasmine.objectContaining({ cambiadas: ['galeria.2'], anteriores: ['galeria.2'] }));
+    expect(texto('.barra__texto strong')).toBe('2 cambios sin guardar');
+    accion('galeria.2', 'anterior');
     expect(q('.barra')).toBeNull();
   });
 });

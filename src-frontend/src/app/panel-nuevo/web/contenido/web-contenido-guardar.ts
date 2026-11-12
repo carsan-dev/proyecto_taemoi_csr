@@ -8,7 +8,7 @@ import {
   recortar,
 } from '../../../web-plantilla/editor/textos-editor';
 import type { PaginaEditor } from '../../../web-plantilla/editor/candados-linea-comarcal';
-import { bloqueDeFoto, claveDescripcion, esFotoSuelta, fotoDeDescripcion } from '../../../web-plantilla/editor/fotos-sueltas';
+import { bloqueDeFoto, claveDescripcion, esFotoEditable, fotoDeDescripcion } from '../../../web-plantilla/editor/fotos-sueltas';
 import { TEXTOS_FOTOS, queFoto } from './web-contenido-fotos';
 import { type BloqueContenido, nombrePagina } from './web-contenido-vista';
 
@@ -74,8 +74,9 @@ export function erroresContenido(borrador: readonly BloqueContenido[], defectos:
     errores['portada.foto'] = 'Añade la foto de portada.';
   }
   // W12f-1 (boceto `errores`): cada foto suelta puesta, descrita; un «Texto con foto» con foto, con su título.
+  // W12f-2a: y cada foto de la galería, descrita.
   for (const fila of borrador) {
-    if (!esFotoSuelta(fila.clave) || fila.imagenId === null) {
+    if (!esFotoEditable(fila.clave) || fila.imagenId === null) {
       continue;
     }
     if (!(fila.texto ?? '').trim()) {
@@ -158,8 +159,8 @@ export function entradaResumen(
   delServidor: boolean,
 ): { clave: string; texto: string; enlace: boolean } {
   const nombre = nombreError(clave, borrador);
-  // W12f-1: el error de la API en una foto suelta lleva a la foto.
-  if (esFotoSuelta(clave) && delServidor && mensaje) {
+  // W12f-1: el error de la API en una foto (suelta o de la galería) lleva a la foto.
+  if (esFotoEditable(clave) && delServidor && mensaje) {
     return { clave, texto: mensaje, enlace: true };
   }
   return { clave, texto: nombre ?? mensaje, enlace: nombre !== null };

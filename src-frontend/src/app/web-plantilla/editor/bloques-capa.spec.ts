@@ -114,7 +114,8 @@ describe('bloques en el sitio (W12e, capa de edición)', () => {
 
   it('pastillas: «Oculto en la web · Mostrar», «Vacío: no sale en la web» y «Sin guardar» (boceto `estadosHtml`)', () => {
     const oculto = bloque('galeria').querySelector('.ed-estados')!;
-    expect(texto(oculto)).toBe('Oculto en la webMostrar');
+    // W12f-2a (boceto `estadosHtml`): la galería dice cuántas fotos tiene.
+    expect(texto(oculto)).toBe('Oculto en la webMostrar0 de 6 fotos');
     expect(bloque('galeria').classList).toContain('es-oculto');
     const mostrar = oculto.querySelector<HTMLButtonElement>('.ed-mini')!;
     expect(mostrar.getAttribute('aria-label')).toBe('Mostrar el bloque Galería');

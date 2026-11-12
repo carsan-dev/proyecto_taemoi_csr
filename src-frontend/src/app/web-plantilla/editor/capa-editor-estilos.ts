@@ -203,4 +203,14 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .estrecho .ed-nombre{opacity:1}
 .estrecho .ed-acciones{display:none}
 @media (prefers-reduced-motion:reduce){.ed-hueco::before,.ed-anadir,.ed-mini{transition:none}}
+/* W12f-2a: galería (boceto .ed-anadir-foto, .ed-galeria-llena y sus ajustes a «La línea comarcal»). La casilla de la
+   foto que sube y el botón van en su propio <li class="ed"> tras las fotos del tema. */
+.ed-anadir-foto{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;width:100%;height:100%;padding:16px;border:2px dashed var(--pn-acento-borde);border-radius:0;background:transparent;color:var(--pn-acento);font:600 .9375rem/1.3 var(--pn-fuente);text-align:center;cursor:pointer;transition:background-color 150ms ease-out}
+.ed-anadir-foto:hover{background:var(--pn-acento-suave)}
+.ed-anadir-foto svg{width:24px;height:24px}
+.ed-anadir-foto small{font:400 .8125rem/1.3 var(--pn-fuente);color:var(--pn-tinta-2)}
+.ed-anadir-foto:focus-visible{outline:3px solid var(--pn-acento-borde);outline-offset:2px;box-shadow:0 0 0 2px #fff}
+.ed-galeria-llena{display:grid;align-content:center;gap:6px;box-sizing:border-box;height:100%;padding:16px;border:2px dashed var(--pn-linea-fuerte);color:var(--pn-tinta-2)}
+.ed-galeria-llena b{color:var(--pn-tinta);font-weight:600;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.ed-anadir-foto{transition:none}}
 `;

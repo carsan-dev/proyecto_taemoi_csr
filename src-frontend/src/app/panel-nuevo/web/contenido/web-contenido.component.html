@@ -279,6 +279,12 @@
           @case ('alumnos') {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke-width="1.8"><circle cx="9" cy="8.5" r="3.5"></circle><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 5.2a3.5 3.5 0 0 1 0 6.6M18.5 14.8c1.7.7 2.8 2.4 3 5.2"></path></svg>
           }
+          @case ('antes') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke-width="2"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>
+          }
+          @case ('despues') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          }
           }
           <span>{{ o.texto }}@if (o.pie) {<small>{{ o.pie }}</small>}</span>
         </button>

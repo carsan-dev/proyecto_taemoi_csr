@@ -29,6 +29,10 @@ import type { BloqueWeb } from '../datos/modelos';
  * guarda el panel en el borrador. Al terminar una subida, el panel pide a la capa abrir el diálogo de describir
  * (`describir`).
  *
+ * W12f-2a: las fotos de la galería (`galeria.<n>`) van por los mismos mensajes. Una foto más se sube con la clave
+ * `galeria.nueva`; al terminar, el panel le da su número y pide describirla con él. «Mover antes» y «Mover después» son
+ * acciones de `foto`.
+ *
  * W12e: bloques de Inicio. La capa dice qué bloques hay en la página y cuáles están vacíos (`bloques`) y pide las
  * acciones de la barra (`bloque`), añadir un bloque en un puesto (`anadir-bloque`) y, con el panel estrecho, la hoja de
  * acciones del bloque (`hoja`), que vive en el panel. El panel cambia el borrador, manda a la capa qué partes tienen
@@ -49,7 +53,8 @@ import {
   esParteInicio,
   esTipoBloque,
 } from './bloques-editor';
-import { MAX_DESCRIPCION_FOTO, esFotoSuelta, fotoDeDescripcion } from './fotos-sueltas';
+import { GALERIA_NUEVA, esFotoGaleria } from './fotos-galeria';
+import { MAX_DESCRIPCION_FOTO, esClaveSubida, esFotoEditable, fotoDeDescripcion } from './fotos-sueltas';
 import { huecoDe } from './huecos-editor';
 import { esTextoEditable } from './textos-editor';
 
@@ -188,7 +193,7 @@ export const MENUS_HOJA = ['foto', 'anadir'] as const;
 export type MenuHoja = (typeof MENUS_HOJA)[number];
 
 /** Iconos que puede llevar una opción de esos menús (el panel los dibuja con los suyos). */
-export const ICONOS_HOJA_MENU = ['foto', 'texto', 'deshacer', 'papelera', 'alumnos'] as const;
+export const ICONOS_HOJA_MENU = ['foto', 'texto', 'deshacer', 'papelera', 'alumnos', 'antes', 'despues'] as const;
 export type IconoHojaMenu = (typeof ICONOS_HOJA_MENU)[number];
 
 /** Una opción del menú tal como la dibuja la hoja (boceto `.flot__op`): texto, pie opcional y estado. */
@@ -297,7 +302,7 @@ export interface MensajeDefectos {
   textos: Record<string, string>;
 }
 
-/** W12f-1: el fichero elegido para una foto suelta; lo sube el panel. */
+/** W12f-1: el fichero elegido para una foto (W12f-2a: también `galeria.nueva`, una foto más en la galería); lo sube el panel. */
 export interface MensajeSubirFoto {
   canal: typeof CANAL_EDITOR_WEB;
   tipo: 'subir-foto';
@@ -305,8 +310,8 @@ export interface MensajeSubirFoto {
   archivo: File;
 }
 
-/** W12f-1: acciones del menú y de la subida de una foto suelta. */
-export const ACCIONES_FOTO = ['cancelar-subida', 'anterior', 'quitar'] as const;
+/** W12f-1: acciones del menú y de la subida de una foto. W12f-2a: «Mover antes» y «Mover después» (galería). */
+export const ACCIONES_FOTO = ['cancelar-subida', 'anterior', 'quitar', 'antes', 'despues'] as const;
 export type AccionFoto = (typeof ACCIONES_FOTO)[number];
 
 export interface MensajeAccionFoto {
@@ -434,7 +439,7 @@ function esAcento(valor: unknown): valor is AcentoEditor {
   return esObjeto(valor) && [valor['acento'], valor['borde'], valor['suave']].every((c) => typeof c === 'string' && HEX.test(c));
 }
 
-const esListaDeFotos = (valor: unknown) => Array.isArray(valor) && valor.length <= 100 && valor.every(esFotoSuelta);
+const esListaDeFotos = (valor: unknown) => Array.isArray(valor) && valor.length <= 100 && valor.every(esFotoEditable);
 const esTextoDeSubida = (valor: unknown) => typeof valor === 'string' && valor.length <= 500;
 
 function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
@@ -448,9 +453,9 @@ function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
   return valor['estado'] === 'error' && esTextoDeSubida(valor['titulo']) && esTextoDeSubida(valor['msg']);
 }
 
-/** Las claves a las que lleva un enlace del resumen: un texto, una foto suelta o su descripción. */
+/** Las claves a las que lleva un enlace del resumen: un texto, una foto (suelta o de la galería) o su descripción. */
 const esClaveIrA = (clave: unknown) =>
-  typeof clave === 'string' && (esTextoEditable(clave) || esFotoSuelta(clave) || fotoDeDescripcion(clave) !== null);
+  typeof clave === 'string' && (esTextoEditable(clave) || esFotoEditable(clave) || fotoDeDescripcion(clave) !== null);
 
 const esIdHoja = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 const esMenuHoja = (v: unknown): v is MenuHoja => (MENUS_HOJA as readonly unknown[]).includes(v);
@@ -501,10 +506,10 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
         esListaDeFotos(valor['cambiadas']) &&
         esListaDeFotos(valor['anteriores']) &&
         esObjeto(valor['subidas']) &&
-        Object.entries(valor['subidas']).every(([k, v]) => esFotoSuelta(k) && esEstadoSubida(v))
+        Object.entries(valor['subidas']).every(([k, v]) => esClaveSubida(k) && esEstadoSubida(v))
       );
     case 'describir':
-      return esFotoSuelta(valor['clave']);
+      return esFotoEditable(valor['clave']);
     case 'estado-bloques':
       return esListaDeIds(valor['sinGuardar'], esParteInicio) && esListaDeIds(valor['quitables'], esIdBloque) && typeof valor['estrecho'] === 'boolean';
     case 'foco-bloque':
@@ -544,13 +549,24 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
     case 'subir-foto': {
       // El `File` llega clonado a esta ventana (`postMessage`): es un `Blob` de aquí con su nombre.
       const archivo = valor['archivo'];
-      return esFotoSuelta(valor['clave']) && archivo instanceof Blob && typeof (archivo as File).name === 'string';
+      return esClaveSubida(valor['clave']) && archivo instanceof Blob && typeof (archivo as File).name === 'string';
     }
     case 'foto':
-      return esFotoSuelta(valor['clave']) && (ACCIONES_FOTO as readonly unknown[]).includes(valor['accion']);
+    {
+      // La foto nueva de la galería solo tiene su subida (cancelarla o cerrar su fallo); solo las de la galería se mueven.
+      const accion = valor['accion'];
+      const clave = valor['clave'];
+      if (!(ACCIONES_FOTO as readonly unknown[]).includes(accion)) {
+        return false;
+      }
+      if (clave === GALERIA_NUEVA) {
+        return accion === 'cancelar-subida';
+      }
+      return accion === 'antes' || accion === 'despues' ? esFotoGaleria(clave) : esFotoEditable(clave);
+    }
     case 'descripcion': {
       const texto = valor['texto'];
-      return esFotoSuelta(valor['clave']) && typeof texto === 'string' && texto.length <= MAX_DESCRIPCION_FOTO;
+      return esFotoEditable(valor['clave']) && typeof texto === 'string' && texto.length <= MAX_DESCRIPCION_FOTO;
     }
     case 'bloques':
       return esListaDeIds(valor['orden'], esIdBloque) && esListaDeIds(valor['vacios'], esIdBloque);

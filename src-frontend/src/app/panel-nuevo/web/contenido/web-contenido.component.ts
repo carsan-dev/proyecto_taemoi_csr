@@ -33,6 +33,7 @@ import {
   escucharPuente,
 } from '../../../web-plantilla/editor/puente-editor';
 import { claveDescripcion, fotoOpcional } from '../../../web-plantilla/editor/fotos-sueltas';
+import { GALERIA_NUEVA, MAX_GALERIA, esFotoGaleria, ordenGaleria, vozMoverFoto } from '../../../web-plantilla/editor/fotos-galeria';
 import {
   type AccionBloque,
   TEXTOS_BLOQUES,
@@ -132,6 +133,7 @@ import {
   vozOculto,
   vozQuitado,
 } from './web-contenido-bloques';
+import { anadirFotoGaleria, moverFotoGaleria, quitarFotoGaleria } from './web-contenido-galeria';
 import { ListasVista, WebContenidoService } from './web-contenido.service';
 
 /** Panel estrecho (boceto `estrecho()`): las acciones de un bloque salen en la hoja inferior. */
@@ -171,6 +173,10 @@ const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
  * lo manda; aquí se comprueba, se sube a la API con su progreso («Cancelar subida» la corta) y la foto subida entra en el
  * borrador sin descripción, con el diálogo de describir abierto en la capa. Poner, cambiar, quitar, volver a la anterior
  * y describir cuentan como cambios. Mientras sube algo no se guarda.
+ *
+ * W12f-2a: la galería (`web-contenido-galeria.ts`). Una foto más llega como `galeria.nueva`; al terminar la subida entra
+ * la última con su número (`numeroGaleriaNuevo`) y se describe. Mover y quitar cambian los puestos; todo cuenta como
+ * cambio y la descripción es obligatoria.
  *
  * W12e: bloques de Inicio (`web-contenido-bloques.ts`). La capa pide subir, bajar, ocultar, mostrar, quitar (con
  * confirmación) y añadir; aquí se cambian las cabeceras del borrador, se manda a la vista previa, se dice por voz y se
@@ -405,6 +411,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private avisoError: number | null = null;
   /** W12f-1: la petición de cada subida en curso (se corta al cancelar, descartar, recargar o salir). */
   private readonly peticiones = new Map<string, Subscription>();
+  /** W12f-2a: números de foto de la galería ya dados en esta pantalla (una foto nueva no repite ninguno). */
+  private readonly numerosGaleria = new Set<number>();
   private observador: ResizeObserver | null = null;
   private temporizadorEsqueleto: ReturnType<typeof setTimeout> | null = null;
   private temporizadorLimite: ReturnType<typeof setTimeout> | null = null;
@@ -790,6 +798,11 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   /** Boceto `simularSubida`: comprobar, subir con progreso y, al terminar, al borrador y a describirla. */
   private subirFoto(clave: string, archivo: File): void {
     this.cancelarPeticion(clave);
+    // W12f-2a: con 6 fotos la capa no ofrece «Añadir foto» (boceto `galeriaHtml`); defensa por si llega.
+    if (clave === GALERIA_NUEVA && ordenGaleria(this.borrador()).length >= MAX_GALERIA) {
+      this.quitarSubida(clave);
+      return;
+    }
     const fallo = comprobarArchivo(archivo);
     if (fallo) {
       this.ponerSubida(clave, fallo);
@@ -813,13 +826,16 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
             return;
           }
           this.quitarSubida(clave);
-          this.cambiarFotos([clave], (filas) => ponerFoto(filas, clave, imagen.imagenId, imagen.url));
+          const puesta = this.ponerFotoSubida(clave, imagen.imagenId, imagen.url);
+          if (!puesta) {
+            return;
+          }
           this.anuncio.set(this.textosFotos.vozSubida);
           if (this.ventana) {
             enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, {
               canal: CANAL_EDITOR_WEB,
               tipo: 'describir',
-              clave,
+              clave: puesta,
             });
           }
         }
@@ -832,6 +848,27 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (!peticion.closed) {
       this.peticiones.set(clave, peticion);
     }
+  }
+
+  /**
+   * La foto subida, al borrador: en su sitio o, si es `galeria.nueva`, la última de la galería con su número (W12f-2a).
+   * Devuelve la clave de la foto puesta, o null si ya no cabe (la galería se llenó, o la foto se quitó mientras subía).
+   */
+  private ponerFotoSubida(clave: string, imagenId: number, url: string): string | null {
+    if (clave === GALERIA_NUEVA) {
+      const r = anadirFotoGaleria(this.borrador(), this.guardado(), this.numerosGaleria, imagenId, url);
+      if (!r) {
+        return null;
+      }
+      this.numerosGaleria.add(Number(r.clave.slice('galeria.'.length)));
+      this.cambiarFotos([r.clave], () => r.filas);
+      return r.clave;
+    }
+    if (esFotoGaleria(clave) && !this.borrador().some((f) => f.clave === clave)) {
+      return null;
+    }
+    this.cambiarFotos([clave], (filas) => ponerFoto(filas, clave, imagenId, url));
+    return clave;
   }
 
   private accionFoto(clave: string, accion: AccionFoto): void {
@@ -852,10 +889,20 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       case 'quitar':
         // La foto de portada es obligatoria: no se quita (boceto `abrirMenuFoto`).
         if (fotoOpcional(clave)) {
-          this.cambiarFotos([clave], (filas) => quitarFoto(filas, clave));
+          this.cambiarFotos([clave], (filas) => (esFotoGaleria(clave) ? quitarFotoGaleria(filas, clave) : quitarFoto(filas, clave)));
           this.anuncio.set(this.textosFotos.vozQuitada);
         }
         break;
+      case 'antes':
+      case 'despues': {
+        // W12f-2a: cambia el puesto con la vecina; la capa deja el foco en la foto movida.
+        const r = esFotoGaleria(clave) ? moverFotoGaleria(this.borrador(), clave, accion === 'antes' ? -1 : 1) : null;
+        if (r) {
+          this.cambiarFotos([], () => r.filas);
+          this.anuncio.set(vozMoverFoto(r.puesto, r.total));
+        }
+        break;
+      }
     }
   }
 
