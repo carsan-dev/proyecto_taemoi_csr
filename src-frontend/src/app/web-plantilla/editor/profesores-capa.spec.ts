@@ -203,6 +203,8 @@ describe('profesores en el sitio (W12f-2b, capa de edición)', () => {
       estado(true);
       await esperar(250);
       for (const n of [1, 4]) {
+        // Sin transición: el valor final no depende de cuánto tarde la máquina (falló en la CI con la de 150 ms a medias).
+        barraDe(n).style.transition = 'none';
         const css = ventana.getComputedStyle(barraDe(n));
         expect(css.opacity).withContext(`tarjeta ${n}`).toBe('1');
         expect(css.display).toBe('flex');
