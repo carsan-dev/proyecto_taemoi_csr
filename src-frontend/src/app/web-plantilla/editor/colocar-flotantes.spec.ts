@@ -223,6 +223,30 @@ describe('flotantes de la capa sin pisarse (maquetación real)', () => {
     });
   });
 
+  describe('con el aviso de error del bloque', () => {
+    it('la etiqueta del campo, bajo el campo, no pisa el .ed-error del bloque', () => {
+      // El botón de la cabecera, arriba del todo: arriba no cabe en la página y la etiqueta va bajo el campo.
+      montar(1200, '.cabecera-cta{position:absolute;top:8px;left:40px}');
+      editar(q('.cabecera-cta'));
+      const campo = q('.ed-campo__texto');
+      const bloque = campo.closest('.ed-bloque') as HTMLElement | null;
+      expect(bloque).not.toBeNull();
+      const chip = q('.ed-chip');
+      const sola = rect(chip);
+      expect(sola.top).withContext('bajo el campo').toBeGreaterThanOrEqual(rect(campo).bottom);
+      // Un aviso de error justo donde estaba la etiqueta.
+      const error = doc.createElement('p');
+      error.className = 'ed ed-error';
+      error.textContent = 'Es obligatorio.';
+      error.style.cssText = `position:absolute;margin:0;left:${sola.left + ventana.scrollX}px;top:${sola.top + ventana.scrollY}px;width:${sola.right - sola.left}px;height:${sola.bottom - sola.top}px`;
+      bloque!.appendChild(error);
+      expect(cortan(rect(error), sola)).toBeTrue();
+      campo.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText' }));
+      expect(chip.hidden).toBeFalse();
+      expect(cortan(rect(chip), rect(error))).withContext('etiqueta y aviso de error').toBeFalse();
+    });
+  });
+
   describe('a 1200 px', () => {
     it('la colocación de siempre: etiqueta a 14 px sobre el campo y a su derecha', () => {
       // El campo lejos de la barra del bloque: nada que evitar, todo donde siempre.

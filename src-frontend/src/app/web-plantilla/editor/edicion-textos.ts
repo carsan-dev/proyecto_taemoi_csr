@@ -957,7 +957,9 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     chip.classList.toggle('es-tope', tope);
     chip.hidden = false;
     const r = activa.campo.getBoundingClientRect();
-    // Sobre el campo (bajo él si arriba no cabe en la página), sin pisar el nombre ni la barra del bloque.
+    // Sobre el campo, o bajo él si arriba no cabe. `arriba` se mide en coordenadas de página a propósito: la etiqueta es
+    // `position:absolute` en el documento y lo que importa es que no quede por encima del principio de la página
+    // (`colocarEvitando` trabaja en coordenadas de la vista). Sin pisar el nombre ni la barra del bloque, ni su aviso de error.
     const sitio = colocarEvitando({
       ancho: chip.offsetWidth,
       alto: chip.offsetHeight,
@@ -966,7 +968,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       izquierda: r.right - chip.offsetWidth + 4,
       arriba: r.top + ventana.scrollY - chip.offsetHeight - 14 >= 4,
       vista: { ancho: doc.documentElement.clientWidth, alto: ventana.innerHeight },
-      evitar: cajasVisibles(doc, [activa.campo.closest('.ed-bloque')], ':scope > .ed-barra .ed-nombre, :scope > .ed-barra .ed-acciones'),
+      evitar: cajasVisibles(doc, [activa.campo.closest('.ed-bloque')], ':scope > .ed-barra .ed-nombre, :scope > .ed-barra .ed-acciones, .ed-error'),
     });
     chip.style.top = `${sitio.top + ventana.scrollY}px`;
     chip.style.left = `${sitio.left + ventana.scrollX}px`;
@@ -1002,9 +1004,18 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
    * campo (el teclado del móvil seguiría abierto): el cursor va delante o detrás de la ficha (según la mitad tocada) o al
    * final del texto. Sin caracteres invisibles: el cursor es un punto entre hijos del campo (`campo`, índice).
    */
+  // Tipo del último puntero (`pointerdown` va siempre antes que su `mousedown`): solo el dedo y el lápiz pasan por aquí;
+  // con el ratón, el navegador coloca el cursor y selecciona arrastrando como siempre.
+  let ultimoPuntero = '';
+  const alPunteroBajar = (evento: PointerEvent) => {
+    ultimoPuntero = evento.pointerType;
+  };
   const alTocarEnEdicion = (evento: MouseEvent) => {
     const a = activa;
     const t = objetivo(evento);
+    if (ultimoPuntero !== 'touch' && ultimoPuntero !== 'pen') {
+      return;
+    }
     // Ampliar una selección (Mayús) o elegir palabras (doble clic) sigue siendo del navegador.
     if (!a || pendiente || evento.button !== 0 || evento.shiftKey || evento.detail > 1 || !t || !a.copia.contains(t)) {
       return;
@@ -1035,13 +1046,27 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
 
   /** El punto cae a la derecha del final del texto (en su última línea) o debajo de ella. */
   function trasElFinal(campo: HTMLElement, x: number, y: number): boolean {
-    // El campo es un `span`: una caja por línea; la última es la de la última línea.
-    const lineas = campo.getClientRects();
-    const ultima = lineas[lineas.length - 1];
+    // La última línea se mide con lo último del contenido (texto o ficha): una caja por línea que ocupa, también en los
+    // campos `.ed-multi` (display:block), donde las del propio campo son una sola caja que lo abarca todo.
+    const ultimo = campo.lastChild;
+    let cajas: ArrayLike<DOMRect> = campo.getClientRects();
+    if (ultimo?.nodeType === Node.TEXT_NODE) {
+      const fin = doc.createRange();
+      fin.selectNodeContents(ultimo);
+      cajas = fin.getClientRects();
+    } else if (ultimo?.nodeType === Node.ELEMENT_NODE) {
+      cajas = (ultimo as Element).getClientRects();
+    }
+    // Las cajas sin ancho (salto o espacio final) no son una línea con texto.
+    const conAncho = Array.from(cajas).filter((c) => c.width > 0);
+    const ultima = conAncho[conAncho.length - 1];
     if (!ultima) {
       return false;
     }
-    return y > ultima.bottom || (y >= ultima.top && x > ultima.right);
+    // Con interlineado ajustado las cajas de líneas contiguas se solapan en vertical: la fila de la última línea empieza
+    // a su mitad, para que el blanco a la derecha de la línea anterior (más larga) no cuente como «tras el final».
+    // Un píxel de tolerancia: el `clientY` del `mousedown` llega truncado a entero.
+    return y > ultima.bottom || (y >= ultima.top + ultima.height / 2 - 1 && x > ultima.right);
   }
 
   const alTeclear = (evento: KeyboardEvent) => {
@@ -1256,6 +1281,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   };
 
   // En captura: antes que los oyentes de la capa que dejan inertes los formularios y controles de la web.
+  doc.addEventListener('pointerdown', alPunteroBajar, true);
   doc.addEventListener('mousedown', alBajar, true);
   doc.addEventListener('mousedown', alTocarEnEdicion, true);
   doc.addEventListener('keydown', alTeclear, true);
@@ -1317,6 +1343,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       doc.removeEventListener('dragstart', alArrastrar, true);
       doc.removeEventListener('compositionstart', alComponer, true);
       doc.removeEventListener('compositionend', alAcabarDeComponer, true);
+      doc.removeEventListener('pointerdown', alPunteroBajar, true);
       doc.removeEventListener('mousedown', alBajar, true);
       doc.removeEventListener('mousedown', alTocarEnEdicion, true);
       doc.removeEventListener('keydown', alTeclear, true);
