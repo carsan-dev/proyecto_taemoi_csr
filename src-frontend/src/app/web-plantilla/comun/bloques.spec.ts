@@ -39,11 +39,23 @@ describe('bloques · lectura de web_bloque', () => {
       b('profesor.10.nombre', 'Manuel Ortega'),
     ]);
     expect(bloques.profesores()).toEqual([
-      { n: 1, nombre: 'Antonio Ruiz', cargo: 'Cinturón negro 5.º dan', foto: null },
+      { n: 1, nombre: 'Antonio Ruiz', cargo: 'Cinturón negro 5.º dan', foto: null, sedes: [] },
       // Sin descripción en su bloque (datos de antes de W12), el nombre.
-      { n: 2, nombre: 'Lucía Fernández', cargo: null, foto: { url: 'https://x/l.jpg', alt: 'Lucía Fernández' } },
-      { n: 10, nombre: 'Manuel Ortega', cargo: null, foto: null },
+      { n: 2, nombre: 'Lucía Fernández', cargo: null, foto: { url: 'https://x/l.jpg', alt: 'Lucía Fernández' }, sedes: [] },
+      { n: 10, nombre: 'Manuel Ortega', cargo: null, foto: null, sedes: [] },
     ]);
+  });
+
+  it('profesores: `sedes` lee ids enteros positivos, sin repetidos y en el orden guardado', () => {
+    const sedes = (texto: string | null, fila = true) =>
+      new BloquesWeb([b('profesor.1.nombre', 'Ana'), ...(fila ? [b('profesor.1.sedes', texto)] : [])]).profesores()[0].sedes;
+    expect(sedes('3,1')).toEqual([3, 1]);
+    expect(sedes(null, false)).toEqual([]);
+    expect(sedes('')).toEqual([]);
+    expect(sedes(' 2 , 5 ,7 ')).toEqual([2, 5, 7]);
+    expect(sedes('2,2, 1,2')).toEqual([2, 1]);
+    expect(sedes('a,-1,0,01,1.5,4')).toEqual([4]);
+    expect(sedes('1,,2,')).toEqual([1, 2]);
   });
 
   it('galería: solo las que tienen imagen, por orden y luego por número', () => {

@@ -224,6 +224,11 @@
 }
 .lc .profe-nombre { margin-top: 20px; font: 800 1.75rem/0.95 var(--display); text-transform: uppercase; text-wrap: balance; }
 .lc .profe-grado { margin-top: 8px; color: var(--tinta-2); }
+.lc .mini-linea { position: relative; display: grid; gap: 8px; margin-top: 16px; }
+.lc .mini-linea::before { content: ""; position: absolute; left: 5px; top: 10px; bottom: 10px; width: 4px; background: var(--escuela-trazo); }
+.lc .mini-linea li { position: relative; display: flex; align-items: center; gap: 10px; font-weight: 600; line-height: 1.3; }
+.lc .mini-linea li::before { content: ""; position: relative; z-index: 1; flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--blanco); border: 3px solid var(--escuela-trazo); }
+.lc .mini-linea:has(li:only-child)::before { display: none; }
 @media (min-width: 900px) { .lc .profes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 /* 5. Galería numerada */

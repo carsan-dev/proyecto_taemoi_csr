@@ -334,6 +334,30 @@ describe('PortadaLineaComarcalComponent', () => {
       expect(antigua.querySelector('.portada-foto img')!.getAttribute('alt')).toBe('Descripción antigua');
     });
 
+    it('las sedes del profesor salen como lista bajo el cargo; sin sedes, sin lista', async () => {
+      const raiz = await abrir(
+        sitioConSedes(3, {
+          bloques: [
+            bloque('profesor.1.nombre', 'Antonio Ruiz Carmona'),
+            bloque('profesor.1.cargo', 'Cinturón negro 5.º dan'),
+            bloque('profesor.1.sedes', '3,1,99'),
+            bloque('profesor.2.nombre', 'Manuel Ortega Pozo'),
+            bloque('profesor.3.nombre', 'Lucía Fernández'),
+            bloque('profesor.3.sedes', '99'),
+          ],
+        }),
+      );
+      const tarjetas = Array.from(raiz.querySelectorAll('li.profe'));
+      expect(tarjetas.length).toBe(3);
+      const lista = tarjetas[0].querySelector('ul.mini-linea')!;
+      expect(lista.getAttribute('aria-label')).toBe('Sedes donde da clase');
+      expect(Array.from(lista.querySelectorAll('li')).map((li) => li.textContent!.trim())).toEqual(['Casariche', 'Herrera']);
+      expect(Array.from(tarjetas[0].children).map((e) => e.className)).toContain('mini-linea');
+      expect(tarjetas[0].querySelector('.profe-grado')!.nextElementSibling).toBe(lista);
+      expect(tarjetas[1].querySelector('.mini-linea')).toBeNull();
+      expect(tarjetas[2].querySelector('.mini-linea')).toBeNull();
+    });
+
     it('la foto de portada con texto en su bloque ignora `portada.alt`', async () => {
       const raiz = await abrir(
         sitioConSedes(6, {
