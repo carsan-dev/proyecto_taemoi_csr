@@ -494,6 +494,46 @@ describe('WebContenidoComponent (W12c)', () => {
       expect(getComputedStyle(q('.barra')!).bottom).toBe('300px');
     });
 
+    it('teclado abierto con el visor desplazado hasta el fondo (tapado 0): sigue siendo el teclado y la barra queda sobre la navegación', () => {
+      preparar();
+      cambiar();
+      // Teclado de 300 px; Chrome mueve el visor 300 px para enseñar el campo: no tapa nada de la ventana.
+      falso.offsetTop = 300;
+      falso.height = window.innerHeight - 300;
+      falso.dispatchEvent(new Event('resize'));
+      fixture.detectChanges();
+      expect(fixture.componentInstance.tapadoAbajo()).toBe(0);
+      expect(fixture.componentInstance.altoTeclado()).toBe(300);
+      expect(fixture.componentInstance.teclado()).toBeTrue();
+      const barra = q('.barra')!;
+      expect(barra.classList).toContain('barra--teclado');
+      expect(barra.classList).toContain('barra--compacta');
+      // Encima de la navegación inferior (64 px; sin safe-area en Karma), no debajo.
+      expect(getComputedStyle(barra).bottom).toBe('64px');
+    });
+
+    it('el visor se desplaza (offsetTop 0 → 300) con el mismo teclado: sigue compacta y no se vuelve a pedir el campo', fakeAsync(() => {
+      preparar();
+      llegar(LISTO);
+      cambiar();
+      teclado(300);
+      tick(500);
+      const conCampo = () => zonas().filter((z) => z.campo).length;
+      expect(conCampo()).toBe(1);
+      const barra = q('.barra')!;
+      expect(getComputedStyle(barra).bottom).toBe('300px');
+      falso.offsetTop = 300;
+      falso.dispatchEvent(new Event('scroll'));
+      falso.dispatchEvent(new Event('resize'));
+      fixture.detectChanges();
+      tick(500);
+      expect(fixture.componentInstance.teclado()).toBeTrue();
+      expect(barra.classList).toContain('barra--compacta');
+      expect(getComputedStyle(barra).bottom).toBe('64px');
+      expect(conCampo()).toBe(1);
+      flush();
+    }));
+
     it('campo: una vez al asentarse el teclado y otra si cambia de alto; nunca solo por mover el visor o desplazar', fakeAsync(() => {
       preparar();
       llegar(LISTO);

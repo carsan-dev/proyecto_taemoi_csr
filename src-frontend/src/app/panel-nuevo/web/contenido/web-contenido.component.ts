@@ -334,10 +334,18 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly presentes = signal<ReadonlySet<string> | null>(null);
   readonly vacios = signal<ReadonlySet<string>>(new Set());
   readonly estrecho = signal(this.ventana?.matchMedia?.(CONSULTA_ESTRECHO).matches ?? false);
-  /** d551: lo que el visor deja tapado por abajo (el teclado del móvil), en px de la ventana; 0 sin visor. */
+  /**
+   * d551: lo que el visor deja tapado por abajo (`innerHeight − (offsetTop + height)`), en px de la ventana; 0 sin visor
+   * o con zoom. Da el `bottom` de la barra con el teclado abierto.
+   */
   readonly tapadoAbajo = signal(0);
-  /** d551: teclado del móvil abierto: panel estrecho y el visor tapado por abajo más que el umbral. */
-  readonly teclado = computed(() => this.estrecho() && this.tapadoAbajo() > UMBRAL_TECLADO);
+  /**
+   * d551: el alto del teclado del móvil (`innerHeight − visor.height`, sin offsetTop); 0 sin visor o con zoom. No depende
+   * de dónde esté el visor: Chrome lo desplaza para enseñar el campo enfocado y lo tapado puede quedar en 0.
+   */
+  readonly altoTeclado = signal(0);
+  /** d551: teclado del móvil abierto: panel estrecho y el alto del teclado por encima del umbral. */
+  readonly teclado = computed(() => this.estrecho() && this.altoTeclado() > UMBRAL_TECLADO);
   /** El bloque de la hoja inferior abierta (panel estrecho), o null. */
   readonly hoja = signal<string | null>(null);
   /** d541: el menú de la vista previa (foto, «Añadir bloque») abierto como hoja inferior, o null. */
@@ -555,8 +563,6 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private zonaPedida: number | null = null;
   /** d551: el teclado se abrió o cambió de alto y ya se asentó: la próxima zona pide a la capa el texto en edición. */
   private campoPedido = false;
-  /** d551: el alto del teclado (`innerHeight − visor.height`, sin offsetTop) en la última medida; 0 cerrado. */
-  private altoTeclado = 0;
   /** d551: la espera a que el teclado deje de cambiar de alto antes de pedir el campo. */
   private temporizadorTeclado: ReturnType<typeof setTimeout> | null = null;
   private observador: ResizeObserver | null = null;
@@ -601,6 +607,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       this.vistaHoja();
       this.estrecho();
       this.tapadoAbajo();
+      this.altoTeclado();
       this.pedirZona();
     });
     const alMoverVentana = () => this.pedirZona();
@@ -1999,12 +2006,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     const visor = this.visorSinZoom();
     const tapado = visor ? Math.max(0, Math.round(ventana.innerHeight - (visor.offsetTop + visor.height))) : 0;
     this.tapadoAbajo.set(tapado);
-    const altoAntes = this.altoTeclado;
-    this.altoTeclado = visor && this.teclado() ? Math.max(0, Math.round(ventana.innerHeight - visor.height)) : 0;
+    const altoAntes = this.altoTeclado();
+    this.altoTeclado.set(visor ? Math.max(0, Math.round(ventana.innerHeight - visor.height)) : 0);
     if (!this.teclado()) {
       this.campoPedido = false;
       this.pararEsperaTeclado();
-    } else if (this.altoTeclado !== altoAntes) {
+    } else if (this.altoTeclado() !== altoAntes) {
       this.pararEsperaTeclado();
       this.temporizadorTeclado = setTimeout(() => {
         this.temporizadorTeclado = null;
