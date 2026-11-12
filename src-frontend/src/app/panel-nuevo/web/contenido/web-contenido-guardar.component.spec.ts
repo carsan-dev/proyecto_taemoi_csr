@@ -475,6 +475,40 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
       await fixture.whenStable();
       expect(fixture.componentInstance.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horas');
     });
+
+    it('si con el diálogo abierto ya no quedan cambios, confirmar no hace nada', async () => {
+      abrir();
+      cambiar('menu.horarios', 'Horas');
+      let responder!: (r: unknown) => void;
+      confirmar.and.returnValue(new Promise((r) => (responder = r)));
+      boton('Descartar').click();
+      // Vuelve al texto del tema: deja de ser un cambio.
+      cambiar('menu.horarios', 'Horarios');
+      expect(fixture.componentInstance.nCambios()).toBe(0);
+      const enviados = alIframe();
+      responder({ confirmado: true });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(enviados.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo)).not.toContain('borrador');
+      expect(texto('p.oculto[role="status"]')).toBe('');
+      expect(fixture.componentInstance.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horarios');
+    });
+
+    it('si llega un conflicto con el diálogo abierto, confirmar no descarta', async () => {
+      abrir();
+      cambiar('menu.horarios', 'Horas');
+      let responder!: (r: unknown) => void;
+      confirmar.and.returnValue(new Promise((r) => (responder = r)));
+      boton('Descartar').click();
+      fixture.componentInstance.conflicto.set(true);
+      const enviados = alIframe();
+      responder({ confirmado: true });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.borrador().find((f) => f.clave === 'menu.horarios')!.texto).toBe('Horas');
+      expect(enviados.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo)).not.toContain('borrador');
+      expect(texto('p.oculto[role="status"]')).toBe('');
+    });
   });
 
   it('salir con cambios: «Tienes N cambios sin guardar»; sin cambios, sale sin preguntar', async () => {

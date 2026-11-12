@@ -293,6 +293,8 @@ describe('WebContenidoComponent (W12c)', () => {
       offsetTop = 0;
       height = window.innerHeight;
       width = window.innerWidth;
+      /** Sin definir, como un visor sin zoom. */
+      scale?: number;
     }
     let falso: VisorFalso;
     let cabecera: HTMLElement | null = null;
@@ -310,6 +312,7 @@ describe('WebContenidoComponent (W12c)', () => {
     });
 
     const fotograma = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+    const esperar = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
     const zonas = () =>
       enviados.calls
         .allArgs()
@@ -425,6 +428,8 @@ describe('WebContenidoComponent (W12c)', () => {
       llegar(LISTO);
       expect(zonas()[0].campo).toBeUndefined();
       teclado(300);
+      // Se pide cuando el teclado se asienta (sin cambios de alto un rato).
+      await esperar(200);
       await fotograma();
       expect(zonas().at(-1)!.campo).toBeTrue();
       // Desplazar la ventana no lo vuelve a pedir: no se pelea con quien se desplaza.
@@ -454,6 +459,144 @@ describe('WebContenidoComponent (W12c)', () => {
       const ir = spyOn(window, 'scrollTo');
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: 3000 });
       expect(ir).not.toHaveBeenCalled();
+    });
+
+    it('zoom de pellizco (scale > 1): el visor no cuenta; ni teclado ni campo, y la zona como sin visor', async () => {
+      preparar();
+      llegar(LISTO);
+      cambiar();
+      // Con zoom ×2 el visor mide la mitad de la ventana y está desplazado: no es el teclado.
+      falso.scale = 2;
+      falso.offsetTop = 200;
+      falso.height = window.innerHeight / 2;
+      falso.dispatchEvent(new Event('resize'));
+      fixture.detectChanges();
+      await fotograma();
+      await esperar(200);
+      await fotograma();
+      expect(fixture.componentInstance.tapadoAbajo()).toBe(0);
+      expect(fixture.componentInstance.teclado()).toBeFalse();
+      const barra = q('.barra')!;
+      expect(barra.classList).not.toContain('barra--teclado');
+      expect(barra.classList).not.toContain('barra--compacta');
+      expect(barra.style.getPropertyValue('--alto-teclado')).toBe('');
+      expect(texto('.barra__texto')).toBe('1 cambio sin guardar · Al guardar se publican en tu web.');
+      // Como en develop: de la cabecera a la barra, en la ventana entera (ni offsetTop ni alto del visor).
+      comoEsperada(zonas().at(-1)!, esperada(64, Math.min(window.innerHeight, barra.getBoundingClientRect().top)));
+      expect(zonas().some((z) => z.campo)).toBeFalse();
+    });
+
+    it('con el visor movido (offsetTop 100, teclado 300), la barra se pega igual al teclado', () => {
+      preparar();
+      cambiar();
+      teclado(300, 100);
+      expect(fixture.componentInstance.tapadoAbajo()).toBe(300);
+      expect(getComputedStyle(q('.barra')!).bottom).toBe('300px');
+    });
+
+    it('campo: una vez al asentarse el teclado y otra si cambia de alto; nunca solo por mover el visor o desplazar', fakeAsync(() => {
+      preparar();
+      llegar(LISTO);
+      const conCampo = () => zonas().filter((z) => z.campo).length;
+      teclado(300);
+      tick(16);
+      // La zona normal va al momento; el campo, aún no.
+      expect(zonas().length).toBeGreaterThan(0);
+      expect(conCampo()).toBe(0);
+      tick(100);
+      // Sigue abriéndose: la espera vuelve a empezar.
+      teclado(320);
+      tick(140);
+      expect(conCampo()).toBe(0);
+      tick(50);
+      expect(conCampo()).toBe(1);
+
+      // Mover el visor (mismo alto, otro offsetTop) o desplazar la ventana no lo pide.
+      falso.offsetTop = 80;
+      falso.dispatchEvent(new Event('scroll'));
+      falso.dispatchEvent(new Event('resize'));
+      fixture.detectChanges();
+      tick(500);
+      expect(fixture.componentInstance.teclado()).toBeTrue();
+      window.scrollBy(0, 100);
+      window.dispatchEvent(new Event('scroll'));
+      tick(500);
+      expect(conCampo()).toBe(1);
+
+      // Cambia el alto con el teclado abierto: otra vez (la ventana de Karma mide poco: alturas que dejan zona).
+      teclado(250);
+      tick(500);
+      expect(conCampo()).toBe(2);
+
+      // Varios cambios seguidos: un solo envío al acabar.
+      teclado(230);
+      tick(50);
+      teclado(240);
+      tick(50);
+      teclado(260);
+      tick(500);
+      expect(conCampo()).toBe(3);
+
+      // Si se cierra antes de asentarse, nada.
+      teclado(0);
+      tick(500);
+      teclado(300);
+      tick(50);
+      teclado(0);
+      tick(500);
+      expect(conCampo()).toBe(3);
+
+      // Tras salir, nada.
+      teclado(300);
+      tick(50);
+      fixture.destroy();
+      tick(500);
+      expect(conCampo()).toBe(3);
+      flush();
+    }));
+
+    for (const [reducir, comportamiento] of [
+      [true, 'auto'],
+      [false, 'smooth'],
+    ] as const) {
+      it(`«mostrar» con campo: scrollTo '${comportamiento}' ${reducir ? 'con' : 'sin'} reduced-motion, aunque ya esté dentro del límite`, () => {
+        preparar();
+        llegar(LISTO);
+        teclado(200);
+        const original = window.matchMedia.bind(window);
+        spyOn(window, 'matchMedia').and.callFake((c: string) =>
+          c.includes('prefers-reduced-motion') ? ({ matches: reducir } as MediaQueryList) : original(c),
+        );
+        const ir = spyOn(window, 'scrollTo');
+        const escala = fixture.componentInstance.escala();
+        const marcoTop = iframe()!.getBoundingClientRect().top;
+        // A 100 px de arriba de la ventana: bajo la cabecera (64 + 16) y por encima del límite (teclado + margen).
+        expect(100).toBeLessThan(window.innerHeight - 200 - 56);
+        const arriba = Math.round((100 - marcoTop) / escala);
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba, campo: true });
+        expect(ir).toHaveBeenCalledTimes(1);
+        const opciones = ir.calls.mostRecent().args[0] as ScrollToOptions;
+        expect(opciones.behavior).toBe(comportamiento);
+        expect(Math.abs(opciones.top! - (window.scrollY + marcoTop + arriba * escala - 64 - 16))).toBeLessThanOrEqual(1);
+        // Con el teclado cerrado, se ignora.
+        teclado(0);
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba, campo: true });
+        expect(ir).toHaveBeenCalledTimes(1);
+      });
+    }
+
+    it('subiendo una foto con el teclado: barra compacta y la frase en una línea con puntos suspensivos', () => {
+      preparar();
+      fixture.componentInstance.subidas.set({ 'portada.foto': { estado: 'subiendo', pct: 10, nombre: 'foto.jpg' } } as never);
+      teclado(300);
+      const barra = q('.barra')!;
+      expect(barra.classList).toContain('barra--compacta');
+      expect(getComputedStyle(barra).bottom).toBe('300px');
+      expect(texto('.barra__frase')).toBe('Se está subiendo una foto. Podrás guardar cuando termine.');
+      const estilo = getComputedStyle(q('.barra__frase')!);
+      expect(estilo.whiteSpace).toBe('nowrap');
+      expect(estilo.textOverflow).toBe('ellipsis');
+      expect(estilo.overflow).toBe('hidden');
     });
 
     it('al salir deja de escuchar el visor y cancela el fotograma pendiente', () => {

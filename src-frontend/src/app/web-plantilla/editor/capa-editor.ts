@@ -725,12 +725,29 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
    * d551: el teclado del móvil se abrió (el panel lo pide con la zona): si el texto que se edita (cualquiera, también el
    * nombre de un profesor recién añadido) queda fuera de la zona que se ve, se dice al panel dónde está para que lo enseñe.
    */
+  /**
+   * d551: el cursor (o la selección) dentro del campo, si tiene alto; así un párrafo más alto que la zona no provoca
+   * saltos si lo que se escribe ya se ve. En `input` y `textarea` la selección no cae dentro: null y se usa el campo.
+   */
+  function rectanguloCursor(campo: HTMLElement): DOMRect | null {
+    const seleccion = doc.getSelection?.();
+    if (!seleccion || seleccion.rangeCount === 0) {
+      return null;
+    }
+    const rango = seleccion.getRangeAt(0);
+    if (!campo.contains(rango.commonAncestorContainer)) {
+      return null;
+    }
+    const r = rango.getBoundingClientRect();
+    return r.height > 0 ? r : null;
+  }
+
   function ensenarCampo(top: number, alto: number): void {
     const campo = doc.activeElement as HTMLElement | null;
     if (!campo || !(campo.isContentEditable || campo.matches?.(CAMPOS_DE_TEXTO))) {
       return;
     }
-    const r = campo.getBoundingClientRect();
+    const r = rectanguloCursor(campo) ?? campo.getBoundingClientRect();
     const arriba = r.top + ventana.scrollY;
     const abajo = r.bottom + ventana.scrollY;
     if (arriba < top + MARGEN_VERTICAL || abajo > top + alto - MARGEN_VERTICAL) {

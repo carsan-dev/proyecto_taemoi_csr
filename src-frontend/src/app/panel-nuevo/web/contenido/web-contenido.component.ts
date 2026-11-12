@@ -180,6 +180,13 @@ const CONSULTA_ESTRECHO = '(max-width: 767.98px)';
 const UMBRAL_TECLADO = 120;
 /** d551: con el teclado abierto, lo que se deja entre el campo que se enseña y el borde de la barra (una línea de texto). */
 const MARGEN_CAMPO = 56;
+/**
+ * d551: por encima de esta escala del visor hay zoom de pellizco: el visor mide `innerHeight / scale` sin teclado, así
+ * que se ignora del todo (como antes de la pieza).
+ */
+const ESCALA_ZOOM = 1.01;
+/** d551: lo que el alto del teclado tiene que quedarse quieto (animación de apertura) antes de pedir el texto en edición. */
+const ESPERA_TECLADO_MS = 150;
 /** Lo que tiene una capa recién puesta: sin pastillas, sin quitables y ancha. */
 const ESTADO_BLOQUES_INICIAL = JSON.stringify([[], [], false]);
 
@@ -546,8 +553,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private zonaEnviada = '';
   /** El fotograma en que se medirá la zona (como mucho un envío por fotograma). */
   private zonaPedida: number | null = null;
-  /** d551: el teclado se acaba de abrir o de cambiar de alto: la próxima zona pide a la capa el texto en edición. */
+  /** d551: el teclado se abrió o cambió de alto y ya se asentó: la próxima zona pide a la capa el texto en edición. */
   private campoPedido = false;
+  /** d551: el alto del teclado (`innerHeight − visor.height`, sin offsetTop) en la última medida; 0 cerrado. */
+  private altoTeclado = 0;
+  /** d551: la espera a que el teclado deje de cambiar de alto antes de pedir el campo. */
+  private temporizadorTeclado: ReturnType<typeof setTimeout> | null = null;
   private observador: ResizeObserver | null = null;
   private temporizadorEsqueleto: ReturnType<typeof setTimeout> | null = null;
   private temporizadorLimite: ReturnType<typeof setTimeout> | null = null;
@@ -1409,6 +1420,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.guardando()) {
       return;
     }
+    // Lo que pasa con el diálogo abierto: guardar, quedarse sin cambios o un conflicto (409) dejan sin nada que descartar.
     const r = await this.confirmacion.confirmar({
       titulo: tituloDescartar(this.nCambios()),
       mensaje: this.textosGuardar.descartarTexto,
@@ -1417,7 +1429,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       destructivo: true,
       nombre: 'descartar-cambios',
     });
-    if (!r.confirmado || this.guardando()) {
+    if (!r.confirmado || this.guardando() || this.nCambios() === 0 || this.conflicto()) {
       return;
     }
     this.cancelarSubidas();
@@ -1966,24 +1978,48 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   }
 
   /**
-   * d551: lo que el visor deja tapado por abajo (`innerHeight − (offsetTop + height)`). Al abrirse el teclado (o cambiar
-   * su alto con él abierto) se pide a la capa el texto en edición con la próxima zona; nunca al desplazar la ventana.
+   * d551: el visor que cuenta, o null si no hay o si hay zoom de pellizco (entonces todo es como antes de la pieza).
+   * Un visor sin `scale` cuenta como sin zoom.
+   */
+  private visorSinZoom(): VisualViewport | null {
+    const visor = this.visor;
+    return visor && !((visor.scale ?? 1) > ESCALA_ZOOM) ? visor : null;
+  }
+
+  /**
+   * d551: lo que el visor deja tapado por abajo (`innerHeight − (offsetTop + height)`). Con el teclado abierto, cuando su
+   * alto (sin offsetTop) cambia, al abrirse o después, se espera a que se asiente y entonces se pide a la capa el texto en
+   * edición con la zona; nunca por mover el visor o desplazar la ventana. La zona sin más se manda al momento.
    */
   private medirVisor(): void {
     const ventana = this.ventana;
-    const visor = this.visor;
-    if (!ventana || !visor) {
+    if (!ventana || !this.visor) {
       return;
     }
-    const antes = this.tapadoAbajo();
-    const tapado = Math.max(0, Math.round(ventana.innerHeight - (visor.offsetTop + visor.height)));
+    const visor = this.visorSinZoom();
+    const tapado = visor ? Math.max(0, Math.round(ventana.innerHeight - (visor.offsetTop + visor.height))) : 0;
     this.tapadoAbajo.set(tapado);
+    const altoAntes = this.altoTeclado;
+    this.altoTeclado = visor && this.teclado() ? Math.max(0, Math.round(ventana.innerHeight - visor.height)) : 0;
     if (!this.teclado()) {
       this.campoPedido = false;
-    } else if (tapado !== antes) {
-      this.campoPedido = true;
+      this.pararEsperaTeclado();
+    } else if (this.altoTeclado !== altoAntes) {
+      this.pararEsperaTeclado();
+      this.temporizadorTeclado = setTimeout(() => {
+        this.temporizadorTeclado = null;
+        this.campoPedido = true;
+        this.pedirZona();
+      }, ESPERA_TECLADO_MS);
     }
     this.pedirZona();
+  }
+
+  private pararEsperaTeclado(): void {
+    if (this.temporizadorTeclado !== null) {
+      clearTimeout(this.temporizadorTeclado);
+      this.temporizadorTeclado = null;
+    }
   }
 
   /**
@@ -1992,8 +2028,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
    */
   private limitesVisibles(ventana: Window): { arriba: number; abajo: number } {
     const doc = this.host.nativeElement.ownerDocument;
-    const visorArriba = this.visor ? this.visor.offsetTop : 0;
-    const visorAbajo = this.visor ? this.visor.offsetTop + this.visor.height : ventana.innerHeight;
+    const visor = this.visorSinZoom();
+    const visorArriba = visor ? visor.offsetTop : 0;
+    const visorAbajo = visor ? visor.offsetTop + visor.height : ventana.innerHeight;
     const mitad = (visorArriba + visorAbajo) / 2;
     const tapa = (el: Element | null): DOMRect | null => {
       if (!el) {
@@ -2144,6 +2181,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       clearTimeout(this.temporizadorLimite);
       this.temporizadorLimite = null;
     }
+    this.pararEsperaTeclado();
   }
 
   private observar(elemento: HTMLElement | null): void {
