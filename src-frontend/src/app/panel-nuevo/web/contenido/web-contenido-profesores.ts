@@ -2,9 +2,11 @@ import { ordenCompleto } from '../../../web-plantilla/editor/bloques-editor';
 import {
   type EstadoProfesor,
   MAX_NUMERO_PROFESOR,
+  type SedeElegible,
   TEXTOS_PROFESORES,
   clavePermiso,
   esFotoProfesor,
+  esIdSede,
   numeroProfesor,
 } from '../../../web-plantilla/editor/fotos-profesores';
 import { conOrden } from './web-contenido-bloques';
@@ -178,12 +180,111 @@ export function textoConstancia(permiso: NonNullable<BloqueContenido['permiso']>
   return permiso.por ? `Permiso marcado por ${permiso.por}${el}` : `Permiso marcado${el}`;
 }
 
-/** El estado de cada profesor del borrador para la capa: su nombre y su casilla o su constancia. */
+// ------------------------------------------------------------------ sedes de cada profesor (W12f-3)
+//
+// `profesor.<n>.sedes` (`ClavesWeb`, tipo SEDES; `ContenidoWebService.sedesDelProfesor`): ids de sede de la escuela
+// (también inactivas) separados por comas, sin repetidos; "" vale. La API conserva el orden recibido.
+//
+// Regla del panel (boceto: `p.sedes = SEDES filtradas por orden de lista`): lo que pide la capa se queda solo con las
+// sedes elegibles (las activas que da la vista previa) y en el orden de esa lista. Para no tocar lo guardado sin motivo
+// (otro orden, «2,1», o sedes inactivas que la capa no ve), se compara por conjuntos de ids elegibles:
+// - si el conjunto pedido es el de lo guardado, la fila vuelve a ser la guardada byte a byte (o desaparece si no había);
+// - si es el que ya tiene el borrador, no se reescribe nada;
+// - si no, la fila pasa a ser el CSV nuevo (y pierde los ids no elegibles); sin fila y sin sedes, no se crea.
+// Si la API rechazó esa fila (`forzar`; el panel lo recuerda hasta que cambia lo guardado), se reescribe siempre con solo
+// elegibles, también en cambios posteriores: volver a la guardada sería volver a lo que falló.
+
+/** Los ids de una fila de sedes («3,4»), en su orden, sin repetidos; lo que no es un id se ignora. */
+export function idsDeSedes(texto: string | null | undefined): number[] {
+  const ids = (texto ?? '')
+    .split(',')
+    .map((parte) => parte.trim())
+    .filter((parte) => /^[0-9]+$/.test(parte))
+    .map(Number)
+    .filter(esIdSede);
+  return [...new Set(ids)];
+}
+
+/** El texto de la fila: «1,2» (sin espacios) o «» sin ninguna. */
+export const csvDeSedes = (ids: readonly number[]): string => ids.join(',');
+
+/** Las sedes elegibles de la vista previa: las de id válido, sin repetir, en su orden; solo el id y el nombre. */
+export function sedesElegibles(sedes: readonly { id?: unknown; nombre: string }[]): SedeElegible[] {
+  const vistas = new Set<number>();
+  const elegibles: SedeElegible[] = [];
+  for (const { id, nombre } of sedes) {
+    if (esIdSede(id) && !vistas.has(id)) {
+      vistas.add(id);
+      elegibles.push({ id, nombre });
+    }
+  }
+  return elegibles;
+}
+
+const claveSedes = (n: number) => `profesor.${n}.sedes`;
+
+/** Las de `ids` que son elegibles, en el orden de `elegibles`. */
+const enOrdenDeLista = (ids: Iterable<number>, elegibles: readonly number[]) => {
+  const marcadas = new Set(ids);
+  return elegibles.filter((id) => marcadas.has(id));
+};
+
+/** Las sedes del profesor que ve la capa: las de su fila del borrador que son elegibles, en el orden de `elegibles`. */
+export function sedesDelProfesor(filas: readonly BloqueContenido[], n: number, elegibles: readonly number[]): number[] {
+  return enOrdenDeLista(idsDeSedes(fila(filas, claveSedes(n))?.texto), elegibles);
+}
+
+/**
+ * La capa pide para el profesor `n` las sedes `pedidas` (acción `sedes`). Devuelve el borrador nuevo, o null si la
+ * petición no vale (el profesor no está en el borrador o trae más ids que sedes elegibles) o no cambia nada. Una fila
+ * nueva se crea como las demás del profesor (`anadirProfesor`): antes, cada bloque con su cabecera.
+ */
+export function elegirSedes(
+  guardado: readonly BloqueContenido[],
+  borrador: readonly BloqueContenido[],
+  n: number,
+  pedidas: readonly number[],
+  elegibles: readonly number[],
+  forzar = false,
+): BloqueContenido[] | null {
+  if (!numerosProfesores(borrador).includes(n) || pedidas.length > elegibles.length) {
+    return null;
+  }
+  const clave = claveSedes(n);
+  const nuevas = csvDeSedes(enOrdenDeLista(pedidas, elegibles));
+  // Mismo conjunto de ids elegibles (sin mirar el orden ni los no elegibles).
+  const mismas = (f: BloqueContenido | undefined) => csvDeSedes(enOrdenDeLista(idsDeSedes(f?.texto), elegibles)) === nuevas;
+  const g = fila(guardado, clave);
+  const b = fila(borrador, clave);
+  // El texto con que queda la fila; undefined: sin fila.
+  let texto: string | null | undefined;
+  if (!forzar && mismas(g)) {
+    texto = g?.texto;
+  } else if (!forzar && b && mismas(b)) {
+    texto = b.texto;
+  } else {
+    texto = nuevas || b ? nuevas : undefined;
+  }
+  if (texto === b?.texto) {
+    return null;
+  }
+  if (texto === undefined) {
+    return conCabeceras(borrador).filter((f) => f.clave !== clave);
+  }
+  if (b) {
+    return borrador.map((f) => (f.clave === clave ? { ...f, texto } : f));
+  }
+  const nueva: BloqueContenido = { clave, texto, imagenId: null, imagenUrl: null, orden: 0, oculto: false, permiso: null };
+  return [...conCabeceras(borrador), nueva];
+}
+
+/** El estado de cada profesor del borrador para la capa: su nombre, su casilla o su constancia y (W12f-3) sus sedes. */
 export function estadoProfesores(
   guardado: readonly BloqueContenido[],
   borrador: readonly BloqueContenido[],
   marcados: ReadonlySet<number>,
   pedidos: ReadonlySet<number> = new Set(),
+  elegibles: readonly number[] = [],
 ): EstadoProfesor[] {
   return numerosProfesores(borrador).map((n) => {
     const nombre = fila(borrador, `profesor.${n}.nombre`)?.texto ?? '';
@@ -193,7 +294,7 @@ export function estadoProfesores(
       pidePermiso(guardado, borrador, n, pedidos) || !constancia
         ? { tipo: 'casilla', marcada: marcados.has(n) }
         : { tipo: 'constancia', texto: textoConstancia(constancia) };
-    return { n, nombre, permiso };
+    return { n, nombre, permiso, sedes: sedesDelProfesor(borrador, n, elegibles) };
   });
 }
 

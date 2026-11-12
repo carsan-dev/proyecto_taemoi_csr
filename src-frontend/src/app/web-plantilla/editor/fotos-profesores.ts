@@ -4,7 +4,8 @@
  * comparten el panel y la capa de edición.
  *
  * Cada profesor es un número `n` (`ClavesWeb.PROFESOR`, de 1 a 99) con sus filas `profesor.<n>.nombre` (obligatorio,
- * lleva la constancia del permiso), `.cargo`, `.foto` (texto = descripción) y `.sedes` (W12f-3; aquí solo se conservan).
+ * lleva la constancia del permiso), `.cargo`, `.foto` (texto = descripción) y `.sedes` (W12f-3: ids de sede separados por
+ * comas, sin espacios ni repetidos; los elige el panel, ver `SedeElegible` y `EstadoProfesor.sedes`).
  * La constancia del permiso (quién y cuándo, d521) solo se ve en el editor: nunca llega al tema.
  */
 
@@ -63,7 +64,29 @@ export const TEXTOS_PROFESORES = {
   vozDesmarcado: 'Permiso desmarcado.',
   confirmarTexto: 'Deja de salir al guardar. Su ficha en el equipo no cambia.',
   confirmarAccion: 'Quitar profesor',
+  // W12f-3 (boceto `profeHtml`, `abrirSedesProfe`, «Listo» de `listo-sedes`).
+  elegirSedes: 'Elegir sus sedes',
+  cambiarSedes: 'Cambiar sus sedes',
+  sinSedes: 'Sin sedes: su tarjeta sale sin la línea.',
+  sedesAyuda: 'Salen en su tarjeta, sobre la línea. No cambia en qué grupos da clase.',
+  sedesLeyenda: 'Sedes donde da clase',
+  listo: 'Listo',
+  vozSinSedes: 'Sin sedes.',
 } as const;
+
+/** W12f-3 (boceto `abrirSedesProfe`): «Sedes de Antonio Ruiz» o, sin nombre, «Sedes de el profesor nuevo». */
+export const tituloSedesProfesor = (nombre: string | null | undefined) => `Sedes de ${(nombre ?? '').trim() || 'el profesor nuevo'}`;
+/** W12f-3 (boceto `listo-sedes`): «Sedes: Casariche, Estepa.» o «Sin sedes.». */
+export const vozSedesProfesor = (nombres: readonly string[]) =>
+  nombres.length ? `Sedes: ${nombres.join(', ')}.` : TEXTOS_PROFESORES.vozSinSedes;
+
+const SEDES = /^profesor\.([1-9][0-9]?)\.sedes$/;
+
+/** W12f-3: el número de una clave de sedes (`profesor.3.sedes` → 3), o null (enlace del resumen de errores). */
+export function numeroSedes(clave: unknown): number | null {
+  const m = typeof clave === 'string' ? SEDES.exec(clave) : null;
+  return m ? Number(m[1]) : null;
+}
 
 /** Boceto `profeHtml`: «Quitar a Antonio Ruiz de la web». */
 export const etiquetaQuitarProfesor = (nombre: string | null | undefined) => `Quitar a ${nombreProfesor(nombre)} de la web`;
@@ -88,4 +111,27 @@ export interface EstadoProfesor {
   /** El nombre del borrador (para las etiquetas: «Quitar a … de la web»). */
   nombre: string;
   permiso: PermisoProfesor;
+  /**
+   * W12f-3: las sedes marcadas en el borrador, solo las que están en `MensajeProfesores.sedes` y en el orden de esa lista
+   * (las sedes inactivas o desconocidas de la fila guardada no viajan, pero el panel las conserva si no se tocan).
+   */
+  sedes: number[];
 }
+
+/**
+ * W12f-3: una sede que se puede elegir para un profesor: las activas de la escuela que da la vista previa de gestión
+ * (`GET /api/publico/web?vistaPrevia=true`), en el orden de la API. El panel la manda a la capa en `profesores`.
+ */
+export interface SedeElegible {
+  id: number;
+  nombre: string;
+}
+
+/**
+ * W12f-3: tope de sedes en un mensaje del puente. `ClavesWeb`: `profesor.<n>.sedes` tiene como mucho 300 caracteres, así
+ * que no caben más de 150 ids («1,2,…»).
+ */
+export const MAX_SEDES_PROFESOR = 150;
+
+/** W12f-3: un id de sede: entero positivo seguro. */
+export const esIdSede = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v > 0;

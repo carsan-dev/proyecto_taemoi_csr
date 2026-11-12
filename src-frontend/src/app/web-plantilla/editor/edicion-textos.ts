@@ -1,7 +1,7 @@
 import { rellenarHuecos } from '../temas/linea-comarcal/contenido';
 import { TEXTOS_LINEA_COMARCAL } from '../temas/linea-comarcal/textos';
 import type { PaginaEditor } from './candados-linea-comarcal';
-import { cajasVisibles, colocarEvitando } from './colocar-flotantes';
+import { cajasVisibles, colocarEvitando, vistaDe } from './colocar-flotantes';
 import { type DefHueco, HUECOS, huecoDe } from './huecos-editor';
 import { type BloqueBorrador, CANAL_EDITOR_WEB, type MensajeDelEditor } from './puente-editor';
 import {
@@ -979,14 +979,17 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     // Sobre el campo, o bajo él si arriba no cabe. `arriba` se mide en coordenadas de página a propósito: la etiqueta es
     // `position:absolute` en el documento y lo que importa es que no quede por encima del principio de la página
     // (`colocarEvitando` trabaja en coordenadas de la vista). Sin pisar el nombre ni la barra del bloque, ni su aviso de error.
+    // Con la zona del panel, lo que importa es no quedar por encima de la parte que se ve.
+    const vista = vistaDe(ventana);
+    const inicioVista = vista.zona ? vista.arriba : -ventana.scrollY;
     const sitio = colocarEvitando({
       ancho: chip.offsetWidth,
       alto: chip.offsetHeight,
       ancla: r,
       separacion: 14,
       izquierda: r.right - chip.offsetWidth + 4,
-      arriba: r.top + ventana.scrollY - chip.offsetHeight - 14 >= 4,
-      vista: { ancho: doc.documentElement.clientWidth, alto: ventana.innerHeight },
+      arriba: r.top - chip.offsetHeight - 14 >= inicioVista + 4,
+      vista,
       evitar: cajasVisibles(doc, [activa.campo.closest('.ed-bloque')], ':scope > .ed-barra .ed-nombre, :scope > .ed-barra .ed-acciones, .ed-error'),
     });
     chip.style.top = `${sitio.top + ventana.scrollY}px`;

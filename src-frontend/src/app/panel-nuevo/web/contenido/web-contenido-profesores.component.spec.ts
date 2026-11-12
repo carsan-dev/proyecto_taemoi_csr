@@ -84,12 +84,12 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
   const anuncio = () => texto('p.oculto[role="status"]');
   const boton = (t: string) => Array.from(el().querySelectorAll<HTMLButtonElement>('.barra button')).find((b) => b.textContent!.trim() === t);
 
-  function abrir(contenido = CONTENIDO): void {
+  function abrir(contenido = CONTENIDO, sedes: unknown[] = [{ nombre: 'Herrera', slug: 'herrera' }]): void {
     fixture = TestBed.createComponent(WebContenidoComponent);
     fixture.detectChanges();
     http.expectOne(URL).flush(PUBLICADA);
     http.expectOne(URL_CONTENIDO).flush(contenido);
-    http.expectOne((r) => r.url === URL_PUBLICA).flush({ sedes: [{ nombre: 'Herrera', slug: 'herrera' }] });
+    http.expectOne((r) => r.url === URL_PUBLICA).flush({ sedes });
     http.expectOne((r) => r.url === `${URL_PUBLICA}/eventos`).flush({ proximos: [], anteriores: [] });
     fixture.detectChanges();
     enviados = spyOn(iframe()!.contentWindow!, 'postMessage') as jasmine.Spy;
@@ -108,7 +108,7 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
       .filter((m) => m.tipo === tipo);
   const ultimo = (tipo: string) => mensajes(tipo).at(-1);
   const borrador = () => ultimo('borrador')!['bloques'] as { clave: string; texto: string | null }[];
-  const profesores = () => ultimo('profesores')!['lista'] as { n: number; nombre: string; permiso: Record<string, unknown> }[];
+  const profesores = () => ultimo('profesores')!['lista'] as { n: number; nombre: string; permiso: Record<string, unknown>; sedes: number[] }[];
   const resumen = () => Array.from(el().querySelectorAll('.resumen li')).map((li) => li.textContent!.trim());
   const guardar = (): TestRequest => {
     boton('Guardar')!.click();
@@ -124,8 +124,8 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
   it('a la capa: cada profesor con su constancia en texto (PANEL y ALTA); al tema, nunca la constancia', () => {
     abrir();
     expect(profesores()).toEqual([
-      { n: 1, nombre: 'Antonio Ruiz', permiso: { tipo: 'constancia', texto: 'Permiso marcado por María Ruiz el 03/11/2026' } },
-      { n: 3, nombre: 'Lucía Fernández', permiso: { tipo: 'constancia', texto: 'Permiso dado en el alta el 01/10/2026' } },
+      { n: 1, nombre: 'Antonio Ruiz', permiso: { tipo: 'constancia', texto: 'Permiso marcado por María Ruiz el 03/11/2026' }, sedes: [] },
+      { n: 3, nombre: 'Lucía Fernández', permiso: { tipo: 'constancia', texto: 'Permiso dado en el alta el 01/10/2026' }, sedes: [] },
     ]);
     const vista = JSON.stringify(ultimo('borrador'));
     expect(vista).not.toContain('permiso');
@@ -138,7 +138,7 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     expect(borrador().find((b) => b.clave === 'profesor.4.nombre')).toEqual(jasmine.objectContaining({ texto: '' }));
     expect(ultimo('foco-profesor')!['foco']).toBe('editar:4');
     expect(anuncio()).toBe('Profesor añadido. Escribe su nombre y marca el permiso.');
-    expect(profesores().at(-1)).toEqual({ n: 4, nombre: '', permiso: { tipo: 'casilla', marcada: false } });
+    expect(profesores().at(-1)).toEqual({ n: 4, nombre: '', permiso: { tipo: 'casilla', marcada: false }, sedes: [] });
     expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
 
     boton('Guardar')!.click();
@@ -171,7 +171,7 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
       bloques: [...BLOQUES, fila('profesor.4.nombre', 'Rosa Gil Prieto', { permiso: { origen: 'PANEL', por: 'Carlos Sánchez', en: '2026-11-12T19:00:00' } })],
     });
     fixture.detectChanges();
-    expect(profesores().at(-1)).toEqual({ n: 4, nombre: 'Rosa Gil Prieto', permiso: { tipo: 'constancia', texto: 'Permiso marcado por Carlos Sánchez el 12/11/2026' } });
+    expect(profesores().at(-1)).toEqual({ n: 4, nombre: 'Rosa Gil Prieto', permiso: { tipo: 'constancia', texto: 'Permiso marcado por Carlos Sánchez el 12/11/2026' }, sedes: [] });
     expect(q('.barra')).toBeNull();
   });
 
@@ -236,7 +236,7 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
   it('quitar el último: foco a «Añadir profesor»; un profesor nuevo sin nombre: «el profesor nuevo»', async () => {
     abrir({ version: 5, bloques: BLOQUES.filter((b) => !b.clave.startsWith('profesor.1.') && !b.clave.startsWith('profesor.3.')) });
     profesor({ accion: 'anadir' });
-    expect(profesores()).toEqual([{ n: 1, nombre: '', permiso: { tipo: 'casilla', marcada: false } }]);
+    expect(profesores()).toEqual([{ n: 1, nombre: '', permiso: { tipo: 'casilla', marcada: false }, sedes: [] }]);
     profesor({ accion: 'quitar', n: 1 });
     await fixture.whenStable();
     fixture.detectChanges();
@@ -264,7 +264,7 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     await fixture.whenStable();
     profesor({ accion: 'anadir' });
     expect(borrador().some((b) => b.clave.startsWith('profesor.4.'))).toBeFalse();
-    expect(profesores().at(-1)).toEqual({ n: 5, nombre: '', permiso: { tipo: 'casilla', marcada: false } });
+    expect(profesores().at(-1)).toEqual({ n: 5, nombre: '', permiso: { tipo: 'casilla', marcada: false }, sedes: [] });
   });
 
   it('d531: quitar, guardar y añadir: el número del quitado (ya fuera de lo guardado) no vuelve', async () => {
@@ -331,7 +331,7 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     expect(borrador().some((b) => b.clave.startsWith('profesor.4.'))).toBeFalse();
     expect(profesores()[0].permiso['tipo']).toBe('constancia');
     profesor({ accion: 'anadir' });
-    expect(profesores().at(-1)).toEqual({ n: 5, nombre: '', permiso: { tipo: 'casilla', marcada: false } });
+    expect(profesores().at(-1)).toEqual({ n: 5, nombre: '', permiso: { tipo: 'casilla', marcada: false }, sedes: [] });
   });
 
   it('salir con un profesor añadido avisa de los cambios', async () => {
@@ -445,7 +445,7 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
       escribir('profesor.1.nombre', 'Antonio R.');
       expect(permisoDe(1)).toEqual(SIN_MARCAR);
       profesor({ accion: 'anadir' });
-      expect(profesores().at(-1)).toEqual({ n: 5, nombre: '', permiso: SIN_MARCAR });
+      expect(profesores().at(-1)).toEqual({ n: 5, nombre: '', permiso: SIN_MARCAR, sedes: [] });
       expect(profesores().some((p) => p.n === 4)).toBeFalse();
     });
   });
@@ -527,5 +527,432 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     profesor({ accion: 'otra' });
     expect(confirmar).not.toHaveBeenCalled();
     expect(q('.barra')).toBeNull();
+  });
+
+  /** W12f-3: sedes de cada profesor (`profesor.<n>.sedes`). La interfaz es de otra pieza: aquí, el contrato y el guardado. */
+  describe('sedes de cada profesor (W12f-3)', () => {
+    /** Las activas de la vista previa, en el orden de la API. La 7 (inactiva) no está. */
+    const SEDES_API = [
+      { id: 6, nombre: 'Casariche', slug: 'casariche' },
+      { id: 3, nombre: 'Estepa', slug: 'estepa' },
+      { id: 4, nombre: 'Herrera', slug: 'herrera' },
+      { id: 5, nombre: 'Lora de Estepa', slug: null },
+    ];
+    const ELEGIBLES = SEDES_API.map(({ id, nombre }) => ({ id, nombre }));
+    const ELIGE = 'Elige sedes de tu escuela.';
+    const sedes = (n: unknown, valor: unknown) => profesor({ accion: 'sedes', n, sedes: valor });
+    const filaBorrador = (clave: string) => borrador().find((b) => b.clave === clave);
+    const sedesDe = (n: number) => profesores().find((p) => p.n === n)!.sedes;
+    const abrirConSedes = (contenido = CONTENIDO) => abrir(contenido, SEDES_API);
+    const conFila = (clave: string, texto: string): ContenidoWeb => ({
+      version: 5,
+      bloques: BLOQUES.map((b) => (b.clave === clave ? { ...b, texto } : b)),
+    });
+
+    it('las sedes de la vista previa conservan su id; a la capa, las elegibles en orden y las marcadas de cada uno', () => {
+      abrirConSedes();
+      expect(fixture.componentInstance.listas()!.sedes.map((s) => s.id)).toEqual([6, 3, 4, 5]);
+      expect(ultimo('profesores')!['sedes']).toEqual(ELEGIBLES);
+      expect(sedesDe(1)).toEqual([3, 4]);
+      expect(sedesDe(3)).toEqual([5]);
+      // Lo de la vista previa (selector «Una sede») sigue igual.
+      expect(fixture.componentInstance.listas()!.sedes[0]).toEqual({ id: 6, nombre: 'Casariche', slug: 'casariche' });
+    });
+
+    it('invariante c: cambiar solo las sedes cuenta (barra, aviso al salir); volver al conjunto guardado deja de contar', async () => {
+      abrirConSedes();
+      sedes(1, [5, 3]);
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,5');
+      expect(sedesDe(1)).toEqual([3, 5]);
+      expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+      confirmar.and.resolveTo({ confirmado: false } as never);
+      expect(await fixture.componentInstance.puedeSalir()).toBeFalse();
+      expect(confirmar).toHaveBeenCalledWith(jasmine.objectContaining({ titulo: 'Tienes 1 cambio sin guardar' }));
+      // De vuelta, en otro orden: la fila vuelve a ser la guardada.
+      sedes(1, [4, 3]);
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,4');
+      expect(q('.barra')).toBeNull();
+    });
+
+    it('invariante c: guardada en otro orden («4,3»): el mismo conjunto no cuenta y la fila queda byte a byte', () => {
+      abrirConSedes(conFila('profesor.1.sedes', '4,3'));
+      sedes(1, [3, 4]);
+      expect(q('.barra')).toBeNull();
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('4,3');
+      sedes(1, [3]);
+      sedes(1, [3, 4]);
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('4,3');
+      expect(q('.barra')).toBeNull();
+    });
+
+    it('invariante a: la fila de quien no cambia viaja en el PUT byte a byte, también con sedes inactivas', () => {
+      abrirConSedes(conFila('profesor.3.sedes', '7,5'));
+      expect(sedesDe(3)).toEqual([5]);
+      // Pedir el mismo conjunto elegible: nada cambia y la capa recibe el estado que vale.
+      const antes = mensajes('profesores').length;
+      sedes(3, [5]);
+      expect(mensajes('profesores').length).toBe(antes + 1);
+      expect(q('.barra')).toBeNull();
+      sedes(1, [6]);
+      const put = guardar();
+      const bloques = bloquesPut(put);
+      expect(bloques.find((b) => b.clave === 'profesor.3.sedes') as unknown).toEqual({ clave: 'profesor.3.sedes', texto: '7,5', imagenId: null, orden: 0, oculto: false });
+      expect(bloques.find((b) => b.clave === 'profesor.1.sedes')!.texto).toBe('6');
+      put.flush({ version: 6, bloques: conFila('profesor.3.sedes', '7,5').bloques.map((b) => (b.clave === 'profesor.1.sedes' ? { ...b, texto: '6' } : b)) });
+    });
+
+    it('invariante b: cambiar sedes no pide ni desmarca el permiso; el PUT no lleva `permiso` ni la constancia', () => {
+      abrirConSedes();
+      profesor({ accion: 'anadir' });
+      escribir('profesor.4.nombre', 'Rosa Gil');
+      profesor({ accion: 'permiso', n: 4, marcada: true });
+      sedes(1, [6]);
+      sedes(4, [3]);
+      expect(profesores().find((p) => p.n === 1)!.permiso['tipo']).toBe('constancia');
+      expect(profesores().find((p) => p.n === 4)!.permiso).toEqual({ tipo: 'casilla', marcada: true });
+      const put = guardar();
+      const bloques = bloquesPut(put);
+      expect(bloques.filter((b) => 'permiso' in b)).toEqual([jasmine.objectContaining({ clave: 'profesor.4.nombre', permiso: true })]);
+      expect(JSON.stringify(put.request.body)).not.toContain('María');
+      put.flush({ version: 6, bloques: BLOQUES });
+    });
+
+    it('invariante f: guardado con éxito, borrador y guardado coinciden con lo que devuelve la API (CSV normalizado)', () => {
+      abrirConSedes();
+      sedes(1, [6, 5]);
+      const put = guardar();
+      expect(bloquesPut(put).find((b) => b.clave === 'profesor.1.sedes')!.texto).toBe('6,5');
+      // La API conserva el orden recibido; aquí devuelve otro para comprobar que manda lo suyo.
+      put.flush(conFila('profesor.1.sedes', '5,6'));
+      fixture.detectChanges();
+      expect(q('.barra')).toBeNull();
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('5,6');
+      expect(sedesDe(1)).toEqual([6, 5]);
+      // Y el mismo conjunto ya no cuenta.
+      sedes(1, [5, 6]);
+      expect(q('.barra')).toBeNull();
+    });
+
+    it('invariante d: Descartar restaura las sedes guardadas y la capa recibe el estado restaurado', () => {
+      abrirConSedes();
+      sedes(1, []);
+      sedes(3, [6, 4]);
+      expect(sedesDe(1)).toEqual([]);
+      descartar();
+      expect(q('.barra')).toBeNull();
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,4');
+      expect(filaBorrador('profesor.3.sedes')!.texto).toBe('5');
+      expect(sedesDe(1)).toEqual([3, 4]);
+      expect(sedesDe(3)).toEqual([5]);
+    });
+
+    it('invariante e: un profesor nuevo lleva sedes; al quitarlo se van; su número no vuelve', async () => {
+      abrirConSedes();
+      profesor({ accion: 'anadir' });
+      sedes(4, [5, 6]);
+      expect(filaBorrador('profesor.4.sedes')).toEqual(jasmine.objectContaining({ texto: '6,5', orden: 0, oculto: false }));
+      expect(sedesDe(4)).toEqual([6, 5]);
+      expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+      profesor({ accion: 'quitar', n: 4 });
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(borrador().some((b) => b.clave.startsWith('profesor.4.'))).toBeFalse();
+      expect(q('.barra')).toBeNull();
+      profesor({ accion: 'anadir' });
+      expect(profesores().at(-1)!.n).toBe(5);
+      expect(sedesDe(5)).toEqual([]);
+    });
+
+    it('invariante g: 400 en `profesor.<n>.sedes` va al resumen y a la capa; se limpia al cambiar sus sedes', () => {
+      abrirConSedes(conFila('profesor.1.sedes', '3,99'));
+      escribir('profesor.1.cargo', 'Maestro');
+      guardar().flush({ mensaje: 'Hay datos que no se pueden guardar.', errores: { 'profesor.1.sedes': ELIGE } }, { status: 400, statusText: 'Bad Request' });
+      fixture.detectChanges();
+      // Como los demás errores de profesor: con su nombre y con enlace al botón de sus sedes.
+      expect(resumen()).toEqual(['Antonio Ruiz: sedes donde da clase']);
+      q<HTMLAnchorElement>('.resumen a[data-ir="profesor.1.sedes"]')!.click();
+      fixture.detectChanges();
+      expect(ultimo('ir-texto')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'ir-texto', clave: 'profesor.1.sedes' });
+      expect((ultimo('errores')!['errores'] as Record<string, string>)['profesor.1.sedes']).toBe(ELIGE);
+      // Marcar una casilla (Herrera): la fila se reescribe con solo elegibles y el error se va.
+      sedes(1, [3, 4]);
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,4');
+      expect(q('.resumen')).toBeNull();
+      expect(ultimo('errores')!['errores']).toEqual({});
+      const put = guardar();
+      expect(bloquesPut(put).find((b) => b.clave === 'profesor.1.sedes')!.texto).toBe('3,4');
+      put.flush({ version: 6, bloques: BLOQUES });
+    });
+
+    describe('fila de sedes rechazada por la API (M1: «3,99», 99 no es sede de la escuela)', () => {
+      const rechazar = () => {
+        abrirConSedes(conFila('profesor.1.sedes', '3,99'));
+        escribir('profesor.1.cargo', 'Maestro');
+        guardar().flush({ mensaje: 'Hay datos que no se pueden guardar.', errores: { 'profesor.1.sedes': ELIGE } }, { status: 400, statusText: 'Bad Request' });
+        fixture.detectChanges();
+      };
+
+      it('tras el 400, marcar 4 y desmarcar 4 deja «3» (no vuelve a «3,99»), cuenta como cambio y el PUT manda «3»', () => {
+        rechazar();
+        expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+        sedes(1, [3, 4]);
+        expect(q('.resumen')).toBeNull();
+        sedes(1, [3]);
+        expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3');
+        expect(sedesDe(1)).toEqual([3]);
+        expect(texto('.barra__texto strong')).toBe('2 cambios sin guardar');
+        const put = guardar();
+        expect(bloquesPut(put).find((b) => b.clave === 'profesor.1.sedes')!.texto).toBe('3');
+        put.flush({ version: 6, bloques: conFila('profesor.1.sedes', '3').bloques });
+      });
+
+      it('descartar no lo olvida (vuelve a lo guardado que falló); guardar bien sí: luego, volver al conjunto guardado deja la fila', () => {
+        rechazar();
+        descartar();
+        expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,99');
+        sedes(1, [3, 4]);
+        sedes(1, [3]);
+        expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3');
+        expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+        // Guardado con éxito (aquí la API devuelve otra vez «3,99»): lo guardado es otro y la regla normal vuelve.
+        guardar().flush({ version: 7, bloques: conFila('profesor.1.sedes', '3,99').bloques });
+        fixture.detectChanges();
+        sedes(1, [3, 4]);
+        sedes(1, [3]);
+        expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,99');
+        expect(q('.barra')).toBeNull();
+      });
+    });
+
+    it('409 tras cambiar sedes: conflicto como hoy; el borrador no se toca', () => {
+      abrirConSedes();
+      sedes(1, [6]);
+      guardar().flush({ mensaje: 'Otra persona…' }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges();
+      expect(fixture.componentInstance.conflicto()).toBeTrue();
+      expect(fixture.componentInstance.erroresServidor()).toEqual({});
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('6');
+    });
+
+    it('invariante h: peticiones que no valen no tocan el borrador (forma, profesor ausente, más ids que sedes, guardando)', () => {
+      abrirConSedes();
+      const antes = JSON.stringify(fixture.componentInstance.borrador());
+      for (const [n, valor] of [
+        [9, [3]],
+        [1, [6, 3, 4, 5, 99]],
+        [0, [3]],
+        [1, [3, 3]],
+        [1, ['3']],
+        [1, '3,4'],
+        [1, [-1]],
+        [1, null],
+      ] as [unknown, unknown][]) {
+        sedes(n, valor);
+      }
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'profesor', accion: 'sedes', n: 1 });
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: [], sedes: [] });
+      expect(JSON.stringify(fixture.componentInstance.borrador())).toBe(antes);
+      expect(q('.barra')).toBeNull();
+
+      // Mientras guarda, no se atiende (lo cambiado se perdería al llegar lo guardado) y la capa recibe el estado que vale.
+      escribir('profesor.1.cargo', 'Maestro');
+      const put = guardar();
+      sedes(1, [6]);
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,4');
+      expect(sedesDe(1)).toEqual([3, 4]);
+      put.flush({ version: 6, bloques: BLOQUES });
+    });
+
+    it('«Listo» en el diálogo de la capa (`anunciar-sedes`): voz con las sedes en orden de lista o «Sin sedes.»', () => {
+      abrirConSedes();
+      profesor({ accion: 'anunciar-sedes', n: 1 });
+      expect(anuncio()).toBe('Sedes: Estepa, Herrera.');
+      sedes(1, []);
+      profesor({ accion: 'anunciar-sedes', n: 1 });
+      expect(anuncio()).toBe('Sin sedes.');
+      profesor({ accion: 'anunciar-sedes', n: 9 });
+      expect(anuncio()).toBe('Sin sedes.');
+    });
+
+    describe('panel estrecho: la hoja de sedes (d541)', () => {
+      const hojaSedes = (n: unknown, id: unknown) => llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-sedes', n, id });
+      const casillas = () => Array.from(el().querySelectorAll<HTMLInputElement>('.flot--sedes input[type="checkbox"]'));
+      const etiquetas = () => Array.from(el().querySelectorAll('.flot--sedes label.casilla')).map((l) => l.textContent!.trim());
+      const marcadas = () => casillas().map((c) => c.checked);
+      const listo = () => q<HTMLButtonElement>('.flot--sedes .flot__acciones button')!;
+      const abrirEstrecho = async () => {
+        abrirConSedes();
+        fixture.componentInstance.estrecho.set(true);
+        fixture.detectChanges();
+        hojaSedes(1, 4);
+        await fixture.whenStable();
+      };
+
+      it('abre como diálogo con título, ayuda, leyenda oculta y una casilla por sede (marcadas las suyas); foco a la primera', async () => {
+        await abrirEstrecho();
+        const hoja = q('.flot--sedes')!;
+        expect(hoja.classList).toContain('flot--capa');
+        expect(hoja.getAttribute('role')).toBe('dialog');
+        expect(hoja.getAttribute('aria-labelledby')).toBe('hoja-sedes-t');
+        // Como el boceto: la ayuda describe el grupo de casillas, no el diálogo.
+        expect(hoja.hasAttribute('aria-describedby')).toBeFalse();
+        expect(q('.flot--sedes fieldset.casillas')!.getAttribute('aria-describedby')).toBe('hoja-sedes-a');
+        expect(texto('#hoja-sedes-t')).toBe('Sedes de Antonio Ruiz');
+        expect(texto('#hoja-sedes-a')).toBe('Salen en su tarjeta, sobre la línea. No cambia en qué grupos da clase.');
+        expect(texto('.flot--sedes legend.oculto')).toBe('Sedes donde da clase');
+        expect(etiquetas()).toEqual(['Casariche', 'Estepa', 'Herrera', 'Lora de Estepa']);
+        expect(marcadas()).toEqual([false, true, true, false]);
+        expect(texto('.flot--sedes .flot__acciones button')).toBe('Listo');
+        expect(el().querySelectorAll('.flot--sedes button').length).toBe(1);
+        expect(document.activeElement).toBe(casillas()[0]);
+      });
+
+      it('cada casilla va por el mismo camino que `sedes`: llega al borrador y a la capa; «Listo» cierra, foco y voz', async () => {
+        await abrirEstrecho();
+        casillas()[0].click();
+        fixture.detectChanges();
+        expect(filaBorrador('profesor.1.sedes')!.texto).toBe('6,3,4');
+        expect(sedesDe(1)).toEqual([6, 3, 4]);
+        expect(marcadas()).toEqual([true, true, true, false]);
+        casillas()[2].click();
+        fixture.detectChanges();
+        expect(filaBorrador('profesor.1.sedes')!.texto).toBe('6,3');
+        listo().click();
+        fixture.detectChanges();
+        expect(q('.flot--sedes')).toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 4, devolverFoco: true });
+        expect(document.activeElement).toBe(iframe());
+        expect(anuncio()).toBe('Sedes: Casariche, Estepa.');
+      });
+
+      it('Escape cierra devolviendo el foco, sin voz (boceto); pulsar fuera cierra sin foco ni voz', async () => {
+        await abrirEstrecho();
+        fixture.componentInstance.anuncio.set('');
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        fixture.detectChanges();
+        expect(q('.flot--sedes')).toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 4, devolverFoco: true });
+        expect(document.activeElement).toBe(iframe());
+        expect(anuncio()).toBe('');
+
+        hojaSedes(1, 5);
+        await fixture.whenStable();
+        document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        fixture.detectChanges();
+        expect(q('.flot--sedes')).toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 5, devolverFoco: false });
+        expect(anuncio()).toBe('');
+      });
+
+      it('mientras guarda, la casilla vuelve a su valor (pinta lo que manda el panel)', async () => {
+        await abrirEstrecho();
+        escribir('profesor.1.cargo', 'Maestro');
+        const put = guardar();
+        casillas()[0].click();
+        fixture.detectChanges();
+        expect(casillas()[0].checked).toBeFalse();
+        expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,4');
+        put.flush({ version: 6, bloques: BLOQUES });
+      });
+
+      it('la capa la cierra sola (`cerrar-hoja-sedes` con su id): se quita sin responder; con otro id, sigue', async () => {
+        await abrirEstrecho();
+        const antes = mensajes('respuesta-hoja-sedes').length;
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-sedes', id: 3 });
+        expect(q('.flot--sedes')).not.toBeNull();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-sedes', id: 4 });
+        expect(q('.flot--sedes')).toBeNull();
+        expect(mensajes('respuesta-hoja-sedes').length).toBe(antes);
+      });
+
+      it('se cierra sin foco ni voz al abrir otra hoja: la de acciones de un bloque o la de un menú de la vista previa', async () => {
+        await abrirEstrecho();
+        fixture.componentInstance.anuncio.set('');
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja', bloque: 'profesores' });
+        expect(q('.flot--sedes')).toBeNull();
+        expect(q('.hoja')).not.toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 4, devolverFoco: false });
+
+        hojaSedes(1, 5);
+        await fixture.whenStable();
+        expect(q('.flot--sedes')).not.toBeNull();
+        expect(q('.hoja')).toBeNull();
+        llegar({
+          canal: CANAL_EDITOR_WEB,
+          tipo: 'hoja-menu',
+          id: 7,
+          menu: 'foto',
+          titulo: 'Foto de «Taekwondo en seis pueblos»',
+          opciones: [{ op: 'subir', texto: 'Cambiar foto', pie: '', icono: 'foto', desactivada: false, peligro: false }],
+        });
+        expect(q('.flot--sedes')).toBeNull();
+        expect(q('.flot--capa [role="menuitem"]')).not.toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 5, devolverFoco: false });
+        expect(anuncio()).toBe('');
+      });
+
+      it('se cierra al cambiar de página y no vuelve al volver a Inicio', async () => {
+        await abrirEstrecho();
+        const pagina = q<HTMLSelectElement>('#web-contenido-pagina')!;
+        pagina.value = 'tarifas';
+        pagina.dispatchEvent(new Event('change'));
+        fixture.detectChanges();
+        expect(q('.flot--sedes')).toBeNull();
+        pagina.value = 'inicio';
+        pagina.dispatchEvent(new Event('change'));
+        fixture.detectChanges();
+        expect(fixture.componentInstance.pagina()).toBe('inicio');
+        expect(q('.flot--sedes')).toBeNull();
+      });
+
+      it('pasar el foco a la vista previa (`window:blur`) la cierra sin devolver el foco; sin el foco en ella, sigue', async () => {
+        await abrirEstrecho();
+        window.dispatchEvent(new Event('blur'));
+        fixture.detectChanges();
+        expect(q('.flot--sedes')).not.toBeNull();
+        iframe()!.focus();
+        window.dispatchEvent(new Event('blur'));
+        fixture.detectChanges();
+        expect(q('.flot--sedes')).toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 4, devolverFoco: false });
+      });
+
+      it('no se abre con el panel ancho, sin el profesor o sin sedes que elegir: se contesta al momento sin foco', () => {
+        abrirConSedes();
+        fixture.componentInstance.estrecho.set(false);
+        hojaSedes(1, 1);
+        expect(q('.flot--sedes')).toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 1, devolverFoco: false });
+        fixture.componentInstance.estrecho.set(true);
+        hojaSedes(9, 2);
+        expect(q('.flot--sedes')).toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')!['id']).toBe(2);
+        // Al ensancharse el panel, la hoja abierta se cierra sin mover el foco.
+        hojaSedes(1, 3);
+        expect(q('.flot--sedes')).not.toBeNull();
+        fixture.componentInstance.estrecho.set(false);
+        fixture.detectChanges();
+        expect(q('.flot--sedes')).toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 3, devolverFoco: false });
+      });
+    });
+
+    it('sin la lista de sedes (falló la vista previa): no se puede cambiar ninguna; lo guardado sigue intacto', () => {
+      fixture = TestBed.createComponent(WebContenidoComponent);
+      fixture.detectChanges();
+      http.expectOne(URL).flush(PUBLICADA);
+      http.expectOne(URL_CONTENIDO).flush(CONTENIDO);
+      http.expectOne((r) => r.url === `${URL_PUBLICA}/eventos`).flush({ proximos: [], anteriores: [] });
+      http.expectOne((r) => r.url === URL_PUBLICA).flush('caída', { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+      enviados = spyOn(iframe()!.contentWindow!, 'postMessage') as jasmine.Spy;
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
+      expect(ultimo('profesores')!['sedes']).toEqual([]);
+      expect(sedesDe(1)).toEqual([]);
+      sedes(1, [3]);
+      sedes(1, []);
+      expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,4');
+      expect(q('.barra')).toBeNull();
+    });
   });
 });

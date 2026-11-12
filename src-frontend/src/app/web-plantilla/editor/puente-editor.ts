@@ -38,6 +38,14 @@ import type { BloqueWeb } from '../datos/modelos';
  * le manda cada profesor con su casilla o su constancia ya en texto (`profesores`, solo para el editor: el tema nunca la
  * recibe, d521) y a dónde va el foco (`foco-profesor`). Nunca viaja el objeto del permiso.
  *
+ * W12f-3: sedes de cada profesor. `profesores` lleva además las sedes que se pueden elegir (`sedes`, en su orden) y, por
+ * profesor, las marcadas. La capa pide el conjunto nuevo (`profesor`, acción `sedes`); el panel lo filtra, lo ordena, lo
+ * escribe en `profesor.<n>.sedes` y devuelve el estado. Al cerrar su diálogo con «Listo» o Escape, la capa pide al panel
+ * que diga las sedes (`profesor`, acción `anunciar-sedes`). Con el panel estrecho el diálogo es una hoja del panel: la
+ * capa la pide (`hoja-sedes`, con el número de apertura), el panel la pinta con sus datos y avisa al cerrarla
+ * (`respuesta-hoja-sedes`); si la capa la cierra sola, se lo dice (`cerrar-hoja-sedes`). Un enlace del resumen lleva al
+ * botón de sedes de la tarjeta (`ir-texto` con `profesor.<n>.sedes`).
+ *
  * W12e: bloques de Inicio. La capa dice qué bloques hay en la página y cuáles están vacíos (`bloques`) y pide las
  * acciones de la barra (`bloque`), añadir un bloque en un puesto (`anadir-bloque`) y, con el panel estrecho, la hoja de
  * acciones del bloque (`hoja`), que vive en el panel. El panel cambia el borrador, manda a la capa qué partes tienen
@@ -59,7 +67,15 @@ import {
   esTipoBloque,
 } from './bloques-editor';
 import { GALERIA_NUEVA, esFotoGaleria } from './fotos-galeria';
-import { type EstadoProfesor, esNumeroProfesor, numeroPermiso } from './fotos-profesores';
+import {
+  type EstadoProfesor,
+  MAX_SEDES_PROFESOR,
+  type SedeElegible,
+  esIdSede,
+  esNumeroProfesor,
+  numeroPermiso,
+  numeroSedes,
+} from './fotos-profesores';
 import { MAX_DESCRIPCION_FOTO, esClaveSubida, esFotoEditable, fotoDeDescripcion } from './fotos-sueltas';
 import { huecoDe } from './huecos-editor';
 import { esTextoEditable } from './textos-editor';
@@ -251,11 +267,19 @@ export interface MensajeCerrarHojaMenu {
   id: number;
 }
 
-/** W12f-2b: los profesores del borrador, en orden, con su nombre y su casilla o su constancia (solo el texto). */
+/**
+ * W12f-2b: los profesores del borrador, en orden, con su nombre y su casilla o su constancia (solo el texto). W12f-3: y
+ * sus sedes marcadas (`EstadoProfesor.sedes`). Se reenvía cada vez que algo de esto cambia.
+ */
 export interface MensajeProfesores {
   canal: typeof CANAL_EDITOR_WEB;
   tipo: 'profesores';
   lista: EstadoProfesor[];
+  /**
+   * W12f-3: las sedes que se pueden elegir, en el orden en que se pintan (el de la API), sin ids repetidos. Vacía
+   * mientras se leen o si no se pudieron leer: entonces no se puede cambiar ninguna.
+   */
+  sedes: SedeElegible[];
 }
 
 /**
@@ -268,8 +292,37 @@ export interface MensajeFocoProfesor {
   foco: string;
 }
 
+/**
+ * W12f-3: el panel cerró la hoja de sedes (`hoja-sedes` con ese `id`). `devolverFoco`: con «Listo» o Escape, el foco
+ * vuelve al botón de sedes de la tarjeta; sin él (pulsar fuera, panel ancho, no se pudo abrir), no se mueve.
+ */
+export interface MensajeRespuestaHojaSedes {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'respuesta-hoja-sedes';
+  id: number;
+  devolverFoco: boolean;
+}
+
+/**
+ * La parte del iframe que el usuario ve de verdad, en píxeles CSS del documento del iframe (ya deshecha la escala del
+ * marco): el iframe mide todo el documento y quien se desplaza es el panel, así que la capa no la puede saber sola.
+ * Descuenta lo que tapa el panel por arriba (cabecera y barras pegadas) y por abajo (la barra de guardar). Los flotantes
+ * de la capa se colocan dentro de ella.
+ */
+export interface MensajeZonaVisible {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'zona-visible';
+  top: number;
+  alto: number;
+}
+
+/** Tope de la zona visible (top y alto): ningún documento de la web llega a tanto. */
+export const MAX_ZONA_VISIBLE = 1_000_000;
+
 export type MensajeDelPanel =
+  | MensajeZonaVisible
   | MensajeProfesores
+  | MensajeRespuestaHojaSedes
   | MensajeFocoProfesor
   | MensajeRespuestaHojaMenu
   | MensajeQuitarDato
@@ -399,15 +452,44 @@ export interface MensajePedirQuitarDato {
 
 /**
  * W12f-2b: añadir un profesor, quitarlo (el panel confirma) o marcar o desmarcar su casilla del permiso.
+ *
+ * W12f-3: `sedes`, el conjunto entero de sedes marcadas para el profesor `n` (ids de `MensajeProfesores.sedes`; el orden
+ * da igual y vacío es «ninguna»). Aquí solo se comprueba la forma (enteros positivos seguros, sin repetidos, como mucho
+ * `MAX_SEDES_PROFESOR`); el panel descarta la petición si `n` no está en el borrador o trae más ids que sedes elegibles,
+ * se queda con los de la lista en el orden de la lista y no la atiende fuera de Inicio ni mientras guarda. A toda petición con forma válida
+ * contesta con `profesores` (el estado que vale), también si no cambia nada: la capa pinta siempre lo que manda el panel.
+ * `anunciar-sedes`: se cerró el diálogo de sedes de `n` con «Listo» o Escape; el panel dice sus sedes («Sedes: A, B.»).
  */
 export type MensajeProfesor = { canal: typeof CANAL_EDITOR_WEB; tipo: 'profesor' } & (
   | { accion: 'anadir' }
   | { accion: 'quitar'; n: number }
   | { accion: 'permiso'; n: number; marcada: boolean }
+  | { accion: 'sedes'; n: number; sedes: number[] }
+  | { accion: 'anunciar-sedes'; n: number }
 );
+
+/**
+ * W12f-3: con el panel estrecho, la capa pide la hoja de sedes del profesor `n` (el panel la pinta con sus datos).
+ * `id`: número de esta apertura (la capa lo incrementa); el panel lo devuelve en `respuesta-hoja-sedes`.
+ */
+export interface MensajeHojaSedes {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'hoja-sedes';
+  n: number;
+  id: number;
+}
+
+/** W12f-3: la capa cerró sola la hoja de sedes `id` (repintado, el profesor ya no está…): que el panel la quite. */
+export interface MensajeCerrarHojaSedes {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'cerrar-hoja-sedes';
+  id: number;
+}
 
 export type MensajeDelEditor =
   | MensajeProfesor
+  | MensajeHojaSedes
+  | MensajeCerrarHojaSedes
   | MensajeHojaMenu
   | MensajeCerrarHojaMenu
   | MensajePedirQuitarDato
@@ -490,11 +572,15 @@ function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
 
 /**
  * Las claves a las que lleva un enlace del resumen: un texto, una foto (suelta, de la galería o de un profesor), su
- * descripción o (W12f-2b) la casilla del permiso de un profesor.
+ * descripción, (W12f-2b) la casilla del permiso de un profesor o (W12f-3) el botón de sus sedes.
  */
 const esClaveIrA = (clave: unknown) =>
   typeof clave === 'string' &&
-  (esTextoEditable(clave) || esFotoEditable(clave) || fotoDeDescripcion(clave) !== null || numeroPermiso(clave) !== null);
+  (esTextoEditable(clave) ||
+    esFotoEditable(clave) ||
+    fotoDeDescripcion(clave) !== null ||
+    numeroPermiso(clave) !== null ||
+    numeroSedes(clave) !== null);
 
 /** W12f-2b: el foco tras una acción de profesor. */
 export function esFocoProfesor(valor: unknown): valor is string {
@@ -515,11 +601,35 @@ function esPermisoProfesor(v: unknown): boolean {
   return v['tipo'] === 'constancia' && typeof v['texto'] === 'string' && v['texto'].length <= 200;
 }
 
-function esListaProfesores(valor: unknown): valor is EstadoProfesor[] {
+/** W12f-3: ids de sede sin repetir, cada uno un entero positivo seguro, como mucho `max`. */
+export function esListaIdsSedes(valor: unknown, max: number = MAX_SEDES_PROFESOR): valor is number[] {
+  return Array.isArray(valor) && valor.length <= max && valor.every(esIdSede) && new Set(valor).size === valor.length;
+}
+
+/** W12f-3: las sedes elegibles: ids sin repetir y un nombre corto. */
+function esSedesElegibles(valor: unknown): valor is SedeElegible[] {
+  return (
+    Array.isArray(valor) &&
+    valor.length <= MAX_SEDES_PROFESOR &&
+    valor.every((s) => esObjeto(s) && esIdSede(s['id']) && typeof s['nombre'] === 'string' && s['nombre'].length <= 200) &&
+    new Set(valor.map((s) => (s as SedeElegible).id)).size === valor.length
+  );
+}
+
+/** W12f-3: las sedes de cada profesor, solo de las elegibles (`ids`). */
+function esListaProfesores(valor: unknown, ids: ReadonlySet<number>): valor is EstadoProfesor[] {
   return (
     Array.isArray(valor) &&
     valor.length <= 99 &&
-    valor.every((p) => esObjeto(p) && esNumeroProfesor(p['n']) && esTextoCorto(p['nombre']) && esPermisoProfesor(p['permiso'])) &&
+    valor.every(
+      (p) =>
+        esObjeto(p) &&
+        esNumeroProfesor(p['n']) &&
+        esTextoCorto(p['nombre']) &&
+        esPermisoProfesor(p['permiso']) &&
+        esListaIdsSedes(p['sedes'], ids.size) &&
+        (p['sedes'] as number[]).every((id) => ids.has(id)),
+    ) &&
     new Set(valor.map((p) => (p as EstadoProfesor).n)).size === valor.length
   );
 }
@@ -554,10 +664,27 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
     return false;
   }
   switch (valor['tipo']) {
-    case 'profesores':
-      return esListaProfesores(valor['lista']);
+    case 'zona-visible': {
+      const { top, alto } = valor;
+      return (
+        typeof top === 'number' &&
+        typeof alto === 'number' &&
+        Number.isFinite(top) &&
+        Number.isFinite(alto) &&
+        top >= 0 &&
+        top <= MAX_ZONA_VISIBLE &&
+        alto > 0 &&
+        alto <= MAX_ZONA_VISIBLE
+      );
+    }
+    case 'profesores': {
+      const sedes = valor['sedes'];
+      return esSedesElegibles(sedes) && esListaProfesores(valor['lista'], new Set(sedes.map((s) => s.id)));
+    }
     case 'foco-profesor':
       return esFocoProfesor(valor['foco']);
+    case 'respuesta-hoja-sedes':
+      return esIdHoja(valor['id']) && typeof valor['devolverFoco'] === 'boolean';
     case 'borrador':
       return (
         Array.isArray(valor['bloques']) &&
@@ -615,9 +742,17 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
           return esNumeroProfesor(valor['n']);
         case 'permiso':
           return esNumeroProfesor(valor['n']) && typeof valor['marcada'] === 'boolean';
+        case 'sedes':
+          return esNumeroProfesor(valor['n']) && esListaIdsSedes(valor['sedes']);
+        case 'anunciar-sedes':
+          return esNumeroProfesor(valor['n']);
         default:
           return false;
       }
+    case 'hoja-sedes':
+      return esNumeroProfesor(valor['n']) && esIdHoja(valor['id']);
+    case 'cerrar-hoja-sedes':
+      return esIdHoja(valor['id']);
     case 'alto':
       return typeof valor['alto'] === 'number' && Number.isFinite(valor['alto']) && valor['alto'] >= 0;
     case 'ir':

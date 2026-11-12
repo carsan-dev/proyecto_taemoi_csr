@@ -92,7 +92,13 @@ describe('vistaPortada: profesores en el editor (W12f-2b)', () => {
 
   it('en la web: solo los que tienen nombre y sin su número (la tarjeta, igual que antes)', () => {
     const web = profesores([b('profesor.1.nombre', 'Ana Ruiz'), b('profesor.2.nombre', ''), b('profesor.2.cargo', 'Maestro')], false)!;
-    expect(web.profesores).toEqual([{ n: 1, nombre: 'Ana Ruiz', cargo: null, foto: null, monograma: 'AR' }]);
+    expect(web.profesores).toEqual([{ n: 1, nombre: 'Ana Ruiz', cargo: null, foto: null, sedes: [], monograma: 'AR' }]);
+  });
+
+  it('sedes del profesor: nombres en el orden guardado; una sede que no está (desactivada) se ignora', () => {
+    const web = profesores([b('profesor.1.nombre', 'Ana Ruiz'), b('profesor.1.sedes', '2,99,1')], false)!;
+    expect(web.profesores[0].sedes).toEqual(['Estepa', 'Herrera']);
+    expect(profesores([b('profesor.1.nombre', 'Ana Ruiz'), b('profesor.1.sedes', '99')], false)!.profesores[0].sedes).toEqual([]);
   });
 
   it('en el editor: también el que no tiene nombre («?»), cada uno con su número', () => {

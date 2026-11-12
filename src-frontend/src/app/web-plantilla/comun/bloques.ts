@@ -18,10 +18,22 @@ export interface ProfesorBloque {
   nombre: string;
   cargo: string | null;
   foto: ImagenBloque | null;
+  /** Ids de las sedes donde da clase (`profesor.<n>.sedes`), en el orden guardado; [] sin ellas. */
+  sedes: number[];
 }
 
 export interface FotoGaleria extends ImagenBloque {
   n: number;
+}
+
+/** Lista de ids de sede separados por comas: solo enteros positivos, sin repetidos y en el orden guardado. */
+function idsDeSedes(texto: string | null): number[] {
+  const ids = (texto ?? '')
+    .split(',')
+    .map((trozo) => trozo.trim())
+    .filter((trozo) => /^[1-9][0-9]{0,17}$/.test(trozo))
+    .map(Number);
+  return [...new Set(ids)];
 }
 
 export class BloquesWeb {
@@ -110,6 +122,7 @@ export class BloquesWeb {
               cargo: this.textoPropio(`profesor.${n}.cargo`),
               // La descripción de su bloque (W12); sin ella (datos de antes), el nombre.
               foto: this.imagen(`profesor.${n}.foto`, this.textoPropio(`profesor.${n}.foto`) ?? nombre),
+              sedes: idsDeSedes(this.textoPropio(`profesor.${n}.sedes`)),
             }
           : null;
       })

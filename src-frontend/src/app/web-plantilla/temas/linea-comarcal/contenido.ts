@@ -408,14 +408,24 @@ function idSeccion(tipo: TipoSeccion, clave: string): string {
  * Un profesor de la sección. `marca` (W12f-2b): su número para la capa de edición (`data-ed-profesor`); solo en el
  * editor. En la web no está y la tarjeta sale igual que antes.
  */
-type ProfesorVista = ProfesorBloque & { monograma: string; marca?: number };
+type ProfesorVista = Omit<ProfesorBloque, 'sedes'> & {
+  monograma: string;
+  marca?: number;
+  /** Nombres de las sedes donde da clase (W12f-3), en el orden guardado; las desactivadas no salen. */
+  sedes: string[];
+};
 
 /**
  * Los profesores de la sección: en la web, los que tienen nombre; en el editor (W12f-2b), todos, con su número, y el que
  * aún no tiene nombre con «?» (boceto `profeHtml`).
  */
-function profesoresDe(bloques: BloquesWeb, editor: boolean): ProfesorVista[] {
-  return bloques.profesores(editor).map((p) => ({ ...p, monograma: monograma(p.nombre) || '?', ...(editor ? { marca: p.n } : {}) }));
+function profesoresDe(bloques: BloquesWeb, editor: boolean, sedesActivas: readonly SedeWeb[]): ProfesorVista[] {
+  return bloques.profesores(editor).map((p) => ({
+    ...p,
+    monograma: monograma(p.nombre) || '?',
+    sedes: p.sedes.flatMap((id) => sedesActivas.find((s) => s.id === id)?.nombre ?? []),
+    ...(editor ? { marca: p.n } : {}),
+  }));
 }
 
 /** Formas de la galería del boceto, en ciclo de seis. */
@@ -532,7 +542,7 @@ function seccionVaciaEditor(tipo: TipoSeccion, clave: string, x: Contexto): Cuer
         numero: SIN_NUMERO,
         rotulo: textos.t('profesores.rotulo'),
         titulo: textos.t('profesores.titulo'),
-        profesores: profesoresDe(textos.bloques, x.editor),
+        profesores: profesoresDe(textos.bloques, x.editor, x.sitio.sedes),
       };
     case 'galeria':
       return { tipo, numero: SIN_NUMERO, rotulo: textos.t('galeria.rotulo'), fotos: [] };
@@ -618,7 +628,7 @@ function construirSeccion(tipo: TipoSeccion, clave: string, x: Contexto): Cuerpo
             numero: x.siguiente(),
             rotulo: textos.t('profesores.rotulo'),
             titulo: textos.t('profesores.titulo'),
-            profesores: profesoresDe(bloques, x.editor),
+            profesores: profesoresDe(bloques, x.editor, sitio.sedes),
           }
         : null;
     }

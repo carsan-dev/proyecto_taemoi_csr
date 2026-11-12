@@ -41,7 +41,9 @@ import {
   numeroPermiso,
   numeroProfesor,
   tituloQuitarProfesor,
+  tituloSedesProfesor,
   vozQuitadoProfesor,
+  vozSedesProfesor,
 } from '../../../web-plantilla/editor/fotos-profesores';
 import {
   type AccionBloque,
@@ -147,6 +149,7 @@ import {
   anadirProfesor,
   cambiosProfesores,
   conCabeceras,
+  elegirSedes,
   erroresProfesores,
   esDeProfesorFuera,
   estadoProfesores,
@@ -155,10 +158,15 @@ import {
   numerosProfesores,
   permisosParaEnviar,
   quitarProfesor,
+  sedesDelProfesor,
+  sedesElegibles,
   stripJava,
   vecinoProfesor,
 } from './web-contenido-profesores';
 import { ListasVista, WebContenidoService } from './web-contenido.service';
+
+/** Lo que tiene la capa al estar lista: ni profesores ni sedes (firma de `enviarProfesores`). */
+const PROFESORES_INICIAL = JSON.stringify({ lista: [], sedes: [] });
 
 /** Panel estrecho (boceto `estrecho()`): las acciones de un bloque salen en la hoja inferior. */
 const CONSULTA_ESTRECHO = '(max-width: 767.98px)';
@@ -167,6 +175,10 @@ const ESTADO_BLOQUES_INICIAL = JSON.stringify([[], [], false]);
 
 /** La barra superior del panel (`navegacion/cabecera-panel`): 64 px y 56 en móvil; la franja del caso va debajo. */
 const CABECERA_PANEL = '.pn-cab';
+/** Lo que el panel pone fijo sobre la vista previa: arriba, su cabecera (la franja del caso se busca en la pantalla)... */
+const TAPAS_ARRIBA = [CABECERA_PANEL];
+/** ...y abajo, la barra de navegación del móvil (la barra de cambios se busca en la pantalla). */
+const TAPAS_ABAJO = ['.pn-barra'];
 
 const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
 
@@ -206,6 +218,10 @@ const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
  * quitar (con confirmación; se van todas sus filas, también sus sedes, y su subida) y marcar la casilla del permiso; aquí
  * se guarda la casilla de cada número (solo en esta pantalla) y el `PUT` manda `permiso: true` solo en el nombre de los
  * que la tienen marcada y la necesitan. La constancia del GET va a la capa en texto y nunca se reenvía.
+ *
+ * W12f-3: sedes de cada profesor. La capa pide el conjunto (`profesor`, acción `sedes`); aquí se filtra y ordena con las
+ * sedes elegibles (las de `listas`) y se escribe `profesor.<n>.sedes` (`elegirSedes`). La capa recibe con `profesores`
+ * las elegibles y las marcadas de cada uno.
  *
  * W12e: bloques de Inicio (`web-contenido-bloques.ts`). La capa pide subir, bajar, ocultar, mostrar, quitar (con
  * confirmación) y añadir; aquí se cambian las cabeceras del borrador, se manda a la vista previa, se dice por voz y se
@@ -302,6 +318,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly hoja = signal<string | null>(null);
   /** d541: el menú de la vista previa (foto, «Añadir bloque») abierto como hoja inferior, o null. */
   readonly hojaMenu = signal<MensajeHojaMenu | null>(null);
+  /** W12f-3: la hoja de sedes de un profesor (panel estrecho) que pidió la capa, con su número de apertura, o null. */
+  readonly hojaSedes = signal<{ n: number; id: number } | null>(null);
+  readonly textosProfesores = TEXTOS_PROFESORES;
   readonly textosBloques = TEXTOS_BLOQUES;
   readonly etiquetaAccion = etiquetaAccion;
   /** Boceto `pintarHoja`. */
@@ -363,6 +382,27 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   /** El paso de la preinscripción que se ve (boceto: empieza en el 1 y se queda al cambiar de página). */
   readonly paso = signal<PasoPreinscripcion>(1);
   readonly menuCasos = signal(false);
+
+  /** W12f-3: las sedes que se pueden elegir para un profesor (vacía mientras se leen o si fallan: no se cambia ninguna). */
+  readonly sedesElegibles = computed(() => sedesElegibles(this.listas()?.sedes ?? []));
+  /**
+   * W12f-3: la hoja de sedes (boceto `abrirSedesProfe` en estrecho): su título y una casilla por sede elegible, marcada
+   * si está en el borrador. Null si no hay hoja, el profesor ya no está o no hay sedes que elegir.
+   */
+  readonly vistaHojaSedes = computed(() => {
+    const h = this.hojaSedes();
+    const filas = this.borrador();
+    const sedes = this.sedesElegibles();
+    if (!h || !sedes.length || !numerosProfesores(filas).includes(h.n)) {
+      return null;
+    }
+    const marcadas = sedesDelProfesor(filas, h.n, sedes.map((s) => s.id));
+    return {
+      n: h.n,
+      titulo: tituloSedesProfesor(filas.find((f) => f.clave === `profesor.${h.n}.nombre`)?.texto),
+      sedes: sedes.map((s) => ({ ...s, marcada: marcadas.includes(s.id) })),
+    };
+  });
 
   /** Con una sola sede, el paso «Pueblo» no existe (como en la web real). */
   readonly unaSede = computed(() => this.listas()?.sedes.length === 1);
@@ -476,8 +516,19 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
    * profesor nuevo nunca toma uno: ni el de uno quitado y guardado, ni el de uno quitado y vuelto a añadir.
    */
   private readonly numerosProfesor = new Set<number>();
+  /**
+   * W12f-3: números de profesor cuya fila `profesor.<n>.sedes` rechazó la API (400). Mientras lo guardado sea el mismo,
+   * esa fila guardada es la que falla: elegir sus sedes la reescribe siempre con solo elegibles (`forzar`), también
+   * después de limpiarse el error. Se vacía con lo guardado nuevo (cargar, recargar, guardar bien); descartar no lo vacía,
+   * porque vuelve justo a lo guardado que falló.
+   */
+  private readonly sedesRechazadas = new Set<number>();
   /** Lo último que se mandó a la capa de `profesores`. */
   private profesoresEnviado = '';
+  /** Lo último que se mandó a la capa de `zona-visible` («top:alto»; vacío con la capa nueva). */
+  private zonaEnviada = '';
+  /** El fotograma en que se medirá la zona (como mucho un envío por fotograma). */
+  private zonaPedida: number | null = null;
   private observador: ResizeObserver | null = null;
   private temporizadorEsqueleto: ReturnType<typeof setTimeout> | null = null;
   private temporizadorLimite: ReturnType<typeof setTimeout> | null = null;
@@ -504,6 +555,26 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         this.cerrarHojaMenu(null, false);
       }
     });
+    // W12f-3: ni la de sedes, si el panel se ensancha, el profesor se va o ya no hay sedes que elegir.
+    effect(() => {
+      if (this.hojaSedes() !== null && (!this.estrecho() || this.vistaHojaSedes() === null)) {
+        this.cerrarHojaSedes(false);
+      }
+    });
+    // La parte de la vista previa que se ve, para que la capa ponga sus flotantes dentro: cambia con el alto del
+    // documento, la escala, la barra de cambios, la franja del caso, la hoja, el desplazamiento y el tamaño de la ventana.
+    effect(() => {
+      this.alto();
+      this.escala();
+      this.barraVisible();
+      this.casoActivo();
+      this.vistaHoja();
+      this.estrecho();
+      this.pedirZona();
+    });
+    const alMoverVentana = () => this.pedirZona();
+    this.ventana?.addEventListener('scroll', alMoverVentana, { passive: true });
+    this.ventana?.addEventListener('resize', alMoverVentana);
     const consulta = this.ventana?.matchMedia?.(CONSULTA_ESTRECHO);
     const alCambiarAncho = (e: MediaQueryListEvent) => this.estrecho.set(e.matches);
     consulta?.addEventListener?.('change', alCambiarAncho);
@@ -514,6 +585,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       : () => undefined;
     inject(DestroyRef).onDestroy(() => {
       dejarDeEscuchar();
+      this.ventana?.removeEventListener('scroll', alMoverVentana);
+      this.ventana?.removeEventListener('resize', alMoverVentana);
+      if (this.zonaPedida !== null) {
+        this.ventana?.cancelAnimationFrame?.(this.zonaPedida);
+        this.zonaPedida = null;
+      }
       consulta?.removeEventListener?.('change', alCambiarAncho);
       this.cancelarSubidas();
       this.pararTemporizadores();
@@ -557,6 +634,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.borrador.set(bloques);
     this.mostrarErrores.set(false);
     this.erroresServidor.set({});
+    // Lo guardado es otro: lo que rechazó la API ya no vale para esto.
+    this.sedesRechazadas.clear();
   }
 
   /** «Reintentar» del error de la pantalla: vuelve a leer, el foco vuelve al título y se anuncia «Contenido cargado.». */
@@ -658,6 +737,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.presentes.set(null);
     this.hoja.set(null);
     this.hojaMenu.set(null);
+    this.hojaSedes.set(null);
     if (this.estado() === 'listo') {
       this.iniciarCarga();
     }
@@ -745,6 +825,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.hojaMenu() !== null && !t?.closest?.('.flot--capa')) {
       this.cerrarHojaMenu(null, false);
     }
+    if (this.hojaSedes() !== null && !t?.closest?.('.flot--capa')) {
+      this.cerrarHojaSedes(false);
+    }
   }
 
   // ------------------------------------------------------------------ puente
@@ -775,15 +858,22 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         // La capa nueva empieza sin pastillas, sin quitables y ancha: solo se manda si hay algo.
         this.estadoBloquesEnviado = ESTADO_BLOQUES_INICIAL;
         this.enviarEstadoBloques();
-        // La capa nueva empieza sin profesores: solo se manda si hay alguno.
-        this.profesoresEnviado = '[]';
+        // La capa nueva empieza sin profesores ni sedes: solo se manda si hay algo.
+        this.profesoresEnviado = PROFESORES_INICIAL;
         this.enviarProfesores();
+        // Ni sabe qué parte se ve: se le dice ya.
+        this.zonaEnviada = '';
+        this.enviarZona();
         break;
       case 'profesor':
         if (mensaje.accion === 'anadir') {
           this.anadirProfesor();
         } else if (mensaje.accion === 'quitar') {
           void this.quitarProfesor(mensaje.n);
+        } else if (mensaje.accion === 'sedes') {
+          this.elegirSedes(mensaje.n, mensaje.sedes);
+        } else if (mensaje.accion === 'anunciar-sedes') {
+          this.anunciarSedes(mensaje.n);
         } else {
           this.marcarPermiso(mensaje.n, mensaje.marcada);
         }
@@ -803,6 +893,15 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         break;
       case 'hoja-menu':
         this.abrirHojaMenu(mensaje);
+        break;
+      case 'hoja-sedes':
+        this.abrirHojaSedes(mensaje.n, mensaje.id);
+        break;
+      case 'cerrar-hoja-sedes':
+        // La capa cerró sola su diálogo: solo se quita la hoja si es esa; sin responder ni mover el foco.
+        if (this.hojaSedes()?.id === mensaje.id) {
+          this.hojaSedes.set(null);
+        }
         break;
       case 'cerrar-hoja-menu': {
         // La capa cerró sola su menú: solo se quita la hoja si es esa; sin responder ni mover el foco.
@@ -921,6 +1020,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       this.permisosPedidos.update((s) => new Set([...s].filter((x) => x !== n)));
     }
     this.borrador.update((filas) => quitarProfesor(filas, n));
+    this.sedesRechazadas.delete(n);
     this.limpiarErrores([...claves, claveDescripcion(foto), clavePermiso(n), `profesor.${n}.nombre`]);
     this.enviarBorrador();
     this.enviarFocoProfesor(vecino === null ? 'anadir' : `quitar:${vecino}`);
@@ -935,6 +1035,36 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.ponerMarca(n, marcada);
     this.limpiarErrores([clavePermiso(n)]);
     this.anuncio.set(marcada ? TEXTOS_PROFESORES.vozMarcado : TEXTOS_PROFESORES.vozDesmarcado);
+  }
+
+  /**
+   * W12f-3: las sedes que pide la capa para un profesor. Solo en Inicio y sin un guardado en curso (lo cambiado durante
+   * «Guardando…» se perdería al llegar lo guardado). La capa recibe siempre el estado que vale, también si no cambia nada.
+   */
+  private elegirSedes(n: number, pedidas: readonly number[]): void {
+    const clave = `profesor.${n}.sedes`;
+    const filas = this.puedeTocarBloques()
+      ? elegirSedes(this.guardado(), this.borrador(), n, pedidas, this.sedesElegibles().map((s) => s.id), this.sedesRechazadas.has(n))
+      : null;
+    if (filas) {
+      this.borrador.set(filas);
+      this.limpiarErrores([clave]);
+      // El tema pinta las sedes de cada tarjeta.
+      this.enviarBorrador();
+    }
+    this.profesoresEnviado = '';
+    this.enviarProfesores();
+  }
+
+  /** W12f-3 (boceto `listo-sedes`): «Sedes: Casariche, Estepa.» o «Sin sedes.», con las del borrador en orden de lista. */
+  private anunciarSedes(n: number): void {
+    const filas = this.borrador();
+    if (!numerosProfesores(filas).includes(n)) {
+      return;
+    }
+    const sedes = this.sedesElegibles();
+    const marcadas = sedesDelProfesor(filas, n, sedes.map((s) => s.id));
+    this.anuncio.set(vozSedesProfesor(sedes.filter((s) => marcadas.includes(s.id)).map((s) => s.nombre)));
   }
 
   /** Marcada, con el nombre que tiene ahora (`stripJava`): la marca vale para ese nombre y solo para él. */
@@ -958,12 +1088,14 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
    * con la capa de edición confirmada (`listo`, que pone la vista previa en `listo`); al llegarlo, se manda entera.
    */
   private enviarProfesores(): void {
-    const lista = estadoProfesores(this.guardado(), this.borrador(), this.permisosVigentes(), this.permisosPedidos());
-    const firma = JSON.stringify(lista);
+    const sedes = this.sedesElegibles();
+    const ids = sedes.map((s) => s.id);
+    const lista = estadoProfesores(this.guardado(), this.borrador(), this.permisosVigentes(), this.permisosPedidos(), ids);
+    const firma = JSON.stringify({ lista, sedes });
     if (!this.ventana || this.carga() !== 'listo' || firma === this.profesoresEnviado) {
       return;
     }
-    if (enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista })) {
+    if (enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista, sedes })) {
       this.profesoresEnviado = firma;
     }
   }
@@ -1211,6 +1343,13 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
           // W12f-2b: el permiso que pide la API (PERMISO_FALTA o PERMISO_NOMBRE_CAMBIADO) va a la casilla de ese profesor.
           const pedidos = Object.keys(errores).map(numeroPermiso).filter((n): n is number => n !== null);
           this.permisosPedidos.set(new Set(pedidos));
+          // W12f-3: lo guardado no cambia con un 400; las filas de sedes rechazadas se suman a las de antes.
+          Object.keys(errores).forEach((clave) => {
+            const n = /^profesor\.([0-9]+)\.sedes$/.exec(clave)?.[1];
+            if (n !== undefined) {
+              this.sedesRechazadas.add(Number(n));
+            }
+          });
           this.erroresServidor.set(errores);
           this.mostrarErrores.set(true);
           this.enfocarDespues('.resumen');
@@ -1447,6 +1586,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     }
     // Una sola hoja a la vez: la del menú de la vista previa se cierra y la capa lo sabe.
     this.cerrarHojaMenu(null, false);
+    this.cerrarHojaSedes(false);
     this.hoja.set(id);
     if (this.vistaHoja() === null) {
       this.hoja.set(null);
@@ -1482,7 +1622,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.host.nativeElement.ownerDocument.querySelector('dialog[open]')) {
       return;
     }
-    if (this.hojaMenu() !== null) {
+    if (this.hojaSedes() !== null) {
+      this.cerrarHojaSedes(true);
+    } else if (this.hojaMenu() !== null) {
       this.cerrarHojaMenu(null, true);
     } else if (this.hoja() !== null) {
       this.cerrarHoja(true);
@@ -1506,6 +1648,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       this.responderHojaMenu(abierta.menu, abierta.id, null, false);
     }
     this.hoja.set(null);
+    this.cerrarHojaSedes(false);
     this.cerrarMenuCasos(false);
     this.hojaMenu.set(menu);
     this.enfocarDespues('.flot--capa [role="menuitem"]:not([aria-disabled="true"])');
@@ -1572,6 +1715,75 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.hojaMenu() !== null && doc.activeElement === this.iframe()?.nativeElement) {
       this.cerrarHojaMenu(null, false);
     }
+    if (this.hojaSedes() !== null && doc.activeElement === this.iframe()?.nativeElement) {
+      this.cerrarHojaSedes(false);
+    }
+  }
+
+  // ------------------------------------------------------------------ sedes de un profesor como hoja (W12f-3)
+
+  /**
+   * La capa (panel estrecho) pide la hoja de sedes de un profesor: la vista previa ocupa toda la altura y un diálogo
+   * dentro de ella no queda a mano. La hoja se pinta con los datos del panel; si no se puede abrir, se contesta ya.
+   */
+  private abrirHojaSedes(n: number, id: number): void {
+    const abierta = this.hojaSedes();
+    if (abierta) {
+      this.hojaSedes.set(null);
+      this.responderHojaSedes(abierta.id, false);
+    }
+    if (!this.estrecho() || this.pagina() !== 'inicio' || !this.sedesElegibles().length || !numerosProfesores(this.borrador()).includes(n)) {
+      this.responderHojaSedes(id, false);
+      return;
+    }
+    this.hoja.set(null);
+    this.cerrarHojaMenu(null, false);
+    this.cerrarMenuCasos(false);
+    this.hojaSedes.set({ n, id });
+    this.enfocarDespues('.flot--sedes input[type="checkbox"]');
+  }
+
+  /**
+   * Una casilla de la hoja: el mismo camino que la acción `sedes` de la capa (el conjunto entero). La casilla queda como
+   * diga el borrador: si no se aceptó (guardando, por ejemplo), vuelve a su valor.
+   */
+  cambiarSedeHoja(evento: Event, id: number): void {
+    const vista = this.vistaHojaSedes();
+    const input = evento.target as HTMLInputElement | null;
+    if (!vista || !input) {
+      return;
+    }
+    const marcadas = vista.sedes.filter((s) => (s.id === id ? input.checked : s.marcada)).map((s) => s.id);
+    this.elegirSedes(vista.n, marcadas);
+    input.checked = this.vistaHojaSedes()?.sedes.find((s) => s.id === id)?.marcada ?? false;
+  }
+
+  /**
+   * Cierra la hoja de sedes y se lo dice a la capa. Con «Listo» o Escape, el foco vuelve al botón; solo con «Listo»
+   * (`anunciar`, boceto `listo-sedes`) se dicen las sedes: Escape solo cierra.
+   */
+  cerrarHojaSedes(devolverFoco: boolean, anunciar = false): void {
+    const abierta = this.hojaSedes();
+    if (abierta === null) {
+      return;
+    }
+    this.hojaSedes.set(null);
+    this.responderHojaSedes(abierta.id, devolverFoco);
+    if (anunciar) {
+      this.anunciarSedes(abierta.n);
+    }
+  }
+
+  private responderHojaSedes(id: number, devolverFoco: boolean): void {
+    const iframe = this.iframe()?.nativeElement;
+    if (!this.ventana || !iframe) {
+      return;
+    }
+    if (devolverFoco) {
+      // El foco pasa a la vista previa (el panel lo tenía en la hoja que se cierra); la capa lo pone en el botón.
+      iframe.focus({ preventScroll: true });
+    }
+    enviarPorPuente(this.ventana, iframe.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id, devolverFoco });
   }
 
   private enfocarBloque(foco: string, enLaHoja: boolean): void {
@@ -1661,6 +1873,78 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         paso: this.paso(),
       });
     }
+  }
+
+  /** Mide y manda la zona en el siguiente fotograma (varios avisos en el mismo fotograma, un solo envío). */
+  private pedirZona(): void {
+    const ventana = this.ventana;
+    if (!ventana || this.zonaPedida !== null) {
+      return;
+    }
+    if (typeof ventana.requestAnimationFrame !== 'function') {
+      this.enviarZona();
+      return;
+    }
+    this.zonaPedida = ventana.requestAnimationFrame(() => {
+      this.zonaPedida = null;
+      this.enviarZona();
+    });
+  }
+
+  /** Manda a la capa la parte de la vista previa que se ve, si cambió desde la última vez. */
+  private enviarZona(): void {
+    const ventana = this.ventana;
+    const iframe = this.iframe()?.nativeElement;
+    const destino = iframe?.contentWindow ?? null;
+    const zona = ventana && iframe ? this.zonaVisible(ventana, iframe) : null;
+    if (!ventana || !destino || !zona) {
+      return;
+    }
+    const firma = `${zona.top}:${zona.alto}`;
+    if (firma === this.zonaEnviada) {
+      return;
+    }
+    this.zonaEnviada = firma;
+    enviarPorPuente(ventana, destino, { canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top: zona.top, alto: zona.alto });
+  }
+
+  /**
+   * La parte del iframe que se ve, en píxeles CSS de su documento: el marco en la ventana menos lo que el panel pone
+   * fijo encima (cabecera y franja del caso arriba; barra de cambios y navegación del móvil abajo), deshecha la escala.
+   * Quien se desplaza es la ventana del panel (el iframe mide todo el documento). Null si no se ve nada.
+   */
+  private zonaVisible(ventana: Window, iframe: HTMLIFrameElement): { top: number; alto: number } | null {
+    const marco = iframe.getBoundingClientRect();
+    const escala = iframe.offsetHeight > 0 ? marco.height / iframe.offsetHeight : 0;
+    if (!(escala > 0)) {
+      return null;
+    }
+    const doc = this.host.nativeElement.ownerDocument;
+    const mitad = ventana.innerHeight / 2;
+    const tapa = (el: Element | null): DOMRect | null => {
+      if (!el) {
+        return null;
+      }
+      const r = el.getBoundingClientRect();
+      return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' ? r : null;
+    };
+    let arriba = Math.max(marco.top, 0);
+    let abajo = Math.min(marco.bottom, ventana.innerHeight);
+    [...TAPAS_ARRIBA.map((s) => doc.querySelector(s)), this.casoActivoEl()?.nativeElement ?? null].forEach((el) => {
+      const r = tapa(el);
+      if (r && r.top < mitad) {
+        arriba = Math.max(arriba, r.bottom);
+      }
+    });
+    [...TAPAS_ABAJO.map((s) => doc.querySelector(s)), this.host.nativeElement.querySelector('.barra')].forEach((el) => {
+      const r = tapa(el);
+      if (r && r.bottom > mitad) {
+        abajo = Math.min(abajo, r.top);
+      }
+    });
+    const top = Math.round((arriba - marco.top) / escala);
+    const alto = Math.round((abajo - arriba) / escala);
+    return alto >= 1 ? { top: Math.max(0, top), alto } : null;
   }
 
   /** Lleva a la vista la parte del caso (boceto `ponerCaso`), bajo la barra del panel y la franja del caso. */

@@ -1,5 +1,6 @@
 import { activarCapaEditor } from './capa-editor';
 import { Caja, cortan, colocarEvitando, encajarEnVista, PeticionColocar } from './colocar-flotantes';
+import { CANAL_EDITOR_WEB } from './puente-editor';
 
 const caja = (left: number, top: number, ancho: number, alto: number): Caja => ({ left, top, right: left + ancho, bottom: top + alto });
 
@@ -51,6 +52,16 @@ describe('colocar evitando cajas (flotantes de la capa)', () => {
     expect(encajarEnVista(500, 200, 640)).toBe(436);
     expect(encajarEnVista(-30, 200, 640)).toBe(4);
     expect(encajarEnVista(300, 900, 640)).toBe(4);
+  });
+
+  it('con la zona del panel (vista que empieza más abajo): encajarEnVista y colocarEvitando no se salen de ella', () => {
+    // Zona de 200 a 600 en la vista.
+    expect(encajarEnVista(100, 150, 400, 200)).toBe(204);
+    expect(encajarEnVista(500, 150, 400, 200)).toBe(446);
+    expect(encajarEnVista(300, 150, 400, 200)).toBe(300);
+    // Sobre el ancla quedaría por encima de la zona: pasa a bajo él.
+    const sitio = colocarEvitando({ ...base, ancla: caja(40, 210, 100, 20), vista: { ancho: 360, alto: 400, arriba: 200 }, evitar: [caja(0, 150, 360, 50)] });
+    expect(sitio.top).toBe(230 + 8);
   });
 });
 
@@ -283,6 +294,30 @@ describe('flotantes de la capa sin pisarse (maquetación real)', () => {
       expect(cortan(rect(q('.ed-chip')), rect(q('#ed-candado')))).toBeFalse();
       // En ancho, el aviso largo sigue en una línea, como siempre.
       expect(q('#ed-candado').offsetHeight).toBeLessThan(40);
+    });
+
+    it('con la zona del panel empezando justo sobre el campo: etiqueta y aviso bajan dentro de ella, sin pisarse', () => {
+      montar(1200, '.tablero{padding-top:200px}');
+      const li = q('.leyenda li:nth-child(2)');
+      ponerEn(li, 300);
+      // Lo que tapa el panel (cabecera, franja) acaba 10 px sobre el campo: arriba no cabe ni la etiqueta ni el aviso.
+      const arriba = Math.round(li.getBoundingClientRect().top) - 10;
+      ventana.dispatchEvent(
+        new MessageEvent('message', {
+          data: { canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top: arriba + ventana.scrollY, alto: 300 },
+          origin: ventana.origin,
+          source: window,
+        }),
+      );
+      editar(li);
+      mostrarCandado();
+      const chip = rect(q('.ed-chip'));
+      const candado = rect(q('#ed-candado'));
+      for (const [nombre, c] of [['etiqueta', chip], ['aviso', candado]] as const) {
+        expect(c.top).withContext(nombre).toBeGreaterThanOrEqual(arriba + 4 - 1);
+        expect(c.bottom).withContext(nombre).toBeLessThanOrEqual(arriba + 300 - 4 + 1);
+      }
+      expect(cortan(chip, candado)).toBeFalse();
     });
   });
 });

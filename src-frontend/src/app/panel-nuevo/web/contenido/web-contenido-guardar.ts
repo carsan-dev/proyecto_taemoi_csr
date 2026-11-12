@@ -149,11 +149,18 @@ export function nombreError(clave: string, borrador: readonly BloqueContenido[])
   if (clave === 'portada.foto') {
     return 'Portada: falta la foto';
   }
-  // W12f-2b (boceto `nombreError`): «Antonio Ruiz: nombre», «Profesor nuevo: permiso para publicar».
-  const profesor = /^profesor\.([1-9][0-9]?)\.(nombre|cargo|permiso)$/.exec(clave);
+  // W12f-2b (boceto `nombreError`): «Antonio Ruiz: nombre», «Profesor nuevo: permiso para publicar». W12f-3: «Antonio
+  // Ruiz: sedes donde da clase» (el nombre del campo es la leyenda de sus casillas, en minúscula, como los demás).
+  const profesor = /^profesor\.([1-9][0-9]?)\.(nombre|cargo|permiso|sedes)$/.exec(clave);
   if (profesor) {
     const nombre = nombreProfesor(borrador.find((f) => f.clave === `profesor.${profesor[1]}.nombre`)?.texto);
-    const que = profesor[2] === 'permiso' ? 'permiso para publicar' : profesor[2] === 'nombre' ? 'nombre' : 'cargo o grado';
+    const campos: Record<string, string> = {
+      permiso: 'permiso para publicar',
+      nombre: 'nombre',
+      cargo: 'cargo o grado',
+      sedes: TEXTOS_PROFESORES.sedesLeyenda.toLowerCase(),
+    };
+    const que = campos[profesor[2]];
     return `${nombre}: ${que}`;
   }
   const foto = fotoDeDescripcion(clave);

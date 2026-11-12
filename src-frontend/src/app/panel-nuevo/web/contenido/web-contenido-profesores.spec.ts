@@ -8,14 +8,19 @@ import { queFoto } from './web-contenido-fotos';
 import {
   anadirProfesor,
   cambiosProfesores,
+  csvDeSedes,
+  elegirSedes,
   erroresProfesores,
   estadoProfesores,
+  idsDeSedes,
   marcasVigentes,
   numeroProfesorNuevo,
   numerosProfesores,
   permisosParaEnviar,
   pidePermiso,
   quitarProfesor,
+  sedesDelProfesor,
+  sedesElegibles,
   stripJava,
   textoConstancia,
   vecinoProfesor,
@@ -192,8 +197,8 @@ describe('profesores de «Web · Contenido» (W12f-2b, lógica pura)', () => {
     expect(textoConstancia({ origen: 'PANEL', por: null, en: '2026-11-05T08:00:00' })).toBe('Permiso marcado el 05/11/2026');
     const estados = estadoProfesores(GUARDADO, GUARDADO, nadie);
     expect(estados).toEqual([
-      { n: 1, nombre: 'Antonio Ruiz', permiso: { tipo: 'constancia', texto: 'Permiso marcado por María Ruiz el 03/11/2026' } },
-      { n: 3, nombre: 'Lucía Fernández', permiso: { tipo: 'constancia', texto: 'Permiso dado en el alta el 01/10/2026' } },
+      { n: 1, nombre: 'Antonio Ruiz', permiso: { tipo: 'constancia', texto: 'Permiso marcado por María Ruiz el 03/11/2026' }, sedes: [] },
+      { n: 3, nombre: 'Lucía Fernández', permiso: { tipo: 'constancia', texto: 'Permiso dado en el alta el 01/10/2026' }, sedes: [] },
     ]);
   });
 
@@ -270,5 +275,148 @@ describe('profesores de «Web · Contenido» (W12f-2b, lógica pura)', () => {
     expect(cambiosProfesores(sinCabeceras, sin, nadie).claves).toEqual(['profesor.1.quitado']);
     // Un número que no está: nada cambia.
     expect(quitarProfesor(sinCabeceras, 9)).toEqual(sinCabeceras);
+  });
+});
+
+/** W12f-3: sedes de cada profesor (`profesor.<n>.sedes`; API `ContenidoWebService.sedesDelProfesor`). */
+describe('sedes de cada profesor (W12f-3, lógica pura)', () => {
+  /** Las activas de la vista previa, en el orden de la API (no por id). La 7 es inactiva: no está. */
+  const ELEGIBLES = [6, 3, 4, 5];
+  const texto = (filas: readonly BloqueContenido[], clave: string) => filas.find((f) => f.clave === clave)?.texto;
+  const con = (filas: readonly BloqueContenido[], clave: string, t: string) => filas.map((f) => (f.clave === clave ? { ...f, texto: t } : f));
+
+  it('CSV ↔ ids: «1,2» sin espacios; lo que no es un id se ignora; sin repetidos', () => {
+    expect(idsDeSedes('3,4')).toEqual([3, 4]);
+    expect(idsDeSedes('4,3')).toEqual([4, 3]);
+    expect(idsDeSedes('')).toEqual([]);
+    expect(idsDeSedes(null)).toEqual([]);
+    expect(idsDeSedes(undefined)).toEqual([]);
+    expect(idsDeSedes(' 3, 4 ')).toEqual([3, 4]);
+    expect(idsDeSedes('3,,x,4,3,0,-1,1.5,1e3,9007199254740993')).toEqual([3, 4]);
+    expect(csvDeSedes([1, 2])).toBe('1,2');
+    expect(csvDeSedes([])).toBe('');
+  });
+
+  it('elegibles: solo id y nombre, ids válidos y sin repetir, en el orden de la API', () => {
+    const sedes = [
+      { id: 6, nombre: 'Casariche', slug: 'casariche' },
+      { nombre: 'Sin id', slug: null },
+      { id: 6, nombre: 'Repetida', slug: null },
+      { id: 0, nombre: 'Cero', slug: null },
+      { id: '4', nombre: 'Texto', slug: null },
+      { id: 1.5, nombre: 'Decimal', slug: null },
+      { id: 3, nombre: 'Estepa', slug: 'estepa' },
+    ];
+    expect(sedesElegibles(sedes)).toEqual([
+      { id: 6, nombre: 'Casariche' },
+      { id: 3, nombre: 'Estepa' },
+    ]);
+    expect(sedesElegibles([])).toEqual([]);
+  });
+
+  it('a la capa: las de su fila que son elegibles, en el orden de la lista; sin fila, ninguna', () => {
+    const filas = con(GUARDADO, 'profesor.1.sedes', '7,5,3');
+    expect(sedesDelProfesor(filas, 1, ELEGIBLES)).toEqual([3, 5]);
+    expect(sedesDelProfesor(filas, 3, ELEGIBLES)).toEqual([5]);
+    expect(sedesDelProfesor(filas, 9, ELEGIBLES)).toEqual([]);
+    expect(sedesDelProfesor(filas, 1, [])).toEqual([]);
+    expect(estadoProfesores(GUARDADO, GUARDADO, nadie, nadie, ELEGIBLES).map((p) => p.sedes)).toEqual([[3, 4], [5]]);
+  });
+
+  it('cambiar: solo elegibles y en el orden de la lista, CSV sin espacios; el resto del borrador, intacto', () => {
+    const r = elegirSedes(GUARDADO, GUARDADO, 1, [5, 99, 6], ELEGIBLES)!;
+    expect(texto(r, 'profesor.1.sedes')).toBe('6,5');
+    expect(r.filter((f) => f.clave !== 'profesor.1.sedes')).toEqual(GUARDADO.filter((f) => f.clave !== 'profesor.1.sedes'));
+    expect(cambiosProfesores(GUARDADO, r, nadie).claves).toEqual(['profesor.1.sedes']);
+    // Ninguna: la fila queda vacía (no se borra: estaba guardada con sedes).
+    const vacia = elegirSedes(GUARDADO, r, 1, [], ELEGIBLES)!;
+    expect(texto(vacia, 'profesor.1.sedes')).toBe('');
+    expect(cuerpoGuardar(5, vacia, {}).bloques.find((b) => b.clave === 'profesor.1.sedes')!.texto).toBe('');
+  });
+
+  it('invariante c: el mismo conjunto que lo guardado no cuenta ni reescribe la fila, aunque venga en otro orden', () => {
+    const guardado = con(GUARDADO, 'profesor.1.sedes', '4,3');
+    // Sin tocar antes: nada que hacer.
+    expect(elegirSedes(guardado, guardado, 1, [3, 4], ELEGIBLES)).toBeNull();
+    expect(elegirSedes(guardado, guardado, 1, [4, 3], ELEGIBLES)).toBeNull();
+    // Tocado y de vuelta: la fila vuelve a ser la guardada byte a byte.
+    const tocado = elegirSedes(guardado, guardado, 1, [3], ELEGIBLES)!;
+    expect(texto(tocado, 'profesor.1.sedes')).toBe('3');
+    const deVuelta = elegirSedes(guardado, tocado, 1, [3, 4], ELEGIBLES)!;
+    expect(texto(deVuelta, 'profesor.1.sedes')).toBe('4,3');
+    expect(cambiosProfesores(guardado, deVuelta, nadie).claves).toEqual([]);
+    // El mismo conjunto que ya tiene el borrador: nada que hacer.
+    expect(elegirSedes(guardado, tocado, 1, [3], ELEGIBLES)).toBeNull();
+  });
+
+  it('invariante a: las sedes inactivas guardadas (fuera de la lista) se conservan si el conjunto elegible no cambia', () => {
+    const guardado = con(GUARDADO, 'profesor.1.sedes', '7,3');
+    expect(elegirSedes(guardado, guardado, 1, [3], ELEGIBLES)).toBeNull();
+    const tocado = elegirSedes(guardado, guardado, 1, [3, 4], ELEGIBLES)!;
+    // Cambiado de verdad: solo elegibles (la 7 sale, como el boceto).
+    expect(texto(tocado, 'profesor.1.sedes')).toBe('3,4');
+    const deVuelta = elegirSedes(guardado, tocado, 1, [3], ELEGIBLES)!;
+    expect(texto(deVuelta, 'profesor.1.sedes')).toBe('7,3');
+    expect(cambiosProfesores(guardado, deVuelta, nadie).claves).toEqual([]);
+    // Y el PUT de otro cambio la reenvía tal cual.
+    const otro = elegirSedes(guardado, guardado, 3, [6], ELEGIBLES)!;
+    const { bloques } = cuerpoGuardar(5, otro, {});
+    expect(bloques.find((b) => b.clave === 'profesor.1.sedes')).toEqual({ clave: 'profesor.1.sedes', texto: '7,3', imagenId: null, orden: 0, oculto: false });
+    expect(bloques.find((b) => b.clave === 'profesor.3.sedes')!.texto).toBe('6');
+  });
+
+  it('sin fila: se crea como las demás del profesor (con cabeceras, orden 0, visible); sin sedes no se crea; volver a ninguna la quita', () => {
+    const sinFila = GUARDADO.filter((f) => f.clave !== 'profesor.1.sedes');
+    expect(elegirSedes(sinFila, sinFila, 1, [], ELEGIBLES)).toBeNull();
+    const r = elegirSedes(sinFila, sinFila, 1, [4], ELEGIBLES)!;
+    expect(r.find((f) => f.clave === 'profesor.1.sedes')).toEqual(fila('profesor.1.sedes', '4'));
+    expect(ordenCompleto(r)).toEqual(ordenCompleto(sinFila));
+    expect(cambiosBloques(sinFila, r).n).toBe(0);
+    expect(cambiosProfesores(sinFila, r, nadie).claves).toEqual(['profesor.1.sedes']);
+    const ninguna = elegirSedes(sinFila, r, 1, [], ELEGIBLES)!;
+    expect(ninguna.some((f) => f.clave === 'profesor.1.sedes')).toBeFalse();
+    expect(cambiosProfesores(sinFila, ninguna, nadie).claves).toEqual([]);
+  });
+
+  it('invariante e: un profesor nuevo lleva sedes; al quitarlo, su fila se va; cuenta solo como añadido', () => {
+    const r = anadirProfesor(GUARDADO, GUARDADO, [1, 3])!;
+    const conSedes = elegirSedes(GUARDADO, r.filas, 4, [5, 6], ELEGIBLES)!;
+    expect(texto(conSedes, 'profesor.4.sedes')).toBe('6,5');
+    expect(cambiosProfesores(GUARDADO, conSedes, nadie).claves).toEqual(['profesor.4.anadido']);
+    const sin = quitarProfesor(conSedes, 4);
+    expect(sin.some((f) => f.clave.startsWith('profesor.4.'))).toBeFalse();
+    expect(numeroProfesorNuevo(sin, GUARDADO, [1, 3, 4])).toBe(5);
+  });
+
+  it('invariante b: cambiar sedes no pide ni manda el permiso', () => {
+    const r = elegirSedes(GUARDADO, GUARDADO, 1, [6], ELEGIBLES)!;
+    expect(pidePermiso(GUARDADO, r, 1)).toBeFalse();
+    expect(erroresProfesores(GUARDADO, r, nadie)).toEqual({});
+    expect(estadoProfesores(GUARDADO, r, nadie, nadie, ELEGIBLES)[0].permiso['tipo']).toBe('constancia');
+    expect(JSON.stringify(cuerpoGuardar(5, r, {}, permisosParaEnviar(GUARDADO, r, nadie)))).not.toContain('permiso');
+  });
+
+  it('invariante h: peticiones que no valen no cambian nada (profesor que no está, más ids que sedes, sin lista)', () => {
+    expect(elegirSedes(GUARDADO, GUARDADO, 9, [3], ELEGIBLES)).toBeNull();
+    expect(elegirSedes(GUARDADO, GUARDADO, 1, [6, 3, 4, 5, 99], ELEGIBLES)).toBeNull();
+    expect(elegirSedes(GUARDADO, GUARDADO, 1, [3], [])).toBeNull();
+    expect(elegirSedes(GUARDADO, GUARDADO, 1, [], [])).toBeNull();
+    // Solo ids que no son elegibles: como pedir ninguna.
+    expect(texto(elegirSedes(GUARDADO, GUARDADO, 1, [98, 99], ELEGIBLES)!, 'profesor.1.sedes')).toBe('');
+  });
+
+  it('fila rechazada por la API (`forzar`): marcar y desmarcar deja solo elegibles, no vuelve a la guardada que falló', () => {
+    const guardado = con(GUARDADO, 'profesor.1.sedes', '3,99');
+    // Lo que manda la interfaz: el conjunto entero de casillas tras cada cambio (marca 4; desmarca 4).
+    const marcada = elegirSedes(guardado, guardado, 1, [3, 4], ELEGIBLES, true)!;
+    expect(texto(marcada, 'profesor.1.sedes')).toBe('3,4');
+    const desmarcada = elegirSedes(guardado, marcada, 1, [3], ELEGIBLES, true)!;
+    expect(texto(desmarcada, 'profesor.1.sedes')).toBe('3');
+    expect(cambiosProfesores(guardado, desmarcada, nadie).claves).toEqual(['profesor.1.sedes']);
+    expect(cuerpoGuardar(5, desmarcada, {}).bloques.find((b) => b.clave === 'profesor.1.sedes')!.texto).toBe('3');
+    // Sin `forzar` (fila no rechazada), la misma secuencia vuelve a la guardada byte a byte (invariante c).
+    const sinForzar = elegirSedes(guardado, elegirSedes(guardado, guardado, 1, [3, 4], ELEGIBLES)!, 1, [3], ELEGIBLES)!;
+    expect(texto(sinForzar, 'profesor.1.sedes')).toBe('3,99');
+    expect(cambiosProfesores(guardado, sinForzar, nadie).claves).toEqual([]);
   });
 });

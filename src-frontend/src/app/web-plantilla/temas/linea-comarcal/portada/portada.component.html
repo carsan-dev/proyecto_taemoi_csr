@@ -116,6 +116,11 @@
                   }
                   <h3 class="profe-nombre">{{ profe.nombre }}</h3>
                   @if (profe.cargo) {<p class="profe-grado">{{ profe.cargo }}</p>}
+                  @if (profe.sedes.length) {
+                    <ul class="mini-linea" aria-label="Sedes donde da clase">
+                      @for (sede of profe.sedes; track $index) {<li>{{ sede }}</li>}
+                    </ul>
+                  }
                 </li>
               }
             </ul>

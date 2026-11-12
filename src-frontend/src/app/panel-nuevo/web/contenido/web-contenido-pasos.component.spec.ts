@@ -124,7 +124,7 @@ describe('WebContenidoComponent: selector «Paso» y casos de Preinscripción (W
     abrir();
     const enviar = spyOn(iframe()!.contentWindow!, 'postMessage');
     llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
-    expect(enviar.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo).filter((t) => t !== 'estado-bloques' && t !== 'profesores')).toEqual(['borrador']);
+    expect(enviar.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo).filter((t) => t !== 'estado-bloques' && t !== 'profesores' && t !== 'zona-visible')).toEqual(['borrador']);
     elegir(pagina(), 'preinscripcion');
     elegir(sub()!, '2');
     abrirMenu();

@@ -239,4 +239,27 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .estrecho .ed-profe-barra{opacity:1}
 .estrecho .ed-profe-barra .ed-btn{min-width:44px;min-height:44px}
 @media (prefers-reduced-motion:reduce){.ed-profe-barra,.ed-anadir-tarjeta{transition:none}}
+/* W12f-3: sedes de cada profesor (boceto .ed-sedes, .ed-sin-sedes, .flot--sedes, .casillas, .casilla; d520). El botón va
+   bajo la línea de sedes del tema; el diálogo, como el de describir la foto. Con el panel estrecho, toque de 44 px. */
+.ed-sedes{margin-top:12px}
+.ed-sedes .ed-btn{margin-left:-10px}
+.ed-sedes .ed-btn svg{color:var(--pn-acento)}
+.ed-sin-sedes{margin:12px 0 0;color:var(--pn-tinta-2)}
+.estrecho .ed-sedes .ed-btn{min-height:44px}
+/* Más alto que la parte que se ve (la capa le limita el alto): se desplazan solo las casillas y «Listo» sigue a la vista */
+.flot--sedes{display:flex;flex-direction:column;width:340px;padding:14px 16px 16px}
+.flot--sedes .flot__titulo{margin:0 0 4px;font:var(--pn-titulo-bloque);color:var(--pn-tinta)}
+.flot--sedes .flot__ayuda{margin:0 0 10px;font:var(--pn-secundario);color:var(--pn-tinta-2)}
+.flot--sedes .casillas{display:grid;gap:2px;min-width:0;min-height:0;margin:0;padding:0;border:0;overflow-y:auto;overscroll-behavior:contain}
+.flot--sedes .casilla{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 8px;border-radius:var(--pn-radio-s);color:var(--pn-tinta);font:400 .9375rem/1.3 var(--pn-fuente);cursor:pointer;transition:background-color var(--pn-transicion)}
+.flot--sedes .casilla:hover{background:var(--pn-marca-primario-suave)}
+.flot--sedes .casilla input{flex:none;width:20px;height:20px;margin:0;accent-color:var(--pn-acento);cursor:pointer}
+.flot--sedes .casilla:focus-within{background:var(--pn-acento-suave)}
+.flot--sedes .casilla input:focus-visible{outline:3px solid var(--pn-acento-borde);outline-offset:2px}
+@media (max-width:767.98px){
+  .flot--sedes{width:auto;right:8px}
+  .flot--sedes .casilla{min-height:44px}
+  .flot--sedes .btn{flex:1;min-height:44px}
+}
+@media (prefers-reduced-motion:reduce){.flot--sedes .casilla{transition:none}}
 `;

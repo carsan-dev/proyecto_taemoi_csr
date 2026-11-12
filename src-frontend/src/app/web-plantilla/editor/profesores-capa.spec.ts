@@ -26,8 +26,8 @@ const BORRADOR: BloqueBorrador[] = [
   fila('profesor.4.nombre', ''),
 ];
 const LISTA: EstadoProfesor[] = [
-  { n: 1, nombre: 'Antonio Ruiz', permiso: { tipo: 'constancia', texto: 'Permiso marcado por María Ruiz el 03/11/2026' } },
-  { n: 4, nombre: '', permiso: { tipo: 'casilla', marcada: false } },
+  { n: 1, nombre: 'Antonio Ruiz', permiso: { tipo: 'constancia', texto: 'Permiso marcado por María Ruiz el 03/11/2026' }, sedes: [] },
+  { n: 4, nombre: '', permiso: { tipo: 'casilla', marcada: false }, sedes: [] },
 ];
 const FALTA = 'Marca la casilla si tienes su permiso. Sin él no puede salir en la web.';
 
@@ -47,7 +47,7 @@ describe('profesores en el sitio (W12f-2b, capa de edición)', () => {
     enviados = spyOn(window, 'postMessage');
     desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: () => undefined });
     delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: BORRADOR });
-    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: LISTA });
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: LISTA, sedes: [] });
   });
 
   afterEach(() => {
@@ -141,16 +141,16 @@ describe('profesores en el sitio (W12f-2b, capa de edición)', () => {
   });
 
   it('nombre cambiado de uno guardado: la misma casilla en lugar de la constancia; al volver, la constancia', () => {
-    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: [{ ...LISTA[0], nombre: 'Antonio R.', permiso: { tipo: 'casilla', marcada: false } }, LISTA[1]] });
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: [{ ...LISTA[0], nombre: 'Antonio R.', permiso: { tipo: 'casilla', marcada: false } }, LISTA[1]], sedes: [] });
     expect(tarjeta(1).querySelector('.ed-constancia')).toBeNull();
     expect(texto(tarjeta(1).querySelector('.ed-permiso label'))).toBe('Tengo su permiso para publicar su nombre y su foto (obligatorio)');
-    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: LISTA });
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: LISTA, sedes: [] });
     expect(tarjeta(1).querySelector('.ed-permiso')).toBeNull();
     expect(texto(tarjeta(1).querySelector('.ed-constancia'))).toBe('Permiso marcado por María Ruiz el 03/11/2026');
   });
 
   it('constancia del alta (d526) con su fecha', () => {
-    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: [{ ...LISTA[0], permiso: { tipo: 'constancia', texto: 'Permiso dado en el alta el 01/10/2026' } }, LISTA[1]] });
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: [{ ...LISTA[0], permiso: { tipo: 'constancia', texto: 'Permiso dado en el alta el 01/10/2026' } }, LISTA[1]], sedes: [] });
     expect(texto(tarjeta(1).querySelector('.ed-constancia'))).toBe('Permiso dado en el alta el 01/10/2026');
   });
 
@@ -250,6 +250,261 @@ describe('profesores en el sitio (W12f-2b, capa de edición)', () => {
       const opciones = Array.from(doc.querySelectorAll<HTMLElement>('.flot [role=menuitem]')).map(texto);
       expect(opciones).toEqual(['Cambiar fotoJPG, PNG o WebP, hasta 50 MB', 'Describir la foto«Antonio en el tatami»', 'Quitar fotoSale con sus iniciales']);
       expect(mensajes('hoja-menu')).toEqual([]);
+    });
+  });
+
+  describe('sedes de cada profesor (W12f-3; boceto `profeHtml`, `abrirSedesProfe`)', () => {
+    const SEDES = [
+      { id: 6, nombre: 'Casariche' },
+      { id: 3, nombre: 'Estepa' },
+      { id: 4, nombre: 'Herrera' },
+    ];
+    const conSedes = (s1: number[], s4: number[] = [], sedes = SEDES) =>
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: [{ ...LISTA[0], sedes: s1 }, { ...LISTA[1], sedes: s4 }], sedes });
+    const boton = (n: number) => tarjeta(n).querySelector<HTMLButtonElement>(':scope > .ed-sedes button')!;
+    const flot = () => q('.flot--sedes');
+    const casillas = () => Array.from(doc.querySelectorAll<HTMLInputElement>('.flot--sedes input[type=checkbox]'));
+    const marcadas = () => casillas().map((c) => c.checked);
+    const ultimoProfesor = () => mensajes('profesor').at(-1);
+    const estado = (estrecho: boolean) => delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'estado-bloques', sinGuardar: [], quitables: [], estrecho });
+
+    beforeEach(() => conSedes([3, 4]));
+
+    it('sin sedes que elegir (lista sin cargar o escuela sin sedes activas) no se pinta ni el botón ni el párrafo', () => {
+      conSedes([], [], []);
+      expect(doc.querySelector('.ed-sedes, .ed-sin-sedes')).toBeNull();
+    });
+
+    it('«Cambiar sus sedes» con sedes, «Elegir sus sedes» y el párrafo sin ellas; con su nombre solo para el lector', () => {
+      const b1 = boton(1);
+      expect(texto(b1.querySelector('span:not(.ed-oculto)'))).toBe('Cambiar sus sedes');
+      expect(b1.querySelector('.ed-oculto')!.textContent).toBe(' de Antonio Ruiz');
+      expect(b1.getAttribute('aria-haspopup')).toBe('dialog');
+      expect(b1.getAttribute('aria-expanded')).toBe('false');
+      expect(b1.querySelector('svg')).not.toBeNull();
+      expect(tarjeta(1).querySelector('.ed-sin-sedes')).toBeNull();
+
+      const b4 = boton(4);
+      expect(texto(b4.querySelector('span:not(.ed-oculto)'))).toBe('Elegir sus sedes');
+      expect(b4.querySelector('.ed-oculto')!.textContent).toBe(' de Profesor nuevo');
+      expect(texto(tarjeta(4).querySelector('.ed-sedes > .ed-sin-sedes'))).toBe('Sin sedes: su tarjeta sale sin la línea.');
+
+      // Al llegar sus sedes, cambia el texto y se va el párrafo.
+      conSedes([3, 4], [6]);
+      expect(texto(boton(4).querySelector('span:not(.ed-oculto)'))).toBe('Cambiar sus sedes');
+      expect(tarjeta(4).querySelector('.ed-sin-sedes')).toBeNull();
+    });
+
+    it('orden en la tarjeta como `profeHtml`: sedes → permiso o constancia → «Quitar profesor»', () => {
+      for (const n of [1, 4]) {
+        const clases = Array.from(tarjeta(n).children)
+          .map((hijo) => ['ed-sedes', 'ed-permiso', 'ed-constancia', 'ed-profe-barra'].find((c) => hijo.classList.contains(c)))
+          .filter((c) => !!c);
+        expect(clases).withContext(`tarjeta ${n}`).toEqual(['ed-sedes', n === 1 ? 'ed-constancia' : 'ed-permiso', 'ed-profe-barra']);
+      }
+    });
+
+    it('el diálogo: título, ayuda, leyenda oculta, una casilla por sede (sin «todas»), las suyas marcadas y «Listo»', () => {
+      boton(1).click();
+      const d = flot();
+      expect(d.hidden).toBeFalse();
+      expect(d.getAttribute('role')).toBe('dialog');
+      expect(d.getAttribute('aria-labelledby')).toBe('ed-sedes-t');
+      // Como el boceto: la ayuda describe el grupo de casillas, no el diálogo.
+      expect(d.hasAttribute('aria-describedby')).toBeFalse();
+      expect(d.querySelector('fieldset.casillas')!.getAttribute('aria-describedby')).toBe('ed-sedes-a');
+      expect(texto(q('#ed-sedes-t'))).toBe('Sedes de Antonio Ruiz');
+      expect(texto(q('#ed-sedes-a'))).toBe('Salen en su tarjeta, sobre la línea. No cambia en qué grupos da clase.');
+      const leyenda = d.querySelector('fieldset.casillas > legend')!;
+      expect(texto(leyenda)).toBe('Sedes donde da clase');
+      expect(leyenda.classList).toContain('ed-oculto');
+      expect(Array.from(d.querySelectorAll('label.casilla')).map(texto)).toEqual(['Casariche', 'Estepa', 'Herrera']);
+      expect(marcadas()).toEqual([false, true, true]);
+      const botones = Array.from(d.querySelectorAll('button'));
+      expect(botones.map(texto)).toEqual(['Listo']);
+      expect(botones[0].classList).toContain('btn--sec');
+      expect(doc.activeElement).toBe(casillas()[0]);
+      expect(boton(1).getAttribute('aria-expanded')).toBe('true');
+      expect(mensajes('hoja-sedes')).toEqual([]);
+
+      boton(4).click();
+      expect(texto(q('#ed-sedes-t'))).toBe('Sedes de el profesor nuevo');
+      expect(marcadas()).toEqual([false, false, false]);
+      expect(boton(1).getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('cada cambio pide el conjunto entero; las casillas pintan lo que contesta el panel (si no acepta, vuelven)', () => {
+      boton(1).click();
+      casillas()[0].click();
+      expect(ultimoProfesor()).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'profesor', accion: 'sedes', n: 1, sedes: [6, 3, 4] });
+      conSedes([6, 3, 4]);
+      expect(marcadas()).toEqual([true, true, true]);
+      expect(texto(boton(1).querySelector('span:not(.ed-oculto)'))).toBe('Cambiar sus sedes');
+
+      casillas()[2].click();
+      expect(ultimoProfesor()).toEqual(jasmine.objectContaining({ accion: 'sedes', n: 1, sedes: [6, 3] }));
+      expect(marcadas()).toEqual([true, true, false]);
+      // El panel no lo acepta (guardando): contesta con lo que vale y la casilla vuelve.
+      conSedes([6, 3, 4]);
+      expect(marcadas()).toEqual([true, true, true]);
+      expect(flot().hidden).toBeFalse();
+    });
+
+    it('«Listo» y Escape cierran y devuelven el foco al botón; solo «Listo» pide la voz; pulsar fuera cierra sin foco ni voz', () => {
+      boton(1).click();
+      q<HTMLButtonElement>('.flot--sedes [data-op="listo-sedes"]').click();
+      expect(flot().hidden).toBeTrue();
+      expect(doc.activeElement).toBe(boton(1));
+      expect(boton(1).getAttribute('aria-expanded')).toBe('false');
+      expect(ultimoProfesor()).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'profesor', accion: 'anunciar-sedes', n: 1 });
+
+      // Boceto (keydown de `.flot`): Escape solo cierra y devuelve el foco, sin voz.
+      const voces = mensajes('profesor').filter((m) => m['accion'] === 'anunciar-sedes').length;
+      boton(4).click();
+      casillas()[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      expect(flot().hidden).toBeTrue();
+      expect(doc.activeElement).toBe(boton(4));
+      expect(boton(4).getAttribute('aria-expanded')).toBe('false');
+      expect(mensajes('profesor').filter((m) => m['accion'] === 'anunciar-sedes').length).toBe(voces);
+
+      const antes = mensajes('profesor').length;
+      boton(1).click();
+      doc.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      expect(flot().hidden).toBeTrue();
+      expect(mensajes('profesor').length).toBe(antes);
+    });
+
+    it('se cierra solo si el profesor se va o ya no hay sedes que elegir', () => {
+      boton(1).click();
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: [{ ...LISTA[1], sedes: [] }], sedes: SEDES });
+      expect(flot().hidden).toBeTrue();
+      conSedes([3]);
+      boton(1).click();
+      conSedes([], [], []);
+      expect(flot().hidden).toBeTrue();
+    });
+
+    it('enlace del resumen (`profesor.<n>.sedes`): al botón de sus sedes', () => {
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'ir-texto', clave: 'profesor.4.sedes' });
+      expect(doc.activeElement).toBe(boton(4));
+      expect(mensajes('mostrar').length).toBeGreaterThan(0);
+    });
+
+    describe('dentro de la parte que se ve en el panel (zona `zona-visible`)', () => {
+      // Como en el panel: el iframe mide todo el documento (no se desplaza) y la tarjeta queda lejos del principio.
+      beforeEach(() => {
+        marco.style.cssText = 'width:1000px;height:2400px;border:0';
+        doc.body.style.cssText = 'margin:0;padding-top:1200px';
+      });
+      const zona = (top: number, alto: number) => delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top, alto });
+      const caja = (el: Element) => el.getBoundingClientRect();
+      /** La zona de `alto` px con el botón al `parte` (0-1) de su alto. */
+      const zonaConBoton = (parte: number, alto = 500) => {
+        const top = Math.round(caja(boton(1)).top - parte * alto);
+        zona(top, alto);
+        return { top, bottom: top + alto };
+      };
+      function dentro(z: { top: number; bottom: number }): void {
+        const r = caja(flot());
+        expect(r.top).withContext('borde de arriba').toBeGreaterThanOrEqual(z.top + 4 - 1);
+        expect(r.bottom).withContext('borde de abajo').toBeLessThanOrEqual(z.bottom - 4 + 1);
+      }
+
+      it('botón arriba, en medio o abajo de la zona: el diálogo queda entero dentro (bajo el botón o sobre él)', () => {
+        for (const parte of [0.2, 0.5, 0.85]) {
+          const z = zonaConBoton(parte);
+          boton(1).click();
+          expect(flot().hidden).toBeFalse();
+          dentro(z);
+          expect(flot().style.maxHeight).withContext('cabe: sin alto limitado').toBe('');
+          if (parte === 0.2) {
+            expect(caja(flot()).top).withContext('bajo el botón').toBeGreaterThanOrEqual(caja(boton(1)).bottom);
+          }
+          if (parte === 0.85) {
+            expect(caja(flot()).bottom).withContext('sobre el botón').toBeLessThanOrEqual(caja(boton(1)).top);
+          }
+          q<HTMLButtonElement>('.flot--sedes [data-op="listo-sedes"]').click();
+          expect(flot().hidden).toBeTrue();
+        }
+      });
+
+      it('más alto que la zona: alto limitado a ella, las casillas se desplazan por dentro y «Listo» se ve', () => {
+        const z = zonaConBoton(0.5, 230);
+        boton(1).click();
+        dentro(z);
+        expect(flot().style.maxHeight).not.toBe('');
+        const lista = q('.flot--sedes fieldset.casillas');
+        expect(lista.scrollHeight).toBeGreaterThan(lista.clientHeight);
+        const listo = caja(q('.flot--sedes [data-op="listo-sedes"]'));
+        expect(listo.height).toBeGreaterThan(0);
+        expect(listo.top).toBeGreaterThanOrEqual(caja(flot()).top - 1);
+        expect(listo.bottom).toBeLessThanOrEqual(caja(flot()).bottom + 1);
+      });
+
+      it('si la zona cambia con el diálogo abierto, se recoloca dentro de la nueva', () => {
+        zonaConBoton(0.2);
+        boton(1).click();
+        const antes = caja(flot()).top;
+        const z = zonaConBoton(0.85);
+        dentro(z);
+        expect(caja(flot()).top).toBeLessThan(antes);
+        expect(doc.activeElement).toBe(casillas()[0]);
+      });
+
+      it('sin zona del panel, como antes: bajo el botón aunque quede lejos', () => {
+        boton(1).click();
+        expect(Math.abs(caja(flot()).top - (caja(boton(1)).bottom + 8))).toBeLessThan(1);
+        expect(flot().style.maxHeight).toBe('');
+      });
+
+      it('el menú de la foto también queda dentro de la zona', () => {
+        const z = zonaConBoton(0.95);
+        tarjeta(1).querySelector<HTMLButtonElement>('.ed-foto')!.click();
+        const menu = caja(Array.from(doc.querySelectorAll<HTMLElement>('.flot:not(.flot--sedes)')).find((f) => !f.hidden)!);
+        expect(menu.height).toBeGreaterThan(0);
+        expect(menu.top).toBeGreaterThanOrEqual(z.top + 4 - 1);
+        expect(menu.bottom).toBeLessThanOrEqual(z.bottom - 4 + 1);
+      });
+    });
+
+    describe('panel estrecho: la hoja del panel', () => {
+      beforeEach(() => estado(true));
+      const idHoja = () => mensajes('hoja-sedes').at(-1)!['id'] as number;
+
+      it('el botón mide al menos 44 px de alto', async () => {
+        await esperar(20);
+        expect(boton(1).getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+      });
+
+      it('pide la hoja (sin diálogo en la vista previa); al cerrarla el panel con foco, el foco vuelve al botón', () => {
+        boton(1).click();
+        expect(mensajes('hoja-sedes').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-sedes', n: 1, id: idHoja() });
+        expect(flot().hidden).toBeTrue();
+        expect(boton(1).getAttribute('aria-expanded')).toBe('true');
+        // Otro número: no es de esta apertura.
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: idHoja() + 1, devolverFoco: true });
+        expect(boton(1).getAttribute('aria-expanded')).toBe('true');
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: idHoja(), devolverFoco: true });
+        expect(doc.activeElement).toBe(boton(1));
+        expect(boton(1).getAttribute('aria-expanded')).toBe('false');
+        expect(mensajes('cerrar-hoja-sedes')).toEqual([]);
+        // La voz la da el panel: la capa no la pide.
+        expect(mensajes('profesor').filter((m) => m['accion'] === 'anunciar-sedes')).toEqual([]);
+      });
+
+      it('si la capa la cierra sola (el profesor ya no está), avisa al panel con su número', () => {
+        boton(1).click();
+        const id = idHoja();
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista: [{ ...LISTA[1], sedes: [] }], sedes: SEDES });
+        expect(mensajes('cerrar-hoja-sedes')).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-sedes', id }]);
+      });
+    });
+
+    it('al desactivar la capa no queda nada de las sedes', () => {
+      boton(1).click();
+      desactivar();
+      expect(doc.querySelector('.ed-sedes, .ed-sin-sedes, .flot--sedes')).toBeNull();
+      desactivar = () => undefined;
     });
   });
 
