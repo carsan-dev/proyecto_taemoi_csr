@@ -935,7 +935,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         // W12f-1: igual con las fotos subidas, quitadas o descritas mientras se guardaba.
         this.borrador.update((filas) => conFotosCambiadasDesde(filas, enviado, actual));
         this.enviarBorrador();
-        this.enfocarTitulo();
+        // Sin desplazar: la página se queda donde estaba (en el móvil, el foco al título la subía arriba del todo).
+        this.enfocarTitulo(false);
         this.avisos.exito(this.publicada() ? this.textosGuardar.guardadoPublicada : this.textosGuardar.guardadoNueva);
       },
       error: (error: unknown) => {
@@ -1506,7 +1507,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     medir();
   }
 
-  private enfocarTitulo(): void {
-    this.host.nativeElement.querySelector<HTMLElement>('h1')?.focus();
+  private enfocarTitulo(desplazar = true): void {
+    this.host.nativeElement.querySelector<HTMLElement>('h1')?.focus({ preventScroll: !desplazar });
   }
 }
