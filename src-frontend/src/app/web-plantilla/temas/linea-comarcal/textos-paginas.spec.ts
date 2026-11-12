@@ -434,6 +434,17 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
         expect(textos(raiz, '.cuadro caption')).toEqual(['Mensualidades']);
       });
 
+      it('cada fila del cuadro dice de quién es (`data-quien`), aunque dos digan lo mismo: así la distingue el editor', async () => {
+        const raiz = await abrir(
+          '/tarifas',
+          sitio({ bloques: [bloque('tarifas.cada_alumno', 'Cada alumno'), bloque('tarifas.hermanos', 'Cada alumno')] }),
+        );
+        const quien = Array.from(raiz.querySelectorAll<HTMLElement>('.cuadro td.quien'));
+        expect(quien.map((td) => td.dataset['quien'])).toEqual(['alumno', 'adulto', 'menor', 'hermanos']);
+        // Sin texto visible nuevo.
+        expect(quien.map((td) => td.textContent!.trim())).toEqual(['Cada alumno', 'Cada adulto', 'Cada menor', 'Cada alumno']);
+      });
+
       it('`tarifas.punto1` se comparte con Inicio y Una sede: primer punto de «Incluye»', async () => {
         const raiz = await abrir('/tarifas', sitio({ bloques: [bloque('tarifas.punto1', 'Cuota de cada alumno')] }));
         expect(textos(raiz, '.tarifa-incluye li')).toEqual(['Cuota de cada alumno', 'También tarifa familiar y de hermanos', 'Licencia y exámenes, aparte']);

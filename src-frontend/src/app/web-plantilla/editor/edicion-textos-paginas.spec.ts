@@ -61,10 +61,10 @@ const TARIFAS = marco(`<div class="p-tarifas">
     <div class="cuadro-caja"><table class="cuadro">
       <caption><span class="rotulo">Mensualidades del curso 2026-2027</span></caption>
       <thead><tr><th scope="col">Tarifa</th><th scope="col">Quién</th><th scope="col">Importe</th></tr></thead>
-      <tbody><tr><th scope="row">General</th><td class="quien">Cada alumno</td><td class="importe cifras">25 €<small>al mes</small></td></tr></tbody>
-      <tbody><tr><th scope="row">Hermanos</th><td class="quien">Desde el segundo hermano</td><td class="importe cifras">20 €<small>al mes</small></td></tr></tbody>
-      <tbody class="grupo-tarifa"><tr><th scope="rowgroup" rowspan="2">Familiar</th><td class="quien">Cada adulto</td><td class="importe cifras">30 €<small>al mes</small></td></tr>
-        <tr><td class="quien">Cada menor</td><td class="importe cifras">15 €<small>al mes</small></td></tr></tbody>
+      <tbody><tr><th scope="row">General</th><td class="quien" data-quien="alumno">Cada alumno</td><td class="importe cifras">25 €<small>al mes</small></td></tr></tbody>
+      <tbody><tr><th scope="row">Hermanos</th><td class="quien" data-quien="hermanos">Desde el segundo hermano</td><td class="importe cifras">20 €<small>al mes</small></td></tr></tbody>
+      <tbody class="grupo-tarifa"><tr><th scope="rowgroup" rowspan="2">Familiar</th><td class="quien" data-quien="adulto">Cada adulto</td><td class="importe cifras">30 €<small>al mes</small></td></tr>
+        <tr><td class="quien" data-quien="menor">Cada menor</td><td class="importe cifras">15 €<small>al mes</small></td></tr></tbody>
     </table><p class="cuadro-pie">Se paga una mensualidad por alumno, la misma en todos los grupos.</p></div>
   </div></section>
   <section class="seccion" id="aparte"><div class="envoltura aparte-rejilla">
@@ -229,8 +229,13 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       expect(campo().textContent).toContain('Horarios · curso ');
       expect(ficha().contentEditable).toBe('false');
       expect(ficha().dataset['token']).toBe('{x}');
-      expect(ficha().querySelector('[aria-hidden="true"]')!.textContent).toBe('2026-2027');
+      expect(ficha().querySelector(':scope > span[aria-hidden="true"]')!.textContent).toBe('2026-2027');
       expect(ficha().querySelector('.ed-oculto')!.textContent).toBe('2026-2027 (Curso: no se edita aquí)');
+      // Más visible que el boceto (decisión del propietario): un candado delante del dato, sin texto ni lector.
+      const candado = ficha().firstElementChild!;
+      expect(candado.localName).toBe('svg');
+      expect(candado.getAttribute('aria-hidden')).toBe('true');
+      expect(candado.textContent).toBe('');
       expect(leido()).toBe('Horarios · curso {x}');
       // Contador como el boceto: el texto con su token (lo que guarda la API).
       expect(q('.ed-chip .ed-cont').textContent).toBe('20 / 40');
@@ -365,25 +370,14 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       ficha().replaceWith(doc.createTextNode(escrito));
     }
 
-    for (const [inputType, isComposing] of [
-      ['insertCompositionText', true],
-      ['historyRedo', false],
-      ['insertFromDrop', false],
-      ['insertReplacementText', false],
-    ] as const) {
-      it(`red de seguridad: ${inputType}${isComposing ? ' (composición)' : ''} que quita la ficha la devuelve y pregunta`, () => {
+    for (const inputType of ['historyRedo', 'insertFromDrop', 'insertReplacementText'] as const) {
+      it(`red de seguridad: ${inputType} que quita la ficha la devuelve y pregunta`, () => {
         elegir([campo(), 1], [campo(), 2]);
-        if (isComposing) {
-          // La composición no se puede cancelar: el `beforeinput` pasa y el navegador cambia el texto igual.
-          const antes = new InputEvent('beforeinput', { bubbles: true, cancelable: false, inputType, data: 'á', isComposing });
-          campo().dispatchEvent(antes);
-          expect(mensajes('pedir-quitar-dato')).toEqual([]);
-        }
         // Sin `beforeinput` que parar (o uno que el navegador no da): el cambio ya ha quitado la ficha.
         quitarAMano('á');
-        campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType, data: 'á', isComposing }));
+        campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType, data: 'á' }));
         expect(leido()).toBe('Mensualidades del curso {x}');
-        expect(ficha().querySelector('[aria-hidden="true"]')!.textContent).toBe('2026-2027');
+        expect(ficha().querySelector(':scope > span[aria-hidden="true"]')!.textContent).toBe('2026-2027');
         expect(mensajes('texto')).toEqual([]);
         expect(mensajes('pedir-quitar-dato')).toEqual([
           jasmine.objectContaining({ clave: 'tarifas.leyenda_cuadro', huecos: ['x'], despues: 'Mensualidades del curso' }),
@@ -406,6 +400,44 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '!' }));
       expect(mensajes('pedir-quitar-dato').length).toBe(1);
       expect(mensajes('texto').pop()).toEqual(jasmine.objectContaining({ texto: 'Mensualidades del curso!' }));
+    });
+
+    it('red de seguridad en una composición: no repinta a mitad; al acabarla devuelve la ficha y pregunta', async () => {
+      elegir([campo(), 1], [campo(), 2]);
+      campo().dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+      // La composición no se puede cancelar: el `beforeinput` pasa y el navegador cambia el texto igual.
+      const antes = new InputEvent('beforeinput', { bubbles: true, cancelable: false, inputType: 'insertCompositionText', data: 'á', isComposing: true });
+      campo().dispatchEvent(antes);
+      quitarAMano('á');
+      campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', data: 'á', isComposing: true }));
+      // A mitad de la composición, el texto se deja como lo tiene el navegador.
+      expect(campo().querySelector('.ed-ficha')).toBeNull();
+      expect(mensajes('pedir-quitar-dato')).toEqual([]);
+      expect(mensajes('texto')).toEqual([]);
+      campo().dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: 'á' }));
+      await new Promise((listo) => setTimeout(listo));
+      expect(leido()).toBe('Mensualidades del curso {x}');
+      expect(mensajes('texto')).toEqual([]);
+      expect(mensajes('pedir-quitar-dato')).toEqual([
+        jasmine.objectContaining({ clave: 'tarifas.leyenda_cuadro', huecos: ['x'], despues: 'Mensualidades del curso' }),
+      ]);
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'quitar-dato', quitar: true });
+      expect(campo().querySelector('.ed-ficha')).toBeNull();
+      expect(mensajes('texto').pop()).toEqual(jasmine.objectContaining({ texto: 'Mensualidades del curso' }));
+    });
+
+    it('con el diálogo ya abierto, un cambio que quita la ficha solo la devuelve (sin otro diálogo) y el diálogo sigue valiendo', () => {
+      cursor(campo(), 2);
+      antesDeEscribir('deleteContentBackward');
+      expect(mensajes('pedir-quitar-dato').length).toBe(1);
+      quitarAMano('');
+      campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'historyRedo' }));
+      expect(leido()).toBe('Mensualidades del curso {x}');
+      expect(mensajes('pedir-quitar-dato').length).toBe(1);
+      expect(mensajes('texto')).toEqual([]);
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'quitar-dato', quitar: true });
+      expect(campo().querySelector('.ed-ficha')).toBeNull();
+      expect(mensajes('texto').pop()).toEqual(jasmine.objectContaining({ texto: 'Mensualidades del curso' }));
     });
 
     it('una composición que empieza con la ficha elegida no la pisa: la selección se recoge al final', () => {
@@ -457,39 +489,33 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       expect(Array.from(doc.querySelectorAll<HTMLElement>('td.importe > small')).every((s) => s.dataset['campo'] === 'tarifas.al_mes')).toBeTrue();
     });
 
-    it('hermanos y cada alumno con el mismo texto: la fila se sabe por su clave (la marca que el editor pasa al tema)', () => {
+    it('hermanos y cada alumno con el mismo texto: la fila se sabe por su `data-quien` (lo pone el tema)', () => {
       const temas: BloqueBorrador[][] = [];
       desactivar();
       desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: (b) => temas.push(b) });
-      delPanel({
-        canal: CANAL_EDITOR_WEB,
-        tipo: 'borrador',
-        bloques: [fila('tarifas.cada_alumno', 'Cada alumno'), fila('tarifas.hermanos', 'Cada alumno')],
-      });
-      const marcado = temas.at(-1)!.find((b) => b.clave === 'tarifas.hermanos')!.texto!;
-      expect(marcado).toBe('Cada alumno' + String.fromCharCode(0x2060));
-      expect(temas.at(-1)!.find((b) => b.clave === 'tarifas.cada_alumno')!.texto).toBe('Cada alumno');
-      // Lo que pintaría el tema con ese borrador: las dos filas dicen lo mismo; solo la de hermanos lleva la marca.
+      const bloques = [fila('tarifas.cada_alumno', 'Cada alumno'), fila('tarifas.hermanos', 'Cada alumno')];
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques });
+      // El tema recibe los textos tal cual (sin marcas).
+      expect(temas.at(-1)).toEqual(bloques);
+      // Lo que pintaría el tema con ese borrador: las dos filas dicen lo mismo.
       const [general, hermanos] = Array.from(doc.querySelectorAll<HTMLElement>('tbody:not(.grupo-tarifa) td.quien'));
       general.textContent = 'Cada alumno';
-      hermanos.textContent = marcado;
-      return new Promise<void>((listo) => {
-        setTimeout(() => {
-          expect([general.dataset['campo'], hermanos.dataset['campo']]).toEqual(['tarifas.cada_alumno', 'tarifas.hermanos']);
-          // Al editar la de hermanos, la marca no entra en el texto.
-          tecla(hermanos, 'Enter');
-          expect(leido()).toBe('Cada alumno');
-          listo();
-        }, 20);
-      });
+      hermanos.textContent = 'Cada alumno';
+      desactivar();
+      desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: () => undefined });
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques });
+      const [g, h] = Array.from(doc.querySelectorAll<HTMLElement>('tbody:not(.grupo-tarifa) td.quien'));
+      expect([g.dataset['campo'], h.dataset['campo']]).toEqual(['tarifas.cada_alumno', 'tarifas.hermanos']);
+      tecla(h, 'Enter');
+      expect(leido()).toBe('Cada alumno');
     });
 
-    it('sin fila de hermanos en el borrador, el tema recibe igualmente la marca con el texto por defecto', () => {
+    it('sin fila de hermanos en el borrador, el tema no recibe nada de más', () => {
       const temas: BloqueBorrador[][] = [];
       desactivar();
       desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: (b) => temas.push(b) });
       delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: [] });
-      expect(temas.at(-1)).toEqual([fila('tarifas.hermanos', 'Desde el segundo hermano' + String.fromCharCode(0x2060))]);
+      expect(temas.at(-1)).toEqual([]);
     });
   });
 
@@ -568,7 +594,7 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       tecla(q('.vacio > h2'), 'Enter');
       const fichas = () => Array.from(campo().querySelectorAll<HTMLElement>('.ed-ficha'));
       fichas()[1].remove();
-      campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', isComposing: true }));
+      campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText' }));
       expect(leido()).toBe('En {x} no hay grupo para {n} años');
       expect(mensajes('pedir-quitar-dato').pop()).toEqual(jasmine.objectContaining({ clave: 'pre.vacio_titulo', huecos: ['n'] }));
       delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'quitar-dato', quitar: false });

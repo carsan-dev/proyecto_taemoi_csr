@@ -14,7 +14,7 @@ import {
 import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
 import { activarBloquesEditor } from './bloques-capa';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
-import { activarEdicionTextos } from './edicion-textos';
+import { activarEdicionTextos, iconoCandado } from './edicion-textos';
 import { activarFotosEditor } from './fotos-editor';
 import {
   BloqueBorrador,
@@ -452,21 +452,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     dato.classList.add('es-activo');
     const donde = dato.dataset['donde'];
     candado.replaceChildren();
-    const icono = doc.createElementNS(SVG, 'svg');
-    icono.setAttribute('viewBox', '0 0 24 24');
-    icono.setAttribute('fill', 'none');
-    icono.setAttribute('stroke', 'currentColor');
-    icono.setAttribute('stroke-width', '2');
-    icono.setAttribute('stroke-linecap', 'round');
-    icono.setAttribute('stroke-linejoin', 'round');
-    icono.setAttribute('aria-hidden', 'true');
-    const caja = doc.createElementNS(SVG, 'rect');
-    for (const [k, v] of [['x', '5'], ['y', '10.5'], ['width', '14'], ['height', '10'], ['rx', '2']]) {
-      caja.setAttribute(k, v);
-    }
-    const arco = doc.createElementNS(SVG, 'path');
-    arco.setAttribute('d', 'M8 10.5V7.5a4 4 0 0 1 8 0v3');
-    icono.append(caja, arco);
+    const icono = iconoCandado(doc);
     const texto = doc.createElement('span');
     // W12d-bis: la ficha de un hueco puede traer su propio texto (`DefHueco.candado`, aprobado por el propietario):
     // el teléfono que escribe la familia, o «Lleno», que se cambia en otro texto de esta página.

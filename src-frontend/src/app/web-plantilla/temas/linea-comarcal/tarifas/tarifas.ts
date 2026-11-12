@@ -16,8 +16,11 @@ const t = (texto: string, valores: Record<string, string | number>) =>
 
 export interface FilaCuadro {
   nombre: string;
-  /** Una fila por importe: «Cada alumno», o «Cada adulto» y «Cada menor» (tarifa familiar). */
-  importes: { quien: string; importe: string }[];
+  /**
+   * Una fila por importe: «Cada alumno», o «Cada adulto» y «Cada menor» (tarifa familiar). `tipo` va en el cuadro como
+   * `data-quien` (no se ve): con él, el editor sabe qué fila es la de hermanos aunque dos digan lo mismo.
+   */
+  importes: { quien: string; importe: string; tipo: 'alumno' | 'adulto' | 'menor' | 'hermanos' }[];
 }
 
 export interface ParadaTarifa {
@@ -175,15 +178,16 @@ function filaCuadro(tarifa: TarifaWeb, textos: TextosTema): FilaCuadro | null {
   const importes: FilaCuadro['importes'] = [];
   if (tarifa.importeAdulto != null || tarifa.importeMenor != null) {
     if (tarifa.importeAdulto != null) {
-      importes.push({ quien: P.cadaAdulto, importe: importeEnTexto(tarifa.importeAdulto) });
+      importes.push({ quien: P.cadaAdulto, importe: importeEnTexto(tarifa.importeAdulto), tipo: 'adulto' });
     }
     if (tarifa.importeMenor != null) {
-      importes.push({ quien: P.cadaMenor, importe: importeEnTexto(tarifa.importeMenor) });
+      importes.push({ quien: P.cadaMenor, importe: importeEnTexto(tarifa.importeMenor), tipo: 'menor' });
     }
   } else if (tarifa.importe != null) {
     importes.push({
       quien: esHermanos(tarifa) ? textos.t('tarifas.hermanos') : textos.t('tarifas.cada_alumno'),
       importe: importeEnTexto(tarifa.importe),
+      tipo: esHermanos(tarifa) ? 'hermanos' : 'alumno',
     });
   }
   return importes.length ? { nombre: tarifa.nombre, importes } : null;

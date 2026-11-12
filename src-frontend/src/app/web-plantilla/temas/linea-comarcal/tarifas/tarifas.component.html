@@ -69,7 +69,7 @@
                       @for (x of fila.importes; track $index; let primera = $first) {
                         <tr>
                           @if (primera) {<th scope="rowgroup" [attr.rowspan]="fila.importes.length">{{ fila.nombre }}</th>}
-                          <td class="quien">{{ x.quien }}</td>
+                          <td class="quien" [attr.data-quien]="x.tipo">{{ x.quien }}</td>
                           <td class="importe cifras">{{ x.importe }}<small>{{ alMes }}</small></td>
                         </tr>
                       }
@@ -78,7 +78,7 @@
                     <tbody>
                       <tr>
                         <th scope="row">{{ fila.nombre }}</th>
-                        <td class="quien">{{ fila.importes[0].quien }}</td>
+                        <td class="quien" [attr.data-quien]="fila.importes[0].tipo">{{ fila.importes[0].quien }}</td>
                         <td class="importe cifras">{{ fila.importes[0].importe }}<small>{{ alMes }}</small></td>
                       </tr>
                     </tbody>

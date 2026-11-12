@@ -6,7 +6,6 @@ import { type BloqueBorrador, CANAL_EDITOR_WEB, type MensajeDelEditor } from './
 import {
   CAMPOS_TEXTO_MARCO,
   CampoTexto,
-  MARCA_HERMANOS,
   bloqueTextoFoto,
   camposTextoInicio,
   camposTextoPagina,
@@ -57,6 +56,22 @@ export interface EdicionTextos {
 
 const ATRIBUTOS_COPIA = /^(class|_ngcontent-.*)$/;
 const SVG = 'http://www.w3.org/2000/svg';
+
+/** El candado de la capa (aviso `#ed-candado` y ficha de un hueco): decorativo, el lector no lo oye. */
+export function iconoCandado(doc: Document): SVGSVGElement {
+  const icono = doc.createElementNS(SVG, 'svg');
+  for (const [k, v] of [['viewBox', '0 0 24 24'], ['fill', 'none'], ['stroke', 'currentColor'], ['stroke-width', '2'], ['stroke-linecap', 'round'], ['stroke-linejoin', 'round'], ['aria-hidden', 'true']]) {
+    icono.setAttribute(k, v);
+  }
+  const caja = doc.createElementNS(SVG, 'rect');
+  for (const [k, v] of [['x', '5'], ['y', '10.5'], ['width', '14'], ['height', '10'], ['rx', '2']]) {
+    caja.setAttribute(k, v);
+  }
+  const arco = doc.createElementNS(SVG, 'path');
+  arco.setAttribute('d', 'M8 10.5V7.5a4 4 0 0 1 8 0v3');
+  icono.append(caja, arco);
+  return icono;
+}
 /** El aviso por voz del máximo, como mucho cada 2,5 s (boceto `tope`). */
 const ESPERA_TOPE = 2500;
 const DENTRO_DE_LA_CAPA = '.ed, .ed-campo, .horario';
@@ -82,6 +97,11 @@ interface QuitarPendiente {
   fichas: HTMLElement[];
   /** Si se confirma: borrar (con la limpieza de `rellenarHuecos` si solo se borran fichas) o escribir encima. */
   accion: { tipo: 'borrar'; soloFichas: boolean } | { tipo: 'escribir'; texto: string };
+  /**
+   * Lo mismo en posiciones del texto con tokens (y cada ficha por su orden), para rehacerlo si el texto se repinta
+   * mientras el panel pregunta. Null si no se pudo medir.
+   */
+  sitio: { rango: [number, number]; seleccion: [number, number] | null; fichas: number[] } | null;
 }
 
 const ENVUELTO = 'ed-envuelto';
@@ -104,6 +124,9 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   let pendiente: QuitarPendiente | null = null;
   /** Mientras la propia capa edita con `execCommand` (quitar una ficha confirmada): sin comprobar fichas. */
   let ejecutando = false;
+  /** W12d-bis: una composición (IME, tecla muerta, dictado) en curso, y si ha quitado una ficha (se devuelve al acabar). */
+  let componiendo = false;
+  let devolverAlComponer = false;
   /** Hasta que se quita la capa. */
   let vivo = true;
 
@@ -135,17 +158,6 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       const def = defTexto(f.clave);
       return def && !(f.texto ?? '').trim() ? { ...f, texto: def.vacio } : f;
     });
-    // W12d-bis: en Tarifas, el texto de hermanos con su marca, para saber qué fila del cuadro es (`MARCA_HERMANOS`).
-    if (pagina === 'tarifas') {
-      const i = lista.findIndex((f) => f.clave === 'tarifas.hermanos');
-      const texto = i >= 0 ? (lista[i].texto ?? '') : (defectoFijo('tarifas.hermanos') ?? TEXTOS_LINEA_COMARCAL['tarifas.hermanos']);
-      const marcada = { clave: 'tarifas.hermanos', texto: texto + MARCA_HERMANOS, imagenUrl: null, orden: 0, oculto: false };
-      if (i >= 0) {
-        lista[i] = { ...lista[i], texto: marcada.texto };
-      } else {
-        lista.push(marcada);
-      }
-    }
     const bloques = new Set(filas.map((f) => bloqueTextoFoto(f.clave) ?? (/^texto_foto\.\d+$/.test(f.clave) ? f.clave : null)));
     for (const bloque of bloques) {
       for (const campo of ['rotulo', 'titulo', 'texto']) {
@@ -169,7 +181,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   function plano(el: Element): string {
     const copia = el.cloneNode(true) as Element;
     copia.querySelectorAll('.oculto, .ed, .ed-oculto, svg').forEach((n) => n.remove());
-    return (copia.textContent ?? '').replaceAll(MARCA_HERMANOS, '').replace(/\s+/g, ' ').trim();
+    return (copia.textContent ?? '').replace(/\s+/g, ' ').trim();
   }
 
   /** El texto que enseña el tema en ese elemento (párrafos separados por una línea en blanco). */
@@ -432,6 +444,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     }
     activa = null;
     pendiente = null;
+    devolverAlComponer = false;
     chip.hidden = true;
     const conFoco = a.copia.contains(doc.activeElement);
     a.el.classList.remove('ed-escondido');
@@ -539,7 +552,8 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     const oido = doc.createElement('span');
     oido.className = 'ed-oculto';
     oido.textContent = `${dato} (${def.que}: no se edita aquí)`;
-    f.append(visto, oido);
+    // Delante del dato, el candado de la capa (más visible que el boceto, decisión del propietario): no es texto.
+    f.append(iconoCandado(doc), visto, oido);
     return f;
   }
 
@@ -577,7 +591,8 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
    * Red de seguridad (W12d-bis): un cambio que el navegador no deja parar antes (composición IME, teclas muertas,
    * dictado, teclados del móvil, rehacer, soltar texto, el corrector) ha quitado alguna ficha sin confirmar. Vuelve el
    * texto de antes con todas sus fichas, el cursor tras la primera que faltaba, y el panel pregunta por ella como
-   * siempre. True si había que devolverlo.
+   * siempre. Si el panel ya está preguntando, solo se devuelve (sin otro diálogo) y la pregunta abierta sigue valiendo
+   * sobre el texto devuelto. True si había que devolverlo.
    */
   function devolverFichas(a: Edicion): boolean {
     const perdidas = faltan(a.fichas, tokensDe(a.campo));
@@ -585,6 +600,10 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       return false;
     }
     pintarCampo(a.campo, a.clave, a.previo, a.valores);
+    if (pendiente) {
+      rehacerPendiente(pendiente);
+      return true;
+    }
     const primera = fichasDe(a.campo).find((f) => perdidas.includes(f.dataset['token'] ?? ''));
     if (!primera) {
       return true;
@@ -678,7 +697,8 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
 
   /** Pide al panel el diálogo «¿Quitar … de este texto?» con la frase de hoy y la de sin esos datos. */
   function pedirQuitar(a: Edicion, rango: Range, fichas: HTMLElement[], accion: QuitarPendiente['accion']): void {
-    pendiente = { edicion: a, rango, seleccion: seleccionEn(a.campo)?.cloneRange() ?? null, fichas, accion };
+    const seleccion = seleccionEn(a.campo)?.cloneRange() ?? null;
+    pendiente = { edicion: a, rango, seleccion, fichas, accion, sitio: medir(a.campo, rango, seleccion, fichas) };
     const plantilla = leer(a.campo, defTexto(a.clave)!.multi);
     const valores: Record<string, string> = {};
     for (const [, n] of plantilla.matchAll(/\{(\w+)\}/g)) {
@@ -718,6 +738,66 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       cuenta += largo;
     }
     return n === cuenta ? [campo, hijos.length] : null;
+  }
+
+  /** Lo contrario de `punto`: la posición en el texto con tokens de un punto del DOM del campo (null si no se sabe). */
+  function posicion(campo: HTMLElement, nodo: Node, desplazamiento: number): number | null {
+    let cuenta = 0;
+    const hijos = Array.from(campo.childNodes);
+    for (let i = 0; i < hijos.length; i++) {
+      if (nodo === campo && desplazamiento === i) {
+        return cuenta;
+      }
+      const h = hijos[i];
+      const largo = h.nodeType === Node.TEXT_NODE ? (h.nodeValue ?? '').length : esFicha(h) ? (h.dataset['token'] ?? '').length : h.nodeName === 'BR' ? 1 : -1;
+      if (largo < 0) {
+        return null;
+      }
+      if (h === nodo) {
+        return h.nodeType === Node.TEXT_NODE ? cuenta + desplazamiento : null;
+      }
+      cuenta += largo;
+    }
+    return nodo === campo && desplazamiento === hijos.length ? cuenta : null;
+  }
+
+  function medir(campo: HTMLElement, rango: Range, seleccion: Range | null, fichas: HTMLElement[]): QuitarPendiente['sitio'] {
+    const extremos = (r: Range): [number, number] | null => {
+      const a = posicion(campo, r.startContainer, r.startOffset);
+      const b = posicion(campo, r.endContainer, r.endOffset);
+      return a === null || b === null ? null : [a, b];
+    };
+    const todas = fichasDe(campo);
+    const orden = fichas.map((f) => todas.indexOf(f));
+    const enRango = extremos(rango);
+    const enSeleccion = seleccion ? extremos(seleccion) : null;
+    return enRango && !orden.includes(-1) && (!seleccion || enSeleccion) ? { rango: enRango, seleccion: enSeleccion, fichas: orden } : null;
+  }
+
+  /** Tras repintar el texto con el panel preguntando: lo que se quitaría (y la selección) vuelve a apuntar al texto nuevo. */
+  function rehacerPendiente(p: QuitarPendiente): void {
+    const campo = p.edicion.campo;
+    const rango = (desde: number, hasta: number): Range | null => {
+      const a = punto(campo, desde);
+      const b = punto(campo, hasta);
+      if (!a || !b) {
+        return null;
+      }
+      const r = doc.createRange();
+      r.setStart(a[0], a[1]);
+      r.setEnd(b[0], b[1]);
+      return r;
+    };
+    const todas = fichasDe(campo);
+    const s = p.sitio;
+    const nuevo = s ? rango(...s.rango) : null;
+    const fichas = s ? s.fichas.map((i) => todas[i]) : [];
+    if (!s || !nuevo || fichas.some((f) => !f)) {
+      return;
+    }
+    p.rango = nuevo;
+    p.fichas = fichas;
+    p.seleccion = s.seleccion ? rango(...s.seleccion) : null;
   }
 
   /**
@@ -819,11 +899,15 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     }
     const { campo } = p.edicion;
     campo.focus({ preventScroll: true });
-    if (!quitar) {
+    // Si el texto se repintó y no se pudo rehacer lo pedido, no se quita nada (como «Cancelar»).
+    if (!quitar || p.fichas.some((f) => !campo.contains(f))) {
       // «Cancelar»: todo como estaba y el foco, en el texto.
-      const sel = ventana.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(p.seleccion ?? p.rango);
+      const vuelta = p.seleccion ?? p.rango;
+      if (campo.contains(vuelta.startContainer)) {
+        const sel = ventana.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(vuelta);
+      }
       mostrarChip();
       return;
     }
@@ -1025,13 +1109,25 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
 
   const alEscribir = (evento: Event) => {
     const a = enEdicion(evento);
-    if (!a) {
-      return;
+    if (a) {
+      revisar(a, componiendo || (evento as InputEvent).isComposing === true);
     }
-    // W12d-bis: si falta una ficha sin haberlo confirmado, vuelve y se pregunta (el texto no cambia).
-    if (!ejecutando && devolverFichas(a)) {
-      mostrarChip();
-      return;
+  };
+
+  /** Cada cambio del texto: al panel y al tema, salvo que haya quitado una ficha sin confirmar. */
+  function revisar(a: Edicion, enComposicion: boolean): void {
+    // W12d-bis: si falta una ficha sin haberlo confirmado, vuelve y se pregunta (el texto no cambia). A mitad de una
+    // composición no se repinta (el navegador la rompería): se espera a que acabe, sin dar nada por bueno hasta entonces.
+    if (!ejecutando && (devolverAlComponer || faltan(a.fichas, tokensDe(a.campo)).length)) {
+      if (enComposicion) {
+        devolverAlComponer = true;
+        return;
+      }
+      devolverAlComponer = false;
+      if (devolverFichas(a)) {
+        mostrarChip();
+        return;
+      }
     }
     a.previo = textoReal(a.campo);
     a.fichas = tokensDe(a.campo);
@@ -1041,7 +1137,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     // El tema repinta los demás sitios de la misma clave (el original está escondido y no se ve).
     alTema(paraTema());
     mostrarChip();
-  };
+  }
 
   const alSalirDelFoco = (evento: FocusEvent) => {
     const a = enEdicion(evento);
@@ -1074,9 +1170,23 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   /** W12d-bis: una composición (IME, tecla muerta, dictado) no empieza sobre una ficha: la selección se recoge al final. */
   const alComponer = (evento: CompositionEvent) => {
     const a = enEdicion(evento);
+    componiendo = !!a;
     const r = a ? seleccionEn(a.campo) : null;
     if (a && r && !r.collapsed && fichasEnRango(a.campo, r).length) {
       ventana.getSelection()?.collapseToEnd();
+    }
+  };
+
+  /** W12d-bis: si la composición quitó una ficha, al acabar (cuando el navegador ya ha cerrado su cambio) se devuelve. */
+  const alAcabarDeComponer = () => {
+    componiendo = false;
+    const a = activa;
+    if (a && devolverAlComponer) {
+      ventana.setTimeout(() => {
+        if (vivo && activa === a && devolverAlComponer && !componiendo) {
+          revisar(a, false);
+        }
+      }, 0);
     }
   };
 
@@ -1100,17 +1210,13 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   doc.addEventListener('cut', alCopiar, true);
   doc.addEventListener('dragstart', alArrastrar, true);
   doc.addEventListener('compositionstart', alComponer, true);
+  doc.addEventListener('compositionend', alAcabarDeComponer, true);
 
   return {
     borrador(bloques) {
       salirEdicion(false);
       filas = bloques;
       alTema(paraTema());
-      // W12d-bis: el tema cambia el texto de las filas del cuadro sin añadir nodos (el observador de la capa no lo ve):
-      // en cuanto pinta la marca de hermanos, se vuelve a ver qué fila es cuál.
-      if (pagina === 'tarifas') {
-        ventana.setTimeout(() => vivo && decorar(pagina));
-      }
     },
     errores(nuevos) {
       errores = nuevos;
@@ -1153,6 +1259,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       doc.removeEventListener('cut', alCopiar, true);
       doc.removeEventListener('dragstart', alArrastrar, true);
       doc.removeEventListener('compositionstart', alComponer, true);
+      doc.removeEventListener('compositionend', alAcabarDeComponer, true);
       doc.removeEventListener('mousedown', alBajar, true);
       doc.removeEventListener('keydown', alTeclear, true);
       doc.removeEventListener('beforeinput', alAntesDeEscribir as EventListener, true);
