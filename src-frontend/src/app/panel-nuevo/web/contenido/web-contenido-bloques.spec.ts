@@ -119,14 +119,14 @@ describe('bloques de Inicio en el borrador (W12e)', () => {
     expect(anadirBloque(sedes.filas, CON_CABECERAS, 1, 'sedes', TODOS)).toBeNull();
   });
 
-  it('quitar: la cabecera y todas sus filas; se puede quitar cada «Texto con foto» y lo añadido sin guardar', () => {
+  it('quitar: la cabecera y todas sus filas; se puede quitar cada «Texto con foto» y «Fotos de las sedes»', () => {
     const sin = quitarBloque(CON_CABECERAS, 'texto_foto.2');
     expect(sin.some((f) => f.clave.startsWith('texto_foto.2'))).toBeFalse();
     expect(sin.length).toBe(CON_CABECERAS.length - 3);
-    expect(esQuitable('texto_foto.2', CON_CABECERAS)).toBeTrue();
-    expect(esQuitable('galeria', CON_CABECERAS)).toBeFalse();
-    expect(esQuitable('sedes', CON_CABECERAS)).toBeTrue();
-    expect(esQuitable('sedes', [...CON_CABECERAS, cab('sedes', 9)])).toBeFalse();
+    expect(esQuitable('texto_foto.2')).toBeTrue();
+    expect(esQuitable('galeria')).toBeFalse();
+    // Boceto `quitable`: lo añadido sigue quitable tras guardar (la API acepta un contenido sin la cabecera `sedes`).
+    expect(esQuitable('sedes')).toBeTrue();
     // De «Fotos de las sedes» solo sus filas (no los textos de la línea de sedes).
     const conSedes = [...CON_CABECERAS, cab('sedes', 9), fila('sedes.titulo', 'Un tatami'), fila('sedes.proxima_rotulo', 'Próxima')];
     expect(quitarBloque(conSedes, 'sedes').map((f) => f.clave)).toContain('sedes.proxima_rotulo');

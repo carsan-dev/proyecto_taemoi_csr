@@ -36,6 +36,7 @@ import {
   type AccionBloque,
   TEXTOS_BLOQUES,
   type TipoBloque,
+  esFilaDelBloque,
   esMovible,
   estaOculto,
   etiquetaAccion,
@@ -236,7 +237,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly nCambios = computed(() => this.clavesQueCuentan().length + this.cambiosBloques().n);
   /** Partes con la pastilla «Sin guardar». */
   readonly sinGuardar = computed(() => partesSinGuardar(this.cambiosBloques(), this.clavesQueCuentan()));
-  readonly quitables = computed(() => ordenCompleto(this.borrador()).filter((id) => esQuitable(id, this.guardado())));
+  readonly quitables = computed(() => ordenCompleto(this.borrador()).filter((id) => esQuitable(id)));
   /** Los bloques que la capa dice que hay en Inicio (las fijas sin datos no se pintan) y los vacíos. */
   readonly presentes = signal<ReadonlySet<string> | null>(null);
   readonly vacios = signal<ReadonlySet<string>>(new Set());
@@ -1051,7 +1052,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     }
     const puesto = ordenVisible(this.borrador(), this.presentes()).indexOf(id);
     const claves = filasDelBloque(this.borrador(), id);
-    for (const clave of claves) {
+    // También las subidas de fotos que aún no tienen fila (una foto nueva en curso): al acabar crearían una fila huérfana.
+    const subiendo = Object.keys(this.subidas()).filter((clave) => esFilaDelBloque(clave, id));
+    for (const clave of new Set([...claves, ...subiendo])) {
       if (clave in this.subidas()) {
         this.cancelarPeticion(clave);
         this.quitarSubida(clave);

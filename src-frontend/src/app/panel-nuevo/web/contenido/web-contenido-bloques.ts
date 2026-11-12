@@ -123,9 +123,12 @@ export function anadirBloque(
   return { filas: conOrden([...filas, cabecera(id, 0)], todos), id };
 }
 
-/** Boceto `quitable`: cada «Texto con foto» y los bloques añadidos que no están guardados. */
-export function esQuitable(id: string, guardado: readonly BloqueContenido[]): boolean {
-  return esTextoFoto(id) || (id === 'sedes' && !guardado.some((f) => f.clave === 'sedes'));
+/**
+ * Boceto `quitable` (`tipo === 'texto-foto' || anadido`, y `anadido` no se borra al guardar): cada «Texto con foto» y
+ * «Fotos de las sedes». La API acepta un contenido sin la cabecera `sedes` (`ContenidoWebService.validar` no la exige).
+ */
+export function esQuitable(id: string): boolean {
+  return esTextoFoto(id) || id === 'sedes';
 }
 
 /** Boceto `quitarBloque`: fuera la cabecera y todas las filas del bloque. */

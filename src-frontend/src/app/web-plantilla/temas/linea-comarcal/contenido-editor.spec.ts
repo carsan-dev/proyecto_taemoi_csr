@@ -1,5 +1,6 @@
 import { sitioConSedes } from '../../datos/datos-de-prueba';
 import { BloqueWeb } from '../../datos/modelos';
+import { ordenCompleto } from '../../editor/bloques-editor';
 import { vistaPortada } from './contenido';
 
 const AHORA = new Date(2026, 10, 2, 16, 0);
@@ -44,5 +45,35 @@ describe('vistaPortada en el editor (W12e)', () => {
     expect(v.secciones.filter((s) => s.numero === '—').every((s) => !s.anden)).toBeTrue();
     const galeria = v.secciones.find((s) => s.id === 'galeria')!;
     expect(galeria.tipo === 'galeria' && galeria.fotos).toEqual([]);
+  });
+
+  it('contrato: el orden que calcula el panel (`ordenCompleto`) es el de las secciones del tema', () => {
+    const base = sitioConSedes(2);
+    const filas: BloqueWeb[][] = [
+      // Sin cabeceras: el orden de antes.
+      [],
+      // Con cabeceras, desordenadas, con «Fotos de las sedes» y dos «Texto con foto» (uno solo con cabecera).
+      [
+        cab('galeria', 0),
+        cab('texto_foto.2', 1),
+        { clave: 'texto_foto.2.titulo', texto: 'Qué traer', imagenUrl: null, orden: 0 },
+        cab('sedes', 2, true),
+        cab('presentacion', 3, true),
+        cab('texto_foto.1', 4),
+        cab('profesores', 5),
+        { clave: 'profesor.1.nombre', texto: 'Ana Ruiz', imagenUrl: null, orden: 0 },
+        cab('disciplinas', 6),
+        cab('eventos', 7),
+        cab('tarifas', 8),
+      ],
+    ];
+    const idDelTema = (id: string) => (id === 'sedes' ? 'fotos-sedes' : id.replace(/[_.]/g, '-'));
+    for (const extra of filas) {
+      const sitio = { ...base, bloques: [...base.bloques, ...extra] };
+      const tema = vistaPortada(sitio, AHORA, true).secciones.map((x) => x.id).filter((id) => id !== 'contacto');
+      const panel = ordenCompleto(sitio.bloques).map(idDelTema).filter((id) => tema.includes(id));
+      expect(tema.length).toBeGreaterThan(3);
+      expect(panel).toEqual(tema);
+    }
   });
 });

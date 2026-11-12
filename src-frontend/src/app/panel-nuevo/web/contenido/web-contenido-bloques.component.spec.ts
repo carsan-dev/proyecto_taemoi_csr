@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpClient, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
@@ -7,12 +7,14 @@ import { environment } from '../../../../environments/environment';
 import { CANAL_EDITOR_WEB } from '../../../web-plantilla/editor/puente-editor';
 import { AvisosService } from '../../avisos/avisos.service';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
+import { CLIENTE_SUBIDAS } from '../../material-examen/material-examen-api.service';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
 import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR } from './web-contenido-vista';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
 const URL_CONTENIDO = `${URL}/contenido`;
+const URL_IMAGENES = `${URL}/imagenes`;
 const URL_PUBLICA = `${environment.apiUrl}/publico/web`;
 const PUBLICADA: EstadoWebEscuela = { tema: 'linea-comarcal', publicada: true, publicadaEn: '2026-11-01T10:00:00Z', temasDisponibles: ['linea-comarcal'] };
 
@@ -52,7 +54,13 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
   beforeEach(() => {
     estrecho = false;
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ORIGEN_EDITOR, useValue: 'about:blank#' }],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: ORIGEN_EDITOR, useValue: 'about:blank#' },
+        { provide: CLIENTE_SUBIDAS, useExisting: HttpClient },
+      ],
     });
     spyOnProperty(TestBed.inject(ActivatedRoute).snapshot, 'queryParamMap').and.returnValue(convertToParamMap({}));
     http = TestBed.inject(HttpTestingController);
@@ -229,6 +237,64 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     expect(q('.barra')).toBeNull();
     expect(ordenEnviado(enviados)).toEqual(PAGINA);
     expect(ultimo(enviados, 'estado-bloques')!['sinGuardar']).toEqual([]);
+  });
+
+  const descartar = () => {
+    Array.from(el().querySelectorAll<HTMLButtonElement>('.barra button')).find((b) => b.textContent!.trim() === 'Descartar')!.click();
+    fixture.detectChanges();
+  };
+
+  it('mover un bloque y volver a su sitio: 0 cambios', () => {
+    const enviados = abrir();
+    accion('bajar', 'presentacion');
+    expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+    accion('subir', 'presentacion');
+    expect(ordenEnviado(enviados)).toEqual(PAGINA);
+    expect(q('.barra')).toBeNull();
+    expect(ultimo(enviados, 'estado-bloques')!['sinGuardar']).toEqual([]);
+  });
+
+  it('añadir, editar su texto y quitar: 0 cambios', async () => {
+    const enviados = abrir();
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'anadir-bloque', pos: 1, bloque: 'texto_foto' });
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'texto', clave: 'texto_foto.1.titulo', texto: 'Horario de verano' });
+    expect(texto('.barra__texto strong')).toBe('2 cambios sin guardar');
+    accion('quitar', 'texto_foto.1');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(q('.barra')).toBeNull();
+    const bloques = ultimo(enviados, 'borrador')!['bloques'] as BloqueContenido[];
+    expect(bloques.some((b) => b.clave.startsWith('texto_foto.1'))).toBeFalse();
+    expect(ordenEnviado(enviados)).toEqual(PAGINA);
+  });
+
+  it('Descartar tras añadir y quitar vuelve exactamente a lo guardado', async () => {
+    const enviados = abrir();
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'anadir-bloque', pos: 0, bloque: 'texto_foto' });
+    accion('quitar', 'texto_foto.2');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(texto('.barra__texto strong')).toBe('3 cambios sin guardar');
+    descartar();
+    expect(q('.barra')).toBeNull();
+    const resumen = (filas: { clave: string; texto: string | null; orden: number; oculto: boolean }[]) =>
+      filas.map((b) => `${b.clave}|${b.texto}|${b.orden}|${b.oculto}`).sort();
+    expect(resumen(ultimo(enviados, 'borrador')!['bloques'] as BloqueContenido[])).toEqual(resumen(BLOQUES));
+  });
+
+  it('Quitar un bloque con una foto nueva subiéndose: la petición se corta y no queda fila huérfana ni cambio', async () => {
+    const enviados = abrir();
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'anadir-bloque', pos: 1, bloque: 'texto_foto' });
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'subir-foto', clave: 'texto_foto.1.foto', archivo: new File(['x'], 'pabellon.jpg', { type: 'image/jpeg' }) });
+    const subida = http.expectOne((r) => r.method === 'POST' && r.url === URL_IMAGENES);
+    accion('quitar', 'texto_foto.1');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(subida.cancelled).toBeTrue();
+    const bloques = ultimo(enviados, 'borrador')!['bloques'] as BloqueContenido[];
+    expect(bloques.some((b) => b.clave.startsWith('texto_foto.1'))).toBeFalse();
+    expect(ultimo(enviados, 'fotos')?.['subidas']).toEqual({});
+    expect(q('.barra')).toBeNull();
   });
 
   it('durante el guardado, las acciones no hacen nada', () => {
