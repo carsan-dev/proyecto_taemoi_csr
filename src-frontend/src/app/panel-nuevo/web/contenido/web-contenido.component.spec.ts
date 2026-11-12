@@ -379,11 +379,13 @@ describe('WebContenidoComponent (W12c)', () => {
       // Para el lector de pantalla, el texto entero; sin «· Al guardar se publican en tu web.».
       expect(texto('.barra__texto')).toBe('1 cambio sin guardar');
       expect(barra.getAttribute('aria-label')).toBe('Cambios sin guardar');
+      // Como la barra de escritorio: el contador a la izquierda, luego Descartar y Guardar, en la misma línea.
       const [descartar, guardar] = Array.from(barra.querySelectorAll('button')).map((b) => b.getBoundingClientRect());
       const frase = q('.barra__texto')!.getBoundingClientRect();
-      expect(descartar.right).toBeLessThanOrEqual(frase.left);
-      expect(frase.right).toBeLessThanOrEqual(guardar.left);
+      expect(frase.right).toBeLessThanOrEqual(descartar.left);
+      expect(descartar.right).toBeLessThanOrEqual(guardar.left);
       expect(Math.abs(descartar.top - guardar.top)).toBeLessThanOrEqual(1);
+      expect(Math.abs(frase.top + frase.height / 2 - (descartar.top + descartar.height / 2))).toBeLessThanOrEqual(1);
       comoEsperada(zonas().at(-1)!, esperada(64, barra.getBoundingClientRect().top));
 
       // Teclado cerrado: la barra de siempre.
@@ -392,6 +394,33 @@ describe('WebContenidoComponent (W12c)', () => {
       expect(barra.classList).not.toContain('barra--compacta');
       expect(barra.style.getPropertyValue('--alto-teclado')).toBe('');
       expect(texto('.barra__texto')).toBe('1 cambio sin guardar · Al guardar se publican en tu web.');
+    });
+
+    it('a 360 px con «12 cambios»: la barra compacta no desborda y los botones conservan su ancho', () => {
+      preparar();
+      cambiar();
+      teclado(300);
+      const barra = q('.barra')!;
+      const botones = Array.from(barra.querySelectorAll('button'));
+      const naturales = botones.map((b) => b.getBoundingClientRect().width);
+      barra.style.right = 'auto';
+      barra.style.width = '360px';
+      // El contador más largo que cabe en la práctica (el número lo da `textoCambiosCorto`).
+      q('.barra__frase strong')!.textContent = '12 cambios';
+      expect(barra.getBoundingClientRect().width).toBe(360);
+      expect(barra.scrollWidth).toBeLessThanOrEqual(barra.clientWidth);
+      expect(barra.getBoundingClientRect().height).toBeLessThanOrEqual(56);
+      botones.forEach((b, i) => {
+        expect(Math.abs(b.getBoundingClientRect().width - naturales[i])).toBeLessThanOrEqual(0.5);
+        expect(b.getBoundingClientRect().right).toBeLessThanOrEqual(barra.getBoundingClientRect().right);
+      });
+      const frase = q('.barra__frase')!;
+      expect(frase.getBoundingClientRect().right).toBeLessThanOrEqual(botones[0].getBoundingClientRect().left);
+      // Si no cabe, se recorta el texto (nunca los botones).
+      q('.barra__frase strong')!.textContent = '12 cambios y un texto mucho más largo que no cabe';
+      expect(barra.scrollWidth).toBeLessThanOrEqual(barra.clientWidth);
+      expect(frase.scrollWidth).toBeGreaterThan(frase.clientWidth);
+      botones.forEach((b, i) => expect(Math.abs(b.getBoundingClientRect().width - naturales[i])).toBeLessThanOrEqual(0.5));
     });
 
     it('panel ancho (tableta o escritorio): aunque el visor encoja, la barra no cambia', () => {
