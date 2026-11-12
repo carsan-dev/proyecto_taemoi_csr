@@ -926,7 +926,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.borrador.update((filas) => quitarProfesor(filas, n));
     this.limpiarErrores([...claves, claveDescripcion(foto), clavePermiso(n), `profesor.${n}.nombre`]);
     this.enviarBorrador();
-    this.enviarFocoProfesor(vecino === null ? 'anadir' : `quitar:${vecino}`);
+    this.enviarFocoProfesor(vecino === null ? 'anadir' : `${desde === 'foto' ? 'foto' : 'quitar'}:${vecino}`);
     this.anuncio.set(vozQuitadoProfesor(nombre));
   }
 

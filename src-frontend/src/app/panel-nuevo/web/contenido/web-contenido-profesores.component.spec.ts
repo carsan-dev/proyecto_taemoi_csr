@@ -511,8 +511,29 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(borrador().some((b) => b.clave.startsWith('profesor.3.'))).toBeFalse();
-    expect(ultimo('foco-profesor')!['foco']).toBe('quitar:1');
+    expect(ultimo('foco-profesor')!['foco']).toBe('foto:1');
     expect(anuncio()).toBe('Lucía Fernández: quitado. Se quita de la web al guardar.');
+  });
+
+  it('quitar desde la hoja, aceptado y con vecino: el foco va a la foto del vecino', async () => {
+    confirmar.and.resolveTo({ confirmado: true } as never);
+    abrir();
+    profesor({ accion: 'quitar', n: 3, desde: 'foto' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(ultimo('foco-profesor')!['foco']).toBe('foto:1');
+  });
+
+  it('quitar desde la hoja, aceptado y siendo el único: el foco va al botón de añadir', async () => {
+    confirmar.and.resolveTo({ confirmado: true } as never);
+    abrir({
+      version: 5,
+      bloques: [fila('profesor.1.nombre', 'Antonio Ruiz', { orden: 1, permiso: PANEL })],
+    });
+    profesor({ accion: 'quitar', n: 1, desde: 'foto' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(ultimo('foco-profesor')!['foco']).toBe('anadir');
   });
 
   it('quitar sin cabeceras guardadas: la sección no se mueve y cuenta un único cambio', async () => {
