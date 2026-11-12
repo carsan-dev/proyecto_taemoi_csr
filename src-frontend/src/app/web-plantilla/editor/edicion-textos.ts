@@ -997,6 +997,53 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     }
   };
 
+  /**
+   * W12d-bis (con el dedo): tocar una ficha del texto que se edita, o tocar tras el final del texto, no saca el foco del
+   * campo (el teclado del móvil seguiría abierto): el cursor va delante o detrás de la ficha (según la mitad tocada) o al
+   * final del texto. Sin caracteres invisibles: el cursor es un punto entre hijos del campo (`campo`, índice).
+   */
+  const alTocarEnEdicion = (evento: MouseEvent) => {
+    const a = activa;
+    const t = objetivo(evento);
+    // Ampliar una selección (Mayús) o elegir palabras (doble clic) sigue siendo del navegador.
+    if (!a || pendiente || evento.button !== 0 || evento.shiftKey || evento.detail > 1 || !t || !a.copia.contains(t)) {
+      return;
+    }
+    const f = t.closest<HTMLElement>(`.${FICHA}`);
+    const cursor = doc.createRange();
+    if (f && f.parentNode === a.campo) {
+      const r = f.getBoundingClientRect();
+      if (evento.clientX < r.left + r.width / 2) {
+        cursor.setStartBefore(f);
+      } else {
+        cursor.setStartAfter(f);
+      }
+    } else if ((t === a.campo || t === a.copia) && trasElFinal(a.campo, evento.clientX, evento.clientY)) {
+      cursor.setStart(a.campo, a.campo.childNodes.length);
+    } else {
+      return;
+    }
+    cursor.collapse(true);
+    evento.preventDefault();
+    if (doc.activeElement !== a.campo) {
+      a.campo.focus({ preventScroll: true });
+    }
+    const sel = ventana.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(cursor);
+  };
+
+  /** El punto cae a la derecha del final del texto (en su última línea) o debajo de ella. */
+  function trasElFinal(campo: HTMLElement, x: number, y: number): boolean {
+    // El campo es un `span`: una caja por línea; la última es la de la última línea.
+    const lineas = campo.getClientRects();
+    const ultima = lineas[lineas.length - 1];
+    if (!ultima) {
+      return false;
+    }
+    return y > ultima.bottom || (y >= ultima.top && x > ultima.right);
+  }
+
   const alTeclear = (evento: KeyboardEvent) => {
     const a = enEdicion(evento);
     if (a) {
@@ -1210,6 +1257,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
 
   // En captura: antes que los oyentes de la capa que dejan inertes los formularios y controles de la web.
   doc.addEventListener('mousedown', alBajar, true);
+  doc.addEventListener('mousedown', alTocarEnEdicion, true);
   doc.addEventListener('keydown', alTeclear, true);
   doc.addEventListener('beforeinput', alAntesDeEscribir as EventListener, true);
   doc.addEventListener('paste', alPegar, true);
@@ -1270,6 +1318,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       doc.removeEventListener('compositionstart', alComponer, true);
       doc.removeEventListener('compositionend', alAcabarDeComponer, true);
       doc.removeEventListener('mousedown', alBajar, true);
+      doc.removeEventListener('mousedown', alTocarEnEdicion, true);
       doc.removeEventListener('keydown', alTeclear, true);
       doc.removeEventListener('beforeinput', alAntesDeEscribir as EventListener, true);
       doc.removeEventListener('paste', alPegar, true);
