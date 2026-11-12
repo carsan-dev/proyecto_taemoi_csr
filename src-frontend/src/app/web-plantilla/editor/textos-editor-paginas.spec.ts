@@ -91,6 +91,20 @@ describe('textos del editor de las otras seis páginas (W12d-bis)', () => {
     expect(Object.keys(HUECOS).every(esTextoEditable)).toBeTrue();
   });
 
+  it('el teléfono de «Si falta algo…» es el de la familia; el curso lo pone la web (decisión del propietario, 12/11)', () => {
+    expect(HUECOS['pre.paso_revisa_texto']['x']).toEqual({
+      que: 'Teléfono de la familia',
+      conArticulo: 'el teléfono de la familia',
+      donde: 'web',
+      ejemplo: '600 000 000',
+      candado: 'Lo escribe la familia en el formulario',
+    });
+    expect(textosQuitarDato('pre.paso_revisa_texto', ['x'], 'a', 'b')!.titulo).toBe('¿Quitar «teléfono de la familia» de este texto?');
+    expect(HUECOS['sede.leyenda_lleno']['x'].candado).toBe('Se cambia más arriba, en la etiqueta “Lleno” de un grupo');
+    expect(HUECOS['sede.rotulo_horarios']['x'].donde).toBe('web');
+    expect(HUECOS['tarifas.leyenda_cuadro']['x'].donde).toBe('web');
+  });
+
   it('el puente: pedir y contestar el diálogo, con forma cerrada', () => {
     const pedir = { canal: CANAL_EDITOR_WEB, tipo: 'pedir-quitar-dato', clave: 'pre.paso_n', huecos: ['n', 'total'], antes: 'Paso 1 de 3', despues: 'Paso de 3' };
     expect(esMensajeDelEditor(pedir)).toBeTrue();

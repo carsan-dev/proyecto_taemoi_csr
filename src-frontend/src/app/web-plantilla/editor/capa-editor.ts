@@ -468,9 +468,10 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     arco.setAttribute('d', 'M8 10.5V7.5a4 4 0 0 1 8 0v3');
     icono.append(caja, arco);
     const texto = doc.createElement('span');
-    // W12d-bis: la ficha de `sede.leyenda_lleno` enseña el texto «Lleno» de los grupos (`donde` «texto»).
+    // W12d-bis: la ficha de un hueco puede traer su propio texto (`DefHueco.candado`, aprobado por el propietario):
+    // el teléfono que escribe la familia, o «Lleno», que se cambia en otro texto de esta página.
     const verbo =
-      donde === 'equipo' ? 'Lo cambia' : donde === 'web' ? 'Lo pone la web' : donde === 'texto' ? 'Se cambia en los grupos de esta página' : 'Se cambia en';
+      dato.dataset['candado'] ?? (donde === 'equipo' ? 'Lo cambia' : donde === 'web' ? 'Lo pone la web' : 'Se cambia en');
     texto.textContent = `${dato.dataset['que']} · ${verbo}`;
     candado.append(icono, texto);
     if (donde === 'equipo') {

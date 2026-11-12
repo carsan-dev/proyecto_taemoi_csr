@@ -6,6 +6,7 @@ import { type BloqueBorrador, CANAL_EDITOR_WEB, type MensajeDelEditor } from './
 import {
   CAMPOS_TEXTO_MARCO,
   CampoTexto,
+  MARCA_HERMANOS,
   bloqueTextoFoto,
   camposTextoInicio,
   camposTextoPagina,
@@ -65,6 +66,11 @@ interface Edicion {
   clave: string;
   copia: HTMLElement;
   campo: HTMLElement;
+  /** W12d-bis: el dato de cada hueco que enseñan sus fichas. */
+  valores: Record<string, string>;
+  /** W12d-bis: el texto (con tokens) y las fichas tras el último cambio aceptado, para devolverlos si falta alguna. */
+  previo: string;
+  fichas: string[];
 }
 
 /** W12d-bis: un intento de borrar una ficha, a la espera de la respuesta del panel. */
@@ -84,6 +90,8 @@ const TOKEN = /(\{\w+\})/;
 const esFicha = (n: Node | null | undefined): n is HTMLElement =>
   !!n && n.nodeType === Node.ELEMENT_NODE && (n as HTMLElement).classList.contains(FICHA);
 const normal = (t: string) => t.replace(/\s+/g, ' ').trim();
+/** Lo que se limpia junto a una ficha que se quita: espacios (no saltos de línea) y signos. */
+const PEGADO = /[^\S\n]|[·()«»¿¡,;:.!?]/;
 
 export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTextos {
   const { ventana, enviar, alTema, seleccionar } = opciones;
@@ -96,6 +104,8 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   let pendiente: QuitarPendiente | null = null;
   /** Mientras la propia capa edita con `execCommand` (quitar una ficha confirmada): sin comprobar fichas. */
   let ejecutando = false;
+  /** Hasta que se quita la capa. */
+  let vivo = true;
 
   const chip = doc.createElement('div');
   chip.className = 'ed ed-chip';
@@ -125,6 +135,17 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       const def = defTexto(f.clave);
       return def && !(f.texto ?? '').trim() ? { ...f, texto: def.vacio } : f;
     });
+    // W12d-bis: en Tarifas, el texto de hermanos con su marca, para saber qué fila del cuadro es (`MARCA_HERMANOS`).
+    if (pagina === 'tarifas') {
+      const i = lista.findIndex((f) => f.clave === 'tarifas.hermanos');
+      const texto = i >= 0 ? (lista[i].texto ?? '') : (defectoFijo('tarifas.hermanos') ?? TEXTOS_LINEA_COMARCAL['tarifas.hermanos']);
+      const marcada = { clave: 'tarifas.hermanos', texto: texto + MARCA_HERMANOS, imagenUrl: null, orden: 0, oculto: false };
+      if (i >= 0) {
+        lista[i] = { ...lista[i], texto: marcada.texto };
+      } else {
+        lista.push(marcada);
+      }
+    }
     const bloques = new Set(filas.map((f) => bloqueTextoFoto(f.clave) ?? (/^texto_foto\.\d+$/.test(f.clave) ? f.clave : null)));
     for (const bloque of bloques) {
       for (const campo of ['rotulo', 'titulo', 'texto']) {
@@ -148,7 +169,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   function plano(el: Element): string {
     const copia = el.cloneNode(true) as Element;
     copia.querySelectorAll('.oculto, .ed, .ed-oculto, svg').forEach((n) => n.remove());
-    return (copia.textContent ?? '').replace(/\s+/g, ' ').trim();
+    return (copia.textContent ?? '').replaceAll(MARCA_HERMANOS, '').replace(/\s+/g, ' ').trim();
   }
 
   /** El texto que enseña el tema en ese elemento (párrafos separados por una línea en blanco). */
@@ -380,7 +401,8 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       campo.setAttribute('aria-describedby', idError(clave));
     }
     campo.dataset['vacio'] = def.vacio;
-    pintarCampo(campo, clave, valor(clave), valoresDe(el, clave));
+    const valores = valoresDe(el, clave);
+    pintarCampo(campo, clave, valor(clave), valores);
     copia.append(campo);
     el.after(copia);
     el.classList.add('ed-escondido');
@@ -391,7 +413,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
         }
       });
     }
-    activa = { el, clave, copia, campo };
+    activa = { el, clave, copia, campo, valores, previo: textoReal(campo), fichas: tokensDe(campo) };
     campo.focus({ preventScroll: true });
     const rango = doc.createRange();
     rango.selectNodeContents(campo);
@@ -508,6 +530,9 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     f.dataset['que'] = def.que;
     f.dataset['donde'] = def.donde;
     f.dataset['valor'] = dato;
+    if (def.candado) {
+      f.dataset['candado'] = def.candado;
+    }
     const visto = doc.createElement('span');
     visto.setAttribute('aria-hidden', 'true');
     visto.textContent = dato;
@@ -533,6 +558,48 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   }
 
   const fichasDe = (campo: HTMLElement) => Array.from(campo.querySelectorAll<HTMLElement>(`.${FICHA}`));
+  const tokensDe = (campo: HTMLElement) => fichasDe(campo).map((f) => f.dataset['token'] ?? '');
+
+  /** Los tokens de `antes` que ya no están en `ahora` (cada uno, tantas veces como falte). */
+  function faltan(antes: readonly string[], ahora: readonly string[]): string[] {
+    const quedan = [...ahora];
+    return antes.filter((t) => {
+      const i = quedan.indexOf(t);
+      if (i < 0) {
+        return true;
+      }
+      quedan.splice(i, 1);
+      return false;
+    });
+  }
+
+  /**
+   * Red de seguridad (W12d-bis): un cambio que el navegador no deja parar antes (composición IME, teclas muertas,
+   * dictado, teclados del móvil, rehacer, soltar texto, el corrector) ha quitado alguna ficha sin confirmar. Vuelve el
+   * texto de antes con todas sus fichas, el cursor tras la primera que faltaba, y el panel pregunta por ella como
+   * siempre. True si había que devolverlo.
+   */
+  function devolverFichas(a: Edicion): boolean {
+    const perdidas = faltan(a.fichas, tokensDe(a.campo));
+    if (!perdidas.length) {
+      return false;
+    }
+    pintarCampo(a.campo, a.clave, a.previo, a.valores);
+    const primera = fichasDe(a.campo).find((f) => perdidas.includes(f.dataset['token'] ?? ''));
+    if (!primera) {
+      return true;
+    }
+    const cursor = doc.createRange();
+    cursor.setStartAfter(primera);
+    cursor.collapse(true);
+    const sel = ventana.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(cursor);
+    const sobre = doc.createRange();
+    sobre.selectNode(primera);
+    pedirQuitar(a, sobre, [primera], { tipo: 'borrar', soloFichas: true });
+    return true;
+  }
 
   /** El nodo junto al cursor (sin texto en medio), hacia atrás o hacia delante; solo si es una ficha. */
   function fichaJunto(rango: Range, atras: boolean): HTMLElement | null {
@@ -654,58 +721,81 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   }
 
   /**
-   * Quitar solo fichas: el texto queda como lo deja `rellenarHuecos` sin esos datos (fuera los espacios dobles, el «·»
-   * suelto, los paréntesis vacíos…), con un solo comando de edición sobre lo que cambia. Null si no se puede.
+   * Quitar solo fichas: alrededor de cada una, el texto queda como lo deja `rellenarHuecos` sin ese dato (fuera los
+   * espacios dobles, el «·» suelto, los paréntesis vacíos…), con un solo comando de edición. Solo se limpia lo que toca
+   * a la ficha (los espacios y signos pegados a ella): lo que el usuario escribió en otra parte del texto no cambia.
+   * Null si no se puede.
    */
   function rangoLimpio(campo: HTMLElement, fichas: HTMLElement[]): { rango: Range; texto: string } | null {
     const todo = textoReal(campo);
     const quitar = new Set(fichas);
-    const valores: Record<string, string> = {};
-    for (const [, n] of todo.matchAll(/\{(\w+)\}/g)) {
-      valores[n] = `{${n}}`;
-    }
-    // Lo que queda sin las fichas, con un marcador en su sitio para limpiarlo como el tema.
-    let sin = '';
-    const tramos: [number, number][] = [];
+    const quitadas: [number, number][] = [];
+    const quedan: [number, number][] = [];
     let cuenta = 0;
     for (const h of Array.from(campo.childNodes)) {
       const t = h.nodeType === Node.TEXT_NODE ? (h.nodeValue ?? '') : esFicha(h) ? (h.dataset['token'] ?? '') : h.nodeName === 'BR' ? '\n' : null;
       if (t === null) {
         return null;
       }
-      if (esFicha(h) && quitar.has(h)) {
-        sin += '{ed_quitado}';
-      } else {
-        if (esFicha(h)) {
-          tramos.push([cuenta, cuenta + t.length]);
-        }
-        sin += t;
+      if (esFicha(h)) {
+        (quitar.has(h) ? quitadas : quedan).push([cuenta, cuenta + t.length]);
       }
       cuenta += t.length;
     }
-    const limpio = rellenarHuecos(sin, { ...valores, ed_quitado: '' });
-    let ini = 0;
-    while (ini < todo.length && ini < limpio.length && todo[ini] === limpio[ini]) {
-      ini++;
-    }
-    let fin = 0;
-    while (fin < todo.length - ini && fin < limpio.length - ini && todo[todo.length - 1 - fin] === limpio[limpio.length - 1 - fin]) {
-      fin++;
-    }
-    const hasta = todo.length - fin;
-    // Sin partir una ficha que se queda.
-    if (tramos.some(([a, b]) => (a < ini && ini < b) || (a < hasta && hasta < b))) {
+    if (!quitadas.length) {
       return null;
     }
-    const desde = punto(campo, ini);
-    const a = punto(campo, hasta);
-    if (!desde || !a) {
+    // Cada ficha con los espacios y signos pegados a ella (sin pasar de línea ni entrar en otra ficha); juntas si se tocan.
+    const ventanas: [number, number][] = [];
+    for (const [a0, b0] of quitadas) {
+      let a = a0;
+      let b = b0;
+      while (a > 0 && PEGADO.test(todo[a - 1])) {
+        a--;
+      }
+      while (b < todo.length && PEGADO.test(todo[b])) {
+        b++;
+      }
+      const ultima = ventanas[ventanas.length - 1];
+      if (ultima && a <= ultima[1]) {
+        ultima[1] = Math.max(ultima[1], b);
+      } else {
+        ventanas.push([a, b]);
+      }
+    }
+    const ini = ventanas[0][0];
+    const hasta = ventanas[ventanas.length - 1][1];
+    // Sin rehacer como texto una ficha que se queda.
+    if (quedan.some(([a, b]) => a < hasta && b > ini)) {
+      return null;
+    }
+    let texto = '';
+    let desde = ini;
+    for (const [a, b] of ventanas) {
+      texto += todo.slice(desde, a);
+      // Lo de alrededor, para limpiar como el tema: una letra si sigue el texto, la línea si la hay, nada en los bordes.
+      const izquierda = a === 0 ? '' : todo[a - 1] === '\n' ? 'a\n' : 'a';
+      const derecha = b === todo.length ? '' : todo[b] === '\n' ? '\na' : 'a';
+      let trozo = todo.slice(a, b);
+      for (const [qa, qb] of quitadas.filter(([qa]) => qa >= a && qa < b).reverse()) {
+        trozo = trozo.slice(0, qa - a) + '{ed_quitado}' + trozo.slice(qb - a);
+      }
+      const limpio = rellenarHuecos(izquierda + trozo + derecha, { ed_quitado: '' });
+      if (!limpio.startsWith(izquierda) || !limpio.endsWith(derecha) || limpio.length < izquierda.length + derecha.length) {
+        return null;
+      }
+      texto += limpio.slice(izquierda.length, limpio.length - derecha.length);
+      desde = b;
+    }
+    const inicio = punto(campo, ini);
+    const fin = punto(campo, hasta);
+    if (!inicio || !fin) {
       return null;
     }
     const rango = doc.createRange();
-    rango.setStart(desde[0], desde[1]);
-    rango.setEnd(a[0], a[1]);
-    return { rango, texto: limpio.slice(ini, limpio.length - fin) };
+    rango.setStart(inicio[0], inicio[1]);
+    rango.setEnd(fin[0], fin[1]);
+    return { rango, texto };
   }
 
   /** Con el rango elegido, un comando de edición del navegador (entra en su deshacer). */
@@ -938,6 +1028,13 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     if (!a) {
       return;
     }
+    // W12d-bis: si falta una ficha sin haberlo confirmado, vuelve y se pregunta (el texto no cambia).
+    if (!ejecutando && devolverFichas(a)) {
+      mostrarChip();
+      return;
+    }
+    a.previo = textoReal(a.campo);
+    a.fichas = tokensDe(a.campo);
     const texto = leer(a.campo, defTexto(a.clave)!.multi);
     poner(a.clave, texto);
     enviar({ canal: CANAL_EDITOR_WEB, tipo: 'texto', clave: a.clave, texto });
@@ -974,6 +1071,15 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     }
   };
 
+  /** W12d-bis: una composición (IME, tecla muerta, dictado) no empieza sobre una ficha: la selección se recoge al final. */
+  const alComponer = (evento: CompositionEvent) => {
+    const a = enEdicion(evento);
+    const r = a ? seleccionEn(a.campo) : null;
+    if (a && r && !r.collapsed && fichasEnRango(a.campo, r).length) {
+      ventana.getSelection()?.collapseToEnd();
+    }
+  };
+
   /** Una ficha no se arrastra fuera del texto (ni el texto que la lleva). */
   const alArrastrar = (evento: DragEvent) => {
     const a = enEdicion(evento);
@@ -993,12 +1099,18 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   doc.addEventListener('copy', alCopiar, true);
   doc.addEventListener('cut', alCopiar, true);
   doc.addEventListener('dragstart', alArrastrar, true);
+  doc.addEventListener('compositionstart', alComponer, true);
 
   return {
     borrador(bloques) {
       salirEdicion(false);
       filas = bloques;
       alTema(paraTema());
+      // W12d-bis: el tema cambia el texto de las filas del cuadro sin añadir nodos (el observador de la capa no lo ve):
+      // en cuanto pinta la marca de hermanos, se vuelve a ver qué fila es cuál.
+      if (pagina === 'tarifas') {
+        ventana.setTimeout(() => vivo && decorar(pagina));
+      }
     },
     errores(nuevos) {
       errores = nuevos;
@@ -1031,6 +1143,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     decorar,
     quitarDato,
     quitar() {
+      vivo = false;
       salirEdicion(false);
       doc.querySelectorAll('[data-ed-aria-oculto]').forEach((el) => {
         el.removeAttribute('data-ed-aria-oculto');
@@ -1039,6 +1152,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       doc.removeEventListener('copy', alCopiar, true);
       doc.removeEventListener('cut', alCopiar, true);
       doc.removeEventListener('dragstart', alArrastrar, true);
+      doc.removeEventListener('compositionstart', alComponer, true);
       doc.removeEventListener('mousedown', alBajar, true);
       doc.removeEventListener('keydown', alTeclear, true);
       doc.removeEventListener('beforeinput', alAntesDeEscribir as EventListener, true);

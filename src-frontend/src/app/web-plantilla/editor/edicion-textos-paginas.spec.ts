@@ -246,15 +246,20 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       tecla(q('.leyenda > li:nth-child(2)'), 'Enter');
       expect(ficha().dataset['token']).toBe('{x}');
       expect(ficha().dataset['valor']).toBe('Completo');
-      expect(ficha().dataset['que']).toBe('Aviso de grupo lleno');
+      expect(ficha().dataset['que']).toBe('Etiqueta de grupo lleno');
       expect(leido()).toBe('{x}: puedes apuntarte a la lista de espera');
+      // Candado aprobado por el propietario (12/11), sin enlace a otra pantalla.
+      ficha().dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      expect(q('#ed-candado').textContent).toBe('Etiqueta de grupo lleno · Se cambia más arriba, en la etiqueta “Lleno” de un grupo');
+      expect(q('#ed-candado').querySelector('[data-accion="ir"]')).toBeNull();
     });
 
     it('al pasar por la ficha sale su candado', () => {
       tecla(q('#horarios .rotulo'), 'Enter');
       ficha().dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
       expect(q('#ed-candado').hidden).toBeFalse();
-      expect(q('#ed-candado').textContent).toContain('Curso · Se cambia en');
+      // El curso lo pone la web con la fecha (no se cambia en Grupos ni en Productos).
+      expect(q('#ed-candado').textContent).toBe('Curso · Lo pone la web');
     });
   });
 
@@ -355,6 +360,76 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       expect(mensajes('pedir-quitar-dato').length).toBe(2);
     });
 
+    /** Lo que haría el navegador en un cambio que no se puede parar: quitar la ficha (y escribir algo). */
+    function quitarAMano(escrito: string): void {
+      ficha().replaceWith(doc.createTextNode(escrito));
+    }
+
+    for (const [inputType, isComposing] of [
+      ['insertCompositionText', true],
+      ['historyRedo', false],
+      ['insertFromDrop', false],
+      ['insertReplacementText', false],
+    ] as const) {
+      it(`red de seguridad: ${inputType}${isComposing ? ' (composición)' : ''} que quita la ficha la devuelve y pregunta`, () => {
+        elegir([campo(), 1], [campo(), 2]);
+        if (isComposing) {
+          // La composición no se puede cancelar: el `beforeinput` pasa y el navegador cambia el texto igual.
+          const antes = new InputEvent('beforeinput', { bubbles: true, cancelable: false, inputType, data: 'á', isComposing });
+          campo().dispatchEvent(antes);
+          expect(mensajes('pedir-quitar-dato')).toEqual([]);
+        }
+        // Sin `beforeinput` que parar (o uno que el navegador no da): el cambio ya ha quitado la ficha.
+        quitarAMano('á');
+        campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType, data: 'á', isComposing }));
+        expect(leido()).toBe('Mensualidades del curso {x}');
+        expect(ficha().querySelector('[aria-hidden="true"]')!.textContent).toBe('2026-2027');
+        expect(mensajes('texto')).toEqual([]);
+        expect(mensajes('pedir-quitar-dato')).toEqual([
+          jasmine.objectContaining({ clave: 'tarifas.leyenda_cuadro', huecos: ['x'], despues: 'Mensualidades del curso' }),
+        ]);
+        // El cursor, justo tras la ficha devuelta.
+        const r = ventana.getSelection()!.getRangeAt(0);
+        expect([r.startContainer, r.startOffset, r.collapsed]).toEqual([campo(), 2, true]);
+        // Y el diálogo sigue el flujo de siempre.
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'quitar-dato', quitar: true });
+        expect(campo().querySelector('.ed-ficha')).toBeNull();
+        expect(mensajes('texto').pop()).toEqual(jasmine.objectContaining({ texto: 'Mensualidades del curso' }));
+      });
+    }
+
+    it('red de seguridad: tras quitar una ficha confirmada, el cambio siguiente no la pide de vuelta', () => {
+      cursor(campo(), 2);
+      antesDeEscribir('deleteContentBackward');
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'quitar-dato', quitar: true });
+      campo().append(doc.createTextNode('!'));
+      campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: '!' }));
+      expect(mensajes('pedir-quitar-dato').length).toBe(1);
+      expect(mensajes('texto').pop()).toEqual(jasmine.objectContaining({ texto: 'Mensualidades del curso!' }));
+    });
+
+    it('una composición que empieza con la ficha elegida no la pisa: la selección se recoge al final', () => {
+      elegir([campo().firstChild!, 15], [campo(), 2]);
+      campo().dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+      const r = ventana.getSelection()!.getRangeAt(0);
+      expect([r.startContainer, r.startOffset, r.collapsed]).toEqual([campo(), 2, true]);
+      expect(ficha()).not.toBeNull();
+      // Sin ficha en la selección, la composición sigue como el navegador quiera.
+      elegir([campo().firstChild!, 3], [campo().firstChild!, 6]);
+      campo().dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true, data: '' }));
+      expect(ventana.getSelection()!.getRangeAt(0).collapsed).toBeFalse();
+    });
+
+    it('quitar la ficha solo limpia lo que la toca: los espacios dobles del usuario en otra parte se quedan', () => {
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: [fila('tarifas.leyenda_cuadro', 'Cuotas  del curso ({x})')] });
+      tecla(q('.cuadro caption .rotulo'), 'Enter');
+      expect(leido()).toBe('Cuotas  del curso ({x})');
+      cursor(campo(), 2);
+      antesDeEscribir('deleteContentBackward');
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'quitar-dato', quitar: true });
+      expect(mensajes('texto').pop()).toEqual(jasmine.objectContaining({ clave: 'tarifas.leyenda_cuadro', texto: 'Cuotas  del curso' }));
+    });
+
     it('copiar da el texto como se ve (sin la frase oculta del lector)', () => {
       elegir([campo().firstChild!, 15], [campo(), 2]);
       const copiar = new ClipboardEvent('copy', { bubbles: true, cancelable: true, clipboardData: new DataTransfer() });
@@ -380,6 +455,41 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       expect(q('[data-dato="examen"]').dataset['campo']).toBe('tarifas.examen_desde');
       expect(q('.aparte li:first-child .aparte-concepto').classList).not.toContain('ed-texto');
       expect(Array.from(doc.querySelectorAll<HTMLElement>('td.importe > small')).every((s) => s.dataset['campo'] === 'tarifas.al_mes')).toBeTrue();
+    });
+
+    it('hermanos y cada alumno con el mismo texto: la fila se sabe por su clave (la marca que el editor pasa al tema)', () => {
+      const temas: BloqueBorrador[][] = [];
+      desactivar();
+      desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: (b) => temas.push(b) });
+      delPanel({
+        canal: CANAL_EDITOR_WEB,
+        tipo: 'borrador',
+        bloques: [fila('tarifas.cada_alumno', 'Cada alumno'), fila('tarifas.hermanos', 'Cada alumno')],
+      });
+      const marcado = temas.at(-1)!.find((b) => b.clave === 'tarifas.hermanos')!.texto!;
+      expect(marcado).toBe('Cada alumno' + String.fromCharCode(0x2060));
+      expect(temas.at(-1)!.find((b) => b.clave === 'tarifas.cada_alumno')!.texto).toBe('Cada alumno');
+      // Lo que pintaría el tema con ese borrador: las dos filas dicen lo mismo; solo la de hermanos lleva la marca.
+      const [general, hermanos] = Array.from(doc.querySelectorAll<HTMLElement>('tbody:not(.grupo-tarifa) td.quien'));
+      general.textContent = 'Cada alumno';
+      hermanos.textContent = marcado;
+      return new Promise<void>((listo) => {
+        setTimeout(() => {
+          expect([general.dataset['campo'], hermanos.dataset['campo']]).toEqual(['tarifas.cada_alumno', 'tarifas.hermanos']);
+          // Al editar la de hermanos, la marca no entra en el texto.
+          tecla(hermanos, 'Enter');
+          expect(leido()).toBe('Cada alumno');
+          listo();
+        }, 20);
+      });
+    });
+
+    it('sin fila de hermanos en el borrador, el tema recibe igualmente la marca con el texto por defecto', () => {
+      const temas: BloqueBorrador[][] = [];
+      desactivar();
+      desactivar = activarCapaEditor({ ventana, padre: window, alBorrador: (b) => temas.push(b) });
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: [] });
+      expect(temas.at(-1)).toEqual([fila('tarifas.hermanos', 'Desde el segundo hermano' + String.fromCharCode(0x2060))]);
     });
   });
 
@@ -451,6 +561,22 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
       tecla(q('.vacio > h2'), 'Enter');
       expect(leido()).toBe('En {x} no hay grupo para {n} años');
       expect(Array.from(campo().querySelectorAll<HTMLElement>('.ed-ficha')).map((f) => f.dataset['valor'])).toEqual(['Herrera', '15']);
+    });
+
+    it('red de seguridad con varias fichas: pregunta por la que falta; si faltan varias, las devuelve y pregunta por la primera', () => {
+      montar(PRE_SIN_GRUPO);
+      tecla(q('.vacio > h2'), 'Enter');
+      const fichas = () => Array.from(campo().querySelectorAll<HTMLElement>('.ed-ficha'));
+      fichas()[1].remove();
+      campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertCompositionText', isComposing: true }));
+      expect(leido()).toBe('En {x} no hay grupo para {n} años');
+      expect(mensajes('pedir-quitar-dato').pop()).toEqual(jasmine.objectContaining({ clave: 'pre.vacio_titulo', huecos: ['n'] }));
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'quitar-dato', quitar: false });
+      fichas().forEach((f) => f.remove());
+      campo().dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'historyRedo' }));
+      expect(fichas().map((f) => f.dataset['valor'])).toEqual(['Herrera', '15']);
+      expect(mensajes('pedir-quitar-dato').pop()).toEqual(jasmine.objectContaining({ huecos: ['x'] }));
+      expect(mensajes('texto')).toEqual([]);
     });
 
     it('enviada a la lista de espera: los textos de la espera, la referencia envuelta y los pasos fijos fuera', () => {

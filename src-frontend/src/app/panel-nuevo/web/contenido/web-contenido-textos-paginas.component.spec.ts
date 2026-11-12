@@ -73,11 +73,11 @@ describe('WebContenidoComponent: textos de las otras páginas (W12d-bis)', () =>
   const src = () => iframe()?.getAttribute('src') ?? null;
   const boton = (t: string) => Array.from(el().querySelectorAll<HTMLButtonElement>('.barra button')).find((b) => b.textContent!.trim() === t)!;
 
-  function abrir(): void {
+  function abrir(contenido: ContenidoWeb = CONTENIDO): void {
     fixture = TestBed.createComponent(WebContenidoComponent);
     fixture.detectChanges();
     http.expectOne(URL).flush(ESTADO);
-    http.expectOne(URL_CONTENIDO).flush(CONTENIDO);
+    http.expectOne(URL_CONTENIDO).flush(contenido);
     http.expectOne((r) => r.url === URL_PUBLICA).flush({ sedes: [{ nombre: 'Herrera', slug: 'herrera' }, { nombre: 'Estepa', slug: 'estepa' }] });
     http.expectOne((r) => r.url === `${URL_PUBLICA}/eventos`).flush({ proximos: [], anteriores: [] });
     fixture.detectChanges();
@@ -122,6 +122,17 @@ describe('WebContenidoComponent: textos de las otras páginas (W12d-bis)', () =>
       ],
     });
     expect(peticion.request.body.bloques.some((b: object) => 'permiso' in b)).toBeFalse();
+    peticion.flush({ version: 4, bloques: BLOQUES });
+  });
+
+  it('guardar conserva intacta una fila guardada que el editor no ofrece (legal.priv.h1)', () => {
+    const noOfrecida = fila('legal.priv.h1', 'Qué datos tratamos', { orden: 2, oculto: true });
+    abrir({ version: 3, bloques: [...BLOQUES, noOfrecida] });
+    cambiar('pre.atras', 'Volver');
+    boton('Guardar').click();
+    fixture.detectChanges();
+    const peticion = http.expectOne((r) => r.method === 'PUT' && r.url === URL_CONTENIDO);
+    expect(peticion.request.body.bloques).toContain({ clave: 'legal.priv.h1', texto: 'Qué datos tratamos', imagenId: null, orden: 2, oculto: true });
     peticion.flush({ version: 4, bloques: BLOQUES });
   });
 

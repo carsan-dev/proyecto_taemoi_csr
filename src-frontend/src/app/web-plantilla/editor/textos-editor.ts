@@ -667,6 +667,12 @@ function camposSede(conTexto: (clave: string) => boolean): CampoTexto[] {
  * La página de tarifas (`tarifasPagHtml`). El concepto de la licencia no: el tema pinta «Licencia de <disciplina>» en
  * un solo texto. «Cada adulto» y «Cada menor» de la tarifa familiar son fijos (candado de la capa).
  */
+/**
+ * W12d-bis: lo que lleva al final el texto de `tarifas.hermanos` que el editor pasa al tema en la página de tarifas
+ * (WORD JOINER, no se ve ni se lee): marca la fila de hermanos del cuadro. Nunca se guarda ni va al panel.
+ */
+export const MARCA_HERMANOS = String.fromCharCode(0x2060);
+
 const CAMPOS_TARIFAS: readonly CampoTexto[] = [
   { selector: '.p-tarifas #tarifas-titulo', clave: 'tarifas.titulo' },
   { selector: '.p-tarifas > #tarifas .tarifa-mes', clave: 'tarifas.al_mes' },
@@ -700,9 +706,18 @@ const CAMPOS_TARIFAS: readonly CampoTexto[] = [
   { selector: '.p-tarifas .cuadro thead th:nth-child(2)', clave: 'tarifas.col_quien' },
   { selector: '.p-tarifas .cuadro thead th:nth-child(3)', clave: 'tarifas.col_importe' },
   {
-    // La fila de hermanos o la de cada alumno: el tema no las distingue en el DOM; por el texto que pinta.
+    // La fila de hermanos o la de cada alumno: el tema no las distingue en el DOM. En el editor, el texto de hermanos
+    // le llega al tema con `MARCA_HERMANOS` al final (invisible): la fila que la lleva es la de hermanos, por su clave
+    // y no por lo que dice (las dos pueden decir lo mismo). Sin la marca en el cuadro (el tema aún no ha pintado el
+    // borrador del editor), por el texto, como antes.
     selector: '.p-tarifas .cuadro tbody:not(.grupo-tarifa) td.quien',
     clave: (el, ver) => {
+      if ((el.textContent ?? '').includes(MARCA_HERMANOS)) {
+        return 'tarifas.hermanos';
+      }
+      if ((el.closest('table')?.textContent ?? '').includes(MARCA_HERMANOS)) {
+        return 'tarifas.cada_alumno';
+      }
       const texto = (el.textContent ?? '').replace(/\s+/g, ' ').trim();
       return texto === ver('tarifas.hermanos') && texto !== ver('tarifas.cada_alumno') ? 'tarifas.hermanos' : 'tarifas.cada_alumno';
     },
