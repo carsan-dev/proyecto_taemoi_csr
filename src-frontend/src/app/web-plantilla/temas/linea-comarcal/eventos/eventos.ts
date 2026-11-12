@@ -135,6 +135,8 @@ export function textosEventos(textos: TextosTema) {
     sinProximosTexto: textos.t('eventos.sin_proximos_texto'),
     verAnteriores: textos.t('eventos.ver_anteriores'),
     sinAnteriores: textos.t('eventos.sin_anteriores'),
+    // El mismo texto que el enlace de cada evento en Inicio.
+    verEvento: textos.t('eventos.enlace_ver'),
   };
 }
 

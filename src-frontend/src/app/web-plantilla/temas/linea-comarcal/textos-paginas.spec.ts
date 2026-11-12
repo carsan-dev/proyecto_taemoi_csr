@@ -103,6 +103,25 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
       );
       expect(rellenarHuecos('«{x}» y ¿{x}?', {})).toBe('«» y ¿?');
     });
+
+    it('hueco sin dato entre paréntesis: fuera los paréntesis vacíos', () => {
+      expect(rellenarHuecos('Mensualidades ({x})', { x: null })).toBe('Mensualidades');
+      expect(rellenarHuecos('Mensualidades ( {x} ).', {})).toBe('Mensualidades.');
+      expect(rellenarHuecos('Cuota ({x}) al mes', { x: '' })).toBe('Cuota al mes');
+    });
+
+    it('hueco sin dato junto a «·»: fuera el «·» sin texto a un lado', () => {
+      expect(rellenarHuecos('{x} · curso', { x: null })).toBe('curso');
+      expect(rellenarHuecos('Horarios · {x}', { x: null })).toBe('Horarios');
+      expect(rellenarHuecos('Horarios · {x}.', {})).toBe('Horarios.');
+      expect(rellenarHuecos('Estepa · {x} · lunes', { x: '' })).toBe('Estepa · lunes');
+      expect(rellenarHuecos('({x} · curso)', {})).toBe('(curso)');
+    });
+
+    it('con todos los datos, paréntesis y «·» no se tocan', () => {
+      expect(rellenarHuecos('Horarios · {x} ()', { x: 'curso' })).toBe('Horarios · curso ()');
+      expect(rellenarHuecos('· {x} ·', { x: 'a' })).toBe('· a ·');
+    });
   });
 
   describe('textos por defecto', () => {
@@ -325,6 +344,22 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
         });
       }
 
+      it('`tarifas.igual` sin fila: el texto de siempre', async () => {
+        expect(textos(await abrir('/sedes/estepa', sitio()), '.tarifa-igual')).toEqual(['Igual en todas las sedes']);
+      });
+
+      it('`tarifas.igual` se comparte con Inicio: el texto de la escuela', async () => {
+        const raiz = await abrir('/sedes/estepa', sitio({ bloques: [bloque('tarifas.igual', 'La misma en todas')] }));
+        expect(textos(raiz, '.tarifa-igual')).toEqual(['La misma en todas']);
+      });
+
+      it('fila vacía: ni `tarifas.igual` ni el rótulo de la próxima clase se pintan', async () => {
+        const raiz = await abrir('/sedes/estepa', sitio({ bloques: [bloque('tarifas.igual', ''), bloque('sedes.proxima_rotulo', '')] }));
+        expect(raiz.querySelector('.tarifa-igual')).toBeNull();
+        expect(raiz.querySelector('.proxima .proxima-rotulo')).toBeNull();
+        expect(raiz.querySelector('.proxima .proxima-cuando')).not.toBeNull();
+      });
+
       it('sin clases esta semana: el texto de la escuela', async () => {
         const s = sitio({ bloques: [bloque('sede.sin_clases', 'Vacaciones')] });
         s.sedes[1] = { ...s.sedes[1], grupos: [] };
@@ -388,14 +423,25 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
         expect(limpio((await abrir('/tarifas', unaSede())).querySelector('.tarifa-igual'))).toBe('Una cuota al mes, para todos los grupos.');
       });
 
-      it('variantes con una sola clave: cuota con una sede (hueco vacío) y «Cada adulto»/«Cada menor»', async () => {
+      it('variantes con una sola clave: cuota con una sede (hueco vacío); `tarifas.cada_alumno` solo en la fila genérica', async () => {
         const raiz = await abrir(
           '/tarifas',
           unaSede({ bloques: [bloque('tarifas.cuota_igual', 'La misma cuota en las {x} sedes.'), bloque('tarifas.cada_alumno', 'Por persona')] }),
         );
         expect(limpio(raiz.querySelector('.tarifa-igual'))).toBe('La misma cuota en las sedes.');
-        expect(textos(raiz, '.cuadro .quien')).toEqual(['Por persona', 'Por persona', 'Por persona', 'Desde el segundo hermano']);
+        // Decisión del propietario: «Cada adulto» y «Cada menor» quedan siempre fijos.
+        expect(textos(raiz, '.cuadro .quien')).toEqual(['Por persona', 'Cada adulto', 'Cada menor', 'Desde el segundo hermano']);
         expect(textos(raiz, '.cuadro caption')).toEqual(['Mensualidades']);
+      });
+
+      it('`tarifas.punto1` se comparte con Inicio y Una sede: primer punto de «Incluye»', async () => {
+        const raiz = await abrir('/tarifas', sitio({ bloques: [bloque('tarifas.punto1', 'Cuota de cada alumno')] }));
+        expect(textos(raiz, '.tarifa-incluye li')).toEqual(['Cuota de cada alumno', 'También tarifa familiar y de hermanos', 'Licencia y exámenes, aparte']);
+      });
+
+      it('`tarifas.punto1` vacía: el punto no se pinta', async () => {
+        const raiz = await abrir('/tarifas', sitio({ bloques: [bloque('tarifas.punto1', '')] }));
+        expect(textos(raiz, '.tarifa-incluye li')).toEqual(['También tarifa familiar y de hermanos', 'Licencia y exámenes, aparte']);
       });
 
       const vacio = [bloque('tarifas.vacio_texto', 'Pregúntanos.'), bloque('tarifas.vacio_correo', 'Email')];
@@ -437,6 +483,12 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
         expect(textos(raiz, '.pagina-entrada')).toEqual(['Exámenes, torneos y exhibiciones del club, con sus circulares y sus fotos.']);
         expect(textos(raiz, '.bloque-cuenta')).toEqual(['2 eventos']);
         expect(textos(raiz, '#anteriores-titulo')).toEqual(['Anteriores']);
+        expect(textos(raiz, '.destacado .boton, .ev-fila .enlace-flecha').map((x) => x.split(':')[0])).toEqual(['Ver evento', 'Ver evento']);
+      });
+
+      it('`eventos.enlace_ver` se comparte con Inicio: los enlaces a cada evento', async () => {
+        const raiz = await abrirEventos(varios(), [bloque('eventos.enlace_ver', 'Más información')]);
+        expect(textos(raiz, '.destacado .boton, .ev-fila .enlace-flecha').map((x) => x.split(':')[0])).toEqual(['Más información', 'Más información']);
       });
 
       it('con filas, los de la escuela y `{n}` sustituido', async () => {
@@ -531,6 +583,39 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
           'Los textos, fotos, logotipos y diseño de esta web son de Club Taekwondo Sierra Sur o de sus autores. No se pueden copiar ni usar con otros fines sin permiso.',
         );
         expect(textos(raiz, '#privacidad .legal-h3').at(-1)).toBe('Tus derechos');
+        expect(raiz.querySelectorAll('#aviso-legal > p').length).toBe(5);
+        expect(raiz.querySelectorAll('#privacidad > p').length).toBe(7);
+        expect(raiz.querySelectorAll('.legal-entrada').length).toBe(1);
+      });
+
+      it('fila vacía: la entrada y los párrafos legales de la escuela no se pintan', async () => {
+        const raiz = await abrirLegales([
+          bloque('legal.entrada', ''),
+          bloque('legal.aviso.p0', ''),
+          bloque('legal.aviso.p1', ' '),
+          bloque('legal.aviso.p2', ''),
+          bloque('legal.priv.p0', ''),
+        ]);
+        expect(raiz.querySelector('.legal-entrada')).toBeNull();
+        expect(textos(raiz, '#aviso-legal > p')).toEqual([
+          'Procuramos que la información esté al día, pero los horarios y las plazas pueden cambiar durante el curso. Si tienes ' +
+            'dudas, confírmalo en tu sede. No respondemos del contenido de las webs de otros a las que enlazamos.',
+          'Esta web se rige por la legislación española.',
+        ]);
+        expect(raiz.querySelectorAll('#privacidad > p').length).toBe(6);
+        expect(Array.from(raiz.querySelectorAll('.legal-texto p')).some((p) => !limpio(p))).toBeFalse();
+      });
+
+      it('un párrafo legal con línea en blanco: un párrafo por bloque (como Inicio)', async () => {
+        const raiz = await abrirLegales([
+          bloque('legal.aviso.p0', 'Primero.\n\nSegundo,\ncon salto simple.'),
+          bloque('legal.aviso.p2', 'Todo es de {x}.\n  \nSalvo lo ajeno.'),
+          bloque('legal.priv.p0', 'Uno.\n\n\nDos.'),
+        ]);
+        const aviso = textos(raiz, '#aviso-legal > p');
+        expect(aviso.slice(0, 2)).toEqual(['Primero.', 'Segundo, con salto simple.']);
+        expect(aviso.slice(3, 5)).toEqual(['Todo es de Club Taekwondo Sierra Sur.', 'Salvo lo ajeno.']);
+        expect(textos(raiz, '#privacidad > p').slice(0, 2)).toEqual(['Uno.', 'Dos.']);
       });
 
       it('con filas: títulos, entrada, ficha y párrafos iguales al boceto; `{x}` del titular sustituido', async () => {
@@ -615,12 +700,46 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
           }),
         );
         expect(textos(raiz, 'h1.pregunta-titulo')).toEqual(['¿Dónde?']);
-        expect(textos(raiz, '#sede-pista')).toEqual(['']);
+        expect(raiz.querySelector('#sede-pista')).toBeNull();
+        expect(raiz.querySelector('#campo-sede')!.hasAttribute('aria-describedby')).toBeFalse();
         expect(textos(raiz, 'button.continuar')).toEqual(['Seguir']);
         expect(textos(raiz, '.progreso-texto')).toEqual(['Etapa 1/3']);
         expect(textos(raiz, '.progreso-paso')).toEqual(['Sede', 'Grupo', 'Datos']);
         expect(textos(raiz, '#resumen-titulo')).toEqual(['Resumen']);
         expect(textos(raiz, '.resumen-vacio')).toEqual(['—', '—', '—']);
+      });
+
+      it('paso 1 sin filas: la pista de siempre, descrita por el grupo', async () => {
+        const raiz = await abrir('/preinscripcion', sitio());
+        expect(textos(raiz, '#sede-pista')).toEqual(['Elige la sede donde quieres entrenar. Después verás sus grupos y horas.']);
+        expect(raiz.querySelector('#campo-sede')!.getAttribute('aria-describedby')).toBe('sede-pista');
+      });
+
+      it('paso 2 sin filas: pista de la fecha y espera de siempre', async () => {
+        const raiz = await abrir('/preinscripcion?paso=2&sede=estepa', sitio());
+        expect(textos(raiz, '#fecha-pista')).toEqual(['Los grupos van por edad: cuenta los años que cumple este año. Por ejemplo, 14 3 2016.']);
+        expect(raiz.querySelector('#campo-fecha')!.getAttribute('aria-describedby')).toBe('fecha-pista fecha-error');
+        expect(textos(raiz, '.grupos-espera')).toEqual(['Escribe su fecha de nacimiento y aquí verás los grupos de Estepa para su edad.']);
+      });
+
+      it('paso 2, fila vacía: ni la pista de la fecha ni la espera se pintan; la pista sale de aria-describedby', async () => {
+        const raiz = await abrir(
+          '/preinscripcion?paso=2&sede=estepa',
+          sitio({ bloques: [bloque('pre.fecha_pista', ''), bloque('pre.espera_fecha', '')] }),
+        );
+        expect(raiz.querySelector('#fecha-pista')).toBeNull();
+        expect(raiz.querySelector('#campo-fecha')!.getAttribute('aria-describedby')).toBe('fecha-error');
+        expect(raiz.querySelector('.grupos-espera')).toBeNull();
+      });
+
+      it('paso 2 sin grupo para su edad, `pre.vacio_otras` vacía: no se pinta, la lista de otras sedes sí', async () => {
+        sessionStorage.setItem(CLAVE_BORRADOR_PREINSCRIPCION, JSON.stringify({ ...DATOS_VACIOS, dia: '1', mes: '1', anio: '2016' }));
+        const s = sitio({ bloques: [bloque('pre.vacio_otras', '')] });
+        s.sedes[1] = { ...s.sedes[1], grupos: [s.sedes[1].grupos[0]] };
+        s.sedes[2] = { ...s.sedes[2], grupos: [grupoDePrueba('Infantil', [turnoDePrueba('Martes', '18:00', '19:00')], { id: 72, rangoEdadMin: 7, rangoEdadMax: 11 })] };
+        const raiz = await abrir('/preinscripcion?paso=2&sede=estepa', s);
+        expect(raiz.querySelector('.vacio .otras')).not.toBeNull();
+        expect(Array.from(raiz.querySelectorAll('.vacio > p')).some((p) => !limpio(p))).toBeFalse();
       });
 
       it('paso 2: leyenda, etiquetas de la fecha y espera de la escuela, con `{x}` sustituido', async () => {
@@ -675,6 +794,8 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
               bloque('pre.nombre', 'Nombre de pila'),
               bloque('pre.email', 'Correo'),
               bloque('pre.email_pista', ''),
+              bloque('pre.pista_datos', ''),
+              bloque('pre.firma_pista', ''),
               bloque('pre.acepto', 'Acepto las normas'),
               bloque('pre.enviar', 'Enviar'),
             ],
@@ -692,8 +813,25 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
         expect(textos(raiz, 'label[for="email"]')).toEqual(['Correo']);
         expect(raiz.querySelector('#email-pista')).toBeNull();
         expect(raiz.querySelector('#email')!.getAttribute('aria-describedby')).toBe('email-error');
+        expect(raiz.querySelector('#firma-pista')).toBeNull();
+        expect(raiz.querySelector('#firma')!.getAttribute('aria-describedby')).toBe('firma-quien firma-error');
+        expect(Array.from(raiz.querySelectorAll('p.pista')).some((p) => !limpio(p))).toBeFalse();
         expect(textos(raiz, 'label.marca-casilla')[0]).toBe('Acepto las normas');
         expect(textos(raiz, '.enviar button')).toEqual(['Enviar']);
+      });
+
+      it('paso 3 sin filas: pista de los datos y de la firma de siempre', async () => {
+        sessionStorage.setItem(CLAVE_BORRADOR_PREINSCRIPCION, JSON.stringify({ ...DATOS_VACIOS, dia: '14', mes: '3', anio: '2021' }));
+        const raiz = await abrir('/preinscripcion?paso=3&sede=estepa&grupo=70', sitio());
+        http
+          .expectOne(`${environment.apiUrl}/preinscripciones/public/configuracion/TAEKWONDO`)
+          .flush({ deporte: 'TAEKWONDO', version: 1, contenido: { normas: ['Una.'] } });
+        harness.detectChanges();
+        await harness.fixture.whenStable();
+        harness.detectChanges();
+        expect(textos(raiz, '#firma-pista')).toEqual(['Con el dedo, el ratón o un lápiz.']);
+        expect(raiz.querySelector('#firma')!.getAttribute('aria-describedby')).toBe('firma-quien firma-pista firma-error');
+        expect(textos(raiz, 'form > p.pista')).toEqual([TEXTOS_LINEA_COMARCAL['pre.pista_datos'].replace(/\s+/g, ' ').trim()]);
       });
     });
   });

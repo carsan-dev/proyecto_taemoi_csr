@@ -104,7 +104,8 @@ export function vistaTarifas(sitio: SitioWeb, ahora: Date): VistaTarifas {
         { x: igual ? numeroEnLetras(sedes.length) : null },
       ),
       incluye: [
-        P.incluyeMensualidad,
+        // `tarifas.punto1`, el mismo texto que el primer punto de Inicio y de la página de cada sede (vacía, no se pinta).
+        textos.t('tarifas.punto1'),
         ...(otras.length ? [rellenarHuecos(textos.t('tarifas.tambien'), { x: otras.join(' y ') })] : []),
         ...(aparte.length ? [textos.t('tarifas.incluye_aparte')] : []),
       ].filter(Boolean),
@@ -166,17 +167,18 @@ function esHermanos(tarifa: TarifaWeb): boolean {
 }
 
 /**
- * Una tarifa en el cuadro; null si no tiene ningún importe. «Cada adulto» y «Cada menor» son variantes de
- * `tarifas.cada_alumno`: si la escuela la guarda, su texto vale para las tres.
+ * Una tarifa en el cuadro; null si no tiene ningún importe. `tarifas.cada_alumno` solo rotula la fila genérica
+ * (decisión del propietario): «Cada adulto» y «Cada menor» de la tarifa familiar quedan siempre fijos, para que dos
+ * importes distintos no salgan con el mismo rótulo.
  */
 function filaCuadro(tarifa: TarifaWeb, textos: TextosTema): FilaCuadro | null {
   const importes: FilaCuadro['importes'] = [];
   if (tarifa.importeAdulto != null || tarifa.importeMenor != null) {
     if (tarifa.importeAdulto != null) {
-      importes.push({ quien: textos.variante('tarifas.cada_alumno', P.cadaAdulto), importe: importeEnTexto(tarifa.importeAdulto) });
+      importes.push({ quien: P.cadaAdulto, importe: importeEnTexto(tarifa.importeAdulto) });
     }
     if (tarifa.importeMenor != null) {
-      importes.push({ quien: textos.variante('tarifas.cada_alumno', P.cadaMenor), importe: importeEnTexto(tarifa.importeMenor) });
+      importes.push({ quien: P.cadaMenor, importe: importeEnTexto(tarifa.importeMenor) });
     }
   } else if (tarifa.importe != null) {
     importes.push({

@@ -9,7 +9,9 @@
     <div class="p-legales">
       <div class="envoltura legal-cabeza">
         <h1 class="legal-titular">{{ textos.tituloLegal }}</h1>
-        <p class="legal-entrada">{{ textos.entradaLegal }}</p>
+        @if (textos.entradaLegal) {
+          <p class="legal-entrada">{{ textos.entradaLegal }}</p>
+        }
         @if (v.actualizada; as a) {
           <p class="actualizado">{{ textos.actualizada }} <time [attr.datetime]="a.iso">{{ a.texto }}</time></p>
         }
@@ -28,7 +30,7 @@
         <div class="legal-texto">
           <section class="legal-seccion" id="aviso-legal" aria-labelledby="t-aviso">
             <h2 class="legal-h2" id="t-aviso">{{ textos.avisoLegal }}</h2>
-            <p>{{ textos.avisoP0 }}</p>
+            @for (p of textos.avisoP0; track $index) {<p>{{ p }}</p>}
             <dl class="ficha">
               <div class="ficha-fila"><dt>{{ textos.fichaTitular }}</dt><dd data-dato="titular">{{ v.titular }}</dd></div>
               @if (v.cif) {
@@ -45,9 +47,9 @@
               }
             </dl>
             <h3 class="legal-h3">{{ textos.avisoH1 }}</h3>
-            <p>{{ textos.avisoP1 }}</p>
+            @for (p of textos.avisoP1; track $index) {<p>{{ p }}</p>}
             <h3 class="legal-h3">{{ textos.avisoH2 }}</h3>
-            <p>{{ textos.avisoP2 }}</p>
+            @for (p of textos.avisoP2; track $index) {<p>{{ p }}</p>}
             <h3 class="legal-h3">{{ textos.avisoH3 }}</h3>
             <p>Procuramos que la información esté al día, pero los horarios y las plazas pueden cambiar durante el curso. Si tienes dudas, confírmalo en tu sede. No respondemos del contenido de las webs de otros a las que enlazamos.</p>
             <h3 class="legal-h3">Legislación</h3>
@@ -56,7 +58,7 @@
 
           <section class="legal-seccion" id="privacidad" aria-labelledby="t-privacidad">
             <h2 class="legal-h2" id="t-privacidad">{{ textos.privacidad }}</h2>
-            <p>{{ textos.privP0 }}</p>
+            @for (p of textos.privP0; track $index) {<p>{{ p }}</p>}
             <h3 class="legal-h3">Quién es el responsable</h3>
             <p>{{ v.titular }}@if (v.cif) {, con CIF <span class="cifras">{{ v.cif }}</span>}.@if (v.correo; as c) { Para cualquier cosa sobre tus datos, escribe a <a [href]="c.enlace">{{ c.texto }}</a>.}</p>
             <h3 class="legal-h3">Qué datos tratamos y para qué</h3>

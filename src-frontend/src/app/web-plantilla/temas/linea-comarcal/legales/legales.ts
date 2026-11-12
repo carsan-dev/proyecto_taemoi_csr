@@ -1,6 +1,6 @@
 import { telefonoEnlace, telefonoVisible } from '../../../comun/horario';
 import { Legal, NormasLegal } from '../../../datos/modelos';
-import { TextosTema, rellenarHuecos } from '../contenido';
+import { TextosTema, enParrafos, rellenarHuecos } from '../contenido';
 import { fechaLargaSinDia } from '../eventos/eventos';
 
 /**
@@ -47,14 +47,15 @@ export function textosLegales(textos: TextosTema, titular: string) {
     actualizada: textos.t('legal.actualizada'),
     enEstaPagina: textos.t('legal.en_esta_pagina'),
     avisoLegal: textos.t('legal.aviso'),
-    avisoP0: textos.t('legal.aviso.p0'),
+    // Los párrafos, como en Inicio (`enParrafos`): una línea en blanco abre otro <p>; vacíos, ninguno.
+    avisoP0: enParrafos(textos.t('legal.aviso.p0')),
     avisoH1: textos.t('legal.aviso.h1'),
-    avisoP1: textos.t('legal.aviso.p1'),
+    avisoP1: enParrafos(textos.t('legal.aviso.p1')),
     avisoH2: textos.t('legal.aviso.h2'),
-    avisoP2: rellenarHuecos(textos.t('legal.aviso.p2'), { x: titular }),
+    avisoP2: enParrafos(rellenarHuecos(textos.t('legal.aviso.p2'), { x: titular })),
     avisoH3: textos.t('legal.aviso.h3'),
     privacidad: textos.t('legal.privacidad'),
-    privP0: textos.t('legal.priv.p0'),
+    privP0: enParrafos(textos.t('legal.priv.p0')),
     privH2: textos.t('legal.priv.h2'),
     cookies: textos.t('legal.cookies'),
     normas: textos.t('legal.normas'),

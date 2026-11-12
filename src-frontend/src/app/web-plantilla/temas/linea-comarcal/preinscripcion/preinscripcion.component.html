@@ -29,9 +29,9 @@
               @case (1) {
                 <form novalidate (submit)="enviarPueblo($event)">
                   <ng-container *ngTemplateOutlet="resumenErrores" />
-                  <fieldset class="pregunta" id="campo-sede" aria-describedby="sede-pista" [class.campo--error]="error('sede')">
+                  <fieldset class="pregunta" id="campo-sede" [attr.aria-describedby]="t.pistaPueblo ? 'sede-pista' : null" [class.campo--error]="error('sede')">
                     <legend><h1 class="pregunta-titulo" tabindex="-1">{{ t.tituloPueblo }}</h1></legend>
-                    <p class="pista" id="sede-pista">{{ t.pistaPueblo }}</p>
+                    @if (t.pistaPueblo) {<p class="pista" id="sede-pista">{{ t.pistaPueblo }}</p>}
                     <div id="sede-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'sede' }" /></div>
                     <ol class="selector-linea">
                       @for (o of opciones(); track o.clave) {
@@ -62,9 +62,9 @@
                       <a [routerLink]="['/preinscripcion']" [queryParams]="consultaPara(1)">{{ t.cambiarDePueblo }}</a>
                     }
                   </p>
-                  <fieldset class="nacimiento" id="campo-fecha" aria-describedby="fecha-pista fecha-error" [class.campo--error]="error('fecha')">
+                  <fieldset class="nacimiento" id="campo-fecha" [attr.aria-describedby]="t.fechaPista ? 'fecha-pista fecha-error' : 'fecha-error'" [class.campo--error]="error('fecha')">
                     <legend>{{ t.fechaLeyenda }}</legend>
-                    <p class="campo-pista" id="fecha-pista">{{ t.fechaPista }}</p>
+                    @if (t.fechaPista) {<p class="campo-pista" id="fecha-pista">{{ t.fechaPista }}</p>}
                     <div class="nacimiento-fila">
                       <div><ng-container *ngTemplateOutlet="campoFecha" /></div>
                       <button class="boton boton--secundario" type="button" id="ver-grupos" (click)="verGrupos()">{{ t.verGrupos }}</button>
@@ -129,7 +129,7 @@
                         <div class="vacio">
                           <h2>{{ v.titulo }}</h2>
                           @if (v.otras.length) {
-                            <p>{{ t.vacioOtras }}</p>
+                            @if (t.vacioOtras) {<p>{{ t.vacioOtras }}</p>}
                             <ul class="otras">
                               @for (o of v.otras; track o.parametro) {
                                 <li class="otra">
@@ -151,7 +151,7 @@
                         </div>
                       }
                     } @else {
-                      <p class="grupos-espera">{{ rellenar(t.esperaFecha, { x: sd.nombre }) }}</p>
+                      @if (t.esperaFecha) {<p class="grupos-espera">{{ rellenar(t.esperaFecha, { x: sd.nombre }) }}</p>}
                     }
                   </div>
                   @if (!vacio()) {
@@ -175,7 +175,7 @@
                       <p><strong>{{ t.avisoEsperaTitulo }}</strong>{{ rellenar(t.avisoEsperaTexto, { grupo: sl.grupo.nombre, dias: textoDias(dias()) }) }}</p>
                     </div>
                   }
-                  <p class="pista">{{ t.pistaDatos }}</p>
+                  @if (t.pistaDatos) {<p class="pista">{{ t.pistaDatos }}</p>}
 
                   <section class="bloque-form" aria-labelledby="b-alumno">
                     <h2 id="b-alumno">{{ t.bloqueAlumno }}</h2>
@@ -260,9 +260,9 @@
                     <ng-container *ngTemplateOutlet="campoTexto; context: { $implicit: { id: 'firmante', etiqueta: t.firmante, auto: 'name', max: max.firmante } }" />
                     <div class="campo" id="campo-firma" [class.campo--error]="error('firma')">
                       <p class="campo-etiqueta" id="firma-etiqueta">{{ t.firma }}</p>
-                      <p class="campo-pista" id="firma-pista">{{ t.firmaPista }}</p>
+                      @if (t.firmaPista) {<p class="campo-pista" id="firma-pista">{{ t.firmaPista }}</p>}
                       <div id="firma-error"><ng-container *ngTemplateOutlet="errorCampo; context: { $implicit: 'firma' }" /></div>
-                      <canvas #lienzo class="firma" id="firma" role="img" tabindex="-1" aria-labelledby="firma-etiqueta" aria-describedby="firma-quien firma-pista firma-error" [attr.aria-invalid]="invalido('firma')" (pointerdown)="empezarTrazo($event)" (pointermove)="seguirTrazo($event)" (pointerup)="terminarTrazo()" (pointercancel)="terminarTrazo()"></canvas>
+                      <canvas #lienzo class="firma" id="firma" role="img" tabindex="-1" aria-labelledby="firma-etiqueta" [attr.aria-describedby]="t.firmaPista ? 'firma-quien firma-pista firma-error' : 'firma-quien firma-error'" [attr.aria-invalid]="invalido('firma')" (pointerdown)="empezarTrazo($event)" (pointermove)="seguirTrazo($event)" (pointerup)="terminarTrazo()" (pointercancel)="terminarTrazo()"></canvas>
                       <div class="firma-pie"><span class="opcional" id="firma-estado" aria-live="polite">{{ firmado() ? t.firmado : t.sinFirmar }}</span><button class="boton--texto" type="button" id="borrar-firma" (click)="borrarFirma()">{{ t.borrarFirma }}</button></div>
                     </div>
                   </section>
@@ -287,7 +287,7 @@
                       <h2 id="fin-ahora">{{ t.queAhora }}</h2>
                       <ol class="ruta">
                         @for (p of f.pasos; track p.titulo) {
-                          <li class="ruta-sede"><span class="ruta-nombre">{{ p.titulo }}</span><span class="ruta-dir">{{ p.texto }}</span></li>
+                          <li class="ruta-sede"><span class="ruta-nombre">{{ p.titulo }}</span>@if (p.texto) {<span class="ruta-dir">{{ p.texto }}</span>}</li>
                         }
                       </ol>
                       <div class="fin-acciones">

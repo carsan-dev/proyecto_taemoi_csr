@@ -60,8 +60,10 @@ export class TextosTema {
 /**
  * Sustituye los huecos `{x}`, `{n}`, `{grupo}`… de un texto por sus datos. Un hueco sin dato (la variante no lo tiene,
  * o la escuela guardó un texto con un hueco que aquí no hay) se queda vacío y se limpia, siempre igual y solo entonces:
- * espacios seguidos, uno; sin espacio antes de «. , ; : ! ? ) »» ni después de «( « ¿ ¡»; sin «, ; :» justo antes de
- * «. ! ?»; sin puntuación ni espacios al principio; y sin espacios al final. Con todos los datos, el texto no se toca.
+ * fuera los paréntesis vacíos; «· ·» seguidos, uno; fuera el «·» sin texto a un lado (al principio o al final del texto
+ * o de una línea, tras «(» o antes de puntuación); espacios seguidos, uno; sin espacio antes de «. , ; : ! ? ) »» ni
+ * después de «( « ¿ ¡»; sin «, ; :» justo antes de «. ! ?»; sin puntuación ni espacios al principio; y sin espacios al
+ * final. Con todos los datos, el texto no se toca.
  */
 export function rellenarHuecos(texto: string, valores: Readonly<Record<string, string | number | null | undefined>>): string {
   let sinDato = false;
@@ -75,6 +77,10 @@ export function rellenarHuecos(texto: string, valores: Readonly<Record<string, s
     return relleno;
   }
   return relleno
+    .replace(/\([ \t]*\)/g, '')
+    .replace(/·(?:[ \t]*·)+/g, '·')
+    .replace(/(^|[\n(«¿¡])[ \t]*·[ \t]*/g, '$1')
+    .replace(/[ \t]*·[ \t]*(?=[\n.,;:!?)»]|$)/g, '')
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/[ \t]+([.,;:!?)»])/g, '$1')
     .replace(/([(«¿¡])[ \t]+/g, '$1')
@@ -872,7 +878,8 @@ export function altFotoSede(sede: SedeWeb, n: 1 | 2): string {
   return propia || TEXTOS_PAGINAS_LINEA_COMARCAL.fotoSede.replace('{x}', () => sede.nombre);
 }
 
-function enParrafos(texto: string): string[] {
+/** Un texto en párrafos: los separa una línea en blanco; un salto simple se queda dentro del párrafo. Vacío, ninguno. */
+export function enParrafos(texto: string): string[] {
   return texto
     .split(/\n\s*\n/)
     .map((p) => p.trim())
