@@ -256,8 +256,9 @@ describe('flotantes de la capa sin pisarse (maquetación real)', () => {
       editar(li);
       const campo = rect(q('.ed-campo__texto'));
       const chip = rect(q('.ed-chip'));
-      expect(Math.round(campo.top - chip.bottom)).toBe(14);
-      expect(Math.round(chip.right)).toBe(Math.round(campo.right + 4));
+      // Con tolerancia de 1 px: las medidas con decimales redondean distinto según las fuentes del sistema (CI en Linux).
+      expect(Math.abs(campo.top - chip.bottom - 14)).toBeLessThan(1);
+      expect(Math.abs(chip.right - (campo.right + 4))).toBeLessThan(1);
     });
 
     it('la colocación de siempre: aviso a 8 px sobre la ficha y a su izquierda cuando no hay etiqueta que pise', () => {
@@ -269,8 +270,8 @@ describe('flotantes de la capa sin pisarse (maquetación real)', () => {
       mostrarCandado();
       const f = rect(ficha());
       const candado = rect(q('#ed-candado'));
-      expect(Math.round(f.top - candado.bottom)).toBe(8);
-      expect(Math.round(candado.left)).toBe(Math.round(f.left));
+      expect(Math.abs(f.top - candado.bottom - 8)).toBeLessThan(1);
+      expect(Math.abs(candado.left - f.left)).toBeLessThan(1);
     });
 
     it('el mismo caso del propietario, con la etiqueta a la vista: tampoco se pisan', () => {
