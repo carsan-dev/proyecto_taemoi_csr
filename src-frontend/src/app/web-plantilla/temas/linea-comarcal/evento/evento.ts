@@ -1,5 +1,6 @@
 import { environment } from '../../../../../environments/environment';
 import { DocumentoEventoWeb, EventoDetalleWeb } from '../../../datos/modelos';
+import { TextosTema, rellenarHuecos } from '../contenido';
 import { FechaEvento, fechaEvento, imagenEvento, lugarEvento } from '../eventos/eventos';
 import { TEXTOS_PAGINAS_LINEA_COMARCAL as TEXTOS } from '../textos';
 
@@ -43,7 +44,20 @@ export interface VistaEventoDetalle {
   cuentaFotos: string;
 }
 
-export function vistaEventoDetalle(evento: EventoDetalleWeb): VistaEventoDetalle {
+/**
+ * Los textos que la plantilla de un evento pinta tal cual (W12d-bis): los de la escuela (`evento.*`, con el del tema
+ * por defecto) y los fijos sin clave. «Anterior» y «Siguiente» del visor de fotos siguen fijos.
+ */
+export function textosEvento(textos: TextosTema) {
+  return {
+    ...TEXTOS,
+    volverEventos: textos.t('evento.volver'),
+    documentos: textos.t('evento.documentos'),
+    galeria: textos.t('evento.galeria'),
+  };
+}
+
+export function vistaEventoDetalle(evento: EventoDetalleWeb, textos: TextosTema): VistaEventoDetalle {
   const fecha = fechaEvento(evento.fecha);
   const hora = evento.hora?.trim() || null;
   const cuando = [fecha?.semana, hora].filter(Boolean).join(' · ');
@@ -69,7 +83,7 @@ export function vistaEventoDetalle(evento: EventoDetalleWeb): VistaEventoDetalle
       ampliar: contar(TEXTOS.ampliarFoto, i + 1),
       alt: contar(TEXTOS.fotoN, i + 1),
     })),
-    cuentaFotos: total === 1 ? TEXTOS.unaFoto : TEXTOS.nFotos.replace('{n}', String(total)),
+    cuentaFotos: total === 1 ? textos.t('evento.una_foto') : rellenarHuecos(textos.t('evento.n_fotos'), { n: total }),
   };
 }
 

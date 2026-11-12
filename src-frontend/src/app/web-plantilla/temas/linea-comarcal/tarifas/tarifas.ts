@@ -1,8 +1,8 @@
 import { importeEnTexto, numeroEnLetras, telefonoEnlace, telefonoVisible } from '../../../comun/horario';
 import { mesYAnio, tarifaPorSede } from '../../../comun/tarifas';
 import { SitioWeb, TarifaWeb } from '../../../datos/modelos';
-import { TextosTema, claveSede, tarifaPrincipal } from '../contenido';
-import { TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS, TEXTOS_PAGINAS_LINEA_COMARCAL as P } from '../textos';
+import { TextosTema, claveSede, rellenarHuecos, tarifaPrincipal } from '../contenido';
+import { TEXTOS_PAGINAS_LINEA_COMARCAL as P } from '../textos';
 
 /**
  * Lo que pinta la página de tarifas del tema «La línea comarcal» (boceto `fase4-web/boceto-linea-comarcal-tarifas.html`)
@@ -49,6 +49,29 @@ export interface VistaTarifas {
   boton: string;
 }
 
+/**
+ * Los textos que la plantilla de la página pinta tal cual (W12d-bis): los de la escuela (`tarifas.*`, con el del tema
+ * por defecto) y los fijos sin clave. Mismos nombres que antes en la plantilla. `alMes` es `tarifas.al_mes`, el mismo
+ * texto que en Inicio y en la página de cada sede.
+ */
+export function textosTarifas(textos: TextosTema) {
+  return {
+    ...P,
+    alMes: textos.t('tarifas.al_mes'),
+    rotuloCuadro: textos.t('tarifas.rotulo_cuadro'),
+    tituloCuadro: textos.t('tarifas.titulo_cuadro'),
+    columnaTarifa: textos.t('tarifas.col_tarifa'),
+    columnaQuien: textos.t('tarifas.col_quien'),
+    columnaImporte: textos.t('tarifas.col_importe'),
+    pieCuadro: textos.t('tarifas.pie_cuadro'),
+    rotuloPorSede: textos.t('tarifas.rotulo_sede'),
+    tituloPorSede: textos.t('tarifas.titulo_sede'),
+    rotuloAparte: textos.t('tarifas.rotulo_aparte'),
+    tituloAparte: textos.t('tarifas.titulo_aparte'),
+    notaAparte: textos.t('tarifas.nota_aparte'),
+  };
+}
+
 export function vistaTarifas(sitio: SitioWeb, ahora: Date): VistaTarifas {
   const textos = new TextosTema(sitio);
   const sedes = sitio.sedes;
@@ -56,7 +79,7 @@ export function vistaTarifas(sitio: SitioWeb, ahora: Date): VistaTarifas {
   const principal = tarifaPrincipal(sitio, ahora);
   const tarifa = sitio.tarifas.find((x) => x.importe != null);
   const boton = textos.t('tarifas.boton_preinscripcion');
-  const aparte = apartes(sitio);
+  const aparte = apartes(sitio, textos);
 
   let cuota: VistaTarifas['cuota'] = null;
   let vacia: VistaTarifas['vacia'] = null;
@@ -68,33 +91,40 @@ export function vistaTarifas(sitio: SitioWeb, ahora: Date): VistaTarifas {
     if (sitio.tarifas.some((x) => esHermanos(x) && x.importe != null)) {
       otras.push(P.incluyeHermanos);
     }
+    // `tarifas.cuota_igual` vale para las tres variantes si la escuela la guarda; `{x}` (el número de sedes) solo lo
+    // tiene la de varias sedes con la misma cuota.
+    const igual = !una && principal.igual && sedes.length > 1;
     cuota = {
       importe: importeEnTexto(principal.importe),
-      alMes: FIJOS.alMes,
-      texto: una
-        ? P.cuotaUnaSede
-        : principal.igual && sedes.length > 1
-          ? t(P.cuotaIgual, { x: numeroEnLetras(sedes.length) })
-          : P.cuota,
+      alMes: textos.t('tarifas.al_mes'),
+      texto: rellenarHuecos(
+        igual
+          ? textos.t('tarifas.cuota_igual')
+          : textos.variante('tarifas.cuota_igual', una ? P.cuotaUnaSede : P.cuota),
+        { x: igual ? numeroEnLetras(sedes.length) : null },
+      ),
       incluye: [
         P.incluyeMensualidad,
-        ...(otras.length ? [t(P.incluyeTambien, { x: otras.join(' y ') })] : []),
-        ...(aparte.length ? [P.incluyeAparte] : []),
-      ],
+        ...(otras.length ? [rellenarHuecos(textos.t('tarifas.tambien'), { x: otras.join(' y ') })] : []),
+        ...(aparte.length ? [textos.t('tarifas.incluye_aparte')] : []),
+      ].filter(Boolean),
       boton,
     };
   } else {
     const email = sitio.contacto.email?.trim();
     const telefono = sitio.contacto.telefono?.trim();
     vacia = {
-      titular: P.vacioTitular,
-      texto: email || telefono ? P.vacioTexto : P.vacioTextoSinContacto,
-      correo: email ? { rotulo: P.correo, texto: email, enlace: `mailto:${email}` } : null,
-      telefono: telefono ? { rotulo: P.telefono, texto: telefonoVisible(telefono), enlace: telefonoEnlace(telefono) } : null,
+      titular: textos.t('tarifas.vacio_titular'),
+      texto:
+        email || telefono ? textos.t('tarifas.vacio_texto') : textos.variante('tarifas.vacio_texto', P.vacioTextoSinContacto),
+      correo: email ? { rotulo: textos.t('tarifas.vacio_correo'), texto: email, enlace: `mailto:${email}` } : null,
+      telefono: telefono
+        ? { rotulo: textos.t('tarifas.vacio_telefono'), texto: telefonoVisible(telefono), enlace: telefonoEnlace(telefono) }
+        : null,
     };
   }
 
-  const filas = sitio.tarifas.map(filaCuadro).filter((f): f is FilaCuadro => f !== null);
+  const filas = sitio.tarifas.map((x) => filaCuadro(x, textos)).filter((f): f is FilaCuadro => f !== null);
   let porSede: VistaTarifas['porSede'] = null;
   if (tarifa && sedes.length > 1) {
     const paradas = tarifaPorSede(sitio, tarifa, ahora).map(
@@ -111,13 +141,19 @@ export function vistaTarifas(sitio: SitioWeb, ahora: Date): VistaTarifas {
 
   return {
     titulo: textos.t('tarifas.titulo'),
-    verHorarios: P.verHorarios,
+    verHorarios: textos.t('tarifas.ver_horarios'),
     conHorarios: sedes.length > 0,
     cuota,
     vacia,
     cuadro:
       principal && filas.length
-        ? { leyenda: sitio.temporada ? t(P.leyendaCuadroCurso, { x: sitio.temporada }) : P.leyendaCuadro, filas }
+        ? {
+            leyenda: rellenarHuecos(
+              sitio.temporada ? textos.t('tarifas.leyenda_cuadro') : textos.variante('tarifas.leyenda_cuadro', P.leyendaCuadro),
+              { x: sitio.temporada },
+            ),
+            filas,
+          }
         : null,
     porSede,
     aparte,
@@ -129,34 +165,45 @@ function esHermanos(tarifa: TarifaWeb): boolean {
   return tarifa.codigo?.toUpperCase() === 'HERMANOS';
 }
 
-/** Una tarifa en el cuadro; null si no tiene ningún importe. */
-function filaCuadro(tarifa: TarifaWeb): FilaCuadro | null {
+/**
+ * Una tarifa en el cuadro; null si no tiene ningún importe. «Cada adulto» y «Cada menor» son variantes de
+ * `tarifas.cada_alumno`: si la escuela la guarda, su texto vale para las tres.
+ */
+function filaCuadro(tarifa: TarifaWeb, textos: TextosTema): FilaCuadro | null {
   const importes: FilaCuadro['importes'] = [];
   if (tarifa.importeAdulto != null || tarifa.importeMenor != null) {
     if (tarifa.importeAdulto != null) {
-      importes.push({ quien: P.cadaAdulto, importe: importeEnTexto(tarifa.importeAdulto) });
+      importes.push({ quien: textos.variante('tarifas.cada_alumno', P.cadaAdulto), importe: importeEnTexto(tarifa.importeAdulto) });
     }
     if (tarifa.importeMenor != null) {
-      importes.push({ quien: P.cadaMenor, importe: importeEnTexto(tarifa.importeMenor) });
+      importes.push({ quien: textos.variante('tarifas.cada_alumno', P.cadaMenor), importe: importeEnTexto(tarifa.importeMenor) });
     }
   } else if (tarifa.importe != null) {
-    importes.push({ quien: esHermanos(tarifa) ? P.hermanos : P.cadaAlumno, importe: importeEnTexto(tarifa.importe) });
+    importes.push({
+      quien: esHermanos(tarifa) ? textos.t('tarifas.hermanos') : textos.t('tarifas.cada_alumno'),
+      importe: importeEnTexto(tarifa.importe),
+    });
   }
   return importes.length ? { nombre: tarifa.nombre, importes } : null;
 }
 
 /** Licencia de cada disciplina (con precio) y examen «desde» el menor precio, como los da la API. */
-function apartes(sitio: SitioWeb): VistaTarifas['aparte'] {
+function apartes(sitio: SitioWeb, textos: TextosTema): VistaTarifas['aparte'] {
   const nombres = new Map(sitio.sedes.flatMap((s) => s.grupos).map((g) => [g.disciplina, g.disciplinaNombre]));
+  const licencia = textos.t('tarifas.licencia');
   const lista: VistaTarifas['aparte'] = sitio.licencias
     .filter((l) => l.precio != null)
     .map((l) => ({
-      concepto: l.concepto?.trim() || `${P.licencia} de ${(nombres.get(l.disciplina) ?? l.disciplina).toLowerCase()}`,
+      concepto: l.concepto?.trim() || `${licencia} de ${(nombres.get(l.disciplina) ?? l.disciplina).toLowerCase()}`,
       precio: importeEnTexto(l.precio!),
       dato: 'licencia',
     }));
   if (sitio.examenDesde != null) {
-    lista.push({ concepto: P.examen, precio: t(P.examenDesde, { x: importeEnTexto(sitio.examenDesde) }), dato: 'examen' });
+    lista.push({
+      concepto: textos.t('tarifas.examen'),
+      precio: rellenarHuecos(textos.t('tarifas.examen_desde'), { x: importeEnTexto(sitio.examenDesde) }),
+      dato: 'examen',
+    });
   }
   return lista;
 }

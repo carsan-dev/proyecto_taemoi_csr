@@ -1,6 +1,7 @@
 import { environment } from '../../../../../environments/environment';
 import { EventoListaWeb, EventoWeb, EventosWeb } from '../../../datos/modelos';
-import { TEXTOS_PAGINAS_LINEA_COMARCAL as TEXTOS } from '../textos';
+import { TextosTema, rellenarHuecos } from '../contenido';
+import { TEXTOS_PAGINAS_LINEA_COMARCAL as P } from '../textos';
 
 /**
  * Lo que pintan las páginas de eventos del tema «La línea comarcal» (bocetos `fase4-web/boceto-linea-comarcal-eventos.html`
@@ -119,8 +120,26 @@ export function vistaEventoLista(evento: EventoListaWeb): VistaEventoLista | nul
   };
 }
 
+/**
+ * Los textos que la plantilla de la lista pinta tal cual (W12d-bis): los de la escuela (`eventos.*`, con el del tema
+ * por defecto) y los fijos sin clave. Mismos nombres que antes en la plantilla.
+ */
+export function textosEventos(textos: TextosTema) {
+  return {
+    ...P,
+    tituloEventos: textos.t('eventos.pag_titulo'),
+    entradaEventos: textos.t('eventos.pag_entrada'),
+    proximos: textos.t('eventos.proximos'),
+    anteriores: textos.t('eventos.anteriores'),
+    sinProximosTitular: textos.t('eventos.sin_proximos_titular'),
+    sinProximosTexto: textos.t('eventos.sin_proximos_texto'),
+    verAnteriores: textos.t('eventos.ver_anteriores'),
+    sinAnteriores: textos.t('eventos.sin_anteriores'),
+  };
+}
+
 /** La lista del boceto: el primer próximo destacado, el resto en filas y los anteriores por año. */
-export function vistaEventos(datos: EventosWeb): VistaEventos {
+export function vistaEventos(datos: EventosWeb, textos: TextosTema): VistaEventos {
   const lista = (eventos: EventoListaWeb[]) =>
     eventos.map(vistaEventoLista).filter((e): e is VistaEventoLista => e !== null);
   const proximos = lista(datos.proximos);
@@ -141,7 +160,10 @@ export function vistaEventos(datos: EventosWeb): VistaEventos {
       ? {
           destacado: proximos[0],
           resto: proximos.slice(1),
-          cuenta: proximos.length === 1 ? TEXTOS.unEvento : TEXTOS.nEventos.replace('{n}', String(proximos.length)),
+          cuenta:
+            proximos.length === 1
+              ? textos.t('eventos.un_evento')
+              : rellenarHuecos(textos.t('eventos.n_eventos'), { n: proximos.length }),
         }
       : null,
     anios,

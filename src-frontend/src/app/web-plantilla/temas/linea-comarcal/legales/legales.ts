@@ -1,5 +1,6 @@
 import { telefonoEnlace, telefonoVisible } from '../../../comun/horario';
 import { Legal, NormasLegal } from '../../../datos/modelos';
+import { TextosTema, rellenarHuecos } from '../contenido';
 import { fechaLargaSinDia } from '../eventos/eventos';
 
 /**
@@ -33,6 +34,36 @@ export interface VistaLegales {
 }
 
 const limpio = (valor: string | null | undefined): string | null => valor?.trim() || null;
+
+/**
+ * Los textos legales de la escuela (W12d-bis, decisión del propietario del 12/11): solo los títulos, la entrada, los
+ * rótulos de la ficha y los párrafos del tema iguales a los del boceto (`legal.*`, con el del tema por defecto). El resto
+ * del texto legal sigue fijo en la plantilla. `titular`: el `{x}` de `legal.aviso.p2`.
+ */
+export function textosLegales(textos: TextosTema, titular: string) {
+  return {
+    tituloLegal: textos.t('legal.titulo'),
+    entradaLegal: textos.t('legal.entrada'),
+    actualizada: textos.t('legal.actualizada'),
+    enEstaPagina: textos.t('legal.en_esta_pagina'),
+    avisoLegal: textos.t('legal.aviso'),
+    avisoP0: textos.t('legal.aviso.p0'),
+    avisoH1: textos.t('legal.aviso.h1'),
+    avisoP1: textos.t('legal.aviso.p1'),
+    avisoH2: textos.t('legal.aviso.h2'),
+    avisoP2: rellenarHuecos(textos.t('legal.aviso.p2'), { x: titular }),
+    avisoH3: textos.t('legal.aviso.h3'),
+    privacidad: textos.t('legal.privacidad'),
+    privP0: textos.t('legal.priv.p0'),
+    privH2: textos.t('legal.priv.h2'),
+    cookies: textos.t('legal.cookies'),
+    normas: textos.t('legal.normas'),
+    fichaTitular: textos.t('legal.ficha_titular'),
+    fichaCif: textos.t('legal.ficha_cif'),
+    fichaDomicilio: textos.t('legal.ficha_domicilio'),
+    fichaCorreo: textos.t('legal.ficha_correo'),
+  };
+}
 
 export function vistaLegales(legal: Legal): VistaLegales {
   const t = legal.titular;

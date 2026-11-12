@@ -85,7 +85,9 @@
                   }
                 }
               </table>
-              <p class="cuadro-pie">{{ textos.pieCuadro }}</p>
+              @if (textos.pieCuadro) {
+                <p class="cuadro-pie">{{ textos.pieCuadro }}</p>
+              }
             </div>
           </div>
         </section>
@@ -138,7 +140,9 @@
                   <li><span class="aparte-concepto">{{ x.concepto }}</span><span class="aparte-precio" [attr.data-dato]="x.dato">{{ x.precio }}</span></li>
                 }
               </ul>
-              <p class="aparte-nota">{{ textos.notaAparte }}</p>
+              @if (textos.notaAparte) {
+                <p class="aparte-nota">{{ textos.notaAparte }}</p>
+              }
               <div class="cierre">
                 @if (v.boton) {
                   <a class="boton" routerLink="/preinscripcion" [queryParams]="null | vistaPrevia">{{ v.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>

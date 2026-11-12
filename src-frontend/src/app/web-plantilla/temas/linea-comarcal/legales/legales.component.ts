@@ -19,9 +19,9 @@ import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { WebPublicaService } from '../../../datos/web-publica.service';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
+import { TextosTema } from '../contenido';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
-import { TEXTOS_PAGINAS_LINEA_COMARCAL } from '../textos';
-import { vistaLegales } from './legales';
+import { textosLegales, vistaLegales } from './legales';
 
 /**
  * Legales del tema «La línea comarcal» (`/legales`, boceto `fase4-web/boceto-linea-comarcal-legales.html`): aviso legal,
@@ -44,7 +44,6 @@ export class LegalesLineaComarcalComponent {
   private readonly documento = inject(DOCUMENT);
   private readonly injector = inject(Injector);
 
-  protected readonly textos = TEXTOS_PAGINAS_LINEA_COMARCAL;
   protected readonly pagina = paginaWeb('legales', () => '/legales');
   /** La petición se lanza (o se reutiliza de la caché) fuera del contexto reactivo: escribe en signals. */
   private readonly recurso = computed(() => {
@@ -55,8 +54,12 @@ export class LegalesLineaComarcalComponent {
     const actual = this.recurso()();
     return actual.estado === 'listo' ? vistaLegales(actual.datos) : null;
   });
+  /** W12d-bis: los textos legales de la escuela (`legal.*`) con los del tema por defecto. */
+  private readonly textosPagina = computed(() =>
+    textosLegales(new TextosTema(this.pagina.sitio()), this.vista()?.titular ?? ''),
+  );
   protected readonly indice = computed(() => {
-    const t = this.textos;
+    const t = this.textosPagina();
     const secciones = [
       { id: 'aviso-legal', texto: t.avisoLegal },
       { id: 'privacidad', texto: t.privacidad },
@@ -65,6 +68,11 @@ export class LegalesLineaComarcalComponent {
     return this.vista()?.normas.length ? [...secciones, { id: 'normas', texto: t.normas }] : secciones;
   });
   protected readonly seccionActual = signal('aviso-legal');
+
+  /** Lo que lee la plantilla (`textos.x`); al leer la señal, la plantilla se repinta si cambian los textos. */
+  protected get textos(): ReturnType<typeof textosLegales> {
+    return this.textosPagina();
+  }
 
   constructor() {
     const pintada = computed(() => !!this.pagina.sitio() && !!this.vista());

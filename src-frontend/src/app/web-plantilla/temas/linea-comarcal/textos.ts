@@ -59,6 +59,191 @@ export const TEXTOS_LINEA_COMARCAL = {
   'pie.aviso_legal': 'Aviso legal',
   'pie.privacidad': 'Privacidad',
   'pie.cookies': 'Cookies',
+
+  // W12d-bis: el botón del menú en el móvil y los textos de las otras seis páginas (`ClavesWeb`, `TX` del boceto del
+  // editor). Por defecto, el texto que el tema pintaba fijo (no el del boceto si difiere). `{x}`, `{n}`…: huecos que se
+  // sustituyen con los datos después de leer la clave (`rellenarHuecos`).
+  'cabecera.menu': 'Menú',
+
+  // Una sede
+  'sede.anterior': 'Anterior',
+  'sede.siguiente': 'Siguiente',
+  /** Solo en el `aria-label` del botón; sin fila, el tema pone «<horarios.boton> en <sede>». */
+  'sede.preinscribirme_en': 'Preinscribirme en {x}',
+  'sede.ver_grupos': 'Ver grupos y horas',
+  /** Con temporada; sin ella, `TEXTOS_PAGINAS_LINEA_COMARCAL.rotuloHorarios` (variante, misma clave). */
+  'sede.rotulo_horarios': 'Horarios · curso {x}',
+  'sede.titulo_horarios': 'Grupos y horas',
+  'sede.cabeza_hora': 'Hora',
+  'sede.cabeza_grupo': 'Grupo',
+  'sede.cabeza_dias': 'Días y plazas',
+  'sede.leyenda_quedan': 'Quedan plazas',
+  /** `{x}`: el texto de `horarios.lleno` (el que tenga la escuela). */
+  'sede.leyenda_lleno': '{x}: puedes apuntarte a la lista de espera',
+  'sede.leyenda_espera': 'Ya hay lista de espera',
+  'sede.rotulo_llegar': 'Dirección y contacto',
+  'sede.titulo_llegar': 'Cómo llegar',
+  'sede.ficha_lugar': 'Lugar',
+  'sede.ficha_entrada': 'Entrada',
+  'sede.ficha_telefono': 'Teléfono',
+  'sede.abrir_mapa': 'Abrir en el mapa',
+  'sede.rotulo_tarifa': 'Tarifa',
+  'sede.rotulo_ruta': 'La línea',
+  'sede.titulo_ruta': 'Todas las sedes',
+  'sede.estas_aqui': 'Estás aquí',
+  'sede.sin_clases': 'Sin clases esta semana',
+
+  // Tarifas (página)
+  /** Varias sedes con la misma cuota; con una sede o cuotas distintas, otra variante (misma clave). */
+  'tarifas.cuota_igual': 'Una cuota al mes, igual en las {x} sedes.',
+  /** `{x}`: «tarifa familiar», «de hermanos» o las dos. */
+  'tarifas.tambien': 'También {x}',
+  'tarifas.incluye_aparte': 'Licencia y exámenes, aparte',
+  'tarifas.ver_horarios': 'Ver horarios',
+  'tarifas.rotulo_cuadro': 'Cuadro de tarifas',
+  'tarifas.titulo_cuadro': 'Cuánto se paga',
+  /** Con temporada; sin ella, `TEXTOS_PAGINAS_LINEA_COMARCAL.leyendaCuadro` (variante, misma clave). */
+  'tarifas.leyenda_cuadro': 'Mensualidades del curso {x}',
+  'tarifas.col_tarifa': 'Tarifa',
+  'tarifas.col_quien': 'Quién',
+  'tarifas.col_importe': 'Importe',
+  /** También «Cada adulto» y «Cada menor» de la tarifa familiar (variantes, misma clave). */
+  'tarifas.cada_alumno': 'Cada alumno',
+  'tarifas.hermanos': 'Desde el segundo hermano',
+  'tarifas.pie_cuadro': 'Se paga una mensualidad por alumno, la misma en todos los grupos.',
+  'tarifas.rotulo_sede': 'Por sede',
+  'tarifas.titulo_sede': 'Parada a parada',
+  'tarifas.rotulo_aparte': 'Aparte',
+  'tarifas.titulo_aparte': 'Licencia y exámenes',
+  'tarifas.licencia': 'Licencia',
+  'tarifas.examen': 'Derecho de examen',
+  'tarifas.examen_desde': 'Según grado, desde {x}',
+  'tarifas.nota_aparte': 'No van en la mensualidad: se pagan cuando tocan.',
+  'tarifas.vacio_titular': 'Pregunta la cuota en tu sede',
+  /** Con correo o teléfono; sin ninguno, `TEXTOS_PAGINAS_LINEA_COMARCAL.vacioTextoSinContacto` (variante, misma clave). */
+  'tarifas.vacio_texto': 'Ahora no hay tarifas publicadas. Te la dicen en la sede o aquí:',
+  'tarifas.vacio_correo': 'Correo',
+  'tarifas.vacio_telefono': 'Teléfono',
+
+  // Eventos
+  'eventos.pag_titulo': 'Eventos',
+  'eventos.pag_entrada': 'Exámenes, torneos y exhibiciones del club, con sus circulares y sus fotos.',
+  'eventos.proximos': 'Próximos',
+  'eventos.n_eventos': '{n} eventos',
+  'eventos.un_evento': '1 evento',
+  'eventos.anteriores': 'Anteriores',
+  'eventos.sin_proximos_titular': 'No hay eventos próximos',
+  'eventos.sin_proximos_texto': 'Cuando el club anuncie uno, aparecerá aquí.',
+  'eventos.ver_anteriores': 'Ver los eventos anteriores',
+  'eventos.sin_anteriores': 'Todavía no hay eventos anteriores.',
+
+  // Un evento
+  'evento.volver': 'Volver a eventos',
+  'evento.documentos': 'Documentos',
+  'evento.galeria': 'Galería',
+  'evento.n_fotos': '{n} fotos',
+  'evento.una_foto': '1 foto',
+
+  // Legales (decisión del propietario, 12/11): solo los títulos, la entrada, los rótulos de la ficha y los párrafos del
+  // tema iguales a los del boceto. El resto del texto legal sigue fijo en la plantilla. Sin sitio en el tema, y no se
+  // pintan: `legal.priv.h1`, `legal.priv.p1`; más largos en el tema, siguen fijos: `legal.aviso.p3`, `legal.priv.p2`,
+  // `legal.cookies.p0`, `legal.normas.p0`.
+  'legal.titulo': 'Información legal',
+  'legal.entrada': 'Quién está detrás de esta web, qué hacemos con tus datos, qué cookies usamos y las normas del club.',
+  'legal.actualizada': 'Última actualización:',
+  'legal.en_esta_pagina': 'En esta página',
+  'legal.aviso': 'Aviso legal',
+  'legal.aviso.p0':
+    'En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio ' +
+    'electrónico (LSSI), estos son los datos del titular de esta web.',
+  'legal.aviso.h1': 'Para qué sirve esta web',
+  'legal.aviso.p1':
+    'Informa de las actividades, sedes, horarios y tarifas del club, y permite enviar una preinscripción. La ' +
+    'preinscripción es una solicitud: el club la revisa y te contesta.',
+  'legal.aviso.h2': 'Propiedad intelectual',
+  /** `{x}`: el titular (nombre legal o, sin él, el de la escuela). */
+  'legal.aviso.p2':
+    'Los textos, fotos, logotipos y diseño de esta web son de {x} o de sus autores. No se pueden copiar ni usar con ' +
+    'otros fines sin permiso.',
+  'legal.aviso.h3': 'Responsabilidad',
+  'legal.privacidad': 'Privacidad',
+  'legal.priv.p0':
+    'Tratamos tus datos según el Reglamento (UE) 2016/679, general de protección de datos (RGPD), y la Ley Orgánica ' +
+    '3/2018, de protección de datos personales y garantía de los derechos digitales.',
+  'legal.priv.h2': 'Tus derechos',
+  'legal.cookies': 'Cookies',
+  'legal.normas': 'Normas del club',
+  'legal.ficha_titular': 'Titular',
+  'legal.ficha_cif': 'CIF',
+  'legal.ficha_domicilio': 'Domicilio',
+  'legal.ficha_correo': 'Correo',
+
+  // Preinscripción
+  'pre.atras': 'Atrás',
+  'pre.paso_n': 'Paso {n} de {total}',
+  'pre.paso_pueblo': 'Pueblo',
+  'pre.paso_grupo': 'Grupo',
+  'pre.paso_datos': 'Datos',
+  'pre.titulo_pueblo': '¿En qué pueblo?',
+  'pre.pista_pueblo': 'Elige la sede donde quieres entrenar. Después verás sus grupos y horas.',
+  'pre.continuar': 'Continuar',
+  'pre.titulo_grupo': '¿Qué grupo?',
+  'pre.cambiar_pueblo': 'Cambiar de pueblo',
+  'pre.fecha_leyenda': 'Fecha de nacimiento del alumno',
+  'pre.fecha_pista': 'Los grupos van por edad: cuenta los años que cumple este año. Por ejemplo, 14 3 2016.',
+  'pre.dia': 'Día',
+  'pre.mes': 'Mes',
+  'pre.anio': 'Año',
+  'pre.ver_grupos': 'Ver sus grupos',
+  'pre.espera_fecha': 'Escribe su fecha de nacimiento y aquí verás los grupos de {x} para su edad.',
+  'pre.titulo_datos': 'Datos y firma',
+  'pre.pista_datos':
+    'Te pedimos lo mismo que en la hoja de inscripción del club. Todo es obligatorio salvo lo que pone «opcional».',
+  'pre.bloque_alumno': 'El alumno o la alumna',
+  'pre.nombre': 'Nombre',
+  'pre.apellidos': 'Apellidos',
+  'pre.bloque_contacto': 'Contacto',
+  'pre.telefono': 'Teléfono',
+  'pre.email': 'Email',
+  'pre.email_pista': 'Te llegará aquí la solicitud firmada en PDF.',
+  'pre.bloque_normas': 'Normas y consentimientos',
+  'pre.acepto': 'He leído y acepto las normas de la actividad',
+  'pre.fotos': 'Autorizo el uso de imágenes en actividades del club',
+  'pre.bloque_firma': 'Firma',
+  'pre.firma_pista': 'Con el dedo, el ratón o un lápiz.',
+  'pre.enviar': 'Enviar preinscripción',
+  'pre.fin_plaza': 'Preinscripción enviada',
+  'pre.referencia': 'Referencia',
+  'pre.estado_plaza': 'Tu preinscripción ya cuenta en las plazas de {grupo} en {sede}.',
+  'pre.que_ahora': 'Qué pasa ahora',
+  'pre.paso_correo': 'Te llega un correo',
+  'pre.paso_correo_texto':
+    'Con la solicitud firmada en PDF y las instrucciones del club. Mira también en correo no deseado.',
+  'pre.paso_revisa': 'El club la revisa',
+  'pre.paso_revisa_texto': 'Si falta algo, te llaman al {x}.',
+  'pre.descargar': 'Descargar solicitud firmada',
+  'pre.volver_inicio': 'Volver al inicio',
+  'pre.resumen_titulo': 'Tu preinscripción',
+  'pre.resumen_pueblo': 'Pueblo',
+  'pre.resumen_grupo': 'Grupo',
+  'pre.resumen_dias': 'Días y hora',
+  'pre.sin_elegir': 'Sin elegir',
+  /** Varias sedes; con una, `TEXTOS_PREINSCRIPCION_LINEA_COMARCAL.tarifaUna` (variante, misma clave). */
+  'pre.tarifa_igual': '{x} al mes, igual en todas las sedes.',
+  'pre.vacio_titulo': 'En {x} no hay grupo para {n} años',
+  'pre.vacio_otras': 'Estas sedes sí tienen grupo para su edad. Al elegir una, mantenemos la fecha.',
+  'pre.vacio_llamar': '¿Prefieres {x} o tienes dudas? Llama a la sede al',
+  'pre.vacio_llamar_fin': 'y te orientamos.',
+  'pre.revisar_fecha': 'Revisar la fecha de nacimiento',
+  'pre.espera_titulo': 'Este grupo está completo: te apuntas a la lista de espera.',
+  'pre.espera_texto': 'No es una plaza. Te avisaremos cuando haya una libre en {grupo} para {dias}.',
+  'pre.enviar_espera': 'Enviar y apuntarme a la lista de espera',
+  'pre.fin_espera': 'Estás en la lista de espera',
+  /** Con posición; sin ella, `TEXTOS_PREINSCRIPCION_LINEA_COMARCAL.estadoEspera` (variante, misma clave). */
+  'pre.estado_espera':
+    'Todavía no tienes plaza. Estás en la posición {n} de la lista de espera de {grupo} en {sede}, para {dias}.',
+  'pre.paso_correo_espera':
+    'Con la solicitud firmada en PDF y tu posición en la lista. Mira también en correo no deseado.',
 } as const;
 
 export type ClaveTexto = keyof typeof TEXTOS_LINEA_COMARCAL;
@@ -72,121 +257,57 @@ export const TEXTOS_FIJOS_LINEA_COMARCAL = {
   botonHorariosUnaSede: 'Ver horarios',
   apoyoHorariosMovil: 'Toca tu pueblo para ver sus grupos',
   apoyoHorariosEscritorio: 'Pulsa en tu pueblo para ver sus grupos y horarios',
-  alMes: 'al mes',
   igualEnTodasLasSedes: 'Igual en todas las sedes',
   igualUnaSede: 'Para todos los grupos',
-  menu: 'Menú',
   cerrar: 'Cerrar',
   saltar: 'Saltar al contenido',
 } as const;
 
 /**
  * Textos fijos de las páginas de sede, tarifas, eventos, evento y legales (bocetos `boceto-linea-comarcal-sede.html`,
- * `-tarifas.html`, `-eventos.html`, `-evento.html` y `-legales.html`): aún sin clave en la lista del plan; los hará
- * editables W12. `{n}`, `{total}`, `{x}`: se sustituyen con los datos. El texto legal va en la plantilla de su página.
+ * `-tarifas.html`, `-eventos.html`, `-evento.html` y `-legales.html`) que no tienen clave en `ClavesWeb`, y los valores por
+ * defecto de las variantes que dependen de los datos (W12d-bis: si la escuela guarda la clave, su texto vale para todas
+ * las variantes). Los que tienen clave están en `TEXTOS_LINEA_COMARCAL`. `{n}`, `{total}`, `{x}`: se sustituyen con los
+ * datos. El texto legal sin clave va en la plantilla de su página.
  */
 export const TEXTOS_PAGINAS_LINEA_COMARCAL = {
   // Sede
+  /** El visor de fotos de un evento (sin clave: `sede.anterior` y `sede.siguiente` son los del cartel de la sede). */
   anterior: 'Anterior',
   siguiente: 'Siguiente',
   unicaSede: 'Única sede',
   parada: 'Parada {n} de {total}',
   posicion: 'Posición en la línea',
-  preinscribirmeEn: 'Preinscribirme en {x}',
-  verGrupos: 'Ver grupos y horas',
   fotoSede: 'Foto de la sede de {x}',
+  /** Variante de `sede.rotulo_horarios` sin temporada. */
   rotuloHorarios: 'Horarios',
-  rotuloHorariosCurso: 'Horarios · curso {x}',
-  tituloHorarios: 'Grupos y horas',
-  sinClases: 'Sin clases esta semana',
-  cabezaHora: 'Hora',
-  cabezaGrupo: 'Grupo',
-  cabezaDias: 'Días y plazas',
   gruposDe: 'Grupos de {x}',
   leyenda: 'Qué significa cada marca de plazas',
-  leyendaQuedan: 'Quedan plazas',
-  leyendaLleno: '{x}: puedes apuntarte a la lista de espera',
-  leyendaEspera: 'Ya hay lista de espera',
-  rotuloLlegar: 'Dirección y contacto',
-  tituloLlegar: 'Cómo llegar',
-  fichaLugar: 'Lugar',
-  fichaEntrada: 'Entrada',
-  fichaTelefono: 'Teléfono',
-  abrirMapa: 'Abrir en el mapa',
   otraPestana: ' (abre en otra pestaña)',
-  rotuloTarifaSede: 'Tarifa',
-  rotuloRuta: 'La línea',
-  tituloRuta: 'Todas las sedes',
-  estasAqui: 'Estás aquí',
   // Tarifas
+  /** Variantes de `tarifas.cuota_igual`: una sede; varias con cuotas distintas. */
   cuotaUnaSede: 'Una cuota al mes, para todos los grupos.',
-  cuotaIgual: 'Una cuota al mes, igual en las {x} sedes.',
   cuota: 'Una cuota al mes.',
   incluyeMensualidad: 'Mensualidad por alumno',
-  incluyeTambien: 'También {x}',
   incluyeFamiliar: 'tarifa familiar',
   incluyeHermanos: 'de hermanos',
-  incluyeAparte: 'Licencia y exámenes, aparte',
-  verHorarios: 'Ver horarios',
-  vacioTitular: 'Pregunta la cuota en tu sede',
-  vacioTexto: 'Ahora no hay tarifas publicadas. Te la dicen en la sede o aquí:',
+  /** Variante de `tarifas.vacio_texto` sin correo ni teléfono. */
   vacioTextoSinContacto: 'Ahora no hay tarifas publicadas. Te la dicen en la sede.',
-  correo: 'Correo',
-  telefono: 'Teléfono',
-  rotuloCuadro: 'Cuadro de tarifas',
-  tituloCuadro: 'Cuánto se paga',
+  /** Variante de `tarifas.leyenda_cuadro` sin temporada. */
   leyendaCuadro: 'Mensualidades',
-  leyendaCuadroCurso: 'Mensualidades del curso {x}',
-  columnaTarifa: 'Tarifa',
-  columnaQuien: 'Quién',
-  columnaImporte: 'Importe',
+  /** Variantes de `tarifas.cada_alumno` en la tarifa familiar. */
   cadaAdulto: 'Cada adulto',
   cadaMenor: 'Cada menor',
-  cadaAlumno: 'Cada alumno',
-  hermanos: 'Desde el segundo hermano',
-  pieCuadro: 'Se paga una mensualidad por alumno, la misma en todos los grupos.',
-  rotuloPorSede: 'Por sede',
-  tituloPorSede: 'Parada a parada',
   etiquetaPorSede: 'Mensualidad en cada sede',
   cambio: 'Desde {x}: {importe} al mes',
   leyendaCambio: 'Cambio de tarifa anunciado en esa sede',
-  rotuloAparte: 'Aparte',
-  tituloAparte: 'Licencia y exámenes',
-  licencia: 'Licencia',
-  examen: 'Derecho de examen',
-  examenDesde: 'Según grado, desde {x}',
-  notaAparte: 'No van en la mensualidad: se pagan cuando tocan.',
   // Eventos
-  tituloEventos: 'Eventos',
-  entradaEventos: 'Exámenes, torneos y exhibiciones del club, con sus circulares y sus fotos.',
-  proximos: 'Próximos',
-  anteriores: 'Anteriores',
-  unEvento: '1 evento',
-  nEventos: '{n} eventos',
   verEvento: 'Ver evento',
   masProximos: 'Más eventos próximos',
-  sinProximosTitular: 'No hay eventos próximos',
-  sinProximosTexto: 'Cuando el club anuncie uno, aparecerá aquí.',
-  verAnteriores: 'Ver los eventos anteriores',
-  sinAnteriores: 'Todavía no hay eventos anteriores.',
   // Evento
-  volverEventos: 'Volver a eventos',
-  documentos: 'Documentos',
-  galeria: 'Galería',
-  unaFoto: '1 foto',
-  nFotos: '{n} fotos',
   ampliarFoto: 'Ampliar la foto {n} de {total}',
   fotoN: 'Foto {n} de {total}',
   de: 'de {total}',
-  // Legales
-  tituloLegal: 'Información legal',
-  entradaLegal: 'Quién está detrás de esta web, qué hacemos con tus datos, qué cookies usamos y las normas del club.',
-  actualizada: 'Última actualización:',
-  enEstaPagina: 'En esta página',
-  avisoLegal: 'Aviso legal',
-  privacidad: 'Privacidad',
-  cookies: 'Cookies',
-  normas: 'Normas del club',
 } as const;
 
 /**
@@ -209,51 +330,31 @@ export const DISCIPLINA_TAEKWONDO = {
 
 /**
  * Textos fijos de la preinscripción (boceto `boceto-linea-comarcal-preinscripcion.html`, con la firma de la decisión
- * 493: dibujada y obligatoria). Aún sin clave en la lista del plan; los hará editables W12. `{x}`, `{n}`…: se sustituyen
- * con los datos. Los mensajes de error son los de la lógica común (`comun/preinscripcion`).
+ * 493: dibujada y obligatoria) que no tienen clave en `ClavesWeb`, y los valores por defecto de las variantes que
+ * dependen de los datos (W12d-bis: si la escuela guarda la clave, su texto vale para todas). Los que tienen clave
+ * (`pre.*`) están en `TEXTOS_LINEA_COMARCAL`. `{x}`, `{n}`…: se sustituyen con los datos. Los mensajes de error son los
+ * de la lógica común (`comun/preinscripcion`).
  */
 export const TEXTOS_PREINSCRIPCION_LINEA_COMARCAL = {
-  atras: 'Atrás',
-  pasoNdeM: 'Paso {n} de {total}',
-  pasoPueblo: 'Pueblo',
-  pasoGrupo: 'Grupo',
-  pasoDatos: 'Datos',
   // Resumen lateral
-  resumenTitulo: 'Tu preinscripción',
-  resumenPueblo: 'Pueblo',
   resumenEdad: 'Edad',
-  resumenGrupo: 'Grupo',
-  resumenDias: 'Días y hora',
   resumenPlaza: 'Plaza',
-  sinElegir: 'Sin elegir',
   cambiar: 'Cambiar',
   cambiarPueblo: 'el pueblo',
   cambiarGrupo: 'el grupo',
   cambiarDias: 'los días',
   cumpleAnios: 'Cumple {n} años este año',
   plazaEspera: 'Lista de espera: no hay plaza ahora',
-  tarifaIgual: '{x} al mes, igual en todas las sedes.',
+  /** Variante de `pre.tarifa_igual` con una sede. */
   tarifaUna: '{x} al mes, para todos los grupos.',
   // Paso 1
-  tituloPueblo: '¿En qué pueblo?',
-  pistaPueblo: 'Elige la sede donde quieres entrenar. Después verás sus grupos y horas.',
   elegida: 'Elegida',
   unGrupo: '1 grupo',
   nGrupos: '{n} grupos',
   proximaHoy: 'próxima clase hoy a las',
   proximaDia: 'próxima clase {x} a las',
-  continuar: 'Continuar',
   // Paso 2
-  tituloGrupo: '¿Qué grupo?',
   en: 'En',
-  cambiarDePueblo: 'Cambiar de pueblo',
-  fechaLeyenda: 'Fecha de nacimiento del alumno',
-  fechaPista: 'Los grupos van por edad: cuenta los años que cumple este año. Por ejemplo, 14 3 2016.',
-  dia: 'Día',
-  mes: 'Mes',
-  anio: 'Año',
-  verGrupos: 'Ver sus grupos',
-  esperaFecha: 'Escribe su fecha de nacimiento y aquí verás los grupos de {x} para su edad.',
   cumpleEsteAnio: 'Este año cumple',
   anios: '{n} años',
   hayUnGrupo: ': hay 1 grupo de su edad en {x}.',
@@ -274,22 +375,10 @@ export const TEXTOS_PREINSCRIPCION_LINEA_COMARCAL = {
   elDia: 'el {x}',
   soloEseDia: 'Solo ese día; el grupo también entrena el {x}.',
   soloEsosDias: 'Solo esos días; el grupo también entrena el {x}.',
-  vacioTitulo: 'En {x} no hay grupo para {n} años',
-  vacioOtras: 'Estas sedes sí tienen grupo para su edad. Al elegir una, mantenemos la fecha.',
   vacioMinimo: 'Los grupos del club empiezan a los {min} años; ninguna sede tiene uno para {n}.',
   vacioNinguna: 'Ninguna sede tiene ahora un grupo para {n} años.',
-  vacioLlamar: '¿Prefieres {x} o tienes dudas? Llama a la sede al',
-  vacioLlamarFin: 'y te orientamos.',
-  revisarFecha: 'Revisar la fecha de nacimiento',
   // Paso 3
-  tituloDatos: 'Datos y firma',
   cambiarGrupoDias: ' el grupo o los días',
-  avisoEsperaTitulo: 'Este grupo está completo: te apuntas a la lista de espera.',
-  avisoEsperaTexto: 'No es una plaza. Te avisaremos cuando haya una libre en {grupo} para {dias}.',
-  pistaDatos: 'Te pedimos lo mismo que en la hoja de inscripción del club. Todo es obligatorio salvo lo que pone «opcional».',
-  bloqueAlumno: 'El alumno o la alumna',
-  nombre: 'Nombre',
-  apellidos: 'Apellidos',
   fechaNacimiento: 'Fecha de nacimiento',
   fechaPistaDatos: 'La que escribiste al elegir grupo. Si la corriges, comprobamos que el grupo sigue siendo de su edad.',
   avisoEdad: 'Con esta fecha cumple {n} años este año y {grupo} es de {edades}.',
@@ -304,35 +393,24 @@ export const TEXTOS_PREINSCRIPCION_LINEA_COMARCAL = {
   bloqueTutor: 'Responsable legal',
   pistaTutor: 'Porque el alumno es menor de edad. Es quien firma la solicitud.',
   tutorNombre: 'Nombre y apellidos',
-  bloqueContacto: 'Contacto',
   pistaContacto: 'Para enviarte la solicitud y avisarte.',
   pistaContactoEspera: 'Para enviarte la solicitud y avisarte cuando haya plaza.',
-  telefono: 'Teléfono',
   telefonoPista: 'Nueve cifras; puedes añadir el prefijo +34.',
   telefono2: 'Teléfono secundario',
   opcional: '(opcional)',
-  email: 'Email',
-  emailPista: 'Te llegará aquí la solicitud firmada en PDF.',
   bloqueHorario: 'Sobre el horario',
   observaciones: 'Observaciones sobre el horario',
   observacionesPista:
     '¿Crees que otro grupo puede encajar mejor por edad, experiencia o recomendación del profesor? Cuéntanoslo y lo revisamos.',
-  bloqueNormas: 'Normas y consentimientos',
   normasPista: 'Son las normas de la actividad en el club. Puedes leerlas aquí antes de aceptarlas.',
   leerNormas: 'Leer las normas ({n} puntos)',
-  aceptoNormas: 'He leído y acepto las normas de la actividad',
-  fotos: 'Autorizo el uso de imágenes en actividades del club',
-  bloqueFirma: 'Firma',
   firmaTutor: 'Firma el responsable legal.',
   firmaAlumno: 'Firma el alumno o la alumna.',
   firmante: 'Nombre y apellidos de quien firma',
   firma: 'Firma',
-  firmaPista: 'Con el dedo, el ratón o un lápiz.',
   sinFirmar: 'Sin firmar',
   firmado: 'Firmado',
   borrarFirma: 'Borrar firma',
-  enviar: 'Enviar preinscripción',
-  enviarEspera: 'Enviar y apuntarme a la lista de espera',
   enviando: 'Enviando…',
   /** Vista previa del panel: el formulario se usa, pero no se envía. */
   vistaPreviaNoEnvia: 'Es una vista previa: la preinscripción no se envía.',
@@ -341,19 +419,8 @@ export const TEXTOS_PREINSCRIPCION_LINEA_COMARCAL = {
   revisaUno: 'Revisa este dato',
   revisaN: 'Revisa estos {n} datos',
   // Paso 4
-  finPlaza: 'Preinscripción enviada',
-  finEspera: 'Estás en la lista de espera',
-  referencia: 'Referencia',
-  estadoPlaza: 'Tu preinscripción ya cuenta en las plazas de {grupo} en {sede}.',
-  estadoEsperaPosicion:
-    'Todavía no tienes plaza. Estás en la posición {n} de la lista de espera de {grupo} en {sede}, para {dias}.',
+  /** Variante de `pre.estado_espera` sin posición en la lista. */
   estadoEspera: 'Todavía no tienes plaza. Estás en la lista de espera de {grupo} en {sede}, para {dias}.',
-  queAhora: 'Qué pasa ahora',
-  pasoCorreo: 'Te llega un correo',
-  pasoCorreoPlaza: 'Con la solicitud firmada en PDF y las instrucciones del club. Mira también en correo no deseado.',
-  pasoCorreoEspera: 'Con la solicitud firmada en PDF y tu posición en la lista. Mira también en correo no deseado.',
-  pasoRevisa: 'El club la revisa',
-  pasoRevisaTexto: 'Si falta algo, te llaman al {x}.',
   pasoPrimer: 'Al primer entrenamiento',
   pasoPrimerTexto: '{horario}, en {lugar}. Ropa cómoda y agua',
   pasoPrimerDobok: '; el dobok se pide en el club.',
@@ -361,8 +428,6 @@ export const TEXTOS_PREINSCRIPCION_LINEA_COMARCAL = {
   pasoEsperasTexto: 'No hace falta que hagas nada. Si cambias de idea, llama a la sede y te quitamos de la lista.',
   pasoAviso: 'Te avisamos si hay plaza',
   pasoAvisoTexto: 'Cuando se libere una en {grupo} para esos días, te avisamos por correo. Hasta entonces no tienes plaza.',
-  descargar: 'Descargar solicitud firmada',
-  volverInicio: 'Volver al inicio',
   resumen: 'Resumen',
   fichaEstado: 'Estado',
   fichaEstadoPlaza: 'Con plaza en el grupo',

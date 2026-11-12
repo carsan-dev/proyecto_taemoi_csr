@@ -8,9 +8,9 @@ import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { WebPublicaService } from '../../../datos/web-publica.service';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
+import { TextosTema } from '../contenido';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
-import { TEXTOS_PAGINAS_LINEA_COMARCAL } from '../textos';
-import { vistaEventos } from './eventos';
+import { textosEventos, vistaEventos } from './eventos';
 
 /**
  * Lista de eventos del tema «La línea comarcal» (`/eventos`, boceto `fase4-web/boceto-linea-comarcal-eventos.html`) con
@@ -32,7 +32,6 @@ export class EventosLineaComarcalComponent {
   /** «Web · Contenido» (W12c-bis): en el editor, «Ver el caso» puede cambiar la lista en memoria. */
   private readonly editor = inject(EditorWebService);
 
-  protected readonly textos = TEXTOS_PAGINAS_LINEA_COMARCAL;
   /** La petición se lanza (o se reutiliza de la caché) fuera del contexto reactivo: escribe en signals. */
   private readonly recurso = computed(() => {
     const previa = this.pagina.vistaPrevia();
@@ -45,10 +44,18 @@ export class EventosLineaComarcalComponent {
   protected readonly pagina = paginaWeb('eventos', () => '/eventos', {
     eventos: computed(() => this.eventos()?.proximos ?? null),
   });
+  /** W12d-bis: los textos de la escuela (`eventos.*`) con los del tema por defecto. */
+  private readonly textosTema = computed(() => new TextosTema(this.pagina.sitio()));
+  private readonly textosPagina = computed(() => textosEventos(this.textosTema()));
   protected readonly vista = computed(() => {
     const eventos = this.eventos();
-    return eventos ? vistaEventos(eventos) : null;
+    return eventos ? vistaEventos(eventos, this.textosTema()) : null;
   });
+
+  /** Lo que lee la plantilla (`textos.x`); al leer la señal, la plantilla se repinta si cambian los textos. */
+  protected get textos(): ReturnType<typeof textosEventos> {
+    return this.textosPagina();
+  }
 
   constructor() {
     irAlAncla(computed(() => !!this.pagina.sitio() && !!this.vista()));

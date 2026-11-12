@@ -31,7 +31,7 @@
       @if (v.menu.length) {
         <button #botonMenu class="menu-boton" type="button" [attr.aria-expanded]="menuAbierto()" aria-controls="nav-principal" (click)="alternarMenu()">
           <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 1h14M1 6h14M1 11h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-          <span class="menu-texto">{{ menuAbierto() ? fijos.cerrar : fijos.menu }}</span>
+          <span class="menu-texto">{{ menuAbierto() ? fijos.cerrar : v.textoMenu }}</span>
         </button>
       }
     </div>

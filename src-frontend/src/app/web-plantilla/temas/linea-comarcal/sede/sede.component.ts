@@ -19,11 +19,10 @@ import { paginaWeb } from '../../../comun/pagina-web';
 import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { RELOJ_WEB } from '../../../comun/reloj';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
-import { CLAVE_SEDE_RECORDADA, claveSede } from '../contenido';
+import { CLAVE_SEDE_RECORDADA, TextosTema, claveSede } from '../contenido';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
 import { ContenidoNoEncontradaLineaComarcalComponent } from '../no-encontrada/no-encontrada.component';
-import { TEXTOS_PAGINAS_LINEA_COMARCAL } from '../textos';
-import { sedeDelSlug, vistaPaginaSede } from './sede';
+import { sedeDelSlug, textosSede, vistaPaginaSede } from './sede';
 
 /**
  * Página de una sede del tema «La línea comarcal» (`/sedes/:slug`, boceto `fase4-web/boceto-linea-comarcal-sede.html`)
@@ -55,8 +54,9 @@ export class SedeLineaComarcalComponent {
   private readonly fragmento = toSignal(this.activa.fragment, { initialValue: null });
   private readonly slug = toSignal(this.activa.paramMap.pipe(map((p) => p.get('slug'))), { requireSync: true });
 
-  protected readonly textos = TEXTOS_PAGINAS_LINEA_COMARCAL;
   protected readonly pagina = paginaWeb('sede', () => `/sedes/${encodeURIComponent(this.slug() ?? '')}`, { slug: this.slug });
+  /** W12d-bis: los textos de la escuela (`sede.*`) con los del tema por defecto. */
+  private readonly textosPagina = computed(() => textosSede(new TextosTema(this.pagina.sitio())));
   private readonly sede = computed(() => {
     const sitio = this.pagina.sitio();
     return sitio ? sedeDelSlug(sitio, this.slug()) : null;
@@ -83,6 +83,11 @@ export class SedeLineaComarcalComponent {
       }
       untracked(() => afterNextRender(() => this.irA(fragmento), { injector: this.injector }));
     });
+  }
+
+  /** Lo que lee la plantilla (`textos.x`); al leer la señal, la plantilla se repinta si cambian los textos. */
+  protected get textos(): ReturnType<typeof textosSede> {
+    return this.textosPagina();
   }
 
   protected gruposDe(nombre: string): string {
