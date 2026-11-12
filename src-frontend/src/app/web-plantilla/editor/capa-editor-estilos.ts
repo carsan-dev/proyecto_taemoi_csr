@@ -167,4 +167,30 @@ app-lc-linea-sedes.ed-bloque{display:block}
   .flot--describir .btn{flex:1;min-height:44px}
 }
 @media (prefers-reduced-motion:reduce){.ed-foto,.ed-foto__pista,.ed-progreso i,.ed-btn,.flot__op,.btn{transition:none}}
+/* W12e: barra del bloque (boceto .ed-acciones con .ed-btn, .ed-estados, .ed-pastilla, .ed-mini, .es-oculto), huecos
+   «Añadir bloque» (.ed-hueco, .ed-anadir) y su menú. Sin .ed-web en el tema: lo atenuado es lo que no es de la capa. */
+.ed-estados{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px;pointer-events:none}
+.ed-estados > *{pointer-events:auto}
+.ed-btn[aria-disabled=true]{color:var(--pn-tinta-3);opacity:.55;cursor:default;background:none}
+.ed-btn--quitar{color:var(--pn-peligro)}
+.ed-btn--quitar:hover{background:#fbf4f3}
+.ed-pastilla{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 10px;border-radius:999px;background:var(--pn-superficie);color:var(--pn-tinta);font:600 .8125rem/1 var(--pn-fuente);box-shadow:var(--pn-sombra-menu);white-space:nowrap}
+.ed-pastilla svg{color:var(--pn-tinta-2)}
+.ed-pastilla--oculto{padding-right:3px}
+.ed-pastilla--cambio{color:var(--pn-acento)}
+.ed-mini{min-height:24px;padding:0 8px;border:0;border-radius:999px;background:var(--pn-acento);color:#fff;font:600 .8125rem/1 var(--pn-fuente);cursor:pointer}
+.ed-mini:hover{background:color-mix(in srgb,var(--pn-acento) 86%,#000)}
+.ed-bloque.es-oculto > :not(.ed){opacity:.38;filter:saturate(.4)}
+.ed-hueco{position:relative;z-index:17;height:0;display:flex;justify-content:center}
+.ed-hueco::before{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:var(--pn-acento);opacity:0;transition:opacity 150ms ease-out;pointer-events:none}
+.ed-hueco:is(:hover,:focus-within)::before{opacity:1}
+.ed-anadir{position:absolute;top:0;transform:translateY(-50%);display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px 0 10px;border:1px dashed var(--pn-acento-borde);border-radius:999px;background:var(--pn-superficie);color:var(--pn-acento);font:600 .8125rem/1 var(--pn-fuente);cursor:pointer;transition:background-color 150ms ease-out}
+.ed-anadir:hover,.ed-anadir[aria-expanded=true]{border-style:solid;background:var(--pn-acento-suave)}
+.ed-anadir:focus-visible{outline:3px solid var(--pn-acento-borde);outline-offset:2px;box-shadow:0 0 0 2px #fff}
+.flot__op[aria-disabled=true]{color:var(--pn-tinta-2);cursor:default;background:none}
+.flot__op[aria-disabled=true] svg{color:var(--pn-tinta-3)}
+/* Panel estrecho (< 768, lo dice el panel): nombre siempre a la vista; las acciones salen en la hoja del panel */
+.estrecho .ed-nombre{opacity:1}
+.estrecho .ed-acciones{display:none}
+@media (prefers-reduced-motion:reduce){.ed-hueco::before,.ed-anadir,.ed-mini{transition:none}}
 `;

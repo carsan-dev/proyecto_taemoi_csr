@@ -28,6 +28,8 @@ export interface EdicionTextos {
   errores(errores: Record<string, string>): void;
   /** Lleva el foco a un texto; da dónde empieza (px desde arriba del documento) o null si no está en la página. */
   irA(clave: string): number | null;
+  /** W12e: entra a editar ese texto (el primero vacío de un bloque recién añadido); false si no está en la página. */
+  editar(clave: string): boolean;
   decorar(pagina: PaginaEditor): void;
   quitar(): void;
 }
@@ -524,6 +526,14 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       }
       el.focus({ preventScroll: true });
       return Math.max(0, Math.round(el.getBoundingClientRect().top + ventana.scrollY));
+    },
+    editar(clave) {
+      const el = principal(clave);
+      if (!el) {
+        return false;
+      }
+      entrarEdicion(el);
+      return true;
     },
     decorar,
     quitar() {

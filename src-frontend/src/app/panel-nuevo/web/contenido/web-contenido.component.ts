@@ -32,6 +32,16 @@ import {
   escucharPuente,
 } from '../../../web-plantilla/editor/puente-editor';
 import { claveDescripcion, fotoOpcional } from '../../../web-plantilla/editor/fotos-sueltas';
+import {
+  type AccionBloque,
+  TEXTOS_BLOQUES,
+  type TipoBloque,
+  esMovible,
+  estaOculto,
+  etiquetaAccion,
+  nombreBloque,
+  ordenCompleto,
+} from '../../../web-plantilla/editor/bloques-editor';
 import { defTexto, defectoDeLaPagina } from '../../../web-plantilla/editor/textos-editor';
 import { AcentoEscuelaDirective } from '../../acento-escuela.directive';
 import { AvisosService } from '../../avisos/avisos.service';
@@ -100,7 +110,30 @@ import {
   quitarFoto,
   volverALaAnterior,
 } from './web-contenido-fotos';
+import {
+  alternarOculto,
+  anadirBloque,
+  cambiosBloques,
+  confirmacionQuitar,
+  esDeBloqueFuera,
+  esQuitable,
+  filasDelBloque,
+  lineaHoja,
+  moverBloque,
+  ordenVisible,
+  partesSinGuardar,
+  quitarBloque,
+  vozAnadido,
+  vozMover,
+  vozOculto,
+  vozQuitado,
+} from './web-contenido-bloques';
 import { ListasVista, WebContenidoService } from './web-contenido.service';
+
+/** Panel estrecho (boceto `estrecho()`): las acciones de un bloque salen en la hoja inferior. */
+const CONSULTA_ESTRECHO = '(max-width: 767.98px)';
+/** Lo que tiene una capa recién puesta: sin pastillas, sin quitables y ancha. */
+const ESTADO_BLOQUES_INICIAL = JSON.stringify([[], [], false]);
 
 /** La barra superior del panel (`navegacion/cabecera-panel`): 64 px y 56 en móvil; la franja del caso va debajo. */
 const CABECERA_PANEL = '.pn-cab';
@@ -134,6 +167,10 @@ const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
  * lo manda; aquí se comprueba, se sube a la API con su progreso («Cancelar subida» la corta) y la foto subida entra en el
  * borrador sin descripción, con el diálogo de describir abierto en la capa. Poner, cambiar, quitar, volver a la anterior
  * y describir cuentan como cambios. Mientras sube algo no se guarda.
+ *
+ * W12e: bloques de Inicio (`web-contenido-bloques.ts`). La capa pide subir, bajar, ocultar, mostrar, quitar (con
+ * confirmación) y añadir; aquí se cambian las cabeceras del borrador, se manda a la vista previa, se dice por voz y se
+ * pide el foco. Con el panel estrecho (< 768 px), las acciones van en la hoja inferior del panel.
  */
 @Component({
   selector: 'pn-web-contenido',
@@ -189,7 +226,45 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly subidas = signal<Record<string, EstadoSubidaFoto>>({});
   readonly subiendo = computed(() => Object.values(this.subidas()).some((s) => s.estado === 'subiendo'));
   readonly fotosCambiadas = computed(() => fotosCambiadas(this.guardado(), this.borrador()));
-  readonly nCambios = computed(() => this.cambiadas().length + this.fotosCambiadas().length);
+  /** W12e: orden, ocultos, añadidos y quitados (boceto `cambios`). */
+  readonly cambiosBloques = computed(() => cambiosBloques(this.guardado(), this.borrador()));
+  /** Los textos y fotos de un bloque añadido o quitado no cuentan aparte: cuenta el bloque (boceto `cambios`). */
+  private readonly clavesQueCuentan = computed(() => {
+    const fuera = this.cambiosBloques().fuera;
+    return [...this.cambiadas(), ...this.fotosCambiadas()].filter((clave) => !esDeBloqueFuera(clave, fuera));
+  });
+  readonly nCambios = computed(() => this.clavesQueCuentan().length + this.cambiosBloques().n);
+  /** Partes con la pastilla «Sin guardar». */
+  readonly sinGuardar = computed(() => partesSinGuardar(this.cambiosBloques(), this.clavesQueCuentan()));
+  readonly quitables = computed(() => ordenCompleto(this.borrador()).filter((id) => esQuitable(id, this.guardado())));
+  /** Los bloques que la capa dice que hay en Inicio (las fijas sin datos no se pintan) y los vacíos. */
+  readonly presentes = signal<ReadonlySet<string> | null>(null);
+  readonly vacios = signal<ReadonlySet<string>>(new Set());
+  readonly estrecho = signal(this.ventana?.matchMedia?.(CONSULTA_ESTRECHO).matches ?? false);
+  /** El bloque de la hoja inferior abierta (panel estrecho), o null. */
+  readonly hoja = signal<string | null>(null);
+  readonly textosBloques = TEXTOS_BLOQUES;
+  readonly etiquetaAccion = etiquetaAccion;
+  /** Boceto `pintarHoja`. */
+  readonly vistaHoja = computed(() => {
+    const id = this.hoja();
+    const filas = this.borrador();
+    const orden = ordenVisible(filas, this.presentes());
+    const puesto = id ? orden.indexOf(id) : -1;
+    if (!id || puesto < 0) {
+      return null;
+    }
+    const oculto = estaOculto(filas, id);
+    return {
+      id,
+      nombre: nombreBloque(id, filas),
+      linea: lineaHoja(puesto, orden.length, oculto, this.vacios().has(id)),
+      primero: puesto === 0,
+      ultimo: puesto === orden.length - 1,
+      oculto,
+      quitable: this.quitables().includes(id),
+    };
+  });
   readonly erroresVisibles = computed<Record<string, string>>(() =>
     this.mostrarErrores() ? { ...erroresContenido(this.borrador(), this.defectos()), ...this.erroresServidor() } : {},
   );
@@ -310,6 +385,10 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private mostrarCaso = false;
   /** Tras un enlace del resumen, se enseña el dato cuando la capa dice dónde está. */
   private mostrarDato = false;
+  /** W12e: tras una acción de bloque, se enseña el bloque cuando la capa dice dónde está. */
+  private mostrarBloque = false;
+  /** Lo último que se mandó a la capa de `estado-bloques` (la capa empieza con el inicial). */
+  private estadoBloquesEnviado = ESTADO_BLOQUES_INICIAL;
   /** El dato del resumen al que ir cuando la capa de la página nueva esté lista. */
   private irPendiente: string | null = null;
   /** El aviso de error con «Reintentar» que sigue abierto (se cierra al guardar bien o al descartar). */
@@ -326,6 +405,17 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     effect(() => this.enviarErrores(this.erroresVisibles()));
     // W12f-1: «Nueva, sin guardar», «Volver a la anterior» y las subidas, en la capa.
     effect(() => this.enviarFotos());
+    // W12e: «Sin guardar», lo que se puede quitar y si el panel es estrecho, en la capa.
+    effect(() => this.enviarEstadoBloques());
+    // La hoja no sigue abierta si el bloque ya no está o el panel deja de ser estrecho.
+    effect(() => {
+      if (this.hoja() !== null && (!this.estrecho() || this.vistaHoja() === null)) {
+        this.hoja.set(null);
+      }
+    });
+    const consulta = this.ventana?.matchMedia?.(CONSULTA_ESTRECHO);
+    const alCambiarAncho = (e: MediaQueryListEvent) => this.estrecho.set(e.matches);
+    consulta?.addEventListener?.('change', alCambiarAncho);
     const dejarDeEscuchar = this.ventana
       ? escucharPuente(this.ventana, () => this.iframe()?.nativeElement.contentWindow ?? null, esMensajeDelEditor, (m) =>
           this.alRecibir(m),
@@ -333,6 +423,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       : () => undefined;
     inject(DestroyRef).onDestroy(() => {
       dejarDeEscuchar();
+      consulta?.removeEventListener?.('change', alCambiarAncho);
       this.cancelarSubidas();
       this.pararTemporizadores();
       this.observador?.disconnect();
@@ -470,6 +561,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
 
   private recargarVista(): void {
     this.alto.set(ALTO_INICIAL);
+    this.presentes.set(null);
+    this.hoja.set(null);
     if (this.estado() === 'listo') {
       this.iniciarCarga();
     }
@@ -581,6 +674,22 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
           this.enviarIrTexto(this.irPendiente);
           this.irPendiente = null;
         }
+        // La capa nueva empieza sin pastillas, sin quitables y ancha: solo se manda si hay algo.
+        this.estadoBloquesEnviado = ESTADO_BLOQUES_INICIAL;
+        this.enviarEstadoBloques();
+        break;
+      case 'bloques':
+        this.presentes.set(new Set(mensaje.orden));
+        this.vacios.set(new Set(mensaje.vacios));
+        break;
+      case 'bloque':
+        void this.accionBloque(mensaje.accion, mensaje.bloque, false);
+        break;
+      case 'anadir-bloque':
+        this.anadir(mensaje.pos, mensaje.bloque);
+        break;
+      case 'hoja':
+        this.abrirHoja(mensaje.bloque);
         break;
       case 'texto':
         this.alCambiarTexto(mensaje.clave, mensaje.texto);
@@ -598,9 +707,10 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         void this.router.navigateByUrl(RUTA_DESTINO[mensaje.destino]);
         break;
       case 'mostrar':
-        if (this.mostrarCaso || this.mostrarDato) {
+        if (this.mostrarCaso || this.mostrarDato || this.mostrarBloque) {
           this.mostrarCaso = false;
           this.mostrarDato = false;
+          this.mostrarBloque = false;
           this.ensenar(mensaje.arriba);
         }
         break;
@@ -824,6 +934,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       return;
     }
     this.cancelarSubidas();
+    this.hoja.set(null);
     this.borrador.set(this.guardado());
     this.cerrarAvisoError();
     this.mostrarErrores.set(false);
@@ -871,6 +982,183 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private enviarErrores(errores: Record<string, string>): void {
     if (this.ventana) {
       enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'errores', errores });
+    }
+  }
+
+  // ------------------------------------------------------------------ bloques de Inicio (W12e)
+
+  /** Las acciones solo valen en Inicio, con la pantalla lista y sin un guardado en curso. */
+  private puedeTocarBloques(): boolean {
+    return this.pagina() === 'inicio' && this.estado() === 'listo' && !this.guardando();
+  }
+
+  /** Boceto `mover`, `alternarOculto` y `quitarBloque` (desde la barra de la capa o desde la hoja). */
+  async accionBloque(accion: AccionBloque, id: string, desdeHoja: boolean): Promise<void> {
+    if (!this.puedeTocarBloques() || !esMovible(id)) {
+      return;
+    }
+    switch (accion) {
+      case 'subir':
+      case 'bajar': {
+        const paso = accion === 'subir' ? -1 : 1;
+        const r = moverBloque(this.borrador(), id, paso, this.presentes());
+        if (!r) {
+          return;
+        }
+        this.borrador.set(r.filas);
+        this.enviarBorrador();
+        // Boceto: el foco sigue en el mismo botón, salvo si el bloque queda en el extremo (entonces, en el otro).
+        const enExtremo = (paso < 0 && r.puesto === 0) || (paso > 0 && r.puesto === r.total - 1);
+        const queda = paso < 0 !== enExtremo ? 'subir' : 'bajar';
+        this.enfocarBloque(desdeHoja ? `h-${queda}` : `${queda}:${id}`, desdeHoja);
+        this.anuncio.set(vozMover(nombreBloque(id, r.filas), r.puesto, r.total));
+        break;
+      }
+      case 'ocultar':
+      case 'mostrar': {
+        if ((accion === 'ocultar') === estaOculto(this.borrador(), id)) {
+          return;
+        }
+        this.borrador.update((filas) => alternarOculto(filas, id));
+        this.enviarBorrador();
+        this.enfocarBloque(desdeHoja ? 'h-vis' : `vis:${id}`, desdeHoja);
+        this.anuncio.set(vozOculto(nombreBloque(id, this.borrador()), accion === 'ocultar'));
+        break;
+      }
+      case 'quitar':
+        await this.quitar(id, desdeHoja);
+        break;
+    }
+  }
+
+  /** Boceto `quitarBloque`: con confirmación; se van la cabecera y todas sus filas (y sus subidas). */
+  private async quitar(id: string, desdeHoja: boolean): Promise<void> {
+    if (!this.quitables().includes(id)) {
+      return;
+    }
+    const filas = this.borrador();
+    const nombre = nombreBloque(id, filas);
+    const r = await this.confirmacion.confirmar({ ...confirmacionQuitar(id, filas), destructivo: true, nombre: 'quitar-bloque' });
+    if (!r.confirmado) {
+      // El foco vuelve al botón que la abrió (el de la hoja ya lo devuelve el diálogo).
+      if (!desdeHoja) {
+        this.enviarFocoBloque(`quitar:${id}`);
+      }
+      return;
+    }
+    if (!this.puedeTocarBloques() || !this.quitables().includes(id)) {
+      return;
+    }
+    const puesto = ordenVisible(this.borrador(), this.presentes()).indexOf(id);
+    const claves = filasDelBloque(this.borrador(), id);
+    for (const clave of claves) {
+      if (clave in this.subidas()) {
+        this.cancelarPeticion(clave);
+        this.quitarSubida(clave);
+      }
+    }
+    this.borrador.update((f) => quitarBloque(f, id));
+    this.limpiarErrores(claves.flatMap((clave) => [clave, claveDescripcion(clave)]));
+    this.hoja.set(null);
+    this.enviarBorrador();
+    this.enfocarBloque(`a:${Math.max(0, puesto)}`, false);
+    this.anuncio.set(vozQuitado(nombre));
+  }
+
+  /** Boceto `anadirBloque`: en el puesto del hueco; el foco, a su primer texto vacío. */
+  private anadir(pos: number, tipo: TipoBloque): void {
+    if (!this.puedeTocarBloques()) {
+      return;
+    }
+    const r = anadirBloque(this.borrador(), this.guardado(), pos, tipo, this.presentes());
+    if (!r) {
+      return;
+    }
+    this.borrador.set(r.filas);
+    this.enviarBorrador();
+    this.enfocarBloque(`editar:${r.id}`, false);
+    this.anuncio.set(vozAnadido(tipo, pos));
+  }
+
+  /** Boceto `abrirHoja` (panel estrecho): el foco, al primer botón que se puede pulsar. */
+  abrirHoja(id: string): void {
+    if (!this.estrecho() || !esMovible(id) || this.pagina() !== 'inicio') {
+      return;
+    }
+    this.hoja.set(id);
+    if (this.vistaHoja() === null) {
+      this.hoja.set(null);
+      return;
+    }
+    this.enfocarDespues('.hoja button:not([aria-disabled="true"])');
+  }
+
+  /** Boceto `cerrarHoja`: el foco vuelve al nombre del bloque, en la vista previa. */
+  cerrarHoja(devolverFoco: boolean): void {
+    const id = this.hoja();
+    if (id === null) {
+      return;
+    }
+    this.hoja.set(null);
+    if (devolverFoco) {
+      this.enviarFocoBloque(`sel:${id}`);
+    }
+  }
+
+  /** Un botón de la hoja: la misma acción que en la barra; la hoja sigue abierta (salvo al quitar). */
+  pulsarHoja(evento: Event, accion: AccionBloque): void {
+    const id = this.hoja();
+    if (!id || (evento.currentTarget as HTMLElement | null)?.getAttribute('aria-disabled') === 'true') {
+      return;
+    }
+    void this.accionBloque(accion, id, true);
+  }
+
+  /** Escape cierra la hoja (si no hay un diálogo abierto encima). */
+  @HostListener('document:keydown.escape')
+  alEscaparHoja(): void {
+    if (this.hoja() !== null && !this.host.nativeElement.ownerDocument.querySelector('dialog[open]')) {
+      this.cerrarHoja(true);
+    }
+  }
+
+  private enfocarBloque(foco: string, enLaHoja: boolean): void {
+    if (enLaHoja) {
+      this.enfocarDespues(`.hoja [data-h="${foco}"]`);
+      return;
+    }
+    this.mostrarBloque = true;
+    this.enviarFocoBloque(foco);
+  }
+
+  private enviarFocoBloque(foco: string): void {
+    const iframe = this.iframe()?.nativeElement;
+    if (!this.ventana || !iframe) {
+      return;
+    }
+    // El foco pasa a la vista previa (el panel lo tenía en un botón suyo o en el diálogo).
+    iframe.focus({ preventScroll: true });
+    enviarPorPuente(this.ventana, iframe.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'foco-bloque', foco });
+  }
+
+  /** Solo si cambia respecto a lo que ya tiene la capa. */
+  private enviarEstadoBloques(): void {
+    const sinGuardar = this.sinGuardar();
+    const quitables = this.quitables();
+    const estrecho = this.estrecho();
+    const firma = JSON.stringify([sinGuardar, quitables, estrecho]);
+    if (!this.ventana || firma === this.estadoBloquesEnviado) {
+      return;
+    }
+    const enviado = enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, {
+      canal: CANAL_EDITOR_WEB,
+      tipo: 'estado-bloques',
+      sinGuardar,
+      quitables,
+      estrecho,
+    });
+    if (enviado) {
+      this.estadoBloquesEnviado = firma;
     }
   }
 

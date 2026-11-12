@@ -1,5 +1,5 @@
 <main class="pn web-contenido" pnAcento aria-labelledby="web-contenido-titulo">
-  <div class="web-contenido__pagina" [class.con-barra]="barraVisible()">
+  <div class="web-contenido__pagina" [class.con-barra]="barraVisible()" [class.con-hoja]="vistaHoja() !== null">
     <nav class="migas" aria-label="Ruta"><span>Web</span><span aria-hidden="true">/</span></nav>
     <header class="cabecera">
       <div class="cabecera__texto">
@@ -209,6 +209,46 @@
         <button pnOcupado type="button" class="primario" [ocupado]="guardando()" [deshabilitado]="subiendo()" [textoOcupado]="textosGuardar.guardando" (click)="guardar()">{{ textosGuardar.guardar }}</button>
       </div>
       }
+    </div>
+    }
+    @if (vistaHoja(); as h) {
+    <!-- W12e: hoja inferior de acciones del bloque (panel < 768 px; boceto `abrirHoja`, `pintarHoja`) -->
+    <div class="hoja" role="dialog" aria-labelledby="hoja-t">
+      <div class="hoja__asa" aria-hidden="true"></div>
+      <div class="hoja__cab"><div><h2 id="hoja-t">{{ h.nombre }}</h2><p>{{ h.linea }}</p></div></div>
+      <div class="hoja__acc">
+        <button type="button" class="secundario" data-h="h-subir" [attr.aria-disabled]="h.primero ? 'true' : null"
+          [attr.aria-label]="etiquetaAccion(textosBloques.subir, h.nombre)" (click)="pulsarHoja($event, 'subir')">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"></path></svg>{{ textosBloques.subir }}
+        </button>
+        <button type="button" class="secundario" data-h="h-bajar" [attr.aria-disabled]="h.ultimo ? 'true' : null"
+          [attr.aria-label]="etiquetaAccion(textosBloques.bajar, h.nombre)" (click)="pulsarHoja($event, 'bajar')">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>{{ textosBloques.bajar }}
+        </button>
+        @if (h.oculto) {
+        <button type="button" class="secundario" data-h="h-vis" [attr.aria-label]="etiquetaAccion(textosBloques.mostrar, h.nombre)"
+          (click)="pulsarHoja($event, 'mostrar')">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M2.5 12C3.5 10 7 6 12 6s8.5 4 9.5 6c-1 2-4.5 6-9.5 6s-8.5-4-9.5-6Z"></path><circle cx="12" cy="12" r="3"></circle></svg>{{ textosBloques.mostrar }}
+        </button>
+        } @else {
+        <button type="button" class="secundario" data-h="h-vis" [attr.aria-label]="etiquetaAccion(textosBloques.ocultar, h.nombre)"
+          (click)="pulsarHoja($event, 'ocultar')">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.1A10 10 0 0 1 12 6c5 0 8.5 4 9.5 6a14 14 0 0 1-2.6 3.4M6.6 6.7C4.6 8 3.2 10 2.5 12c1 2 4.5 6 9.5 6a9.6 9.6 0 0 0 4.4-1"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path></svg>{{ textosBloques.ocultar }}
+        </button>
+        }
+        @if (h.quitable) {
+        <button type="button" class="secundario hoja__quitar" data-h="h-quitar" [attr.aria-label]="etiquetaAccion(textosBloques.quitar, h.nombre)"
+          (click)="pulsarHoja($event, 'quitar')">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4.5h6V7"></path></svg>{{ textosBloques.quitar }}
+        </button>
+        }
+      </div>
+      <button type="button" class="secundario hoja__listo" (click)="cerrarHoja(true)">{{ textosBloques.listo }}</button>
     </div>
     }
     <!-- Fuera de los estados: tiene que existir antes de que cambie su texto para que se anuncie («Contenido cargado.»). -->

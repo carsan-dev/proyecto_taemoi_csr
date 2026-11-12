@@ -344,3 +344,29 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
   .barra__acciones button { flex: 1; min-height: 44px; }
   .barra__acciones .secundario { flex: 0 0 auto; }
 }
+
+// W12e: hoja inferior de acciones del bloque (panel < 768 px; boceto `.hoja`, `.hoja__*`, `body.con-hoja .barra`). Por
+// encima de la barra inferior del panel, como el menú «Ver el caso» en móvil.
+.hoja {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1020;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+  background: var(--pn-superficie);
+  box-shadow: var(--pn-sombra-hoja);
+}
+.hoja__asa { width: 36px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: var(--pn-linea-fuerte); }
+.hoja__cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.hoja__cab h2 { margin: 0; font: var(--pn-titulo-bloque); }
+.hoja__cab p { margin: 4px 0 0; color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.hoja__acc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.hoja .secundario { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin-top: 0; }
+.hoja .secundario svg { flex: none; width: 18px; height: 18px; }
+.hoja .secundario[aria-disabled='true'] { opacity: 0.55; cursor: default; }
+.hoja__acc .hoja__quitar { grid-column: 1 / -1; border-color: var(--pn-linea-fuerte); background: var(--pn-superficie); color: var(--pn-peligro); }
+.hoja__acc .hoja__quitar:hover { background: #fbf4f3; }
+.hoja .hoja__listo { width: 100%; margin-top: 8px; }
+.con-hoja .barra { visibility: hidden; }
