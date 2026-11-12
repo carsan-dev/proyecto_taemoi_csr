@@ -1,6 +1,8 @@
 import { esFotoEditable, fotoDeDescripcion } from '../../../web-plantilla/editor/fotos-sueltas';
 import { esFotoProfesor, etiquetaMonograma, numeroPermiso } from '../../../web-plantilla/editor/fotos-profesores';
 import { defTexto, esTextoEditable } from '../../../web-plantilla/editor/textos-editor';
+import { ordenCompleto } from '../../../web-plantilla/editor/bloques-editor';
+import { cambiosBloques } from './web-contenido-bloques';
 import { cuerpoGuardar, erroresContenido, nombreError, ponerTexto } from './web-contenido-guardar';
 import { queFoto } from './web-contenido-fotos';
 import {
@@ -8,6 +10,7 @@ import {
   cambiosProfesores,
   erroresProfesores,
   estadoProfesores,
+  marcasVigentes,
   numeroProfesorNuevo,
   numerosProfesores,
   permisosParaEnviar,
@@ -220,5 +223,52 @@ describe('profesores de «Web · Contenido» (W12f-2b, lógica pura)', () => {
     const otro = ponerTexto(GUARDADO, 'profesor.3.nombre', 'Lucía F.');
     expect(cambiosProfesores(GUARDADO, otro, new Set([3])).claves).toEqual(['profesor.3.permiso']);
     expect(cambiosProfesores(GUARDADO, GUARDADO, new Set([3])).claves).toEqual([]);
+  });
+
+  describe('permiso ligado al nombre con que se marcó (decisión del propietario, 12/11)', () => {
+    const conNuevo = (nombre: string) => ponerTexto(anadirProfesor(GUARDADO, GUARDADO, [1, 3])!.filas, 'profesor.4.nombre', nombre);
+
+    it('la marca cuenta solo con el mismo nombre (como la API: `strip()`); con otro, no', () => {
+      const marcas = new Map([[4, 'Ana Ruiz']]);
+      expect([...marcasVigentes(conNuevo('Ana Ruiz'), marcas)]).toEqual([4]);
+      expect([...marcasVigentes(conNuevo('  Ana Ruiz\t'), marcas)]).toEqual([4]);
+      expect([...marcasVigentes(conNuevo('Ana Ruiz Gil'), marcas)]).toEqual([]);
+      expect([...marcasVigentes(conNuevo('ana ruiz'), marcas)]).toEqual([]);
+      // Sin la fila del nombre (quitado), tampoco.
+      expect([...marcasVigentes(quitarProfesor(conNuevo('Ana Ruiz'), 4), marcas)]).toEqual([]);
+    });
+
+    it('invariante: el PUT nunca lleva `permiso: true` con un nombre distinto del que había al marcar', () => {
+      const nombres = ['', 'Ana', 'Ana ', 'Pedro', 'Antonio Ruiz', 'Antonio R.', ' Lucía Fernández'];
+      for (const marcadoCon of nombres) {
+        for (const ahora of nombres) {
+          for (const n of [1, 3, 4]) {
+            const base = n === 4 ? conNuevo('') : GUARDADO;
+            const borrador = ponerTexto(base, `profesor.${n}.nombre`, ahora);
+            const marcas = new Map([[n, stripJava(marcadoCon)]]);
+            const { bloques } = cuerpoGuardar(5, borrador, {}, permisosParaEnviar(GUARDADO, borrador, marcasVigentes(borrador, marcas), new Set([n])));
+            const enviado = bloques.find((b) => b.clave === `profesor.${n}.nombre`)!;
+            if (enviado.permiso === true) {
+              expect(stripJava(enviado.texto)).withContext(`${n}: «${marcadoCon}» → «${ahora}»`).toBe(stripJava(marcadoCon));
+            }
+          }
+        }
+      }
+    });
+  });
+
+  it('quitar un profesor fija antes las cabeceras: la sección no se mueve y no cuenta un cambio de orden falso', () => {
+    const sinCabeceras = [
+      fila('presentacion.texto', 'Hola', { orden: 2 }),
+      fila('profesor.1.nombre', 'Antonio Ruiz', { orden: 1, permiso: PANEL }),
+      fila('profesor.2.nombre', 'Lucía Fernández', { orden: 4, permiso: ALTA }),
+      fila('galeria.1', 'Clase', { orden: 3, imagenId: 5, imagenUrl: 'https://x/g.webp' }),
+    ];
+    const sin = quitarProfesor(sinCabeceras, 1);
+    expect(ordenCompleto(sin)).toEqual(ordenCompleto(sinCabeceras));
+    expect(cambiosBloques(sinCabeceras, sin).n).toBe(0);
+    expect(cambiosProfesores(sinCabeceras, sin, nadie).claves).toEqual(['profesor.1.quitado']);
+    // Un número que no está: nada cambia.
+    expect(quitarProfesor(sinCabeceras, 9)).toEqual(sinCabeceras);
   });
 });

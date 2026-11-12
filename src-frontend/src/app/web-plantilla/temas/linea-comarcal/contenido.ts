@@ -404,7 +404,6 @@ function idSeccion(tipo: TipoSeccion, clave: string): string {
   return tipo === 'sedes' ? 'fotos-sedes' : tipo;
 }
 
-/** Formas de la galería del boceto, en ciclo de seis. */
 /**
  * Un profesor de la sección. `marca` (W12f-2b): su número para la capa de edición (`data-ed-profesor`); solo en el
  * editor. En la web no está y la tarjeta sale igual que antes.
@@ -419,7 +418,8 @@ function profesoresDe(bloques: BloquesWeb, editor: boolean): ProfesorVista[] {
   return bloques.profesores(editor).map((p) => ({ ...p, monograma: monograma(p.nombre) || '?', ...(editor ? { marca: p.n } : {}) }));
 }
 
-const FORMAS_GALERIA = ['g-grande', '', 'g-alta', '', 'g-ancha', 'g-ancha'];
+/** Formas de la galería del boceto, en ciclo de seis. */
+const FORMAS_GALERIA =['g-grande', '', 'g-alta', '', 'g-ancha', 'g-ancha'];
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
 

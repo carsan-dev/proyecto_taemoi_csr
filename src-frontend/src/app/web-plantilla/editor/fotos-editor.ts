@@ -1,7 +1,7 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
 import { encajarEnVista } from './colocar-flotantes';
 import { GALERIA_NUEVA, MAX_GALERIA, TEXTOS_GALERIA, esFotoGaleria, ordenGaleria } from './fotos-galeria';
-import { TEXTOS_PROFESORES, esFotoProfesor } from './fotos-profesores';
+import { OP_QUITAR_PROFESOR, TEXTOS_PROFESORES, esFotoProfesor, numeroProfesor } from './fotos-profesores';
 import {
   FORMATOS_FOTO,
   MAX_DESCRIPCION_FOTO,
@@ -658,6 +658,11 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       datos.push(datosOpcion('quitar', galeria ? TEXTOS_GALERIA.quitar : 'Quitar foto', 'papelera', pie, true));
     }
     if (estrecho()) {
+      if (esFotoProfesor(clave)) {
+        // Decisión del propietario (12/11): con el panel estrecho la barra «Quitar» de la tarjeta no se ve (boceto); su
+        // hoja lo ofrece al final, en peligro (la hoja pone el separador). El menú flotante de escritorio no cambia.
+        datos.push(datosOpcion(OP_QUITAR_PROFESOR, TEXTOS_PROFESORES.quitarProfesor, 'papelera', '', true));
+      }
       // d541: hoja inferior del panel; ella devuelve la opción elegida (`respuestaMenu`). Las desactivadas no valen.
       const id = ++ultimaHoja;
       abierto = { clave, tipo: 'menu', enHoja: { id, ops: datos.filter((d) => !d.desactivada).map((d) => d.op), avisar: true } };
@@ -809,6 +814,15 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       case 'describir':
         abrirDescribir(clave, false);
         break;
+      case OP_QUITAR_PROFESOR: {
+        // El panel confirma; al cancelar devuelve el foco a esta foto (`foco-profesor` `foto:<n>`).
+        const n = numeroProfesor(clave);
+        cerrar(false);
+        if (n !== null) {
+          enviar({ canal: CANAL_EDITOR_WEB, tipo: 'profesor', accion: 'quitar', n, desde: 'foto' });
+        }
+        break;
+      }
       case 'anterior':
       case 'quitar':
       case 'antes':

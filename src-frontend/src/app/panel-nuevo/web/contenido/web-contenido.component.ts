@@ -151,10 +151,11 @@ import {
   esDeProfesorFuera,
   estadoProfesores,
   filasDeProfesor,
+  marcasVigentes,
   numerosProfesores,
   permisosParaEnviar,
-  pidePermiso,
   quitarProfesor,
+  stripJava,
   vecinoProfesor,
 } from './web-contenido-profesores';
 import { ListasVista, WebContenidoService } from './web-contenido.service';
@@ -266,13 +267,18 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly fotosCambiadas = computed(() => fotosCambiadas(this.guardado(), this.borrador()));
   /** W12e: orden, ocultos, añadidos y quitados (boceto `cambios`). */
   readonly cambiosBloques = computed(() => cambiosBloques(this.guardado(), this.borrador()));
-  /** W12f-2b: casillas del permiso marcadas en esta pantalla, por número de profesor (no se guardan en ningún sitio). */
-  readonly permisosMarcados = signal<ReadonlySet<number>>(new Set());
+  /**
+   * W12f-2b: casillas del permiso marcadas en esta pantalla (no se guardan en ningún sitio): por número de profesor, el
+   * nombre (`stripJava`) con el que se marcó. Decisión del propietario (12/11): si el nombre cambia, la marca se va.
+   */
+  readonly permisosMarcados = signal<ReadonlyMap<number, string>>(new Map());
+  /** Las marcas que cuentan: las de los profesores cuyo nombre sigue siendo el de cuando se marcaron. */
+  readonly permisosVigentes = computed(() => marcasVigentes(this.borrador(), this.permisosMarcados()));
   /** W12f-2b: los profesores cuyo permiso pidió la API en el último intento (400 `profesor.<n>.permiso`). */
   readonly permisosPedidos = signal<ReadonlySet<number>>(new Set());
   /** W12f-2b: profesores añadidos y quitados, fotos, sedes y casillas (boceto `cambios`). */
   readonly cambiosProfesores = computed(() =>
-    cambiosProfesores(this.guardado(), this.borrador(), this.permisosMarcados(), this.permisosPedidos()),
+    cambiosProfesores(this.guardado(), this.borrador(), this.permisosVigentes(), this.permisosPedidos()),
   );
   /** Los textos y fotos de un bloque (o un profesor) añadido o quitado no cuentan aparte: cuenta él (boceto `cambios`). */
   private readonly clavesQueCuentan = computed(() => {
@@ -321,7 +327,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   /** Lo que falta para guardar (boceto `errores()`), con los profesores (W12f-2b: permiso obligatorio). */
   readonly errores = computed<Record<string, string>>(() => ({
     ...erroresContenido(this.borrador(), this.defectos()),
-    ...erroresProfesores(this.guardado(), this.borrador(), this.permisosMarcados(), this.permisosPedidos()),
+    ...erroresProfesores(this.guardado(), this.borrador(), this.permisosVigentes(), this.permisosPedidos()),
   }));
   readonly erroresVisibles = computed<Record<string, string>>(() => {
     if (!this.mostrarErrores()) {
@@ -529,7 +535,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         this.tema.set(temaDeLaVista(estado));
         this.leerListas(temaDeLaVista(estado));
         this.ponerContenido(contenido.version, contenido.bloques);
-        this.permisosMarcados.set(new Set());
+        this.permisosMarcados.set(new Map());
         this.permisosPedidos.set(new Set());
         this.defectos.set({});
         this.conflicto.set(false);
@@ -777,7 +783,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         if (mensaje.accion === 'anadir') {
           this.anadirProfesor();
         } else if (mensaje.accion === 'quitar') {
-          void this.quitarProfesor(mensaje.n);
+          void this.quitarProfesor(mensaje.n, mensaje.desde);
         } else {
           this.marcarPermiso(mensaje.n, mensaje.marcada);
         }
@@ -855,9 +861,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     // W12f-2b: una fila nueva de profesor (su cargo) no mueve la sección: antes, cada bloque con su cabecera.
     const nueva = n !== null && !this.borrador().some((f) => f.clave === clave);
     this.borrador.update((filas) => ponerTexto(nueva ? conCabeceras(filas) : filas, clave, recortado));
-    // Si el nombre vuelve al guardado, vuelve la constancia: la casilla marcada para otro nombre deja de valer.
-    if (n !== null && clave.endsWith('.nombre') && this.permisosMarcados().has(n) && !pidePermiso(this.guardado(), this.borrador(), n)) {
+    // Decisión del propietario (12/11): el permiso es del nombre con que se marcó. Si cambia (`stripJava`, como la API),
+    // también al volver al guardado, la casilla se desmarca sola y se dice una vez (con ella ya fuera, no se repite).
+    const marcadoCon = n !== null && clave.endsWith('.nombre') ? this.permisosMarcados().get(n) : undefined;
+    if (n !== null && marcadoCon !== undefined && stripJava(this.borrador().find((f) => f.clave === clave)?.texto) !== marcadoCon) {
       this.ponerMarca(n, false);
+      this.anuncio.set(TEXTOS_PROFESORES.vozDesmarcado);
     }
     this.limpiarErrores([clave]);
   }
@@ -882,8 +891,11 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.anuncio.set(TEXTOS_PROFESORES.vozAnadido);
   }
 
-  /** Boceto `quitarProfe`: con confirmación; se van todas sus filas (nombre, cargo, foto y sedes) y su subida. */
-  private async quitarProfesor(n: number): Promise<void> {
+  /**
+   * Boceto `quitarProfe`: con confirmación; se van todas sus filas (nombre, cargo, foto y sedes) y su subida. `desde`
+   * `foto`: desde la hoja de su foto (panel estrecho, sin la barra de la tarjeta); al cancelar, el foco vuelve a su foto.
+   */
+  private async quitarProfesor(n: number, desde?: 'foto'): Promise<void> {
     if (!this.puedeTocarBloques() || !numerosProfesores(this.borrador()).includes(n)) {
       return;
     }
@@ -897,7 +909,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       nombre: 'quitar-profesor',
     });
     if (!r.confirmado || !this.puedeTocarBloques() || !numerosProfesores(this.borrador()).includes(n)) {
-      this.enviarFocoProfesor(`quitar:${n}`);
+      this.enviarFocoProfesor(desde === 'foto' ? `foto:${n}` : `quitar:${n}`);
       return;
     }
     const vecino = vecinoProfesor(this.borrador(), n);
@@ -928,26 +940,30 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.anuncio.set(marcada ? TEXTOS_PROFESORES.vozMarcado : TEXTOS_PROFESORES.vozDesmarcado);
   }
 
+  /** Marcada, con el nombre que tiene ahora (`stripJava`): la marca vale para ese nombre y solo para él. */
   private ponerMarca(n: number, marcada: boolean): void {
-    if (this.permisosMarcados().has(n) === marcada) {
+    const actual = this.permisosMarcados();
+    const nombre = stripJava(this.borrador().find((f) => f.clave === `profesor.${n}.nombre`)?.texto);
+    if (marcada ? actual.get(n) === nombre : !actual.has(n)) {
       return;
     }
-    this.permisosMarcados.update((s) => {
-      const nuevo = new Set(s);
-      if (marcada) {
-        nuevo.add(n);
-      } else {
-        nuevo.delete(n);
-      }
-      return nuevo;
-    });
+    const nuevo = new Map(actual);
+    if (marcada) {
+      nuevo.set(n, nombre);
+    } else {
+      nuevo.delete(n);
+    }
+    this.permisosMarcados.set(nuevo);
   }
 
-  /** Solo si cambia respecto a lo que ya tiene la capa. */
+  /**
+   * Solo si cambia respecto a lo que ya tiene la capa. d521: la constancia (quién y cuándo) solo sale hacia el iframe
+   * con la capa de edición confirmada (`listo`, que pone la vista previa en `listo`); al llegarlo, se manda entera.
+   */
   private enviarProfesores(): void {
-    const lista = estadoProfesores(this.guardado(), this.borrador(), this.permisosMarcados(), this.permisosPedidos());
+    const lista = estadoProfesores(this.guardado(), this.borrador(), this.permisosVigentes(), this.permisosPedidos());
     const firma = JSON.stringify(lista);
-    if (!this.ventana || firma === this.profesoresEnviado) {
+    if (!this.ventana || this.carga() !== 'listo' || firma === this.profesoresEnviado) {
       return;
     }
     if (enviarPorPuente(this.ventana, this.iframe()?.nativeElement.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'profesores', lista })) {
@@ -1161,7 +1177,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.guardando.set(true);
     const enviado = this.borrador();
     // W12f-2b: `permiso: true` solo en los que lo necesitan y tienen la casilla marcada en esta pantalla.
-    const permisos = permisosParaEnviar(this.guardado(), enviado, this.permisosMarcados(), this.permisosPedidos());
+    // Decisión del propietario (12/11): solo las marcas cuyo nombre es el que se envía (el de cuando se marcaron).
+    const permisos = permisosParaEnviar(this.guardado(), enviado, marcasVigentes(enviado, this.permisosMarcados()), this.permisosPedidos());
     this.servicio.guardar(cuerpoGuardar(this.version(), enviado, this.defectos(), permisos)).subscribe({
       next: (contenido) => {
         this.guardando.set(false);
@@ -1174,7 +1191,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         );
         this.ponerContenido(contenido.version, contenido.bloques);
         // W12f-2b: lo guardado ya trae la constancia; solo siguen las casillas de los añadidos durante «Guardando…».
-        this.permisosMarcados.update((s) => new Set([...s].filter((n) => !enviado.some((f) => numeroProfesor(f.clave) === n))));
+        this.permisosMarcados.update((s) => new Map([...s].filter(([n]) => !enviado.some((f) => numeroProfesor(f.clave) === n))));
         this.permisosPedidos.set(new Set());
         if (tecleado.length) {
           this.borrador.update((filas) => tecleado.reduce((f, [clave, texto]) => ponerTexto(f, clave, texto), filas));
@@ -1222,7 +1239,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.hoja.set(null);
     this.borrador.set(this.guardado());
     // W12f-2b: las casillas vuelven a como estaban; los números ya dados siguen dados (d531).
-    this.permisosMarcados.set(new Set());
+    this.permisosMarcados.set(new Map());
     this.permisosPedidos.set(new Set());
     this.cerrarAvisoError();
     this.mostrarErrores.set(false);

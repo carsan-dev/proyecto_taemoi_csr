@@ -189,6 +189,60 @@ describe('profesores en el sitio (W12f-2b, capa de edición)', () => {
     expect(doc.activeElement!.closest('li.profe')).toBe(tarjeta(4));
   });
 
+  describe('panel estrecho: «Quitar profesor» en la hoja de su foto (decisión del propietario, 12/11)', () => {
+    const idActual = () => mensajes('hoja-menu').at(-1)!['id'] as number;
+    const opsHoja = () => (mensajes('hoja-menu').at(-1)!['opciones'] as { op: string; texto: string; pie: string; icono: string; peligro: boolean }[]);
+    const respuesta = (op: string | null) =>
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'foto', id: idActual(), op, devolverFoco: false });
+    const fotoDe = (n: number) => tarjeta(n).querySelector<HTMLButtonElement>('.ed-foto')!;
+
+    beforeEach(() => delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'estado-bloques', sinGuardar: [], quitables: [], estrecho: true }));
+
+    it('con foto: …, «Quitar foto» y, al final, «Quitar profesor» en peligro (cada uno tras su separador)', () => {
+      fotoDe(1).click();
+      expect(opsHoja().map((o) => [o.op, o.texto, o.pie, o.icono, o.peligro])).toEqual([
+        ['subir', 'Cambiar foto', 'JPG, PNG o WebP, hasta 50 MB', 'foto', false],
+        ['describir', 'Describir la foto', '«Antonio en el tatami»', 'texto', false],
+        ['quitar', 'Quitar foto', 'Sale con sus iniciales', 'papelera', true],
+        ['quitar-profesor', 'Quitar profesor', '', 'papelera', true],
+      ]);
+    });
+
+    it('sin foto (monograma): «Añadir foto» y «Quitar profesor»', () => {
+      fotoDe(4).click();
+      expect(opsHoja().map((o) => [o.op, o.texto, o.peligro])).toEqual([
+        ['subir', 'Añadir foto', false],
+        ['quitar-profesor', 'Quitar profesor', true],
+      ]);
+    });
+
+    it('elegirla pide al panel quitar a ese profesor desde su foto (el panel confirma)', () => {
+      fotoDe(4).click();
+      respuesta('quitar-profesor');
+      expect(mensajes('profesor').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'profesor', accion: 'quitar', n: 4, desde: 'foto' });
+      expect(fotoDe(4).getAttribute('aria-expanded')).toBe('false');
+      expect(mensajes('foto')).toEqual([]);
+    });
+
+    it('confirmación cancelada: el foco vuelve al botón de su foto o monograma', async () => {
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'foco-profesor', foco: 'foto:4' });
+      await esperar(20);
+      expect(doc.activeElement).toBe(fotoDe(4));
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'foco-profesor', foco: 'foto:1' });
+      await esperar(20);
+      expect(doc.activeElement).toBe(fotoDe(1));
+    });
+
+    it('con el panel ancho, el menú flotante no cambia: sin «Quitar profesor» (está la barra de la tarjeta)', () => {
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'estado-bloques', sinGuardar: [], quitables: [], estrecho: false });
+      fotoDe(1).click();
+      const opciones = Array.from(doc.querySelectorAll<HTMLElement>('.flot [role=menuitem]')).map(texto);
+      expect(opciones).toEqual(['Cambiar fotoJPG, PNG o WebP, hasta 50 MB', 'Describir la foto«Antonio en el tatami»', 'Quitar fotoSale con sus iniciales']);
+      expect(doc.querySelector('.flot [data-op="quitar-profesor"]')).toBeNull();
+      expect(mensajes('hoja-menu')).toEqual([]);
+    });
+  });
+
   it('la constancia no llega al tema ni sale fuera de las tarjetas del editor', () => {
     expect(doc.querySelectorAll('.ed-constancia').length).toBe(1);
     expect(doc.querySelector('.ed-constancia')!.closest('li.profe[data-ed-profesor]')).not.toBeNull();

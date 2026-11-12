@@ -342,6 +342,213 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     expect(confirmar).toHaveBeenCalledWith(jasmine.objectContaining({ titulo: 'Tienes 1 cambio sin guardar' }));
   });
 
+  describe('permiso ligado al nombre con que se marcó (decisión del propietario, 12/11)', () => {
+    const permisoDe = (n: number) => profesores().find((p) => p.n === n)!.permiso;
+    const SIN_MARCAR = { tipo: 'casilla', marcada: false };
+
+    it('nuevo: marcar y cambiar el nombre la desmarca, lo dice una vez y no mueve el foco; volver al nombre no la recupera', () => {
+      abrir();
+      profesor({ accion: 'anadir' });
+      escribir('profesor.4.nombre', 'Ana');
+      profesor({ accion: 'permiso', n: 4, marcada: true });
+      const voz = spyOn(fixture.componentInstance.anuncio, 'set').and.callThrough();
+      const focos = mensajes('foco-profesor').length;
+      // Solo espacios en los extremos: el mismo nombre para la API (`strip()`), la casilla sigue.
+      escribir('profesor.4.nombre', 'Ana ');
+      expect(permisoDe(4)).toEqual({ tipo: 'casilla', marcada: true });
+      // Letra a letra: se desmarca con la primera y se dice una sola vez.
+      escribir('profesor.4.nombre', 'Ana P');
+      escribir('profesor.4.nombre', 'Ana Pe');
+      escribir('profesor.4.nombre', 'Ana Pedro');
+      expect(permisoDe(4)).toEqual(SIN_MARCAR);
+      expect(voz.calls.allArgs().filter(([t]) => t === 'Permiso desmarcado.').length).toBe(1);
+      expect(anuncio()).toBe('Permiso desmarcado.');
+      expect(mensajes('foco-profesor').length).toBe(focos);
+      escribir('profesor.4.nombre', 'Ana');
+      expect(permisoDe(4)).toEqual(SIN_MARCAR);
+
+      boton('Guardar')!.click();
+      fixture.detectChanges();
+      http.expectNone((r) => r.method === 'PUT');
+      expect(resumen()).toEqual(['Ana: permiso para publicar']);
+
+      // Marcada otra vez con este nombre: `true` con este nombre.
+      profesor({ accion: 'permiso', n: 4, marcada: true });
+      const put = guardar();
+      expect(bloquesPut(put).filter((b) => 'permiso' in b)).toEqual([jasmine.objectContaining({ clave: 'profesor.4.nombre', texto: 'Ana', permiso: true })]);
+      put.flush({ version: 6, bloques: BLOQUES });
+    });
+
+    it('guardado renombrado: marcar y volver a renombrar la desmarca; volver al nombre marcado no la recupera; sin PUT', () => {
+      abrir();
+      escribir('profesor.1.nombre', 'Antonio R.');
+      profesor({ accion: 'permiso', n: 1, marcada: true });
+      escribir('profesor.1.nombre', 'Antonio Ruiz Gil');
+      expect(permisoDe(1)).toEqual(SIN_MARCAR);
+      expect(anuncio()).toBe('Permiso desmarcado.');
+      escribir('profesor.1.nombre', 'Antonio R.');
+      expect(permisoDe(1)).toEqual(SIN_MARCAR);
+      boton('Guardar')!.click();
+      fixture.detectChanges();
+      http.expectNone((r) => r.method === 'PUT');
+      expect(resumen()).toEqual(['Antonio R.: permiso para publicar']);
+    });
+
+    it('marcado y vuelto al nombre guardado: vuelve la constancia; el PUT no manda `permiso`', () => {
+      abrir();
+      escribir('profesor.1.nombre', 'Antonio R.');
+      profesor({ accion: 'permiso', n: 1, marcada: true });
+      escribir('profesor.1.nombre', 'Antonio Ruiz');
+      expect(permisoDe(1)['tipo']).toBe('constancia');
+      escribir('profesor.1.cargo', 'Maestro');
+      const put = guardar();
+      expect(bloquesPut(put).some((b) => 'permiso' in b)).toBeFalse();
+      put.flush({ version: 6, bloques: BLOQUES });
+    });
+
+    it('guardado con éxito y renombrado después: pide de nuevo la casilla, sin marcar', () => {
+      abrir();
+      profesor({ accion: 'anadir' });
+      escribir('profesor.4.nombre', 'Rosa Gil');
+      profesor({ accion: 'permiso', n: 4, marcada: true });
+      guardar().flush({ version: 6, bloques: [...BLOQUES, fila('profesor.4.nombre', 'Rosa Gil', { permiso: { origen: 'PANEL', por: 'Carlos Sánchez', en: '2026-11-12T19:00:00' } })] });
+      fixture.detectChanges();
+      expect(permisoDe(4)['tipo']).toBe('constancia');
+      escribir('profesor.4.nombre', 'Rosa Gil Prieto');
+      expect(permisoDe(4)).toEqual(SIN_MARCAR);
+      boton('Guardar')!.click();
+      fixture.detectChanges();
+      http.expectNone((r) => r.method === 'PUT');
+      expect(resumen()).toEqual(['Rosa Gil Prieto: permiso para publicar']);
+    });
+
+    it('409 y recargar con casillas marcadas: marcas limpias; el número 4 ya dado no se repite (el nuevo es el 5)', () => {
+      spyOn(TestBed.inject(AvisosService), 'info').and.returnValue(3);
+      abrir();
+      profesor({ accion: 'anadir' });
+      escribir('profesor.4.nombre', 'Rosa Gil');
+      profesor({ accion: 'permiso', n: 4, marcada: true });
+      escribir('profesor.1.nombre', 'Antonio R.');
+      profesor({ accion: 'permiso', n: 1, marcada: true });
+      guardar().flush({ mensaje: 'Otra persona…' }, { status: 409, statusText: 'Conflict' });
+      fixture.detectChanges();
+      fixture.componentInstance.recargar();
+      fixture.detectChanges();
+      http.expectOne(URL).flush(PUBLICADA);
+      http.expectOne(URL_CONTENIDO).flush(CONTENIDO);
+      http.match((r) => r.url.startsWith(URL_PUBLICA)).forEach((r) => r.flush(r.request.url.endsWith('/eventos') ? { proximos: [], anteriores: [] } : { sedes: [] }));
+      fixture.detectChanges();
+      const ventana = iframe()!.contentWindow!;
+      enviados = jasmine.isSpy(ventana.postMessage) ? (ventana.postMessage as jasmine.Spy) : spyOn(ventana, 'postMessage');
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
+
+      escribir('profesor.1.nombre', 'Antonio R.');
+      expect(permisoDe(1)).toEqual(SIN_MARCAR);
+      profesor({ accion: 'anadir' });
+      expect(profesores().at(-1)).toEqual({ n: 5, nombre: '', permiso: SIN_MARCAR });
+      expect(profesores().some((p) => p.n === 4)).toBeFalse();
+    });
+  });
+
+  it('d521: sin `listo` de la capa no sale la constancia hacia el iframe; con `listo`, sí', () => {
+    const todos: unknown[] = [];
+    const espiadas = new WeakSet<Window>();
+    const real = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'contentWindow')!.get!;
+    spyOnProperty(HTMLIFrameElement.prototype, 'contentWindow').and.callFake(function (this: HTMLIFrameElement) {
+      const w = real.call(this) as Window | null;
+      if (w && !espiadas.has(w)) {
+        espiadas.add(w);
+        w.postMessage = ((m: unknown) => todos.push(m)) as typeof w.postMessage;
+      }
+      return w;
+    });
+    fixture = TestBed.createComponent(WebContenidoComponent);
+    fixture.detectChanges();
+    http.expectOne(URL).flush(PUBLICADA);
+    http.expectOne(URL_CONTENIDO).flush(CONTENIDO);
+    http.expectOne((r) => r.url === URL_PUBLICA).flush({ sedes: [{ nombre: 'Herrera', slug: 'herrera' }] });
+    http.expectOne((r) => r.url === `${URL_PUBLICA}/eventos`).flush({ proximos: [], anteriores: [] });
+    fixture.detectChanges();
+    fixture.detectChanges();
+    expect(iframe()).not.toBeNull();
+    // Algo sí sale (errores, fotos), pero nada de quién marcó ni cuándo.
+    expect(todos.length).toBeGreaterThan(0);
+    const antes = JSON.stringify(todos);
+    expect(todos.some((m) => (m as Mensaje).tipo === 'profesores')).toBeFalse();
+    for (const prohibido of ['María Ruiz', 'Permiso marcado', 'Permiso dado', 'constancia', '03/11/2026', '01/10/2026']) {
+      expect(antes).not.toContain(prohibido);
+    }
+
+    window.dispatchEvent(new MessageEvent('message', { data: { canal: CANAL_EDITOR_WEB, tipo: 'listo' }, origin: location.origin, source: iframe()!.contentWindow }));
+    fixture.detectChanges();
+    const lista = todos.filter((m) => (m as Mensaje).tipo === 'profesores');
+    expect(lista.length).toBe(1);
+    expect(JSON.stringify(lista[0])).toContain('Permiso marcado por María Ruiz el 03/11/2026');
+  });
+
+  it('quitar desde la hoja de su foto (panel estrecho): la misma confirmación; cancelada, el foco vuelve a su foto', async () => {
+    confirmar.and.resolveTo({ confirmado: false } as never);
+    abrir();
+    profesor({ accion: 'quitar', n: 3, desde: 'barra' });
+    await fixture.whenStable();
+    expect(confirmar).not.toHaveBeenCalled();
+
+    profesor({ accion: 'quitar', n: 3, desde: 'foto' });
+    await fixture.whenStable();
+    expect(confirmar).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({
+        titulo: '¿Quitar a Lucía Fernández de la web?',
+        mensaje: 'Deja de salir al guardar. Su ficha en el equipo no cambia.',
+        accion: 'Quitar profesor',
+        destructivo: true,
+      }),
+    );
+    expect(ultimo('foco-profesor')!['foco']).toBe('foto:3');
+    expect(borrador().some((b) => b.clave === 'profesor.3.nombre')).toBeTrue();
+
+    confirmar.and.resolveTo({ confirmado: true } as never);
+    profesor({ accion: 'quitar', n: 3, desde: 'foto' });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(borrador().some((b) => b.clave.startsWith('profesor.3.'))).toBeFalse();
+    expect(ultimo('foco-profesor')!['foco']).toBe('quitar:1');
+    expect(anuncio()).toBe('Lucía Fernández: quitado. Se quita de la web al guardar.');
+  });
+
+  it('quitar sin cabeceras guardadas: la sección no se mueve y cuenta un único cambio', async () => {
+    abrir({
+      version: 5,
+      bloques: [
+        fila('presentacion.texto', 'Hola', { orden: 2 }),
+        fila('profesor.1.nombre', 'Antonio Ruiz', { orden: 1, permiso: PANEL }),
+        fila('profesor.2.nombre', 'Lucía Fernández', { orden: 4, permiso: ALTA }),
+        fila('galeria.1', 'Clase', { orden: 3, imagenId: 5, imagenUrl: 'https://x/g.webp' }),
+      ],
+    });
+    profesor({ accion: 'quitar', n: 1 });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+  });
+
+  it('foto de un profesor que sube mientras se le quita y se añade otro: la respuesta tardía no llega a ninguno', async () => {
+    abrir();
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'subir-foto', clave: 'profesor.3.foto', archivo: new File(['x'], 'lucia.jpg', { type: 'image/jpeg' }) });
+    const subida = http.expectOne((r) => r.method === 'POST' && r.url === URL_IMAGENES);
+    profesor({ accion: 'quitar', n: 3 });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    profesor({ accion: 'anadir' });
+    expect(profesores().at(-1)!.n).toBe(4);
+    expect(subida.cancelled).toBeTrue();
+    // La respuesta ya no tiene a quién llegar: la petición está cortada.
+    expect(() => subida.flush({ imagenId: 61, url: 'https://x/tarde.webp' }, { status: 201, statusText: 'Created' })).toThrow();
+    fixture.detectChanges();
+    expect(borrador().some((b) => b.clave === 'profesor.3.foto' || b.clave === 'profesor.4.foto')).toBeFalse();
+    expect(JSON.stringify(borrador())).not.toContain('tarde.webp');
+    expect(ultimo('fotos')!['subidas']).toEqual({});
+  });
+
   it('mensajes de profesor mal formados se ignoran (número fuera de 1-99, sin marcada)', () => {
     abrir();
     profesor({ accion: 'quitar', n: 100 });

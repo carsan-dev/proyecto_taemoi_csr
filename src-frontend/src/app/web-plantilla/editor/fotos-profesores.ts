@@ -63,7 +63,12 @@ export const TEXTOS_PROFESORES = {
   vozDesmarcado: 'Permiso desmarcado.',
   confirmarTexto: 'Deja de salir al guardar. Su ficha en el equipo no cambia.',
   confirmarAccion: 'Quitar profesor',
+  /** La opción de la hoja de su foto con el panel estrecho (decisión del propietario, 12/11). */
+  quitarProfesor: 'Quitar profesor',
 } as const;
+
+/** La opción «Quitar profesor» de la hoja de su foto (panel estrecho): lo que la hoja devuelve a la capa. */
+export const OP_QUITAR_PROFESOR = 'quitar-profesor';
 
 /** Boceto `profeHtml`: «Quitar a Antonio Ruiz de la web». */
 export const etiquetaQuitarProfesor = (nombre: string | null | undefined) => `Quitar a ${nombreProfesor(nombre)} de la web`;

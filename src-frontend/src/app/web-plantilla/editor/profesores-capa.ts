@@ -256,6 +256,10 @@ export function activarProfesoresEditor(opciones: OpcionesProfesoresEditor): Pro
     if (tipo === 'permiso') {
       return casilla(Number(n));
     }
+    if (tipo === 'foto') {
+      // Quitar cancelado desde la hoja de su foto: al botón de la foto o del monograma (lo pone `fotos-editor.ts`).
+      return doc.querySelector<HTMLElement>(`.ed-foto[data-foto="profesor.${n}.foto"]`);
+    }
     return doc.querySelector<HTMLElement>(`.ed-texto[data-campo="profesor.${n}.nombre"]`);
   }
 

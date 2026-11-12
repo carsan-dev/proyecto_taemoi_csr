@@ -18,7 +18,8 @@ import type { BloqueContenido } from './web-contenido-vista';
  * - viaja solo en la fila `profesor.<n>.nombre` y solo como `true` (nunca el objeto del GET);
  * - un profesor con constancia guardada cuyo nombre no cambia la conserva: no se manda nada;
  * - uno nuevo, uno sin constancia o uno cuyo nombre cambia (puede ser otra persona en el mismo puesto) necesita
- *   `permiso: true`, que solo se manda si la persona marcó la casilla en esta pantalla para ese número.
+ *   `permiso: true`, que solo se manda si la persona marcó la casilla en esta pantalla para ese número y con ese mismo
+ *   nombre (decisión del propietario, 12/11: `marcasVigentes`).
  * El nombre se compara como la API: el guardado y el nuevo sin espacios en los extremos (`String.strip()` de Java),
  * con mayúsculas y espacios de dentro tal cual.
  *
@@ -83,9 +84,15 @@ export function anadirProfesor(
 export const filasDeProfesor = (filas: readonly BloqueContenido[], n: number): string[] =>
   filas.filter((f) => numeroProfesor(f.clave) === n).map((f) => f.clave);
 
-/** Boceto `quitarProfe`: fuera todas sus filas (también sus sedes); se quita de la web al guardar. */
+/**
+ * Boceto `quitarProfe`: fuera todas sus filas (también sus sedes); se quita de la web al guardar. Antes, cada bloque con
+ * su cabecera (como `quitarFotoGaleria`): sin ellas, quitar al que daba el orden de la sección la movería.
+ */
 export function quitarProfesor(filas: readonly BloqueContenido[], n: number): BloqueContenido[] {
-  return filas.filter((f) => numeroProfesor(f.clave) !== n);
+  if (!filas.some((f) => numeroProfesor(f.clave) === n)) {
+    return [...filas];
+  }
+  return conCabeceras(filas).filter((f) => numeroProfesor(f.clave) !== n);
 }
 
 /** Tras quitar un profesor, a dónde va el foco: al siguiente, al de antes o (sin ninguno) a «Añadir profesor». */
@@ -118,7 +125,8 @@ export function pidePermiso(
 
 /**
  * Los profesores a los que el `PUT` manda `permiso: true`: los que lo necesitan y tienen la casilla marcada en esta
- * pantalla. Uno que vuelve a su nombre guardado conserva su constancia: su casilla deja de contar.
+ * pantalla. Uno que vuelve a su nombre guardado conserva su constancia: su casilla deja de contar. `marcados`: las
+ * marcas vigentes para ese borrador (`marcasVigentes`), nunca las crudas.
  */
 export function permisosParaEnviar(
   guardado: readonly BloqueContenido[],
@@ -130,6 +138,22 @@ export function permisosParaEnviar(
     numerosProfesores(borrador).filter(
       (n) => marcados.has(n) && !!fila(borrador, `profesor.${n}.nombre`) && pidePermiso(guardado, borrador, n, pedidos),
     ),
+  );
+}
+
+/**
+ * Decisión del propietario (12/11): el permiso va ligado al nombre con que se marcó la casilla. `marcas` guarda, por
+ * número, ese nombre (`stripJava`); una marca solo cuenta (PUT, errores, cambios y casilla de la capa) si el nombre del
+ * borrador sigue siendo ese. El panel además la quita al cambiar el nombre: no revive si el nombre vuelve.
+ */
+export function marcasVigentes(borrador: readonly BloqueContenido[], marcas: ReadonlyMap<number, string>): Set<number> {
+  return new Set(
+    [...marcas]
+      .filter(([n, nombre]) => {
+        const f = fila(borrador, `profesor.${n}.nombre`);
+        return !!f && stripJava(f.texto) === nombre;
+      })
+      .map(([n]) => n),
   );
 }
 
