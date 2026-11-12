@@ -292,6 +292,21 @@
       </div>
     </div>
     }
+    @if (vistaHojaSedes(); as s) {
+    <!-- W12f-3: sedes de un profesor como hoja inferior (panel < 768 px; boceto `abrirSedesProfe` y `.flot` en estrecho) -->
+    <div class="flot flot--capa flot--sedes" role="dialog" aria-labelledby="hoja-sedes-t">
+      <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m"></div></div>
+      <h2 class="flot__titulo" id="hoja-sedes-t">{{ s.titulo }}</h2>
+      <p class="flot__ayuda" id="hoja-sedes-a">{{ textosProfesores.sedesAyuda }}</p>
+      <fieldset class="casillas" aria-describedby="hoja-sedes-a">
+        <legend class="oculto">{{ textosProfesores.sedesLeyenda }}</legend>
+        @for (sede of s.sedes; track sede.id) {
+        <label class="casilla"><input type="checkbox" [value]="sede.id" [checked]="sede.marcada" (change)="cambiarSedeHoja($event, sede.id)"><span>{{ sede.nombre }}</span></label>
+        }
+      </fieldset>
+      <div class="flot__acciones"><button type="button" class="secundario" (click)="cerrarHojaSedes(true, true)">{{ textosProfesores.listo }}</button></div>
+    </div>
+    }
     <!-- Fuera de los estados: tiene que existir antes de que cambie su texto para que se anuncie («Contenido cargado.»). -->
     <p class="oculto" role="status">{{ anuncio() }}</p>
   </div>

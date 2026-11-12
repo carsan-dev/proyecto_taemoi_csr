@@ -188,3 +188,110 @@ describe('puente del editor de la web: fotos sueltas (W12f-1)', () => {
     expect(esMensajeDelEditor({ canal: c, tipo: 'descripcion', clave: 'portada.foto', texto: 'x'.repeat(151) })).toBeFalse();
   });
 });
+
+describe('puente del editor de la web: sedes de cada profesor (W12f-3)', () => {
+  const c = CANAL_EDITOR_WEB;
+  const sedes = (n: unknown, valor: unknown) => ({ canal: c, tipo: 'profesor', accion: 'sedes', n, sedes: valor });
+  const SEDES = [
+    { id: 6, nombre: 'Casariche' },
+    { id: 3, nombre: 'Estepa' },
+  ];
+  const antonio = (extra: Record<string, unknown> = {}) => ({ n: 1, nombre: 'Antonio Ruiz', permiso: { tipo: 'casilla', marcada: false }, sedes: [3], ...extra });
+  const profesores = (lista: unknown, valor: unknown = SEDES) => ({ canal: c, tipo: 'profesores', lista, sedes: valor });
+
+  it('de la capa: el profesor y el conjunto de ids (enteros positivos seguros, sin repetir); vacío vale', () => {
+    expect(esMensajeDelEditor(sedes(1, [3, 6]))).toBeTrue();
+    expect(esMensajeDelEditor(sedes(99, []))).toBeTrue();
+    expect(esMensajeDelEditor(sedes(1, [Number.MAX_SAFE_INTEGER]))).toBeTrue();
+    expect(esMensajeDelEditor(sedes(1, Array.from({ length: 150 }, (_, i) => i + 1)))).toBeTrue();
+  });
+
+  it('invariante h: de la capa, cualquier otra forma se descarta', () => {
+    const malos: [unknown, unknown][] = [
+      [0, [3]],
+      [100, [3]],
+      [1.5, [3]],
+      ['1', [3]],
+      [null, [3]],
+      [undefined, [3]],
+      [1, undefined],
+      [1, null],
+      [1, '3,4'],
+      [1, { 0: 3 }],
+      [1, [3, 3]],
+      [1, [0]],
+      [1, [-3]],
+      [1, [2.5]],
+      [1, ['3']],
+      [1, [null]],
+      [1, [Number.NaN]],
+      [1, [Number.POSITIVE_INFINITY]],
+      [1, [Number.MAX_SAFE_INTEGER + 1]],
+      [1, [[3]]],
+      [1, [{ id: 3 }]],
+      [1, Array.from({ length: 151 }, (_, i) => i + 1)],
+    ];
+    for (const [n, valor] of malos) {
+      expect(esMensajeDelEditor(sedes(n, valor))).withContext(JSON.stringify([n, valor])).toBeFalse();
+    }
+    expect(esMensajeDelEditor({ canal: 'otro', tipo: 'profesor', accion: 'sedes', n: 1, sedes: [3] })).toBeFalse();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'profesor', accion: 'sede', n: 1, sedes: [3] })).toBeFalse();
+    // El panel no lo acepta del lado contrario ni la capa el estado del panel como petición.
+    expect(esMensajeDelPanel(sedes(1, [3]))).toBeFalse();
+    expect(esMensajeDelEditor(profesores([antonio()]))).toBeFalse();
+  });
+
+  it('del panel: las sedes elegibles y las marcadas de cada profesor, solo de esa lista', () => {
+    expect(esMensajeDelPanel(profesores([antonio()]))).toBeTrue();
+    expect(esMensajeDelPanel(profesores([antonio({ sedes: [] })], []))).toBeTrue();
+    expect(esMensajeDelPanel(profesores([], []))).toBeTrue();
+    expect(esMensajeDelPanel(profesores([antonio({ sedes: [3, 6] })]))).toBeTrue();
+    for (const malo of [
+      { canal: c, tipo: 'profesores', lista: [antonio()] },
+      profesores([antonio()], null),
+      profesores([antonio()], [{ id: 3 }]),
+      profesores([antonio()], [{ id: 0, nombre: 'X' }]),
+      profesores([antonio()], [{ id: '3', nombre: 'X' }]),
+      profesores([antonio()], [{ id: 3, nombre: 'X' }, { id: 3, nombre: 'Y' }]),
+      profesores([antonio()], [{ id: 3, nombre: 'x'.repeat(201) }]),
+      profesores([antonio({ sedes: undefined })]),
+      profesores([antonio({ sedes: [7] })]),
+      profesores([antonio({ sedes: [3, 3] })]),
+      profesores([antonio({ sedes: ['3'] })]),
+      profesores([antonio({ sedes: [3] })], []),
+    ]) {
+      expect(esMensajeDelPanel(malo)).withContext(JSON.stringify(malo)).toBeFalse();
+    }
+  });
+
+  it('interfaz: `anunciar-sedes`, la hoja (`hoja-sedes`, `cerrar-hoja-sedes`, `respuesta-hoja-sedes`) y el enlace a las sedes', () => {
+    expect(esMensajeDelEditor({ canal: c, tipo: 'profesor', accion: 'anunciar-sedes', n: 3 })).toBeTrue();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'hoja-sedes', n: 3, id: 0 })).toBeTrue();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'cerrar-hoja-sedes', id: 7 })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'respuesta-hoja-sedes', id: 7, devolverFoco: true })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'profesor.3.sedes' })).toBeTrue();
+    for (const malo of [
+      { canal: c, tipo: 'profesor', accion: 'anunciar-sedes' },
+      { canal: c, tipo: 'profesor', accion: 'anunciar-sedes', n: 100 },
+      { canal: c, tipo: 'hoja-sedes', n: 0, id: 1 },
+      { canal: c, tipo: 'hoja-sedes', n: 3 },
+      { canal: c, tipo: 'hoja-sedes', n: 3, id: -1 },
+      { canal: c, tipo: 'hoja-sedes', n: 3, id: 1.5 },
+      { canal: c, tipo: 'cerrar-hoja-sedes', id: '1' },
+      { canal: 'otro', tipo: 'hoja-sedes', n: 3, id: 1 },
+      { canal: c, tipo: 'respuesta-hoja-sedes', id: 1, devolverFoco: true },
+    ]) {
+      expect(esMensajeDelEditor(malo)).withContext(JSON.stringify(malo)).toBeFalse();
+    }
+    for (const malo of [
+      { canal: c, tipo: 'respuesta-hoja-sedes', id: 1 },
+      { canal: c, tipo: 'respuesta-hoja-sedes', id: -1, devolverFoco: false },
+      { canal: c, tipo: 'respuesta-hoja-sedes', id: 1, devolverFoco: 'si' },
+      { canal: c, tipo: 'hoja-sedes', n: 3, id: 1 },
+      { canal: c, tipo: 'ir-texto', clave: 'profesor.0.sedes' },
+      { canal: c, tipo: 'ir-texto', clave: 'profesor.3.sedes.x' },
+    ]) {
+      expect(esMensajeDelPanel(malo)).withContext(JSON.stringify(malo)).toBeFalse();
+    }
+  });
+});

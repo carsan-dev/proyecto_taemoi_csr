@@ -396,3 +396,28 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
 .flot--capa .flot__op[aria-disabled='true'] svg { color: var(--pn-tinta-3); }
 .flot--capa .flot__op--peligro,
 .flot--capa .flot__op--peligro svg { color: var(--pn-peligro); }
+
+// W12f-3: sedes de un profesor como hoja (boceto `.flot--sedes`, `.casillas`, `.casilla` y `.flot` en < 768). Casillas
+// y «Listo» con toque de 48 px, como las opciones de los menús en la hoja.
+.flot--sedes .flot__titulo { margin: 0 0 4px; color: var(--pn-tinta); font: var(--pn-titulo-bloque); }
+.flot--sedes .flot__ayuda { margin: 0 0 10px; color: var(--pn-tinta-2); font: var(--pn-secundario); }
+.flot--sedes .casillas { display: grid; gap: 2px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.flot--sedes .casilla {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 8px;
+  border-radius: var(--pn-radio-s);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+}
+.flot--sedes .casilla:hover { background: var(--pn-marca-primario-suave); }
+.flot--sedes .casilla:focus-within { background: var(--pn-acento-suave); }
+.flot--sedes .casilla input { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--pn-acento); cursor: pointer; }
+.flot--sedes .casilla input:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+.flot--sedes .flot__acciones { display: flex; margin-top: 14px; }
+.flot--sedes .flot__acciones .secundario { flex: 1; min-height: 48px; margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .flot--sedes .casilla { transition: none; } }

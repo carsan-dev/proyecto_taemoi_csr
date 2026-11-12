@@ -147,7 +147,13 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   // W12e: bloques de Inicio. El panel hace cada acción; la capa la pide y pinta el estado.
   const bloques = activarBloquesEditor({ ventana, enviar: (m) => enviar(m), editar: (clave) => textos.editar(clave) });
   // W12f-2b: profesores. El panel confirma, numera y guarda; la capa pide cada acción y pinta la casilla o la constancia.
-  const profesores = activarProfesoresEditor({ ventana, enviar: (m) => enviar(m), editar: (clave) => textos.editar(clave) });
+  // W12f-3: sus sedes, en un diálogo junto al botón o, con el panel estrecho, en la hoja del panel.
+  const profesores = activarProfesoresEditor({
+    ventana,
+    enviar: (m) => enviar(m),
+    editar: (clave) => textos.editar(clave),
+    estrecho: () => bloques.estrecho(),
+  });
 
   // ------------------------------------------------------------------ anotar el DOM del tema
   function nombreDe(parte: Parte, el: HTMLElement): string {
@@ -730,7 +736,11 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       return;
     }
     if (mensaje.tipo === 'profesores') {
-      profesores.estado(mensaje.lista);
+      profesores.estado(mensaje.lista, mensaje.sedes);
+      return;
+    }
+    if (mensaje.tipo === 'respuesta-hoja-sedes') {
+      profesores.respuestaHoja(mensaje.id, mensaje.devolverFoco);
       return;
     }
     if (mensaje.tipo === 'foco-profesor') {

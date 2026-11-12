@@ -23,7 +23,8 @@ export interface DatosContenido {
 
 /** Para elegir cuál se ve en «Una sede» y «Un evento» (W12c-bis). */
 export interface ListasVista {
-  sedes: Pick<SedeWeb, 'nombre' | 'slug'>[];
+  /** W12f-3: con su `id`, para elegir las sedes de cada profesor (solo las activas, en el orden de la API). */
+  sedes: Pick<SedeWeb, 'id' | 'nombre' | 'slug'>[];
   /** Los próximos (como el boceto); sin próximos, los anteriores. */
   eventos: Pick<EventoListaWeb, 'id' | 'titulo' | 'fecha'>[];
 }
@@ -37,7 +38,8 @@ export interface ListasVista {
  * versión nueva; 400 `{mensaje, errores}`; 409 si otra persona guardó antes. El fallo lo trata la pantalla.
  *
  * W12c-bis: las sedes y los eventos de la vista previa de gestión (`GET /api/publico/web?vistaPrevia=true` y
- * `/eventos`, como «Web · Tema»), solo para el selector de «Una sede» y «Un evento». Un fallo da null.
+ * `/eventos`, como «Web · Tema»), solo para el selector de «Una sede» y «Un evento». Un fallo da null. W12f-3: las sedes,
+ * también para elegir las de cada profesor.
  *
  * W12f-1: `subirImagen` (`POST /api/escuela/web/imagenes`, multipart `archivo`) con progreso. Va por el cliente de
  * subidas del panel (`CLIENTE_SUBIDAS`, con `HttpXhrBackend`: fetch no informa del progreso de subida). No toca bloques.
@@ -80,7 +82,7 @@ export class WebContenidoService {
       eventos: this.http.get<EventosWeb>(`${this.urlPublica}/eventos`, { ...opciones, params: previa }),
     }).pipe(
       map(({ sitio, eventos }) => ({
-        sedes: sitio.sedes.map(({ nombre, slug }) => ({ nombre, slug })),
+        sedes: sitio.sedes.map(({ id, nombre, slug }) => ({ id, nombre, slug })),
         eventos: (eventos.proximos.length ? eventos.proximos : eventos.anteriores).map(({ id, titulo, fecha }) => ({ id, titulo, fecha })),
       })),
       catchError(() => of(null)),

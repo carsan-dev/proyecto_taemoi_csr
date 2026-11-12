@@ -149,6 +149,13 @@ describe('web-contenido-guardar (W12d)', () => {
     expect(nombreError('profesor.1.permiso', GUARDADO)).toBe('Ana Ruiz: permiso para publicar');
     expect(nombreError('profesor.1.nombre', GUARDADO)).toBe('Ana Ruiz: nombre');
     expect(nombreError('profesor.7.permiso', GUARDADO)).toBe('Profesor nuevo: permiso para publicar');
+    // W12f-3: el error de sus sedes, como los demás de profesor.
+    expect(nombreError('profesor.1.sedes', GUARDADO)).toBe('Ana Ruiz: sedes donde da clase');
+    expect(entradaResumen('profesor.7.sedes', 'Elige sedes de tu escuela.', GUARDADO, true)).toEqual({
+      clave: 'profesor.7.sedes',
+      texto: 'Profesor nuevo: sedes donde da clase',
+      enlace: true,
+    });
   });
 
   it('resumen: en la foto de portada, el mensaje de la API si lo hay', () => {
