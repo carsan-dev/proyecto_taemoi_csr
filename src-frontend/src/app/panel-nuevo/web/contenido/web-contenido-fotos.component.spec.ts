@@ -306,12 +306,14 @@ describe('WebContenidoComponent: fotos sueltas (W12f-1)', () => {
     put.flush({ version: 6, bloques: BLOQUES.filter((f) => f.clave !== 'presentacion.foto') });
   });
 
-  it('Descartar: vuelven las fotos guardadas y se corta la subida en curso', () => {
+  it('Descartar: vuelven las fotos guardadas y se corta la subida en curso', async () => {
     abrir();
     subir('portada.foto');
     elegir('presentacion.foto', foto());
     const peticion = subida();
+    confirmar.and.resolveTo({ confirmado: true } as never);
     boton('Descartar').click();
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(peticion.cancelled).toBeTrue();
     expect(q('.barra')).toBeNull();
@@ -421,12 +423,14 @@ describe('WebContenidoComponent: fotos sueltas (W12f-1)', () => {
     put.flush(conGaleria(galeria(1, 2), galeria(2, 1), galeria(3, 3)));
   });
 
-  it('galería: quitar saca la foto entera del PUT y las demás suben de puesto; Descartar la recupera', () => {
+  it('galería: quitar saca la foto entera del PUT y las demás suben de puesto; Descartar la recupera', async () => {
     abrir(conGaleria(galeria(1, 1), galeria(2, 2), galeria(3, 3)));
     accion('galeria.1', 'quitar');
     expect(texto('[role=status].oculto')).toBe('Foto quitada. Se quita de la web al guardar.');
     expect(texto('.barra__texto strong')).toBe('1 cambio sin guardar');
+    confirmar.and.resolveTo({ confirmado: true } as never);
     boton('Descartar').click();
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(q('.barra')).toBeNull();
     accion('galeria.2', 'quitar');

@@ -116,8 +116,10 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     return http.expectOne((r) => r.method === 'PUT' && r.url === URL_CONTENIDO);
   };
   const bloquesPut = (put: TestRequest) => put.request.body.bloques as Peticion[];
-  const descartar = () => {
+  // d551: Descartar pide confirmación (aquí, aceptada) y descarta al resolverse.
+  const descartar = async () => {
     boton('Descartar')!.click();
+    await fixture.whenStable();
     fixture.detectChanges();
   };
 
@@ -320,13 +322,13 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     put.flush({ version: 6, bloques: BLOQUES });
   });
 
-  it('Descartar: vuelven los profesores, sus filas y las casillas; los números ya dados no se repiten', () => {
+  it('Descartar: vuelven los profesores, sus filas y las casillas; los números ya dados no se repiten', async () => {
     abrir();
     profesor({ accion: 'anadir' });
     profesor({ accion: 'permiso', n: 4, marcada: true });
     escribir('profesor.1.nombre', 'Otro nombre');
     profesor({ accion: 'permiso', n: 1, marcada: true });
-    descartar();
+    await descartar();
     expect(q('.barra')).toBeNull();
     expect(borrador().some((b) => b.clave.startsWith('profesor.4.'))).toBeFalse();
     expect(profesores()[0].permiso['tipo']).toBe('constancia');
@@ -633,12 +635,12 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
       expect(q('.barra')).toBeNull();
     });
 
-    it('invariante d: Descartar restaura las sedes guardadas y la capa recibe el estado restaurado', () => {
+    it('invariante d: Descartar restaura las sedes guardadas y la capa recibe el estado restaurado', async () => {
       abrirConSedes();
       sedes(1, []);
       sedes(3, [6, 4]);
       expect(sedesDe(1)).toEqual([]);
-      descartar();
+      await descartar();
       expect(q('.barra')).toBeNull();
       expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,4');
       expect(filaBorrador('profesor.3.sedes')!.texto).toBe('5');
@@ -706,9 +708,9 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
         put.flush({ version: 6, bloques: conFila('profesor.1.sedes', '3').bloques });
       });
 
-      it('descartar no lo olvida (vuelve a lo guardado que falló); guardar bien sí: luego, volver al conjunto guardado deja la fila', () => {
+      it('descartar no lo olvida (vuelve a lo guardado que falló); guardar bien sí: luego, volver al conjunto guardado deja la fila', async () => {
         rechazar();
-        descartar();
+        await descartar();
         expect(filaBorrador('profesor.1.sedes')!.texto).toBe('3,99');
         sedes(1, [3, 4]);
         sedes(1, [3]);

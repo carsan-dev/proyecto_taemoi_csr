@@ -110,6 +110,7 @@ import {
   ponerTexto,
   textoCambios,
   textoConflicto,
+  tituloDescartar,
   tituloResumen,
   tituloSalir,
   valorTexto,
@@ -1367,8 +1368,23 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     });
   }
 
-  descartar(): void {
+  /**
+   * d551: con confirmación siempre (móvil y escritorio): «¿Descartar los N cambios?». Cancelar no cambia nada y el foco
+   * vuelve al botón (`ConfirmacionService`). Mientras guarda, nada (tampoco si empezó a guardar con el diálogo abierto).
+   */
+  async descartar(): Promise<void> {
     if (this.guardando()) {
+      return;
+    }
+    const r = await this.confirmacion.confirmar({
+      titulo: tituloDescartar(this.nCambios()),
+      mensaje: this.textosGuardar.descartarTexto,
+      accion: this.textosGuardar.descartar,
+      cancelar: this.textosGuardar.seguir,
+      destructivo: true,
+      nombre: 'descartar-cambios',
+    });
+    if (!r.confirmado || this.guardando()) {
       return;
     }
     this.cancelarSubidas();

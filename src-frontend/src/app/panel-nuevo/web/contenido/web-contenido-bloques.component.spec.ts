@@ -234,15 +234,16 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     fixture.detectChanges();
     // El orden cuenta una vez (boceto `cambios`): bajar + ocultar + quitar = 3.
     expect(texto('.barra__texto strong')).toBe('3 cambios sin guardar');
-    Array.from(el().querySelectorAll<HTMLButtonElement>('.barra button')).find((b) => b.textContent!.trim() === 'Descartar')!.click();
-    fixture.detectChanges();
+    await descartar();
     expect(q('.barra')).toBeNull();
     expect(ordenEnviado(enviados)).toEqual(PAGINA);
     expect(ultimo(enviados, 'estado-bloques')!['sinGuardar']).toEqual([]);
   });
 
-  const descartar = () => {
+  // d551: Descartar pide confirmación (aquí, aceptada) y descarta al resolverse.
+  const descartar = async () => {
     Array.from(el().querySelectorAll<HTMLButtonElement>('.barra button')).find((b) => b.textContent!.trim() === 'Descartar')!.click();
+    await fixture.whenStable();
     fixture.detectChanges();
   };
 
@@ -277,7 +278,7 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(texto('.barra__texto strong')).toBe('3 cambios sin guardar');
-    descartar();
+    await descartar();
     expect(q('.barra')).toBeNull();
     const resumen = (filas: { clave: string; texto: string | null; orden: number; oculto: boolean }[]) =>
       filas.map((b) => `${b.clave}|${b.texto}|${b.orden}|${b.oculto}`).sort();
