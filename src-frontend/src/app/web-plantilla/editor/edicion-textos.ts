@@ -445,6 +445,7 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     activa = null;
     pendiente = null;
     devolverAlComponer = false;
+    componiendo = false;
     chip.hidden = true;
     const conFoco = a.copia.contains(doc.activeElement);
     a.el.classList.remove('ed-escondido');
