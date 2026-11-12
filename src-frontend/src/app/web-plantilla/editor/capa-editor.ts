@@ -98,6 +98,10 @@ const ICONO_FOTO: Icono = {
   ],
 };
 
+/** d551: los campos en los que se escribe con el teclado del móvil (además de los `contenteditable`). */
+const CAMPOS_DE_TEXTO =
+  'textarea, input:not([type]), input[type="text"], input[type="search"], input[type="email"], input[type="tel"], input[type="url"], input[type="number"]';
+
 function recorta(texto: string, maximo: number): string {
   return texto.length > maximo ? `${texto.slice(0, maximo - 1).trimEnd()}…` : texto;
 }
@@ -717,11 +721,31 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     }, 0);
   }
 
+  /**
+   * d551: el teclado del móvil se abrió (el panel lo pide con la zona): si el texto que se edita (cualquiera, también el
+   * nombre de un profesor recién añadido) queda fuera de la zona que se ve, se dice al panel dónde está para que lo enseñe.
+   */
+  function ensenarCampo(top: number, alto: number): void {
+    const campo = doc.activeElement as HTMLElement | null;
+    if (!campo || !(campo.isContentEditable || campo.matches?.(CAMPOS_DE_TEXTO))) {
+      return;
+    }
+    const r = campo.getBoundingClientRect();
+    const arriba = r.top + ventana.scrollY;
+    const abajo = r.bottom + ventana.scrollY;
+    if (arriba < top + MARGEN_VERTICAL || abajo > top + alto - MARGEN_VERTICAL) {
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: Math.max(0, Math.round(arriba)), campo: true });
+    }
+  }
+
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
     if (mensaje.tipo === 'zona-visible') {
       // La parte del iframe que se ve en el panel: los flotantes abiertos vuelven a quedar dentro.
       fijarZonaVisible(ventana, { top: mensaje.top, alto: mensaje.alto });
       recolocarFlotantes(ventana);
+      if (mensaje.campo) {
+        ensenarCampo(mensaje.top, mensaje.alto);
+      }
       return;
     }
     if (mensaje.tipo === 'estado-bloques') {

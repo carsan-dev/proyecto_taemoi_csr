@@ -97,6 +97,15 @@ describe('puente del editor de la web (W12c)', () => {
       expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: -5 })).toBeFalse();
       expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'ir', destino: 'plantillas' })).toBeTrue();
     });
+
+    it('d551: `campo` solo como `true` en la zona visible (lo pide el panel) y en «mostrar» (responde la capa)', () => {
+      expect(esMensajeDelPanel({ canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top: 0, alto: 300, campo: true })).toBeTrue();
+      expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: 900, campo: true })).toBeTrue();
+      for (const malo of [false, 1, 'si', null, {}]) {
+        expect(esMensajeDelPanel({ canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top: 0, alto: 300, campo: malo })).withContext(String(malo)).toBeFalse();
+        expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: 900, campo: malo })).withContext(String(malo)).toBeFalse();
+      }
+    });
   });
 
   describe('escuchar', () => {

@@ -345,6 +345,19 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
   .barra__acciones .secundario { flex: 0 0 auto; }
 }
 
+// d551: con el teclado del móvil abierto (solo < 768 px; lo decide el componente con el `visualViewport`), la barra se
+// pega al borde superior del teclado; la navegación inferior queda debajo de él. El conflicto conserva su forma.
+.barra.barra--teclado { bottom: var(--alto-teclado, 0px); }
+// Una sola línea de 52 px: Descartar a la izquierda, el contador en medio y Guardar a la derecha. Los botones siguen en el
+// DOM en su orden (Descartar, Guardar): `display: contents` y `order` solo cambian dónde se pintan.
+.barra.barra--compacta { flex-direction: row; align-items: center; gap: 8px; padding: 4px 12px; }
+.barra--compacta .barra__acciones { display: contents; }
+.barra--compacta .barra__acciones button { flex: none; min-height: 44px; }
+.barra--compacta .barra__acciones .secundario { order: 0; }
+.barra--compacta .barra__texto { flex: 1; order: 1; max-width: none; }
+.barra--compacta .barra__acciones .primario { order: 2; }
+.barra--compacta .barra__frase { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
 // W12e: hoja inferior de acciones del bloque (panel < 768 px; boceto `.hoja`, `.hoja__*`, `body.con-hoja .barra`). Por
 // encima de la barra inferior del panel, como el menú «Ver el caso» en móvil.
 .hoja {

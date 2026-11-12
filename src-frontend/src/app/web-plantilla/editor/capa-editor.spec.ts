@@ -269,4 +269,58 @@ describe('capa de edición de la vista previa (W12c)', () => {
     ventana.dispatchEvent(new MessageEvent('message', { data: datos, origin: location.origin, source: window }));
     expect(borradores).toEqual([datos.bloques]);
   });
+
+  describe('d551: el texto que se edita, a la vista al abrirse el teclado del móvil', () => {
+    let campo: HTMLElement;
+
+    beforeEach(() => {
+      campo = doc.createElement('p');
+      campo.contentEditable = 'true';
+      campo.style.cssText = 'margin:0;position:absolute;top:900px;left:0;height:24px';
+      campo.textContent = 'Nombre del profesor';
+      doc.body.appendChild(campo);
+      campo.focus();
+      enviados.calls.reset();
+    });
+
+    afterEach(() => campo.remove());
+
+    const zona = (top: number, alto: number, campoPedido?: true) =>
+      ventana.dispatchEvent(
+        new MessageEvent('message', {
+          data: { canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top, alto, ...(campoPedido ? { campo: true } : {}) },
+          origin: location.origin,
+          source: window,
+        }),
+      );
+    const mostrar = () => mensajes().filter(([m]) => (m as { tipo: string }).tipo === 'mostrar').map(([m]) => m);
+    const arribaCampo = () => Math.round(campo.getBoundingClientRect().top + ventana.scrollY);
+
+    it('si el panel lo pide y el campo queda fuera de la zona, dice dónde está (`mostrar` con `campo`)', () => {
+      expect(doc.activeElement).toBe(campo);
+      zona(0, 400, true);
+      expect(mostrar()).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba: arribaCampo(), campo: true }]);
+    });
+
+    it('también si queda por encima de la zona', () => {
+      zona(arribaCampo() + 100, 400, true);
+      expect(mostrar().length).toBe(1);
+    });
+
+    it('nada si el campo ya se ve entero dentro de la zona', () => {
+      zona(arribaCampo() - 100, 400, true);
+      expect(mostrar()).toEqual([]);
+    });
+
+    it('nada si el panel no lo pide (desplazar la ventana no devuelve el campo a la vista)', () => {
+      zona(0, 400);
+      expect(mostrar()).toEqual([]);
+    });
+
+    it('nada si no se está editando ningún texto', () => {
+      campo.blur();
+      zona(0, 400, true);
+      expect(mostrar()).toEqual([]);
+    });
+  });
 });

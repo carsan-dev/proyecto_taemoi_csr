@@ -231,6 +231,8 @@ export const TEXTOS_GUARDAR = {
   descartar: 'Descartar',
   /** d551: la confirmación de «Descartar» (título con `tituloDescartar`; cancelar, «Seguir editando»). */
   descartarTexto: 'Se pierde lo que no has guardado.',
+  /** d551: tras el contador corto («3 cambios»), solo para el lector de pantalla. */
+  sinGuardar: ' sin guardar',
   publicaAlGuardar: ' · Al guardar se publican en tu web.',
   guardadoPublicada: 'Cambios guardados. Ya se ven en tu web.',
   guardadoNueva: 'Cambios guardados. Saldrán en tu web cuando la publiques.',
@@ -248,6 +250,8 @@ export const TEXTOS_GUARDAR = {
 
 export const tituloResumen = (n: number) => (n === 1 ? 'Falta 1 dato para guardar' : `Faltan ${n} datos para guardar`);
 export const textoCambios = (n: number) => plural(n, 'cambio sin guardar', 'cambios sin guardar');
+/** d551: el contador de la barra compacta (teclado del móvil abierto); «sin guardar» va solo para el lector de pantalla. */
+export const textoCambiosCorto = (n: number) => plural(n, 'cambio', 'cambios');
 export const tituloDescartar = (n: number) => (n === 1 ? '¿Descartar el cambio?' : `¿Descartar los ${n} cambios?`);
 export const textoConflicto = (n: number) =>
   'Los tuyos no se han guardado, para no borrar los suyos. Recarga la página para ver la web como está ahora y vuelve a ' +

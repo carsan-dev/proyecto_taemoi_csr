@@ -1,4 +1,5 @@
-import { InjectionToken } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { InjectionToken, inject } from '@angular/core';
 
 import { EventoListaWeb, SedeWeb, TemaWeb } from '../../../web-plantilla/datos/modelos';
 import type { PaginaEditor } from '../../../web-plantilla/editor/candados-linea-comarcal';
@@ -50,6 +51,14 @@ export function nombrePublicada(estado: EstadoWebEscuela): string | null {
  * para que el iframe no cargue la página de Karma.
  */
 export const ORIGEN_EDITOR = new InjectionToken<string>('ORIGEN_EDITOR', { factory: () => '' });
+
+/**
+ * d551: el `visualViewport` de la ventana (la parte que se ve; con el teclado del móvil abierto, encoge), o null si el
+ * navegador no lo tiene. Las pruebas lo cambian por uno simulado.
+ */
+export const VISOR_VISUAL = new InjectionToken<VisualViewport | null>('VISOR_VISUAL', {
+  factory: () => inject(DOCUMENT).defaultView?.visualViewport ?? null,
+});
 
 /**
  * `/<ruta>?vista-previa=<tema>&editor=1`: la plantilla activa la capa de edición solo si la API confirma la gestión.
