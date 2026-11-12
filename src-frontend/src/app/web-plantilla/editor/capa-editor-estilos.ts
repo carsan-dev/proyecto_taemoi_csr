@@ -79,6 +79,10 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .ed-campo__texto:focus{outline:2px solid var(--pn-acento)}
 .ed-campo__texto:empty::before{content:attr(data-vacio);opacity:.45}
 .ed-campo__texto[aria-invalid="true"]{outline-color:var(--pn-peligro)}
+/* W12d-bis: el dato de otra pantalla dentro de un texto (boceto: .ed-ficha): se escribe alrededor, no dentro */
+.ed-campo__texto .ed-ficha{display:inline;padding:0 .08em;border-radius:3px;outline:1px dashed var(--pn-borde-control);outline-offset:1px;cursor:default;user-select:none;opacity:.92}
+.ed-campo__texto .ed-ficha.es-activo{outline-style:solid}
+.tarifas .ed-campo__texto .ed-ficha{outline-color:rgb(255 255 255/75%)}
 .ed-multi{display:block;white-space:pre-wrap}
 .ed-error{display:flex;align-items:flex-start;gap:6px;width:fit-content;max-width:100%;margin:10px 0 0;padding:6px 10px;border-radius:6px;background:var(--pn-superficie);color:var(--pn-peligro);font:600 .875rem/1.35 var(--pn-fuente);box-shadow:var(--pn-sombra-menu)}
 .ed-error svg{margin-top:1px}

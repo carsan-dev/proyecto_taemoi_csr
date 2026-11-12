@@ -34,6 +34,10 @@ import type { BloqueWeb } from '../datos/modelos';
  * acciones del bloque (`hoja`), que vive en el panel. El panel cambia el borrador, manda a la capa qué partes tienen
  * cambios sin guardar, qué bloques se pueden quitar y si el panel es estrecho (`estado-bloques`) y a dónde va el foco
  * tras cada acción (`foco-bloque`).
+ *
+ * W12d-bis: un dato dentro de un texto (ficha de un hueco `{x}`) no se borra sin confirmar. La capa pide al panel el
+ * diálogo (`pedir-quitar-dato`: el texto, sus huecos y cómo se ve la frase antes y después) y el panel contesta si se
+ * quita (`quitar-dato`).
  */
 import {
   ACCIONES_BLOQUE,
@@ -46,6 +50,7 @@ import {
   esTipoBloque,
 } from './bloques-editor';
 import { MAX_DESCRIPCION_FOTO, esFotoSuelta, fotoDeDescripcion } from './fotos-sueltas';
+import { huecoDe } from './huecos-editor';
 import { esTextoEditable } from './textos-editor';
 
 /** Marca de los mensajes de este puente: los de otras librerías o extensiones no la llevan. */
@@ -171,7 +176,15 @@ export interface MensajeFocoBloque {
   foco: string;
 }
 
+/** W12d-bis: la respuesta al diálogo «¿Quitar … de este texto?»: true, «Quitar dato»; false, «Cancelar» (o Escape). */
+export interface MensajeQuitarDato {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'quitar-dato';
+  quitar: boolean;
+}
+
 export type MensajeDelPanel =
+  | MensajeQuitarDato
   | MensajeEstadoBloques
   | MensajeFocoBloque
   | MensajeBorrador
@@ -284,7 +297,20 @@ export interface MensajeHoja {
   bloque: string;
 }
 
+/** W12d-bis: se intentó borrar la ficha de uno o varios huecos de un texto; el panel pregunta antes de quitarlos. */
+export interface MensajePedirQuitarDato {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'pedir-quitar-dato';
+  clave: string;
+  /** Los huecos, sin llaves (`x`, `grupo`). */
+  huecos: string[];
+  /** La frase hoy, con los datos de la vista previa, y sin esos datos. */
+  antes: string;
+  despues: string;
+}
+
 export type MensajeDelEditor =
+  | MensajePedirQuitarDato
   | MensajeBloques
   | MensajeAccionBloque
   | MensajeAnadirBloque
@@ -404,6 +430,8 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
       return esListaDeIds(valor['sinGuardar'], esParteInicio) && esListaDeIds(valor['quitables'], esIdBloque) && typeof valor['estrecho'] === 'boolean';
     case 'foco-bloque':
       return esFocoBloque(valor['foco']);
+    case 'quitar-dato':
+      return typeof valor['quitar'] === 'boolean';
     default:
       return false;
   }
@@ -448,6 +476,20 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
     }
     case 'hoja':
       return esIdBloque(valor['bloque']);
+    case 'pedir-quitar-dato': {
+      const clave = valor['clave'];
+      const huecos = valor['huecos'];
+      return (
+        typeof clave === 'string' &&
+        esTextoEditable(clave) &&
+        Array.isArray(huecos) &&
+        huecos.length > 0 &&
+        huecos.length <= 8 &&
+        huecos.every((n) => typeof n === 'string' && huecoDe(clave, n) !== null) &&
+        esTextoCorto(valor['antes']) &&
+        esTextoCorto(valor['despues'])
+      );
+    }
     default:
       return false;
   }

@@ -1,6 +1,18 @@
+import { rellenarHuecos } from '../temas/linea-comarcal/contenido';
+import { TEXTOS_LINEA_COMARCAL } from '../temas/linea-comarcal/textos';
 import type { PaginaEditor } from './candados-linea-comarcal';
+import { type DefHueco, HUECOS, huecoDe } from './huecos-editor';
 import { type BloqueBorrador, CANAL_EDITOR_WEB, type MensajeDelEditor } from './puente-editor';
-import { CAMPOS_TEXTO_MARCO, CampoTexto, bloqueTextoFoto, camposTextoInicio, defTexto, defectoDeLaPagina, defectoFijo } from './textos-editor';
+import {
+  CAMPOS_TEXTO_MARCO,
+  CampoTexto,
+  bloqueTextoFoto,
+  camposTextoInicio,
+  camposTextoPagina,
+  defTexto,
+  defectoDeLaPagina,
+  defectoFijo,
+} from './textos-editor';
 
 /**
  * Textos en el sitio (W12d; boceto `boceto-panel-contenido-web-comarcal.html`: `texto()`, `entrarEdicion`, `salirEdicion`,
@@ -12,6 +24,12 @@ import { CAMPOS_TEXTO_MARCO, CampoTexto, bloqueTextoFoto, camposTextoInicio, def
  * salir se quita la copia y vuelve el original, ya repintado por el tema.
  *
  * Un texto vacío no se pintaría en la web; en el editor el tema recibe su «Escribe aquí…» y la capa lo marca vacío.
+ *
+ * W12d-bis: los textos de las otras seis páginas (`camposTextoPagina`). Un hueco del texto (`{x}`, `{n}`…, `HUECOS`) va
+ * en la copia como una ficha que no se escribe (boceto `conFichas`): enseña el dato de la vista previa, las flechas la
+ * saltan como un carácter y al leer el texto vuelve el token. Borrarla (Retroceso o Suprimir junto a ella, cortar, o
+ * escribir o pegar sobre una selección que la tenga) no la borra: el panel pregunta antes («¿Quitar … de este texto?»,
+ * `pedir-quitar-dato`) y, si se confirma, se quita con un comando de edición (el deshacer del navegador la devuelve).
  */
 export interface OpcionesEdicionTextos {
   ventana: Window;
@@ -26,6 +44,8 @@ export interface EdicionTextos {
   borrador(bloques: BloqueBorrador[]): void;
   /** Los errores que hay que señalar (vacío: ninguno). */
   errores(errores: Record<string, string>): void;
+  /** W12d-bis: la respuesta del panel al diálogo de quitar el dato de una ficha. */
+  quitarDato(quitar: boolean): void;
   /** Lleva el foco a un texto; da dónde empieza (px desde arriba del documento) o null si no está en la página. */
   irA(clave: string): number | null;
   /** W12e: entra a editar ese texto (el primero vacío de un bloque recién añadido); false si no está en la página. */
@@ -47,6 +67,24 @@ interface Edicion {
   campo: HTMLElement;
 }
 
+/** W12d-bis: un intento de borrar una ficha, a la espera de la respuesta del panel. */
+interface QuitarPendiente {
+  edicion: Edicion;
+  /** Lo que se borraría y la selección que había (vuelve con «Cancelar»). */
+  rango: Range;
+  seleccion: Range | null;
+  fichas: HTMLElement[];
+  /** Si se confirma: borrar (con la limpieza de `rellenarHuecos` si solo se borran fichas) o escribir encima. */
+  accion: { tipo: 'borrar'; soloFichas: boolean } | { tipo: 'escribir'; texto: string };
+}
+
+const ENVUELTO = 'ed-envuelto';
+const FICHA = 'ed-ficha';
+const TOKEN = /(\{\w+\})/;
+const esFicha = (n: Node | null | undefined): n is HTMLElement =>
+  !!n && n.nodeType === Node.ELEMENT_NODE && (n as HTMLElement).classList.contains(FICHA);
+const normal = (t: string) => t.replace(/\s+/g, ' ').trim();
+
 export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTextos {
   const { ventana, enviar, alTema, seleccionar } = opciones;
   const doc = ventana.document;
@@ -55,6 +93,9 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   const defectos = new Map<string, string>();
   let activa: Edicion | null = null;
   let ultimoTope = 0;
+  let pendiente: QuitarPendiente | null = null;
+  /** Mientras la propia capa edita con `execCommand` (quitar una ficha confirmada): sin comprobar fichas. */
+  let ejecutando = false;
 
   const chip = doc.createElement('div');
   chip.className = 'ed ed-chip';
@@ -138,7 +179,9 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
 
   function campos(): CampoTexto[] {
     const conFila = (clave: string) => !!fila(clave);
-    return pagina === 'inicio' ? [...CAMPOS_TEXTO_MARCO, ...camposTextoInicio(conFila)] : [...CAMPOS_TEXTO_MARCO];
+    return pagina === 'inicio'
+      ? [...CAMPOS_TEXTO_MARCO, ...camposTextoInicio(conFila)]
+      : [...CAMPOS_TEXTO_MARCO, ...camposTextoPagina(pagina, conFila)];
   }
 
   const principal = (clave: string) =>
@@ -154,9 +197,49 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       delete el.dataset['rep'];
     }
     el.tabIndex = 0;
+    // Un texto editable no puede quedar dentro de algo escondido a los lectores (las cabeceras de la tabla de grupos y
+    // la línea de pasos de la preinscripción): en el editor se les quita `aria-hidden` (vuelve al quitar la capa).
+    const oculto = el.parentElement?.closest('[aria-hidden="true"]');
+    if (oculto?.closest('.lc')) {
+      oculto.removeAttribute('aria-hidden');
+      oculto.setAttribute('data-ed-aria-oculto', '');
+    }
     el.setAttribute('role', 'button');
     el.setAttribute('aria-label', `Editar ${def.nombre.toLowerCase()}${def.obligatorio ? ' (obligatorio)' : ''}`);
     el.classList.toggle('es-vacio', !valor(clave).trim());
+  }
+
+  /** Lo que pinta el tema en una clave: su texto o, vacío, su «Escribe aquí…». */
+  function ver(clave: string): string {
+    const v = normal(valor(clave));
+    return v || (defTexto(clave)?.vacio ?? '');
+  }
+
+  /**
+   * W12d-bis: los textos sueltos del elemento antes de su primer hijo o después del último, envueltos una vez en un
+   * `span` (como el envoltorio de los candados): ese `span` es el texto. Null si no hay texto.
+   */
+  function envuelto(el: HTMLElement, lado: 'antes' | 'despues'): HTMLElement | null {
+    const ya = el.querySelector<HTMLElement>(`:scope > .${ENVUELTO}[data-lado="${lado}"]`);
+    if (ya) {
+      return ya;
+    }
+    const hijos = Array.from(el.childNodes);
+    const elementos = hijos.filter((n) => n.nodeType === Node.ELEMENT_NODE);
+    if (!elementos.length) {
+      return null;
+    }
+    const corte = hijos.indexOf(lado === 'antes' ? elementos[0] : elementos[elementos.length - 1]);
+    const nodos = (lado === 'antes' ? hijos.slice(0, corte) : hijos.slice(corte + 1)).filter((n) => n.nodeType === Node.TEXT_NODE);
+    if (!nodos.some((n) => (n.nodeValue ?? '').trim())) {
+      return null;
+    }
+    const span = doc.createElement('span');
+    span.className = ENVUELTO;
+    span.dataset['lado'] = lado;
+    nodos[0].before(span);
+    span.append(...nodos);
+    return span;
   }
 
   function decorar(paginaActual: PaginaEditor): void {
@@ -164,15 +247,23 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     const vistas = new Set<string>();
     const nuevos: Record<string, string> = {};
     for (const campo of campos()) {
-      doc.querySelectorAll<HTMLElement>(campo.selector).forEach((el) => {
-        if (el.closest(DENTRO_DE_LA_CAPA) || el.classList.contains('ed-escondido')) {
+      doc.querySelectorAll<HTMLElement>(campo.selector).forEach((encontrado) => {
+        if (encontrado.closest(DENTRO_DE_LA_CAPA) || encontrado.classList.contains('ed-escondido')) {
           return;
         }
-        const clave = typeof campo.clave === 'string' ? campo.clave : campo.clave(el);
+        const clave = typeof campo.clave === 'string' ? campo.clave : campo.clave(encontrado, ver);
         if (!clave || !defTexto(clave)) {
           return;
         }
+        const el = campo.envolver ? envuelto(encontrado, campo.envolver) : encontrado;
+        if (!el || el.classList.contains('ed-escondido')) {
+          return;
+        }
         marcar(el, clave, vistas.has(clave));
+        // Los párrafos de un texto de varias líneas que se está editando: los enseña la copia.
+        if (activa && activa.clave === clave && el !== activa.el && el.parentElement === activa.el.parentElement) {
+          el.classList.add('ed-escondido');
+        }
         // Solo las claves cuyo defecto depende de los datos (nunca un texto con foto ni el «Escribe aquí…» de un vacío).
         if (!vistas.has(clave) && !fila(clave) && defectoFijo(clave) === null && !defectos.has(clave)) {
           const texto = textoDeLaPagina(el);
@@ -289,10 +380,17 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       campo.setAttribute('aria-describedby', idError(clave));
     }
     campo.dataset['vacio'] = def.vacio;
-    campo.textContent = valor(clave);
+    pintarCampo(campo, clave, valor(clave), valoresDe(el, clave));
     copia.append(campo);
     el.after(copia);
     el.classList.add('ed-escondido');
+    if (def.multi) {
+      doc.querySelectorAll<HTMLElement>(`.ed-texto[data-campo="${CSS.escape(clave)}"][data-rep]`).forEach((otro) => {
+        if (otro.parentElement === el.parentElement) {
+          otro.classList.add('ed-escondido');
+        }
+      });
+    }
     activa = { el, clave, copia, campo };
     campo.focus({ preventScroll: true });
     const rango = doc.createRange();
@@ -311,9 +409,13 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       return;
     }
     activa = null;
+    pendiente = null;
     chip.hidden = true;
     const conFoco = a.copia.contains(doc.activeElement);
     a.el.classList.remove('ed-escondido');
+    doc
+      .querySelectorAll<HTMLElement>(`.ed-texto.ed-escondido[data-campo="${CSS.escape(a.clave)}"]`)
+      .forEach((otro) => otro.classList.remove('ed-escondido'));
     a.copia.remove();
     const el = a.el.isConnected ? a.el : principal(a.clave);
     if (el) {
@@ -334,6 +436,9 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     nodo.childNodes.forEach((n) => {
       if (n.nodeType === Node.TEXT_NODE) {
         v += n.nodeValue ?? '';
+      } else if (esFicha(n)) {
+        // W12d-bis: la ficha de un hueco vuelve a ser su token.
+        v += n.dataset['token'] ?? '';
       } else if (n.nodeName === 'BR') {
         v += '\n';
       } else if (n.nodeType === Node.ELEMENT_NODE) {
@@ -350,6 +455,310 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     let v = textoReal(campo).replace(/ /g, ' ');
     v = multi ? v.replace(/\n$/, '') : v.replace(/\n/g, ' ');
     return v.trim() ? v : '';
+  }
+
+  // ------------------------------------------------------------------ fichas de los huecos (W12d-bis)
+
+  /**
+   * Los datos de los huecos que enseña el tema en `el`: se leen comparando su texto con el de la clave (los huecos son
+   * lo que cambia). `sede.leyenda_lleno` va enlazada con `horarios.lleno` (su texto, también el del borrador). Lo que no
+   * se pueda leer (otra variante, el «Escribe aquí…»), con el dato de ejemplo del boceto.
+   */
+  function valoresDe(el: HTMLElement, clave: string): Record<string, string> {
+    const huecos = HUECOS[clave];
+    if (!huecos) {
+      return {};
+    }
+    const valores: Record<string, string> = {};
+    const plantilla = normal(valor(clave));
+    const partes = plantilla.split(TOKEN);
+    const nombres: string[] = [];
+    const patron = partes
+      .map((parte) => {
+        const token = /^\{(\w+)\}$/.exec(parte);
+        if (token) {
+          nombres.push(token[1]);
+          return '(.+?)';
+        }
+        return parte.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      })
+      .join('');
+    const leido = nombres.length ? new RegExp(`^${patron}$`).exec(normal(plano(el))) : null;
+    nombres.forEach((n, i) => {
+      if (leido && valores[n] === undefined) {
+        valores[n] = leido[i + 1];
+      }
+    });
+    for (const [n, def] of Object.entries(huecos)) {
+      valores[n] ??= def.ejemplo;
+    }
+    if (clave === 'sede.leyenda_lleno') {
+      const lleno = fila('horarios.lleno');
+      valores['x'] = normal(lleno ? (lleno.texto ?? '') : TEXTOS_LINEA_COMARCAL['horarios.lleno']) || huecos['x'].ejemplo;
+    }
+    return valores;
+  }
+
+  /** Boceto `conFichas`: la ficha de un hueco, que no se escribe; el lector oye el dato, su nombre y que no se edita. */
+  function ficha(nombre: string, def: DefHueco, dato: string): HTMLElement {
+    const f = doc.createElement('span');
+    f.className = FICHA;
+    f.contentEditable = 'false';
+    f.dataset['token'] = `{${nombre}}`;
+    f.dataset['que'] = def.que;
+    f.dataset['donde'] = def.donde;
+    f.dataset['valor'] = dato;
+    const visto = doc.createElement('span');
+    visto.setAttribute('aria-hidden', 'true');
+    visto.textContent = dato;
+    const oido = doc.createElement('span');
+    oido.className = 'ed-oculto';
+    oido.textContent = `${dato} (${def.que}: no se edita aquí)`;
+    f.append(visto, oido);
+    return f;
+  }
+
+  /** El texto de la clave en la copia: lo escrito como texto y cada hueco de la clave como su ficha. */
+  function pintarCampo(campo: HTMLElement, clave: string, texto: string, valores: Record<string, string>): void {
+    campo.replaceChildren();
+    for (const parte of texto.split(TOKEN)) {
+      const token = /^\{(\w+)\}$/.exec(parte);
+      const def = token ? huecoDe(clave, token[1]) : null;
+      if (token && def) {
+        campo.append(ficha(token[1], def, valores[token[1]] ?? def.ejemplo));
+      } else if (parte) {
+        campo.append(doc.createTextNode(parte));
+      }
+    }
+  }
+
+  const fichasDe = (campo: HTMLElement) => Array.from(campo.querySelectorAll<HTMLElement>(`.${FICHA}`));
+
+  /** El nodo junto al cursor (sin texto en medio), hacia atrás o hacia delante; solo si es una ficha. */
+  function fichaJunto(rango: Range, atras: boolean): HTMLElement | null {
+    const nodo = rango.startContainer;
+    const pos = rango.startOffset;
+    let vecino: Node | null;
+    if (nodo.nodeType === Node.TEXT_NODE) {
+      const largo = (nodo.nodeValue ?? '').length;
+      if (atras ? pos > 0 : pos < largo) {
+        return null;
+      }
+      vecino = atras ? nodo.previousSibling : nodo.nextSibling;
+    } else {
+      vecino = nodo.childNodes[atras ? pos - 1 : pos] ?? null;
+    }
+    while (vecino && vecino.nodeType === Node.TEXT_NODE && !vecino.nodeValue) {
+      vecino = atras ? vecino.previousSibling : vecino.nextSibling;
+    }
+    return esFicha(vecino) ? vecino : null;
+  }
+
+  function seleccionEn(campo: HTMLElement): Range | null {
+    const sel = ventana.getSelection();
+    if (!sel || !sel.rangeCount) {
+      return null;
+    }
+    const r = sel.getRangeAt(0);
+    return campo.contains(r.commonAncestorContainer) ? r : null;
+  }
+
+  /** Las fichas que toca un rango (no vacío). */
+  const fichasEnRango = (campo: HTMLElement, rango: Range) => fichasDe(campo).filter((f) => rango.intersectsNode(f));
+
+  /** El texto (con los tokens) de lo elegido: para el máximo al escribir o pegar encima. */
+  function largoElegido(campo: HTMLElement): number {
+    const r = seleccionEn(campo);
+    return r && !r.collapsed ? textoReal(r.cloneContents()).length : 0;
+  }
+
+  /**
+   * Las fichas que borraría el cambio que pide `evento` (antes de que pase): las de sus rangos o, si el navegador no
+   * los da, las de la selección; con el cursor junto a una ficha, Retroceso o Suprimir hacia ella.
+   */
+  function fichasQueBorra(evento: InputEvent, campo: HTMLElement): { fichas: HTMLElement[]; rango: Range | null } {
+    const objetivos = typeof evento.getTargetRanges === 'function' ? evento.getTargetRanges() : [];
+    for (const objetivo of objetivos) {
+      const r = doc.createRange();
+      r.setStart(objetivo.startContainer, objetivo.startOffset);
+      r.setEnd(objetivo.endContainer, objetivo.endOffset);
+      if (!r.collapsed && campo.contains(r.commonAncestorContainer)) {
+        const fichas = fichasEnRango(campo, r);
+        if (fichas.length) {
+          return { fichas, rango: r };
+        }
+      }
+    }
+    const r = seleccionEn(campo);
+    if (!r) {
+      return { fichas: [], rango: null };
+    }
+    if (!r.collapsed) {
+      return { fichas: fichasEnRango(campo, r), rango: r.cloneRange() };
+    }
+    const tipo = evento.inputType;
+    if (tipo.startsWith('delete')) {
+      const atras = tipo.endsWith('Backward');
+      const f = fichaJunto(r, atras);
+      if (f) {
+        const sobre = doc.createRange();
+        sobre.selectNode(f);
+        return { fichas: [f], rango: sobre };
+      }
+    }
+    return { fichas: [], rango: null };
+  }
+
+  /** Pide al panel el diálogo «¿Quitar … de este texto?» con la frase de hoy y la de sin esos datos. */
+  function pedirQuitar(a: Edicion, rango: Range, fichas: HTMLElement[], accion: QuitarPendiente['accion']): void {
+    pendiente = { edicion: a, rango, seleccion: seleccionEn(a.campo)?.cloneRange() ?? null, fichas, accion };
+    const plantilla = leer(a.campo, defTexto(a.clave)!.multi);
+    const valores: Record<string, string> = {};
+    for (const [, n] of plantilla.matchAll(/\{(\w+)\}/g)) {
+      valores[n] = `{${n}}`;
+    }
+    for (const f of fichasDe(a.campo)) {
+      valores[(f.dataset['token'] ?? '').slice(1, -1)] = f.dataset['valor'] ?? '';
+    }
+    const huecos = [...new Set(fichas.map((f) => (f.dataset['token'] ?? '').slice(1, -1)))];
+    const sin = { ...valores, ...Object.fromEntries(huecos.map((n) => [n, ''])) };
+    enviar({
+      canal: CANAL_EDITOR_WEB,
+      tipo: 'pedir-quitar-dato',
+      clave: a.clave,
+      huecos,
+      antes: normal(rellenarHuecos(plantilla, valores)),
+      despues: normal(rellenarHuecos(plantilla, sin)),
+    });
+  }
+
+  /** El punto del DOM del campo en la posición `n` de su texto con tokens (null si cae dentro de una ficha). */
+  function punto(campo: HTMLElement, n: number): [Node, number] | null {
+    let cuenta = 0;
+    const hijos = Array.from(campo.childNodes);
+    for (let i = 0; i < hijos.length; i++) {
+      const h = hijos[i];
+      const largo = h.nodeType === Node.TEXT_NODE ? (h.nodeValue ?? '').length : esFicha(h) ? (h.dataset['token'] ?? '').length : h.nodeName === 'BR' ? 1 : -1;
+      if (largo < 0) {
+        return null;
+      }
+      if (n <= cuenta + largo) {
+        if (h.nodeType === Node.TEXT_NODE) {
+          return [h, n - cuenta];
+        }
+        return n === cuenta ? [campo, i] : n === cuenta + largo ? [campo, i + 1] : null;
+      }
+      cuenta += largo;
+    }
+    return n === cuenta ? [campo, hijos.length] : null;
+  }
+
+  /**
+   * Quitar solo fichas: el texto queda como lo deja `rellenarHuecos` sin esos datos (fuera los espacios dobles, el «·»
+   * suelto, los paréntesis vacíos…), con un solo comando de edición sobre lo que cambia. Null si no se puede.
+   */
+  function rangoLimpio(campo: HTMLElement, fichas: HTMLElement[]): { rango: Range; texto: string } | null {
+    const todo = textoReal(campo);
+    const quitar = new Set(fichas);
+    const valores: Record<string, string> = {};
+    for (const [, n] of todo.matchAll(/\{(\w+)\}/g)) {
+      valores[n] = `{${n}}`;
+    }
+    // Lo que queda sin las fichas, con un marcador en su sitio para limpiarlo como el tema.
+    let sin = '';
+    const tramos: [number, number][] = [];
+    let cuenta = 0;
+    for (const h of Array.from(campo.childNodes)) {
+      const t = h.nodeType === Node.TEXT_NODE ? (h.nodeValue ?? '') : esFicha(h) ? (h.dataset['token'] ?? '') : h.nodeName === 'BR' ? '\n' : null;
+      if (t === null) {
+        return null;
+      }
+      if (esFicha(h) && quitar.has(h)) {
+        sin += '{ed_quitado}';
+      } else {
+        if (esFicha(h)) {
+          tramos.push([cuenta, cuenta + t.length]);
+        }
+        sin += t;
+      }
+      cuenta += t.length;
+    }
+    const limpio = rellenarHuecos(sin, { ...valores, ed_quitado: '' });
+    let ini = 0;
+    while (ini < todo.length && ini < limpio.length && todo[ini] === limpio[ini]) {
+      ini++;
+    }
+    let fin = 0;
+    while (fin < todo.length - ini && fin < limpio.length - ini && todo[todo.length - 1 - fin] === limpio[limpio.length - 1 - fin]) {
+      fin++;
+    }
+    const hasta = todo.length - fin;
+    // Sin partir una ficha que se queda.
+    if (tramos.some(([a, b]) => (a < ini && ini < b) || (a < hasta && hasta < b))) {
+      return null;
+    }
+    const desde = punto(campo, ini);
+    const a = punto(campo, hasta);
+    if (!desde || !a) {
+      return null;
+    }
+    const rango = doc.createRange();
+    rango.setStart(desde[0], desde[1]);
+    rango.setEnd(a[0], a[1]);
+    return { rango, texto: limpio.slice(ini, limpio.length - fin) };
+  }
+
+  /** Con el rango elegido, un comando de edición del navegador (entra en su deshacer). */
+  function editarCon(rango: Range, texto: string): void {
+    const sel = ventana.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(rango);
+    ejecutando = true;
+    try {
+      doc.execCommand(texto ? 'insertText' : 'delete', false, texto);
+    } finally {
+      ejecutando = false;
+    }
+  }
+
+  function quitarDato(quitar: boolean): void {
+    const p = pendiente;
+    pendiente = null;
+    if (!p || activa !== p.edicion || !p.edicion.campo.isConnected) {
+      return;
+    }
+    const { campo } = p.edicion;
+    campo.focus({ preventScroll: true });
+    if (!quitar) {
+      // «Cancelar»: todo como estaba y el foco, en el texto.
+      const sel = ventana.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(p.seleccion ?? p.rango);
+      mostrarChip();
+      return;
+    }
+    if (p.accion.tipo === 'borrar' && p.accion.soloFichas) {
+      const limpio = rangoLimpio(campo, p.fichas);
+      if (limpio) {
+        editarCon(limpio.rango, limpio.texto);
+        return;
+      }
+    }
+    editarCon(p.rango, p.accion.tipo === 'escribir' ? p.accion.texto : '');
+  }
+
+  /** Lo elegido como se ve (con el dato de cada ficha), para copiar y cortar. */
+  function textoVisible(rango: Range): string {
+    const trozo = rango.cloneContents();
+    trozo.querySelectorAll('.ed-oculto').forEach((n) => n.remove());
+    return trozo.textContent ?? '';
+  }
+
+  /** Si un rango solo tiene fichas (y espacios): entonces se limpia el texto como el tema. */
+  function soloFichas(rango: Range): boolean {
+    const trozo = rango.cloneContents();
+    trozo.querySelectorAll(`.${FICHA}`).forEach((n) => n.remove());
+    return !(trozo.textContent ?? '').trim();
   }
 
   function mostrarChip(): void {
@@ -409,6 +818,26 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     const a = enEdicion(evento);
     if (a) {
       const multi = defTexto(a.clave)!.multi;
+      // W12d-bis: la flecha salta la ficha entera, como un carácter.
+      if ((evento.key === 'ArrowLeft' || evento.key === 'ArrowRight') && !evento.shiftKey && !evento.altKey && !evento.ctrlKey && !evento.metaKey) {
+        const r = seleccionEn(a.campo);
+        const atras = evento.key === 'ArrowLeft';
+        const f = r?.collapsed ? fichaJunto(r, atras) : null;
+        if (f) {
+          evento.preventDefault();
+          const nuevo = doc.createRange();
+          if (atras) {
+            nuevo.setStartBefore(f);
+          } else {
+            nuevo.setStartAfter(f);
+          }
+          nuevo.collapse(true);
+          const sel = ventana.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(nuevo);
+        }
+        return;
+      }
       if (evento.key === 'Escape') {
         evento.preventDefault();
         evento.stopImmediatePropagation();
@@ -434,15 +863,33 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       return;
     }
     const def = defTexto(a.clave)!;
+    if (pendiente) {
+      evento.preventDefault();
+      return;
+    }
     if (!def.multi && (evento.inputType === 'insertParagraph' || evento.inputType === 'insertLineBreak')) {
       evento.preventDefault();
       return;
+    }
+    // W12d-bis: una ficha no se borra sin confirmar (el deshacer del navegador sí la devuelve).
+    const tipo = evento.inputType;
+    if (!ejecutando && !evento.isComposing && (tipo.startsWith('delete') || tipo.startsWith('insert')) && tipo !== 'insertFromPaste') {
+      const { fichas, rango } = fichasQueBorra(evento, a.campo);
+      if (fichas.length && rango) {
+        evento.preventDefault();
+        if (tipo === 'insertFromDrop' || tipo === 'deleteByDrag') {
+          return;
+        }
+        const escrito = tipo.startsWith('insert') ? (evento.data ?? (tipo === 'insertParagraph' || tipo === 'insertLineBreak' ? '\n' : '')) : '';
+        pedirQuitar(a, rango, fichas, escrito ? { tipo: 'escribir', texto: escrito } : { tipo: 'borrar', soloFichas: soloFichas(rango) });
+        return;
+      }
     }
     if (!evento.inputType.startsWith('insert') || evento.inputType === 'insertFromPaste' || evento.isComposing) {
       return;
     }
     const anade = evento.data ? evento.data.length : 1;
-    const elegido = String(ventana.getSelection() ?? '').length;
+    const elegido = largoElegido(a.campo);
     if (leer(a.campo, def.multi).length - elegido + anade > def.max) {
       evento.preventDefault();
       alTope();
@@ -460,7 +907,10 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     if (!def.multi) {
       texto = texto.replace(/\s*\n\s*/g, ' ');
     }
-    const sitio = def.max - (leer(a.campo, def.multi).length - String(ventana.getSelection() ?? '').length);
+    if (pendiente) {
+      return;
+    }
+    const sitio = def.max - (leer(a.campo, def.multi).length - largoElegido(a.campo));
     if (sitio <= 0) {
       alTope();
       return;
@@ -469,7 +919,18 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       texto = texto.slice(0, sitio);
       alTope();
     }
-    doc.execCommand('insertText', false, texto);
+    // W12d-bis: pegar encima de una ficha también pregunta antes de quitarla.
+    const r = seleccionEn(a.campo);
+    const fichas = r && !r.collapsed ? fichasEnRango(a.campo, r) : [];
+    if (r && fichas.length) {
+      pedirQuitar(a, r.cloneRange(), fichas, { tipo: 'escribir', texto });
+      return;
+    }
+    if (r) {
+      editarCon(r.cloneRange(), texto);
+    } else {
+      doc.execCommand('insertText', false, texto);
+    }
   };
 
   const alEscribir = (evento: Event) => {
@@ -488,8 +949,37 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   const alSalirDelFoco = (evento: FocusEvent) => {
     const a = enEdicion(evento);
     const destino = evento.relatedTarget as Node | null;
-    if (a && !(destino && a.copia.contains(destino))) {
+    // Mientras el panel pregunta si se quita un dato, el foco está en su diálogo: la edición sigue.
+    if (a && !pendiente && !(destino && a.copia.contains(destino))) {
       salirEdicion(false);
+    }
+  };
+
+  /** W12d-bis: copiar y cortar dan el texto como se ve (sin la frase oculta de cada ficha para el lector). */
+  const alCopiar = (evento: ClipboardEvent) => {
+    const a = enEdicion(evento);
+    const r = a ? seleccionEn(a.campo) : null;
+    if (!a || !r || r.collapsed || !fichasDe(a.campo).length) {
+      return;
+    }
+    evento.preventDefault();
+    evento.clipboardData?.setData('text/plain', textoVisible(r));
+    if (evento.type === 'cut' && !pendiente) {
+      const fichas = fichasEnRango(a.campo, r);
+      if (fichas.length) {
+        pedirQuitar(a, r.cloneRange(), fichas, { tipo: 'borrar', soloFichas: soloFichas(r) });
+      } else {
+        editarCon(r.cloneRange(), '');
+      }
+    }
+  };
+
+  /** Una ficha no se arrastra fuera del texto (ni el texto que la lleva). */
+  const alArrastrar = (evento: DragEvent) => {
+    const a = enEdicion(evento);
+    const r = a ? seleccionEn(a.campo) : null;
+    if (a && r && !r.collapsed && fichasEnRango(a.campo, r).length) {
+      evento.preventDefault();
     }
   };
 
@@ -500,6 +990,9 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
   doc.addEventListener('paste', alPegar, true);
   doc.addEventListener('input', alEscribir, true);
   doc.addEventListener('focusout', alSalirDelFoco, true);
+  doc.addEventListener('copy', alCopiar, true);
+  doc.addEventListener('cut', alCopiar, true);
+  doc.addEventListener('dragstart', alArrastrar, true);
 
   return {
     borrador(bloques) {
@@ -536,8 +1029,16 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
       return true;
     },
     decorar,
+    quitarDato,
     quitar() {
       salirEdicion(false);
+      doc.querySelectorAll('[data-ed-aria-oculto]').forEach((el) => {
+        el.removeAttribute('data-ed-aria-oculto');
+        el.setAttribute('aria-hidden', 'true');
+      });
+      doc.removeEventListener('copy', alCopiar, true);
+      doc.removeEventListener('cut', alCopiar, true);
+      doc.removeEventListener('dragstart', alArrastrar, true);
       doc.removeEventListener('mousedown', alBajar, true);
       doc.removeEventListener('keydown', alTeclear, true);
       doc.removeEventListener('beforeinput', alAntesDeEscribir as EventListener, true);

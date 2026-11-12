@@ -119,8 +119,8 @@ export const CANDADOS_LINEA_COMARCAL: readonly Candado[] = [
 
 /**
  * Las otras seis páginas (`sedePagHtml`, `tarifasPagHtml`, `eventosPagHtml`, `eventoPagHtml`, `legalesHtml` y
- * `preinscripcionHtml` del boceto). Los datos que el boceto pone dentro de un texto como ficha («Preinscribirme en
- * [Herrera]», «desde [30 €]») son de W12d.
+ * `preinscripcionHtml` del boceto). Los datos que el boceto pone dentro de un texto como ficha («desde [30 €]») van en
+ * la edición del texto (W12d-bis, `huecos-editor.ts`).
  */
 const CANDADOS_PAGINAS: Readonly<Record<PaginaInterior, readonly Candado[]>> = {
   sede: [
@@ -145,6 +145,8 @@ const CANDADOS_PAGINAS: Readonly<Record<PaginaInterior, readonly Candado[]>> = {
     { selector: '.p-tarifas .tarifa-contacto dd:has(> a[href^="mailto:"])', que: 'Correo de contacto', donde: ESCUELA },
     { selector: '.p-tarifas .tarifa-contacto dd:has(> a.cifras)', que: 'Teléfono de contacto', donde: ESCUELA },
     { selector: '.p-tarifas .cuadro tbody th', que: 'Nombre de la tarifa', donde: PRODUCTOS },
+    // W12d-bis (decisión del propietario, 12/11): «Cada adulto» y «Cada menor» de la tarifa familiar son fijos.
+    { selector: '.p-tarifas .cuadro tbody.grupo-tarifa td.quien', que: 'Quién paga', donde: 'web' },
     { selector: '.p-tarifas .cuadro td.importe', que: 'Importe de la tarifa', donde: PRODUCTOS, envolver: { texto: true } },
     { selector: '.p-tarifas .lt-nombre', que: 'Nombre de la sede', donde: SEDES },
     { selector: '.p-tarifas .lt-importe', que: 'Mensualidad en la sede', donde: PRODUCTOS },
