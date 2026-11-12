@@ -175,6 +175,10 @@ const ESTADO_BLOQUES_INICIAL = JSON.stringify([[], [], false]);
 
 /** La barra superior del panel (`navegacion/cabecera-panel`): 64 px y 56 en móvil; la franja del caso va debajo. */
 const CABECERA_PANEL = '.pn-cab';
+/** Lo que el panel pone fijo sobre la vista previa: arriba, su cabecera (la franja del caso se busca en la pantalla)... */
+const TAPAS_ARRIBA = [CABECERA_PANEL];
+/** ...y abajo, la barra de navegación del móvil (la barra de cambios se busca en la pantalla). */
+const TAPAS_ABAJO = ['.pn-barra'];
 
 const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
 
@@ -521,6 +525,10 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private readonly sedesRechazadas = new Set<number>();
   /** Lo último que se mandó a la capa de `profesores`. */
   private profesoresEnviado = '';
+  /** Lo último que se mandó a la capa de `zona-visible` («top:alto»; vacío con la capa nueva). */
+  private zonaEnviada = '';
+  /** El fotograma en que se medirá la zona (como mucho un envío por fotograma). */
+  private zonaPedida: number | null = null;
   private observador: ResizeObserver | null = null;
   private temporizadorEsqueleto: ReturnType<typeof setTimeout> | null = null;
   private temporizadorLimite: ReturnType<typeof setTimeout> | null = null;
@@ -553,6 +561,20 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         this.cerrarHojaSedes(false);
       }
     });
+    // La parte de la vista previa que se ve, para que la capa ponga sus flotantes dentro: cambia con el alto del
+    // documento, la escala, la barra de cambios, la franja del caso, la hoja, el desplazamiento y el tamaño de la ventana.
+    effect(() => {
+      this.alto();
+      this.escala();
+      this.barraVisible();
+      this.casoActivo();
+      this.vistaHoja();
+      this.estrecho();
+      this.pedirZona();
+    });
+    const alMoverVentana = () => this.pedirZona();
+    this.ventana?.addEventListener('scroll', alMoverVentana, { passive: true });
+    this.ventana?.addEventListener('resize', alMoverVentana);
     const consulta = this.ventana?.matchMedia?.(CONSULTA_ESTRECHO);
     const alCambiarAncho = (e: MediaQueryListEvent) => this.estrecho.set(e.matches);
     consulta?.addEventListener?.('change', alCambiarAncho);
@@ -563,6 +585,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       : () => undefined;
     inject(DestroyRef).onDestroy(() => {
       dejarDeEscuchar();
+      this.ventana?.removeEventListener('scroll', alMoverVentana);
+      this.ventana?.removeEventListener('resize', alMoverVentana);
+      if (this.zonaPedida !== null) {
+        this.ventana?.cancelAnimationFrame?.(this.zonaPedida);
+        this.zonaPedida = null;
+      }
       consulta?.removeEventListener?.('change', alCambiarAncho);
       this.cancelarSubidas();
       this.pararTemporizadores();
@@ -833,6 +861,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         // La capa nueva empieza sin profesores ni sedes: solo se manda si hay algo.
         this.profesoresEnviado = PROFESORES_INICIAL;
         this.enviarProfesores();
+        // Ni sabe qué parte se ve: se le dice ya.
+        this.zonaEnviada = '';
+        this.enviarZona();
         break;
       case 'profesor':
         if (mensaje.accion === 'anadir') {
@@ -1842,6 +1873,78 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         paso: this.paso(),
       });
     }
+  }
+
+  /** Mide y manda la zona en el siguiente fotograma (varios avisos en el mismo fotograma, un solo envío). */
+  private pedirZona(): void {
+    const ventana = this.ventana;
+    if (!ventana || this.zonaPedida !== null) {
+      return;
+    }
+    if (typeof ventana.requestAnimationFrame !== 'function') {
+      this.enviarZona();
+      return;
+    }
+    this.zonaPedida = ventana.requestAnimationFrame(() => {
+      this.zonaPedida = null;
+      this.enviarZona();
+    });
+  }
+
+  /** Manda a la capa la parte de la vista previa que se ve, si cambió desde la última vez. */
+  private enviarZona(): void {
+    const ventana = this.ventana;
+    const iframe = this.iframe()?.nativeElement;
+    const destino = iframe?.contentWindow ?? null;
+    const zona = ventana && iframe ? this.zonaVisible(ventana, iframe) : null;
+    if (!ventana || !destino || !zona) {
+      return;
+    }
+    const firma = `${zona.top}:${zona.alto}`;
+    if (firma === this.zonaEnviada) {
+      return;
+    }
+    this.zonaEnviada = firma;
+    enviarPorPuente(ventana, destino, { canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top: zona.top, alto: zona.alto });
+  }
+
+  /**
+   * La parte del iframe que se ve, en píxeles CSS de su documento: el marco en la ventana menos lo que el panel pone
+   * fijo encima (cabecera y franja del caso arriba; barra de cambios y navegación del móvil abajo), deshecha la escala.
+   * Quien se desplaza es la ventana del panel (el iframe mide todo el documento). Null si no se ve nada.
+   */
+  private zonaVisible(ventana: Window, iframe: HTMLIFrameElement): { top: number; alto: number } | null {
+    const marco = iframe.getBoundingClientRect();
+    const escala = iframe.offsetHeight > 0 ? marco.height / iframe.offsetHeight : 0;
+    if (!(escala > 0)) {
+      return null;
+    }
+    const doc = this.host.nativeElement.ownerDocument;
+    const mitad = ventana.innerHeight / 2;
+    const tapa = (el: Element | null): DOMRect | null => {
+      if (!el) {
+        return null;
+      }
+      const r = el.getBoundingClientRect();
+      return r.height > 0 && r.width > 0 && getComputedStyle(el).visibility !== 'hidden' ? r : null;
+    };
+    let arriba = Math.max(marco.top, 0);
+    let abajo = Math.min(marco.bottom, ventana.innerHeight);
+    [...TAPAS_ARRIBA.map((s) => doc.querySelector(s)), this.casoActivoEl()?.nativeElement ?? null].forEach((el) => {
+      const r = tapa(el);
+      if (r && r.top < mitad) {
+        arriba = Math.max(arriba, r.bottom);
+      }
+    });
+    [...TAPAS_ABAJO.map((s) => doc.querySelector(s)), this.host.nativeElement.querySelector('.barra')].forEach((el) => {
+      const r = tapa(el);
+      if (r && r.bottom > mitad) {
+        abajo = Math.min(abajo, r.top);
+      }
+    });
+    const top = Math.round((arriba - marco.top) / escala);
+    const alto = Math.round((abajo - arriba) / escala);
+    return alto >= 1 ? { top: Math.max(0, top), alto } : null;
   }
 
   /** Lleva a la vista la parte del caso (boceto `ponerCaso`), bajo la barra del panel y la franja del caso. */

@@ -189,6 +189,94 @@ describe('WebContenidoComponent (W12c)', () => {
     });
   });
 
+  describe('zona visible de la vista previa (los flotantes de la capa, dentro de lo que se ve)', () => {
+    const LISTO = { canal: CANAL_EDITOR_WEB, tipo: 'listo' };
+    let cabecera: HTMLElement | null = null;
+    let enviados: jasmine.Spy;
+
+    afterEach(() => {
+      cabecera?.remove();
+      cabecera = null;
+      window.scrollTo(0, 0);
+    });
+
+    const fotograma = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+    const zonas = () =>
+      enviados.calls
+        .allArgs()
+        .map(([m]) => m as { tipo: string; top: number; alto: number })
+        .filter((m) => m.tipo === 'zona-visible');
+    /** Lo que se espera, en píxeles del documento del iframe: de `arriba` a `abajo` de la ventana, con la escala del marco. */
+    function esperada(arriba: number, abajo: number): { top: number; alto: number } {
+      const marco = iframe()!.getBoundingClientRect();
+      const escala = marco.height / iframe()!.offsetHeight;
+      return { top: (arriba - marco.top) / escala, alto: (abajo - arriba) / escala };
+    }
+    function comoEsperada(z: { top: number; alto: number }, e: { top: number; alto: number }): void {
+      expect(Math.abs(z.top - e.top)).withContext(`top ${z.top} ≈ ${e.top}`).toBeLessThanOrEqual(1);
+      expect(Math.abs(z.alto - e.alto)).withContext(`alto ${z.alto} ≈ ${e.alto}`).toBeLessThanOrEqual(1);
+    }
+
+    /** Escritorio a media escala, documento muy alto, la cabecera fija del panel y el marco empezando 500 px más arriba. */
+    function preparar(): void {
+      abrir();
+      fixture.componentInstance.cambiarVista('escritorio');
+      fixture.componentInstance.disponible.set(600);
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'alto', alto: 8000 });
+      cabecera = document.createElement('div');
+      cabecera.className = 'pn-cab';
+      cabecera.style.cssText = 'position:fixed;top:0;left:0;right:0;height:64px;z-index:1';
+      document.body.appendChild(cabecera);
+      window.scrollTo(0, iframe()!.getBoundingClientRect().top + window.scrollY + 500);
+      enviados = spyOn(iframe()!.contentWindow!, 'postMessage');
+    }
+
+    it('al «listo»: la parte del marco bajo la cabecera fija y hasta el borde de la ventana; con cambios, hasta la barra', async () => {
+      preparar();
+      llegar(LISTO);
+      expect(zonas().length).toBe(1);
+      expect(iframe()!.getBoundingClientRect().top).toBeLessThan(0);
+      comoEsperada(zonas()[0], esperada(64, window.innerHeight));
+
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'texto', clave: 'portada.titular', texto: 'Taekwondo en siete pueblos' });
+      const barra = q('.barra')!;
+      expect(barra).not.toBeNull();
+      await fotograma();
+      expect(zonas().length).toBe(2);
+      comoEsperada(zonas()[1], esperada(64, barra.getBoundingClientRect().top));
+    });
+
+    it('al desplazar o redimensionar: un envío por fotograma y ninguno si no cambia', async () => {
+      preparar();
+      llegar(LISTO);
+      const antes = zonas()[0];
+      window.scrollBy(0, 100);
+      window.dispatchEvent(new Event('scroll'));
+      window.dispatchEvent(new Event('scroll'));
+      window.dispatchEvent(new Event('resize'));
+      await fotograma();
+      await fotograma();
+      expect(zonas().length).toBe(2);
+      comoEsperada(zonas()[1], esperada(64, window.innerHeight));
+      expect(zonas()[1].top).toBeGreaterThan(antes.top);
+
+      window.dispatchEvent(new Event('resize'));
+      window.dispatchEvent(new Event('scroll'));
+      await fotograma();
+      expect(zonas().length).toBe(2);
+    });
+
+    it('al salir de la pantalla deja de escuchar el desplazamiento y el tamaño', () => {
+      preparar();
+      llegar(LISTO);
+      fixture.destroy();
+      const pedir = spyOn(window, 'requestAnimationFrame').and.callThrough();
+      window.dispatchEvent(new Event('scroll'));
+      window.dispatchEvent(new Event('resize'));
+      expect(pedir).not.toHaveBeenCalled();
+    });
+  });
+
   describe('carga de la vista previa', () => {
     const LISTO = { canal: CANAL_EDITOR_WEB, tipo: 'listo' };
 
@@ -259,8 +347,11 @@ describe('WebContenidoComponent (W12c)', () => {
       abrir();
       const enviar = spyOn(iframe()!.contentWindow!, 'postMessage');
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
-      // W12e: con el panel estrecho la capa nueva recibe también `estado-bloques`; W12f-2b, `profesores`: aquí no cuentan.
-      const llamadas = enviar.calls.allArgs().filter(([m]) => !['estado-bloques', 'profesores'].includes((m as { tipo: string }).tipo));
+      // W12e: con el panel estrecho la capa nueva recibe también `estado-bloques`; W12f-2b, `profesores`; y la parte que se
+      // ve (`zona-visible`): aquí no cuentan.
+      const llamadas = enviar.calls
+        .allArgs()
+        .filter(([m]) => !['estado-bloques', 'profesores', 'zona-visible'].includes((m as { tipo: string }).tipo));
       expect(llamadas.length).toBe(1);
       const [mensaje, destino] = llamadas[0] as unknown as [Record<string, unknown>, string];
       expect(destino).toBe(location.origin);

@@ -1,5 +1,5 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
-import { encajarEnVista } from './colocar-flotantes';
+import { colocarJuntoAlAncla } from './colocar-flotantes';
 import {
   type EstadoProfesor,
   type SedeElegible,
@@ -218,20 +218,7 @@ export function activarProfesoresEditor(opciones: OpcionesProfesoresEditor): Pro
     pintarCasillas(estado, true);
     flot.hidden = false;
     // Como `abrirFlot` de las fotos: bajo el botón (o sobre él si abajo no cabe) y siempre dentro de la vista.
-    const r = b.getBoundingClientRect();
-    const ancho = flot.offsetWidth;
-    const alto = flot.offsetHeight;
-    const izquierda = Math.min(
-      Math.max(8 + ventana.scrollX, r.left + ventana.scrollX + r.width / 2 - ancho / 2),
-      ventana.scrollX + doc.documentElement.clientWidth - ancho - 8,
-    );
-    let arriba = r.top + ventana.scrollY + r.height + 8;
-    if (arriba + alto > ventana.scrollY + ventana.innerHeight - 8 && r.top + ventana.scrollY - alto - 8 > ventana.scrollY) {
-      arriba = r.top + ventana.scrollY - alto - 8;
-    }
-    arriba = encajarEnVista(arriba - ventana.scrollY, alto, ventana.innerHeight) + ventana.scrollY;
-    flot.style.left = `${Math.max(8, izquierda)}px`;
-    flot.style.top = `${arriba}px`;
+    colocarJuntoAlAncla(flot, b, ventana);
     flot.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
   }
 

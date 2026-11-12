@@ -390,6 +390,83 @@ describe('profesores en el sitio (W12f-2b, capa de edición)', () => {
       expect(mensajes('mostrar').length).toBeGreaterThan(0);
     });
 
+    describe('dentro de la parte que se ve en el panel (zona `zona-visible`)', () => {
+      // Como en el panel: el iframe mide todo el documento (no se desplaza) y la tarjeta queda lejos del principio.
+      beforeEach(() => {
+        marco.style.cssText = 'width:1000px;height:2400px;border:0';
+        doc.body.style.cssText = 'margin:0;padding-top:1200px';
+      });
+      const zona = (top: number, alto: number) => delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top, alto });
+      const caja = (el: Element) => el.getBoundingClientRect();
+      /** La zona de `alto` px con el botón al `parte` (0-1) de su alto. */
+      const zonaConBoton = (parte: number, alto = 500) => {
+        const top = Math.round(caja(boton(1)).top - parte * alto);
+        zona(top, alto);
+        return { top, bottom: top + alto };
+      };
+      function dentro(z: { top: number; bottom: number }): void {
+        const r = caja(flot());
+        expect(r.top).withContext('borde de arriba').toBeGreaterThanOrEqual(z.top + 4 - 1);
+        expect(r.bottom).withContext('borde de abajo').toBeLessThanOrEqual(z.bottom - 4 + 1);
+      }
+
+      it('botón arriba, en medio o abajo de la zona: el diálogo queda entero dentro (bajo el botón o sobre él)', () => {
+        for (const parte of [0.2, 0.5, 0.85]) {
+          const z = zonaConBoton(parte);
+          boton(1).click();
+          expect(flot().hidden).toBeFalse();
+          dentro(z);
+          expect(flot().style.maxHeight).withContext('cabe: sin alto limitado').toBe('');
+          if (parte === 0.2) {
+            expect(caja(flot()).top).withContext('bajo el botón').toBeGreaterThanOrEqual(caja(boton(1)).bottom);
+          }
+          if (parte === 0.85) {
+            expect(caja(flot()).bottom).withContext('sobre el botón').toBeLessThanOrEqual(caja(boton(1)).top);
+          }
+          q<HTMLButtonElement>('.flot--sedes [data-op="listo-sedes"]').click();
+          expect(flot().hidden).toBeTrue();
+        }
+      });
+
+      it('más alto que la zona: alto limitado a ella, las casillas se desplazan por dentro y «Listo» se ve', () => {
+        const z = zonaConBoton(0.5, 230);
+        boton(1).click();
+        dentro(z);
+        expect(flot().style.maxHeight).not.toBe('');
+        const lista = q('.flot--sedes fieldset.casillas');
+        expect(lista.scrollHeight).toBeGreaterThan(lista.clientHeight);
+        const listo = caja(q('.flot--sedes [data-op="listo-sedes"]'));
+        expect(listo.height).toBeGreaterThan(0);
+        expect(listo.top).toBeGreaterThanOrEqual(caja(flot()).top - 1);
+        expect(listo.bottom).toBeLessThanOrEqual(caja(flot()).bottom + 1);
+      });
+
+      it('si la zona cambia con el diálogo abierto, se recoloca dentro de la nueva', () => {
+        zonaConBoton(0.2);
+        boton(1).click();
+        const antes = caja(flot()).top;
+        const z = zonaConBoton(0.85);
+        dentro(z);
+        expect(caja(flot()).top).toBeLessThan(antes);
+        expect(doc.activeElement).toBe(casillas()[0]);
+      });
+
+      it('sin zona del panel, como antes: bajo el botón aunque quede lejos', () => {
+        boton(1).click();
+        expect(Math.abs(caja(flot()).top - (caja(boton(1)).bottom + 8))).toBeLessThan(1);
+        expect(flot().style.maxHeight).toBe('');
+      });
+
+      it('el menú de la foto también queda dentro de la zona', () => {
+        const z = zonaConBoton(0.95);
+        tarjeta(1).querySelector<HTMLButtonElement>('.ed-foto')!.click();
+        const menu = caja(Array.from(doc.querySelectorAll<HTMLElement>('.flot:not(.flot--sedes)')).find((f) => !f.hidden)!);
+        expect(menu.height).toBeGreaterThan(0);
+        expect(menu.top).toBeGreaterThanOrEqual(z.top + 4 - 1);
+        expect(menu.bottom).toBeLessThanOrEqual(z.bottom - 4 + 1);
+      });
+    });
+
     describe('panel estrecho: la hoja del panel', () => {
       beforeEach(() => estado(true));
       const idHoja = () => mensajes('hoja-sedes').at(-1)!['id'] as number;

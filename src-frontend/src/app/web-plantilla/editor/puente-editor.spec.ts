@@ -24,6 +24,23 @@ describe('puente del editor de la web (W12c)', () => {
       expect(esMensajeDelPanel(null)).toBeFalse();
     });
 
+    it('del panel: la zona visible, dos números finitos con top ≥ 0, alto > 0 y un tope; nada más', () => {
+      const zona = (top: unknown, alto: unknown) => esMensajeDelPanel({ canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top, alto });
+      expect(zona(0, 720)).toBeTrue();
+      expect(zona(1234.5, 0.5)).toBeTrue();
+      expect(zona(-1, 720)).toBeFalse();
+      expect(zona(10, 0)).toBeFalse();
+      expect(zona(10, -5)).toBeFalse();
+      expect(zona(Number.NaN, 720)).toBeFalse();
+      expect(zona(10, Number.POSITIVE_INFINITY)).toBeFalse();
+      expect(zona(2_000_000, 720)).toBeFalse();
+      expect(zona(10, 2_000_000)).toBeFalse();
+      expect(zona('10', 720)).toBeFalse();
+      expect(zona(10, undefined)).toBeFalse();
+      // La capa no la manda: el panel no la acepta.
+      expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'zona-visible', top: 0, alto: 720 })).toBeFalse();
+    });
+
     it('del editor: listo, alto y un destino de la lista cerrada', () => {
       expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'listo' })).toBeTrue();
       expect(esMensajeDelEditor({ canal: CANAL_EDITOR_WEB, tipo: 'alto', alto: 2400 })).toBeTrue();

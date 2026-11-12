@@ -1,5 +1,5 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
-import { encajarEnVista } from './colocar-flotantes';
+import { colocarJuntoAlAncla } from './colocar-flotantes';
 import { cuentaGaleria, ordenGaleria } from './fotos-galeria';
 import {
   type AccionBloque,
@@ -472,21 +472,7 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
     flot.hidden = false;
     menuAbierto = pos;
     ancla.setAttribute('aria-expanded', 'true');
-    const r = ancla.getBoundingClientRect();
-    const ancho = flot.offsetWidth;
-    const alto = flot.offsetHeight;
-    const izquierda = Math.min(
-      Math.max(8 + ventana.scrollX, r.left + ventana.scrollX + r.width / 2 - ancho / 2),
-      ventana.scrollX + doc.documentElement.clientWidth - ancho - 8,
-    );
-    let arriba = r.top + ventana.scrollY + r.height + 8;
-    if (arriba + alto > ventana.scrollY + ventana.innerHeight - 8 && r.top + ventana.scrollY - alto - 8 > ventana.scrollY) {
-      arriba = r.top + ventana.scrollY - alto - 8;
-    }
-    // Ni abajo ni arriba cabe entero: se desplaza lo justo para que se vea dentro de la vista.
-    arriba = encajarEnVista(arriba - ventana.scrollY, alto, ventana.innerHeight) + ventana.scrollY;
-    flot.style.left = `${Math.max(8, izquierda)}px`;
-    flot.style.top = `${arriba}px`;
+    colocarJuntoAlAncla(flot, ancla, ventana);
     flot.querySelector<HTMLElement>('[role=menuitem]:not([aria-disabled=true])')?.focus({ preventScroll: true });
   }
 

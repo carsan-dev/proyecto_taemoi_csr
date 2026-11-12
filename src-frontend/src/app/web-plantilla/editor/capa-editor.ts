@@ -14,7 +14,7 @@ import {
 import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
 import { activarBloquesEditor } from './bloques-capa';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
-import { cajasVisibles, colocarEvitando, MARGEN_VERTICAL } from './colocar-flotantes';
+import { cajasVisibles, colocarEvitando, fijarZonaVisible, MARGEN_VERTICAL, recolocarFlotantes, vistaDe } from './colocar-flotantes';
 import { activarEdicionTextos, iconoCandado } from './edicion-textos';
 import { activarFotosEditor } from './fotos-editor';
 import { activarProfesoresEditor } from './profesores-capa';
@@ -496,15 +496,17 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     const r = dato.getBoundingClientRect();
     const alto = candado.offsetHeight;
     const ancho = candado.offsetWidth;
-    // Sobre el dato, o bajo él si arriba no cabe; y sin pisar la etiqueta del campo ni la barra del bloque.
+    // Sobre el dato, o bajo él si arriba no cabe; y sin pisar la etiqueta del campo ni la barra del bloque. Dentro de la
+    // parte que se ve en el panel (su zona), si la ha dicho.
+    const vista = vistaDe(ventana);
     const sitio = colocarEvitando({
       ancho,
       alto,
       ancla: r,
       separacion: 8,
       izquierda: r.left,
-      arriba: r.top - alto - 8 >= MARGEN_VERTICAL,
-      vista: { ancho: doc.documentElement.clientWidth, alto: ventana.innerHeight },
+      arriba: r.top - alto - 8 >= vista.arriba + MARGEN_VERTICAL,
+      vista,
       evitar: [
         ...cajasVisibles(doc, [doc.body], ':scope > .ed-chip'),
         ...cajasVisibles(doc, [dato.closest('.ed-bloque')], ':scope > .ed-barra .ed-nombre, :scope > .ed-barra .ed-acciones, .ed-error'),
@@ -716,6 +718,12 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   }
 
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
+    if (mensaje.tipo === 'zona-visible') {
+      // La parte del iframe que se ve en el panel: los flotantes abiertos vuelven a quedar dentro.
+      fijarZonaVisible(ventana, { top: mensaje.top, alto: mensaje.alto });
+      recolocarFlotantes(ventana);
+      return;
+    }
     if (mensaje.tipo === 'estado-bloques') {
       bloques.estado(mensaje);
       return;
@@ -819,5 +827,6 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     bloques.quitar();
     estilos.remove();
     candado.remove();
+    fijarZonaVisible(ventana, null);
   };
 }

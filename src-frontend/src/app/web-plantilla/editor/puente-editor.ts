@@ -303,7 +303,24 @@ export interface MensajeRespuestaHojaSedes {
   devolverFoco: boolean;
 }
 
+/**
+ * La parte del iframe que el usuario ve de verdad, en píxeles CSS del documento del iframe (ya deshecha la escala del
+ * marco): el iframe mide todo el documento y quien se desplaza es el panel, así que la capa no la puede saber sola.
+ * Descuenta lo que tapa el panel por arriba (cabecera y barras pegadas) y por abajo (la barra de guardar). Los flotantes
+ * de la capa se colocan dentro de ella.
+ */
+export interface MensajeZonaVisible {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'zona-visible';
+  top: number;
+  alto: number;
+}
+
+/** Tope de la zona visible (top y alto): ningún documento de la web llega a tanto. */
+export const MAX_ZONA_VISIBLE = 1_000_000;
+
 export type MensajeDelPanel =
+  | MensajeZonaVisible
   | MensajeProfesores
   | MensajeRespuestaHojaSedes
   | MensajeFocoProfesor
@@ -647,6 +664,19 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
     return false;
   }
   switch (valor['tipo']) {
+    case 'zona-visible': {
+      const { top, alto } = valor;
+      return (
+        typeof top === 'number' &&
+        typeof alto === 'number' &&
+        Number.isFinite(top) &&
+        Number.isFinite(alto) &&
+        top >= 0 &&
+        top <= MAX_ZONA_VISIBLE &&
+        alto > 0 &&
+        alto <= MAX_ZONA_VISIBLE
+      );
+    }
     case 'profesores': {
       const sedes = valor['sedes'];
       return esSedesElegibles(sedes) && esListaProfesores(valor['lista'], new Set(sedes.map((s) => s.id)));

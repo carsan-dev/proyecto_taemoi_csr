@@ -66,7 +66,8 @@ export interface PeticionColocar {
   izquierda: number;
   /** El lado de siempre: sobre el ancla (`true`) o bajo ella. */
   arriba: boolean;
-  vista: { ancho: number; alto: number };
+  /** `arriba`: dónde empieza la parte visible (0 sin zona del panel). */
+  vista: { ancho: number; alto: number; arriba?: number };
   evitar: readonly Caja[];
 }
 
@@ -77,7 +78,9 @@ export function colocarEvitando(p: PeticionColocar): { top: number; left: number
   const porDefecto = p.arriba ? sobre : bajo;
   const caja = (top: number): Caja => ({ left, top, right: left + p.ancho, bottom: top + p.alto });
   const libre = (top: number) => !p.evitar.some((o) => cortan(caja(top), o, HOLGURA_FLOTANTES));
-  const enVista = (top: number) => top >= MARGEN_VERTICAL && top + p.alto <= p.vista.alto - MARGEN_VERTICAL;
+  const inicio = p.vista.arriba ?? 0;
+  const fin = inicio + p.vista.alto;
+  const enVista = (top: number) => top >= inicio + MARGEN_VERTICAL && top + p.alto <= fin - MARGEN_VERTICAL;
 
   if (libre(porDefecto)) {
     return { top: porDefecto, left };
@@ -95,7 +98,7 @@ export function colocarEvitando(p: PeticionColocar): { top: number; left: number
   if (dentro.length) {
     return { top: dentro[0], left };
   }
-  const fuera = (t: number) => Math.max(0, MARGEN_VERTICAL - t) + Math.max(0, t + p.alto - (p.vista.alto - MARGEN_VERTICAL));
+  const fuera = (t: number) => Math.max(0, inicio + MARGEN_VERTICAL - t) + Math.max(0, t + p.alto - (fin - MARGEN_VERTICAL));
   const resto = validas.sort((a, b) => fuera(a) - fuera(b) || distancia(a) - distancia(b));
   return { top: resto.length ? resto[0] : porDefecto, left };
 }
@@ -103,9 +106,124 @@ export function colocarEvitando(p: PeticionColocar): { top: number; left: number
 /**
  * Un menú o diálogo con su sitio de siempre (bajo el ancla, o sobre ella si abajo no cabe) pero sin salirse de la
  * vista por abajo ni por arriba: si es más alto que la vista, se ve al menos su principio. `top` en coordenadas de
- * la vista.
+ * la vista; `vistaArriba`, dónde empieza la parte visible (la zona del panel; 0 sin ella).
  */
-export function encajarEnVista(top: number, alto: number, vistaAlto: number): number {
-  const maximo = vistaAlto - alto - MARGEN_VERTICAL;
-  return Math.max(MARGEN_VERTICAL, Math.min(top, maximo));
+export function encajarEnVista(top: number, alto: number, vistaAlto: number, vistaArriba = 0): number {
+  const maximo = vistaArriba + vistaAlto - alto - MARGEN_VERTICAL;
+  return Math.max(vistaArriba + MARGEN_VERTICAL, Math.min(top, maximo));
+}
+
+// ------------------------------------------------------------------ la parte que se ve (zona del panel)
+
+/**
+ * La parte del iframe que se ve en el panel, en coordenadas del documento (mensaje `zona-visible`): el iframe mide todo
+ * el documento y quien se desplaza es el panel, así que `innerHeight` y `scrollY` del iframe no dicen qué se ve.
+ */
+export interface ZonaVisible {
+  top: number;
+  alto: number;
+}
+
+/** La vista donde caben los flotantes, en coordenadas de la vista del iframe. `zona`: viene del panel. */
+export interface Vista {
+  ancho: number;
+  alto: number;
+  arriba: number;
+  zona: boolean;
+}
+
+const zonas = new WeakMap<Window, ZonaVisible>();
+
+/** La última zona que dijo el panel (null al cerrar la capa: vuelve a la vista del iframe). */
+export function fijarZonaVisible(ventana: Window, zona: ZonaVisible | null): void {
+  if (zona) {
+    zonas.set(ventana, { top: zona.top, alto: zona.alto });
+  } else {
+    zonas.delete(ventana);
+    abiertos.delete(ventana);
+  }
+}
+
+/** La vista del iframe recortada a la zona del panel; sin zona (o si no se cruzan), la vista del iframe entera. */
+export function vistaDe(ventana: Window): Vista {
+  const ancho = ventana.document.documentElement.clientWidth;
+  const entera: Vista = { ancho, alto: ventana.innerHeight, arriba: 0, zona: false };
+  const zona = zonas.get(ventana);
+  if (!zona) {
+    return entera;
+  }
+  const arriba = Math.max(0, zona.top - ventana.scrollY);
+  const abajo = Math.min(ventana.innerHeight, zona.top + zona.alto - ventana.scrollY);
+  return abajo > arriba ? { ancho, alto: abajo - arriba, arriba, zona: true } : entera;
+}
+
+interface Abierto {
+  ancla: HTMLElement;
+  /** Su alto sin limitar, medido al abrirlo (recolocarlo no lo vuelve a medir: perdería el desplazamiento interno). */
+  alto: number;
+}
+
+/** Por ventana, cada menú o diálogo colocado junto a su botón (para recolocarlo si cambia la zona). */
+const abiertos = new WeakMap<Window, Map<HTMLElement, Abierto>>();
+
+/**
+ * Boceto `abrirFlot`: un menú o diálogo bajo su botón (o sobre él si abajo no cabe) y siempre dentro de la parte que se
+ * ve. Si es más alto que la zona del panel, su alto se limita a ella y se desplaza por dentro.
+ */
+export function colocarJuntoAlAncla(flot: HTMLElement, ancla: HTMLElement, ventana: Window): void {
+  flot.style.maxHeight = '';
+  flot.style.overflowY = '';
+  const alto = flot.offsetHeight;
+  let mapa = abiertos.get(ventana);
+  if (!mapa) {
+    mapa = new Map();
+    abiertos.set(ventana, mapa);
+  }
+  mapa.set(flot, { ancla, alto });
+  situar(flot, ancla, alto, ventana);
+}
+
+/** Tras un cambio de zona: los menús y diálogos que siguen abiertos vuelven a quedar dentro de ella. */
+export function recolocarFlotantes(ventana: Window): void {
+  const mapa = abiertos.get(ventana);
+  mapa?.forEach((a, flot) => {
+    if (flot.hidden || !flot.isConnected || !a.ancla.isConnected) {
+      mapa.delete(flot);
+      return;
+    }
+    situar(flot, a.ancla, a.alto, ventana);
+  });
+}
+
+function situar(flot: HTMLElement, ancla: HTMLElement, altoNatural: number, ventana: Window): void {
+  const vista = vistaDe(ventana);
+  const cabe = Math.floor(vista.alto - 2 * MARGEN_VERTICAL);
+  const limitar = vista.zona && altoNatural > cabe;
+  let tope = cabe;
+  if (limitar) {
+    // `max-height` sin `border-box` no cuenta el relleno ni el borde.
+    const estilo = ventana.getComputedStyle(flot);
+    if (estilo.boxSizing !== 'border-box') {
+      tope -= ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'].reduce(
+        (suma, p) => suma + (parseFloat(estilo[p as 'paddingTop']) || 0),
+        0,
+      );
+    }
+  }
+  flot.style.maxHeight = limitar ? `${Math.max(0, Math.floor(tope))}px` : '';
+  flot.style.overflowY = limitar ? 'auto' : '';
+  const r = ancla.getBoundingClientRect();
+  const ancho = flot.offsetWidth;
+  const alto = flot.offsetHeight;
+  const { scrollX, scrollY } = ventana;
+  const izquierda = Math.min(Math.max(8 + scrollX, r.left + scrollX + r.width / 2 - ancho / 2), scrollX + vista.ancho - ancho - 8);
+  const fin = vista.arriba + vista.alto;
+  let arriba = r.bottom + 8;
+  if (arriba + alto > fin - 8 && r.top - alto - 8 > vista.arriba) {
+    arriba = r.top - alto - 8;
+  }
+  // Ni abajo ni arriba cabe entero: se desplaza lo justo para que se vea dentro de la vista.
+  arriba = encajarEnVista(arriba, alto, vista.alto, vista.arriba);
+  flot.style.left = `${Math.max(8, izquierda)}px`;
+  flot.style.top = `${arriba + scrollY}px`;
 }
