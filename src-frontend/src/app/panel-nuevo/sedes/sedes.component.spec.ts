@@ -1,10 +1,12 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpEventType, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
@@ -13,6 +15,11 @@ import { Sede } from './sedes-vista';
 import { SedesPanelComponent } from './sedes.component';
 
 const API = `${environment.apiUrl}/sedes`;
+const WEB = `${environment.apiUrl}/publico/web`;
+
+/** Catálogo de prueba: Moiskimdo (`legado`) o una escuela con web por plantilla. */
+const CATALOGO_LEGADO = { organizacion: { comportamientoLegadoTaemoi: true } };
+const CATALOGO_PLANTILLA = { organizacion: { comportamientoLegadoTaemoi: false } };
 
 function sede(cambios: Partial<Sede> = {}): Sede {
   return {
@@ -41,6 +48,8 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
   let http: HttpTestingController;
   let quitarTokens: () => void;
   let reiniciar: jasmine.Spy;
+  // Por defecto, Moiskimdo: las pruebas de siempre comprueban que el cuerpo enviado no cambia (W12g).
+  const catalogo = signal<object | null>(CATALOGO_LEGADO);
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const texto = (n: Element | null | undefined): string => (n?.textContent ?? '').replace(/[\s  ]+/g, ' ').trim();
@@ -111,6 +120,7 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
     jasmine.clock().install();
     quitarTokens = ponerTokensDePrueba();
     reiniciar = jasmine.createSpy('reiniciar');
+    catalogo.set(CATALOGO_LEGADO);
     await TestBed.configureTestingModule({
       imports: [SedesPanelComponent],
       providers: [
@@ -119,6 +129,7 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
         provideRouter([]),
         { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => ({ subscribe: () => undefined }), reiniciar } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+        { provide: CatalogoService, useValue: { catalogo } },
       ],
     }).compileComponents();
   });
@@ -664,5 +675,465 @@ describe('SedesPanelComponent (E9-3, pantalla Sedes del panel nuevo)', () => {
     activar.click();
     await esperar();
     expect(http.match((r) => r.url === `${API}/3/activa`).length).toBe(1);
+  });
+
+  // ------------------------------------------------------------------ W12g: grupo «En la web» (d523, d524)
+
+  describe('W12g: grupo «En la web»', () => {
+    const HERRERA = sede({
+      id: 1,
+      nombre: 'Herrera',
+      slug: 'herrera',
+      lugar: 'Pabellón municipal',
+      indicacionesAcceso: 'Entrada por la puerta lateral.',
+      fotoImagenId: 11,
+      foto2ImagenId: 12,
+      fotoAlt: 'Pabellón con el tatami montado',
+      foto2Alt: null,
+    });
+    const ESTEPA = sede({ id: 2, nombre: 'Estepa', slug: 'estepa' });
+    const URL_FOTO_1 = 'https://ejemplo.test/imagenes/org-2/web/sedes/a.jpg';
+
+    const web = (): HTMLElement | null => el().querySelector<HTMLElement>('.sedes__web');
+    /** El texto de cada hijo, separado por un espacio (la plantilla no deja espacios entre elementos). */
+    const partes = (selector: string): string => Array.from(el().querySelector(selector)!.children).map((h) => texto(h)).filter((t) => t !== '').join(' ');
+    const foto = (n: number): HTMLElement => el().querySelector<HTMLElement>(`.sedes__foto[data-foto="${n}"]`)!;
+    const jpeg = (nombre = 'pabellon-herrera.jpg'): File => new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3])], nombre, { type: 'image/jpeg' });
+    const elegir = (archivo: File): Event => ({ target: { files: [archivo], value: 'x' } }) as unknown as Event;
+
+    function cargarPlantilla(sedes: Sede[] = [HERRERA, ESTEPA]): void {
+      catalogo.set(CATALOGO_PLANTILLA);
+      cargar(sedes);
+      const vista = http.match((r) => r.method === 'GET' && r.url === WEB);
+      expect(vista.length).toBe(1);
+      expect(vista[0].request.params.get('vistaPrevia')).toBe('true');
+      vista[0].flush({ sedes: [{ id: 1, fotoUrl: URL_FOTO_1, foto2Url: null }] });
+      fixture.detectChanges();
+    }
+
+    it('Moiskimdo (legado): sin el grupo, sin pedir la vista previa y el PUT con el cuerpo de siempre', async () => {
+      cargar([HERRERA, ESTEPA]);
+      abrirEditar(1);
+      expect(web()).toBeNull();
+      expect(el().textContent).not.toContain('En la web');
+      expect(http.match((r) => r.url === WEB).length).toBe(0);
+
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`);
+      expect(Object.keys(put.request.body as object).sort()).toEqual(
+        ['aforoTurno', 'codigoClubFederacion', 'codigoPostal', 'direccion', 'email', 'localidad', 'nombre', 'telefono'].sort()
+      );
+    });
+
+    it('sin catálogo no hay grupo (falla cerrado)', () => {
+      catalogo.set(null);
+      cargar([HERRERA]);
+      abrirEditar(1);
+      expect(web()).toBeNull();
+      expect(http.match((r) => r.url === WEB).length).toBe(0);
+    });
+
+    it('editar: textos, orden y valores del boceto', () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      const g = web()!;
+      expect(texto(g.querySelector('h3'))).toBe('En la web');
+      expect(texto(g.querySelector('.sedes__web-texto'))).toBe('Así sale esta sede en tu web. Todo es opcional.');
+      const etiquetas = Array.from(g.querySelectorAll(':scope > .sedes__campo > label, .sedes__foto label')).map((l) => texto(l));
+      expect(etiquetas).toEqual([
+        'Dirección de su página(opcional)',
+        'Lugar(opcional)',
+        'Indicaciones de acceso(opcional)',
+        'Descripción de la foto(opcional)',
+        'Descripción de la foto(opcional)',
+      ]);
+      expect(texto(g.querySelector('.sedes__prefijo-fijo'))).toBe(`${location.host}/sedes/`);
+      expect(campo('slug').value).toBe('herrera');
+      expect(partes('#sedes-ayuda-slug')).toBe(
+        'Minúsculas, números y guiones. Sin ella, la sede no tiene página propia en la web. Si la cambias, los enlaces que ya hayas compartido dejan de funcionar. 7 / 60'
+      );
+      expect(campo('lugar').value).toBe('Pabellón municipal');
+      expect(partes('#sedes-ayuda-lugar')).toBe('El edificio donde se da la clase. Sale encima de la dirección. 18 / 100');
+      expect(partes('#sedes-ayuda-indicacionesAcceso')).toBe('Cómo encontrar la entrada. Sale en «Cómo llegar». 30 / 300');
+      expect(partes('.sedes__foto[data-foto="1"] .sedes__foto-cabecera')).toBe('Foto principal Sale arriba en su página y en «Fotos de las sedes».');
+      expect(partes('.sedes__foto[data-foto="2"] .sedes__foto-cabecera')).toBe('Segunda foto Sale en «Cómo llegar», en su página.');
+      expect(foto(1).querySelector('img')!.getAttribute('src')).toBe(URL_FOTO_1);
+      expect(texto(foto(1).querySelector('.sedes__foto-nota'))).toBe('Guardada');
+      expect(campo('fotoAlt').value).toBe('Pabellón con el tatami montado');
+      expect(campo('foto2Alt').placeholder).toBe('Foto de la sede de Herrera');
+      expect(partes('#sedes-ayuda-foto2Alt')).toBe(
+        'Qué se ve, para quien no puede verla. Si la dejas vacía, la web dice «Foto de la sede de Herrera». Sin nombres de alumnos. 0 / 150'
+      );
+      expect(g.textContent).not.toContain('Las fotos se suben al crear la sede.');
+      // «Estado» sigue después del grupo.
+      expect(g.compareDocumentPosition(el().querySelector('.sedes__estado-bloque')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('nueva: grupo vacío, «Añadir foto» con formatos y la nota de las fotos', () => {
+      cargarPlantilla();
+      abrirNueva();
+      expect(campo('slug').value).toBe('');
+      expect(partes('#sedes-ayuda-slug')).toBe('Minúsculas, números y guiones. Sin ella, la sede no tiene página propia en la web. 0 / 60');
+      expect(partes('.sedes__foto[data-foto="1"] .sedes__anadir-foto')).toBe('Añadir foto JPG, PNG o WebP, hasta 50 MB');
+      expect(texto(web()!.querySelector('.sedes__nota'))).toBe('Las fotos se suben al crear la sede.');
+    });
+
+    it('el contador sigue lo escrito', () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      escribir('lugar', 'Gimnasio');
+      expect(texto(el().querySelector('#sedes-ayuda-lugar .sedes__contador'))).toBe('8 / 100');
+    });
+
+    it('PUT con los campos sin tocar: se envían tal como llegaron', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`);
+      expect(put.request.body).toEqual(
+        jasmine.objectContaining({
+          nombre: 'Herrera',
+          slug: 'herrera',
+          lugar: 'Pabellón municipal',
+          indicacionesAcceso: 'Entrada por la puerta lateral.',
+          fotoAlt: 'Pabellón con el tatami montado',
+          foto2Alt: null,
+        })
+      );
+      put.flush(HERRERA);
+      await esperar();
+      expect(panel()).toBeNull();
+      expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Cambios guardados.' }]);
+      // Sin fotos que enviar, ninguna petición de fotos.
+      expect(http.match((r) => r.url.includes('/fotos/')).length).toBe(0);
+    });
+
+    it('PUT con los campos cambiados: recortados, vacíos como null y la dirección en minúsculas', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      escribir('slug', ' Herrera-Centro ');
+      escribir('lugar', '   ');
+      escribir('indicacionesAcceso', ' Por el patio. ');
+      escribir('foto2Alt', 'Entrada del pabellón');
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`);
+      expect(put.request.body).toEqual({
+        nombre: 'Herrera',
+        direccion: null,
+        localidad: null,
+        codigoPostal: null,
+        telefono: null,
+        email: null,
+        codigoClubFederacion: null,
+        aforoTurno: null,
+        slug: 'herrera-centro',
+        lugar: null,
+        indicacionesAcceso: 'Por el patio.',
+        fotoAlt: 'Pabellón con el tatami montado',
+        foto2Alt: 'Entrada del pabellón',
+      });
+    });
+
+    it('crear: POST con los campos de la web vacíos como null', async () => {
+      cargarPlantilla();
+      abrirNueva();
+      escribir('nombre', 'Lora de Estepa');
+      escribir('slug', 'lora-de-estepa');
+      boton(panel()!, 'Crear sede').click();
+      await esperar();
+      const post = http.expectOne((r) => r.method === 'POST' && r.url === API);
+      expect(post.request.body).toEqual(
+        jasmine.objectContaining({ nombre: 'Lora de Estepa', slug: 'lora-de-estepa', lugar: null, indicacionesAcceso: null, fotoAlt: null, foto2Alt: null })
+      );
+    });
+
+    it('dirección que ya usa otra sede de la lista: error en el campo, foco y nada enviado', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      escribir('slug', 'Estepa');
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      expect(http.match((r) => r.method === 'PUT').length).toBe(0);
+      expect(texto(el().querySelector('#sedes-error-slug'))).toBe('Ya la usa la sede de Estepa. Elige otra.');
+      expect(campo('slug').getAttribute('aria-invalid')).toBe('true');
+      expect(campo('slug').getAttribute('aria-describedby')).toBe('sedes-error-slug sedes-ayuda-slug');
+      expect(el().querySelector('.sedes__prefijo')!.getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(campo('slug'));
+      // Escribir quita el error.
+      escribir('slug', 'herrera');
+      expect(el().querySelector('#sedes-error-slug')).toBeNull();
+    });
+
+    it('dirección no válida: el error del servidor en el campo, sin enviar', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      escribir('slug', 'roda de andalucía');
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      expect(http.match((r) => r.method === 'PUT').length).toBe(0);
+      expect(texto(el().querySelector('#sedes-error-slug'))).toBe(
+        'La dirección web de la sede solo admite minúsculas sin tildes, cifras y guiones entre ellas (hasta 60 caracteres).'
+      );
+    });
+
+    it('409 de dirección repetida del servidor: el error va al campo (no a Nombre) y el panel sigue abierto', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      escribir('slug', 'casariche');
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      http
+        .expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`)
+        .flush({ mensaje: 'Ya hay una sede con esa dirección web.' }, { status: 409, statusText: 'Conflict' });
+      await esperar();
+      expect(panel()).not.toBeNull();
+      expect(texto(el().querySelector('#sedes-error-slug'))).toBe('Ya hay una sede con esa dirección web.');
+      expect(el().querySelector('#sedes-error-nombre')).toBeNull();
+      expect(document.activeElement).toBe(campo('slug'));
+    });
+
+    it('400 de dirección repetida o no válida y de lugar: cada uno en su campo', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      http
+        .expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`)
+        .flush({ mensaje: 'Ya hay una sede con esa dirección web.' }, { status: 400, statusText: 'Bad Request' });
+      await esperar();
+      expect(texto(el().querySelector('#sedes-error-slug'))).toBe('Ya hay una sede con esa dirección web.');
+
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      http
+        .expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`)
+        .flush({ mensaje: 'El lugar de la sede no puede pasar de 120 caracteres.' }, { status: 400, statusText: 'Bad Request' });
+      await esperar();
+      expect(texto(el().querySelector('#sedes-error-lugar'))).toBe('El lugar de la sede no puede pasar de 120 caracteres.');
+      expect(document.activeElement).toBe(campo('lugar'));
+      expect(el().querySelector('#sedes-error-general')).toBeNull();
+    });
+
+    it('editar: foto 1 nueva con descripción y foto 2 quitada se envían al guardar, con el progreso', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      await fixture.componentInstance.fotoElegida(1, elegir(jpeg('entrenamiento-herrera.jpg')));
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-nombre'))).toBe('entrenamiento-herrera.jpg');
+      expect(texto(foto(1).querySelector('.sedes__foto-nota'))).toBe('1 KB · se subirá al guardar los cambios');
+      expect(foto(1).querySelector('img')!.getAttribute('src')).toMatch(/^blob:/);
+      escribir('fotoAlt', 'Clase de los peques');
+      boton(foto(2), 'Quitar').click();
+      pintar();
+      expect(texto(foto(2).querySelector('.sedes__anadir-foto'))).toContain('Añadir foto');
+
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`);
+      expect((put.request.body as { fotoAlt: string }).fotoAlt).toBe('Clase de los peques');
+      put.flush(HERRERA);
+      await esperar();
+
+      const subida = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/fotos/1`);
+      expect(subida.request.reportProgress).toBeTrue();
+      expect(subida.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      const datos = subida.request.body as FormData;
+      expect((datos.get('archivo') as File).name).toBe('entrenamiento-herrera.jpg');
+      expect(panel()).not.toBeNull();
+      subida.event({ type: HttpEventType.UploadProgress, loaded: 62, total: 100 });
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-nota'))).toBe('Subiendo la foto… 62 %');
+      expect(foto(1).querySelector('[role="progressbar"]')!.getAttribute('aria-valuenow')).toBe('62');
+      expect(texto(boton(panel()!, 'Guardando…'))).toBe('Guardando…');
+      subida.flush({ ...HERRERA, fotoImagenId: 21 });
+      await esperar();
+
+      const borrado = http.expectOne((r) => r.method === 'DELETE' && r.url === `${API}/1/fotos/2`);
+      borrado.flush({ ...HERRERA, fotoImagenId: 21, foto2ImagenId: null });
+      await esperar();
+      expect(panel()).toBeNull();
+      expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Cambios guardados.' }]);
+      // Las miniaturas se vuelven a pedir.
+      expect(http.match((r) => r.method === 'GET' && r.url === WEB).length).toBe(1);
+    });
+
+    it('crear con foto: la nota dice «se subirá al crear la sede» y la foto va a la sede nueva', async () => {
+      cargarPlantilla();
+      abrirNueva();
+      escribir('nombre', 'Lora de Estepa');
+      await fixture.componentInstance.fotoElegida(2, elegir(jpeg('pabellon-lora.jpg')));
+      pintar();
+      expect(texto(foto(2).querySelector('.sedes__foto-nota'))).toBe('1 KB · se subirá al crear la sede');
+      boton(panel()!, 'Crear sede').click();
+      await esperar();
+      http.expectOne((r) => r.method === 'POST' && r.url === API).flush(sede({ id: 9, nombre: 'Lora de Estepa' }), { status: 201, statusText: 'Created' });
+      await esperar();
+      const subida = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/9/fotos/2`);
+      subida.flush(sede({ id: 9, nombre: 'Lora de Estepa', foto2ImagenId: 30 }));
+      await esperar();
+      expect(panel()).toBeNull();
+      expect(avisos()).toEqual([{ tipo: 'exito', texto: 'Sede creada.' }]);
+    });
+
+    it('la foto no sube: el panel sigue abierto como «Editar sede», con el fallo en la foto y sin duplicar la sede', async () => {
+      cargarPlantilla();
+      abrirNueva();
+      escribir('nombre', 'Lora de Estepa');
+      await fixture.componentInstance.fotoElegida(1, elegir(jpeg('pabellon-lora.jpg')));
+      boton(panel()!, 'Crear sede').click();
+      await esperar();
+      http.expectOne((r) => r.method === 'POST' && r.url === API).flush(sede({ id: 9, nombre: 'Lora de Estepa' }), { status: 201, statusText: 'Created' });
+      await esperar();
+      http
+        .expectOne((r) => r.method === 'PUT' && r.url === `${API}/9/fotos/1`)
+        .flush({ mensaje: 'La imagen no se puede leer.' }, { status: 400, statusText: 'Bad Request' });
+      await esperar();
+
+      expect(panel()).not.toBeNull();
+      expect(texto(panel()!.querySelector('h2'))).toBe('Editar sede');
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo-titulo'))).toBe('No se pudo subir la foto');
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).toContain('La imagen no se puede leer.');
+      expect(foto(1).querySelector('.sedes__foto-fallo')!.getAttribute('role')).toBe('alert');
+      expect(avisos()).toEqual([{ tipo: 'error', texto: 'La sede se ha creado, pero una foto no se pudo guardar.' }]);
+
+      // Reintento: PUT de la sede 9 (no otro POST) y la foto otra vez.
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      expect(http.match((r) => r.method === 'POST').length).toBe(0);
+      http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/9`).flush(sede({ id: 9, nombre: 'Lora de Estepa' }));
+      await esperar();
+      http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/9/fotos/1`).flush(sede({ id: 9, nombre: 'Lora de Estepa', fotoImagenId: 40 }));
+      await esperar();
+      expect(panel()).toBeNull();
+    });
+
+    it('una foto demasiado grande no se acepta: «Demasiado grande» y la de antes sigue puesta', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      const grande = { name: 'entrada-pabellon.jpg', type: 'image/jpeg', size: 64 * 1024 * 1024 } as File;
+      await fixture.componentInstance.fotoElegida(1, elegir(grande));
+      pintar();
+      const fallo = foto(1).querySelector('.sedes__foto-fallo')!;
+      expect(texto(fallo.querySelector('.sedes__foto-fallo-titulo'))).toBe('Demasiado grande');
+      expect(texto(fallo)).toContain('«entrada-pabellon.jpg» pesa 64 MB. Usa una foto de menos de 50 MB.');
+      expect(texto(fallo)).toContain('La foto de antes sigue puesta.');
+      boton(fallo, 'Cerrar').click();
+      pintar();
+      expect(foto(1).querySelector('.sedes__foto-fallo')).toBeNull();
+      expect(texto(foto(1).querySelector('.sedes__foto-nota'))).toBe('Guardada');
+    });
+
+    it('un lugar guardado de 110 caracteres se guarda sin tocarlo, se acorta, y no se alarga', async () => {
+      const largo = 'x'.repeat(110);
+      cargarPlantilla([sede({ ...HERRERA, lugar: largo }), ESTEPA]);
+      abrirEditar(1);
+      expect(texto(el().querySelector('#sedes-ayuda-lugar .sedes__contador'))).toBe('110 / 100');
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      const put = http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`);
+      expect((put.request.body as { lugar: string }).lugar).toBe(largo);
+      put.flush(sede({ ...HERRERA, lugar: largo }));
+      await esperar();
+      expect(panel()).toBeNull();
+
+      abrirEditar(1);
+      escribir('lugar', 'x'.repeat(105));
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      expect(el().querySelector('#sedes-error-lugar')).toBeNull();
+      http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`).flush(sede({ ...HERRERA, lugar: 'x'.repeat(105) }));
+      await esperar();
+
+      abrirEditar(1);
+      escribir('lugar', 'x'.repeat(106));
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      expect(texto(el().querySelector('#sedes-error-lugar'))).toBe('No puede pasar de 105 caracteres.');
+      expect(http.match((r) => r.method === 'PUT').length).toBe(0);
+    });
+
+    it('fallo parcial de fotos: se vuelven a pedir las miniaturas', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      await fixture.componentInstance.fotoElegida(1, elegir(jpeg()));
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`).flush(HERRERA);
+      await esperar();
+      http
+        .expectOne((r) => r.method === 'PUT' && r.url === `${API}/1/fotos/1`)
+        .flush({ mensaje: 'La imagen no se puede leer.' }, { status: 400, statusText: 'Bad Request' });
+      await esperar();
+      expect(panel()).not.toBeNull();
+      expect(http.match((r) => r.method === 'GET' && r.url === WEB).length).toBe(1);
+    });
+
+    it('«La foto de antes sigue puesta.» solo sale si había una foto guardada', () => {
+      cargarPlantilla();
+      // Sin foto previa (la sede 2 no tiene): el fallo de subida no lo dice.
+      abrirEditar(2);
+      fixture.componentInstance.panel!.fotos[1].archivo = jpeg();
+      fixture.componentInstance.panel!.fotos[1].fallo = { titulo: 'No se pudo subir la foto', texto: 'x' };
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).not.toContain('La foto de antes sigue puesta.');
+      fixture.componentInstance.cerrarPanel();
+      pintar();
+      // Con foto guardada, sí.
+      abrirEditar(1);
+      fixture.componentInstance.panel!.fotos[1].fallo = { titulo: 'No se pudo subir la foto', texto: 'x' };
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).toContain('La foto de antes sigue puesta.');
+      // Con la guardada marcada para quitar, ya no está puesta.
+      fixture.componentInstance.panel!.fotos[1].quitar = true;
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).not.toContain('La foto de antes sigue puesta.');
+    });
+
+    it('«Quitar» sobre una foto recién elegida descarta solo el fichero y vuelve a la guardada', async () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      await fixture.componentInstance.fotoElegida(1, elegir(jpeg()));
+      pintar();
+      boton(foto(1), 'Quitar').click();
+      pintar();
+      expect(fixture.componentInstance.panel!.fotos[1].quitar).toBeFalse();
+      expect(fixture.componentInstance.panel!.fotos[1].archivo).toBeNull();
+      expect(texto(foto(1).querySelector('.sedes__foto-nota'))).toBe('Guardada');
+      // Guardar no borra la foto guardada.
+      boton(panel()!, 'Guardar cambios').click();
+      await esperar();
+      http.expectOne((r) => r.method === 'PUT' && r.url === `${API}/1`).flush(HERRERA);
+      await esperar();
+      expect(http.match((r) => r.url.includes('/fotos/')).length).toBe(0);
+
+      // Estando en la guardada, «Quitar» sí la marca para borrar.
+      abrirEditar(1);
+      boton(foto(1), 'Quitar').click();
+      pintar();
+      expect(fixture.componentInstance.panel!.fotos[1].quitar).toBeTrue();
+      expect(texto(foto(1).querySelector('.sedes__anadir-foto'))).toContain('Añadir foto');
+    });
+
+    it('«Cambiar foto» y «Quitar» distinguen la foto principal de la segunda para los lectores de pantalla', () => {
+      cargarPlantilla();
+      abrirEditar(1);
+      const etiquetas = (n: number): string[] =>
+        Array.from(foto(n).querySelectorAll<HTMLButtonElement>('.sedes__foto-acciones button')).map((b) => `${texto(b)}|${b.getAttribute('aria-label')}`);
+      expect(etiquetas(1)).toEqual(['Cambiar foto|Cambiar la foto principal', 'Quitar|Quitar la foto principal']);
+      expect(etiquetas(2)).toEqual(['Cambiar foto|Cambiar la segunda foto', 'Quitar|Quitar la segunda foto']);
+    });
+
+    it('una foto HEIC: «Formato no admitido» con el motivo', async () => {
+      cargarPlantilla();
+      abrirEditar(2);
+      await fixture.componentInstance.fotoElegida(1, elegir(new File([new Uint8Array([1])], 'grupo.heic', { type: 'image/heic' })));
+      pintar();
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).toContain('Formato no admitido');
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).toContain('«grupo.heic»: convierte la foto a JPG o desactiva HEIF en la cámara.');
+      expect(texto(foto(1).querySelector('.sedes__foto-fallo'))).not.toContain('La foto de antes sigue puesta.');
+    });
   });
 });

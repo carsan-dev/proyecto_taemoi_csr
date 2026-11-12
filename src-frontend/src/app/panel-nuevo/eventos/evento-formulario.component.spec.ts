@@ -1,6 +1,7 @@
 import { Location } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { BehaviorSubject, of } from 'rxjs';
@@ -8,6 +9,7 @@ import Swal from 'sweetalert2';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
+import { CatalogoService } from '../../features/catalogo/catalogo.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { LoadingService } from '../../servicios/generales/loading.service';
 import { itSinReloj, leerFicherosEnLaZona } from '../../testing/reloj-prueba';
@@ -42,6 +44,10 @@ function claves(datos: FormData): string[] {
   return lista;
 }
 
+/** Catálogo de prueba: Moiskimdo (`legado`, por defecto) o una escuela con web por plantilla (W12g). */
+const CATALOGO_LEGADO = { organizacion: { comportamientoLegadoTaemoi: true } };
+const CATALOGO_PLANTILLA = { organizacion: { comportamientoLegadoTaemoi: false } };
+
 const PDF = (nombre = 'Horario.pdf'): File => new File(['%PDF-1.4 ficticio'], nombre, { type: 'application/pdf' });
 
 describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuevo)', () => {
@@ -52,6 +58,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
   let parametros: BehaviorSubject<Record<string, string>>;
   let navegar: jasmine.Spy;
   let atras: jasmine.Spy;
+  const catalogo = signal<object | null>(CATALOGO_LEGADO);
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const texto = (n: Element | null | undefined): string => (n?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -148,6 +155,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
       'Bien.pdf': pdf,
     });
     loading = jasmine.createSpyObj('LoadingService', ['show', 'hide']);
+    catalogo.set(CATALOGO_LEGADO);
     await TestBed.configureTestingModule({
       imports: [EventoFormularioComponent],
       providers: [
@@ -158,6 +166,7 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
         { provide: LoadingService, useValue: loading },
         { provide: PermisosSesionService, useValue: { tiene: () => false, obtener: () => of({}) } },
         { provide: EstilosPanelService, useValue: { cargar: () => Promise.resolve() } },
+        { provide: CatalogoService, useValue: { catalogo } },
       ],
     }).compileComponents();
   });
@@ -831,5 +840,206 @@ describe('EventoFormularioComponent (8b-3f, crear y editar evento del panel nuev
     } finally {
       jasmine.clock().uninstall();
     }
+  });
+  // ------------------------------------------------------------------ W12g: grupo «En la web» (d524)
+
+  describe('W12g: grupo «En la web»', () => {
+    const SEDES = [
+      { id: 1, nombre: 'Herrera', activa: true },
+      { id: 2, nombre: 'Estepa', activa: true },
+    ];
+    const seccionWeb = (): HTMLElement | null => el().querySelector<HTMLElement>('.evento-form__seccion--web');
+    const sede = (): HTMLSelectElement => el().querySelector<HTMLSelectElement>('#evento-sede')!;
+    const asiSale = (): string => Array.from(el().querySelector('#evento-asi-sale')!.children).map((h) => texto(h)).join(' ');
+
+    function elegirSede(valor: string): void {
+      sede().value = valor;
+      sede().dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+    }
+
+    function conSedes(): void {
+      const r = http.expectOne(`${API}/sedes`);
+      expect(r.request.context.get(ERROR_HANDLED_LOCALLY)).toBeTrue();
+      r.flush(SEDES);
+      fixture.detectChanges();
+    }
+
+    it('Moiskimdo (legado): sin el grupo ni la lista de sedes', () => {
+      crear();
+      expect(seccionWeb()).toBeNull();
+      expect(el().textContent).not.toContain('En la web');
+      expect(http.match(`${API}/sedes`).length).toBe(0);
+    });
+
+    itSinReloj('Moiskimdo (legado) al editar: el PUT de siempre, sin hora, lugar ni sede aunque el evento los tenga', async () => {
+      editar({ ...EVENTO, hora: '10:00', lugar: 'Pabellón', sedeId: 2 });
+      guardar().click();
+      fixture.detectChanges();
+      const r = http.expectOne((x) => x.method === 'PUT' && x.url === `${API}/eventos/1`);
+      expect(JSON.parse((r.request.body as FormData).get('eventoEditado') as string)).toEqual({
+        titulo: 'Campeonato regional',
+        descripcion: 'Competición oficial.',
+        fechaEvento: '2026-11-14',
+        fotoEvento: null,
+      });
+    });
+
+    it('crear: textos del boceto, «Sin sede» y las sedes, y «En tu web: sin lugar ni hora»', () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      crear();
+      conSedes();
+      const g = seccionWeb()!;
+      expect(Array.from(el().querySelectorAll('.evento-form__seccion h2')).map(texto)).toEqual([
+        'Información',
+        'Imagen',
+        'Fotos del evento',
+        'Documentos',
+        'En la web',
+      ]);
+      expect(Array.from(g.querySelector('.evento-form__seccion-cabecera')!.children).map((h) => texto(h)).join(' ')).toBe(
+        'En la web opcional Salen junto a la fecha, en la lista de eventos y en su página.'
+      );
+      const etiqueta = (id: string): string => texto(el().querySelector(`label[for="${id}"]`));
+      expect(etiqueta('evento-hora')).toBe('Hora(opcional)');
+      expect(etiqueta('evento-lugar')).toBe('Lugar(opcional)');
+      expect(etiqueta('evento-sede')).toBe('Sede(opcional)');
+      expect(el().querySelector<HTMLInputElement>('#evento-hora')!.type).toBe('time');
+      expect(Array.from(el().querySelector('#evento-lugar-ayuda')!.children).map((h) => texto(h)).join(' ')).toBe('El edificio o la instalación. 0 / 100');
+      expect(texto(el().querySelector('#evento-sede-ayuda'))).toBe('Si la eliges, la web añade su nombre al lugar.');
+      expect(Array.from(sede().options).map((o) => texto(o))).toEqual(['Sin sede', 'Herrera', 'Estepa']);
+      expect(asiSale()).toBe('En tu web: sin lugar ni hora');
+    });
+
+    itSinReloj('crear con los campos: «En tu web» los junta y el POST los lleva (sede como número)', async () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      crear();
+      conSedes();
+      escribir('evento-titulo', 'T');
+      escribir('evento-descripcion', 'D');
+      escribir('evento-hora', '10:00');
+      escribir('evento-lugar', ' Pabellón cubierto municipal ');
+      elegirSede('2');
+      expect(asiSale()).toBe('En tu web: Pabellón cubierto municipal, Estepa · 10:00');
+      guardar().click();
+      fixture.detectChanges();
+      const r = http.expectOne(`${API}/eventos/crear`);
+      expect(JSON.parse((r.request.body as FormData).get('nuevo') as string)).toEqual({
+        titulo: 'T',
+        descripcion: 'D',
+        fechaEvento: null,
+        visible: true,
+        hora: '10:00',
+        lugar: 'Pabellón cubierto municipal',
+        sedeId: 2,
+      });
+    });
+
+    itSinReloj('crear sin los campos: el POST los lleva vacíos (null)', async () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      crear();
+      conSedes();
+      escribir('evento-titulo', 'T');
+      escribir('evento-descripcion', 'D');
+      guardar().click();
+      fixture.detectChanges();
+      const r = http.expectOne(`${API}/eventos/crear`);
+      expect(JSON.parse((r.request.body as FormData).get('nuevo') as string)).toEqual({
+        titulo: 'T',
+        descripcion: 'D',
+        fechaEvento: null,
+        visible: true,
+        hora: null,
+        lugar: null,
+        sedeId: null,
+      });
+    });
+
+    itSinReloj('editar: rellena hora, lugar y sede del evento y el PUT los envía; «Sin sede» envía null', async () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      editar({ ...EVENTO, hora: '09:30', lugar: 'Pabellón municipal', sedeId: 1 });
+      conSedes();
+      expect(el().querySelector<HTMLInputElement>('#evento-hora')!.value).toBe('09:30');
+      expect(el().querySelector<HTMLInputElement>('#evento-lugar')!.value).toBe('Pabellón municipal');
+      expect(sede().value).toBe('1');
+      expect(asiSale()).toBe('En tu web: Pabellón municipal, Herrera · 09:30');
+      elegirSede('');
+      guardar().click();
+      fixture.detectChanges();
+      const r = http.expectOne((x) => x.method === 'PUT' && x.url === `${API}/eventos/1`);
+      expect(JSON.parse((r.request.body as FormData).get('eventoEditado') as string)).toEqual({
+        titulo: 'Campeonato regional',
+        descripcion: 'Competición oficial.',
+        fechaEvento: '2026-11-14',
+        fotoEvento: null,
+        hora: '09:30',
+        lugar: 'Pabellón municipal',
+        sedeId: null,
+      });
+    });
+
+    itSinReloj('editar con un lugar guardado de más de 100 caracteres: no se bloquea y se reenvía intacto', async () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      const largo = 'x'.repeat(150);
+      editar({ ...EVENTO, hora: '09:30', lugar: largo, sedeId: 1 });
+      conSedes();
+      expect(el().querySelector<HTMLInputElement>('#evento-lugar')!.value).toBe(largo);
+      guardar().click();
+      fixture.detectChanges();
+      const r = http.expectOne((x) => x.method === 'PUT' && x.url === `${API}/eventos/1`);
+      expect((JSON.parse((r.request.body as FormData).get('eventoEditado') as string) as { lugar: string }).lugar).toBe(largo);
+      expect(el().querySelector('#evento-lugar-error')).toBeNull();
+    });
+
+    itSinReloj('400 de sede de otra escuela: el error sale bajo «Sede», con el foco, sin aviso', async () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      editar({ ...EVENTO, sedeId: 1 });
+      conSedes();
+      guardar().click();
+      fixture.detectChanges();
+      http
+        .expectOne((x) => x.method === 'PUT' && x.url === `${API}/eventos/1`)
+        .flush({ mensaje: 'La sede del evento no existe.' }, { status: 400, statusText: 'Bad Request' });
+      await esperar(1);
+      expect(texto(el().querySelector('#evento-sede-error'))).toBe('La sede del evento no existe.');
+      expect(sede().getAttribute('aria-invalid')).toBe('true');
+      expect(sede().getAttribute('aria-describedby')).toBe('evento-sede-error evento-sede-ayuda');
+      expect(document.activeElement).toBe(sede());
+      expect(avisos()).toEqual([]);
+      expect(navegar).not.toHaveBeenCalled();
+      // Cambiar la sede quita el error.
+      elegirSede('2');
+      expect(el().querySelector('#evento-sede-error')).toBeNull();
+    });
+
+    itSinReloj('400 de lugar al crear: el error sale bajo «Lugar»', async () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      crear();
+      conSedes();
+      escribir('evento-titulo', 'T');
+      escribir('evento-descripcion', 'D');
+      guardar().click();
+      fixture.detectChanges();
+      http
+        .expectOne(`${API}/eventos/crear`)
+        .flush({ mensaje: 'El lugar del evento no puede pasar de 160 caracteres.' }, { status: 400, statusText: 'Bad Request' });
+      await esperar(1);
+      expect(texto(el().querySelector('#evento-lugar-error'))).toBe('El lugar del evento no puede pasar de 160 caracteres.');
+      expect(document.activeElement).toBe(el().querySelector('#evento-lugar'));
+      expect(avisos()).toEqual([]);
+    });
+
+    itSinReloj('otro 400 sigue avisando como hoy', async () => {
+      catalogo.set(CATALOGO_PLANTILLA);
+      crear();
+      conSedes();
+      escribir('evento-titulo', 'T');
+      escribir('evento-descripcion', 'D');
+      guardar().click();
+      fixture.detectChanges();
+      http.expectOne(`${API}/eventos/crear`).flush({ mensaje: 'La imagen no es válida.' }, { status: 400, statusText: 'Bad Request' });
+      await esperar(1);
+      expect(avisos()).toEqual([{ tipo: 'error', texto: 'La imagen no es válida.' }]);
+    });
   });
 });

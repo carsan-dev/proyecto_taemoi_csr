@@ -247,6 +247,300 @@
   }
 }
 
+// ------------------------------------------------------------------ W12g: grupo «En la web» (boceto comarcal, d524)
+
+.sedes__web {
+  display: grid;
+  gap: 16px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--pn-linea);
+}
+
+.sedes__web-cabecera {
+  display: grid;
+  gap: 4px;
+}
+
+.sedes__web-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    color: var(--pn-acento);
+  }
+}
+
+.sedes__web-texto {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.sedes__marca {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--pn-tinta-2);
+}
+
+.sedes__ayuda--contador {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sedes__contador {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.sedes__control--area {
+  min-height: 88px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+// Dirección de su página: el dominio fijo delante del campo.
+.sedes__prefijo {
+  display: flex;
+  align-items: stretch;
+  min-height: 42px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--pn-tinta-2);
+  }
+
+  &:focus-within {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--pn-peligro);
+    box-shadow: inset 0 0 0 1px var(--pn-peligro);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 0 12px;
+    border: 0;
+    background: none;
+    color: var(--pn-tinta);
+    font: var(--pn-cuerpo);
+
+    &:focus-visible {
+      outline: none;
+    }
+
+    &:disabled {
+      background: var(--pn-superficie-2);
+      color: var(--pn-tinta-2);
+    }
+  }
+}
+
+.sedes__prefijo-fijo {
+  display: flex;
+  align-items: center;
+  padding: 0 2px 0 12px;
+  border-right: 1px solid var(--pn-linea);
+  background: var(--pn-superficie-2);
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+  white-space: nowrap;
+}
+
+.sedes__foto {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie-2);
+}
+
+.sedes__foto-cabecera {
+  display: grid;
+  gap: 2px;
+
+  b {
+    font: var(--pn-etiqueta);
+    font-size: 0.875rem;
+    color: var(--pn-tinta);
+  }
+
+  span {
+    font: var(--pn-secundario);
+    font-size: 0.8125rem;
+    color: var(--pn-tinta-2);
+  }
+}
+
+.sedes__foto-fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.sedes__miniatura {
+  position: relative;
+  flex: none;
+  width: 128px;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--pn-radio-s);
+  background: var(--pn-serie-pista);
+  overflow: hidden;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.sedes__miniatura--subiendo img {
+  opacity: 0.55;
+}
+
+.sedes__foto-datos {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sedes__foto-nombre {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sedes__foto-nota {
+  margin: 0;
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+}
+
+.sedes__foto-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: -10px;
+}
+
+.sedes__boton-quitar {
+  color: var(--pn-peligro);
+}
+
+.sedes__progreso {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--pn-serie-pista);
+  overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--pn-acento);
+    transition: width var(--pn-transicion);
+  }
+}
+
+.sedes__anadir-foto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 96px;
+  padding: 12px;
+  border: 2px dashed var(--pn-acento-borde);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-acento);
+  font: 600 0.9375rem/1.3 var(--pn-fuente-cuerpo);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover:not(:disabled) {
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  small {
+    font: 400 0.8125rem/1.3 var(--pn-fuente-cuerpo);
+    color: var(--pn-tinta-2);
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.sedes__foto-fallo {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 2px solid var(--pn-peligro);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+
+  p {
+    margin: 0;
+  }
+}
+
+.sedes__foto-fallo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pn-peligro);
+  font-weight: 600;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+}
+
+.sedes__nota--suave {
+  border-color: var(--pn-linea);
+  color: var(--pn-tinta-2);
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: var(--pn-tinta-3);
+  }
+}
+
 .sedes__estado-bloque {
   display: grid;
   gap: 12px;
@@ -345,8 +639,18 @@
     min-height: 44px;
   }
 
-  .sedes__control {
+  .sedes__control,
+  .sedes__prefijo {
     min-height: 44px;
+  }
+
+  .sedes__foto-fila {
+    flex-direction: column;
+  }
+
+  .sedes__miniatura {
+    width: 100%;
+    max-width: 240px;
   }
 
   .sedes__estado-bloque .sedes__boton-secundario {
@@ -355,7 +659,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sedes__fila {
+  .sedes__fila,
+  .sedes__anadir-foto,
+  .sedes__progreso i {
     transition: none;
   }
 }

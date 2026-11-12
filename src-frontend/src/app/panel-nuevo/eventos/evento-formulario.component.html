@@ -202,6 +202,53 @@
           <p class="evento-form__error" id="evento-documentos-error" role="alert">{{ errorDocumentos }}</p>
           }
         </section>
+
+        @if (webPlantilla) {
+        <!-- W12g: grupo «En la web» (boceto-panel-contenido-web-comarcal.html, eventosPantallaHtml; d524) -->
+        <section class="evento-form__seccion evento-form__seccion--web" aria-labelledby="evento-seccion-web">
+          <div class="evento-form__seccion-cabecera evento-form__seccion-cabecera--con-texto">
+            <h2 id="evento-seccion-web">En la web</h2>
+            <span class="evento-form__marca evento-form__marca--opcional">opcional</span>
+            <p class="evento-form__seccion-texto">Salen junto a la fecha, en la lista de eventos y en su página.</p>
+          </div>
+
+          <div class="evento-form__doble">
+            <div class="evento-form__campo">
+              <label class="evento-form__etiqueta" for="evento-hora">Hora<span class="evento-form__marca">(opcional)</span></label>
+              <input type="time" class="evento-form__control" id="evento-hora" formControlName="hora" />
+            </div>
+            <div class="evento-form__campo" [class.evento-form__campo--error]="erroresWeb.lugar">
+              <label class="evento-form__etiqueta" for="evento-lugar">Lugar<span class="evento-form__marca">(opcional)</span></label>
+              <input type="text" class="evento-form__control" id="evento-lugar" formControlName="lugar" autocomplete="off" [attr.maxlength]="maximoLugar"
+                [attr.aria-invalid]="erroresWeb.lugar ? 'true' : null" [attr.aria-describedby]="describirWeb('lugar')" (input)="limpiarErrorWeb('lugar')" />
+              @if (erroresWeb.lugar) {
+              <p class="evento-form__error" id="evento-lugar-error">{{ erroresWeb.lugar }}</p>
+              }
+              <p class="evento-form__ayuda" id="evento-lugar-ayuda">
+                <span>El edificio o la instalación.</span>
+                <span class="evento-form__cuenta" data-cifras>{{ form.controls.lugar.value.length }} / {{ maximoLugar }}</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="evento-form__campo" [class.evento-form__campo--error]="erroresWeb.sedeId">
+            <label class="evento-form__etiqueta" for="evento-sede">Sede<span class="evento-form__marca">(opcional)</span></label>
+            <select class="evento-form__control evento-form__select" id="evento-sede" formControlName="sedeId"
+              [attr.aria-invalid]="erroresWeb.sedeId ? 'true' : null" [attr.aria-describedby]="describirWeb('sedeId')" (change)="limpiarErrorWeb('sedeId')">
+              <option value="">Sin sede</option>
+              @for (s of sedes; track s.id) {
+              <option [value]="idSede(s)">{{ s.nombre }}</option>
+              }
+            </select>
+            @if (erroresWeb.sedeId) {
+            <p class="evento-form__error" id="evento-sede-error">{{ erroresWeb.sedeId }}</p>
+            }
+            <p class="evento-form__ayuda" id="evento-sede-ayuda">Si la eliges, la web añade su nombre al lugar.</p>
+          </div>
+
+          <p class="evento-form__asi-sale" id="evento-asi-sale"><span>En tu web:</span><strong>{{ asiSale }}</strong></p>
+        </section>
+        }
       </div>
 
       <!-- Vista previa de la tarjeta pública -->
