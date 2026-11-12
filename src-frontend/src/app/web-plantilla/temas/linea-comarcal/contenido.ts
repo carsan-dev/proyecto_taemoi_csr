@@ -305,7 +305,7 @@ export interface VistaSedeFoto {
 type CuerpoSeccion =
   | { tipo: 'presentacion'; numero: string; rotulo: string; titulo: string; parrafos: string[]; foto: ImagenBloque | null; datos: VistaDato[] }
   | { tipo: 'disciplinas'; numero: string; rotulo: string; disciplinas: VistaDisciplina[] }
-  | { tipo: 'profesores'; numero: string; rotulo: string; titulo: string; profesores: (ProfesorBloque & { monograma: string })[] }
+  | { tipo: 'profesores'; numero: string; rotulo: string; titulo: string; profesores: ProfesorVista[] }
   | { tipo: 'galeria'; numero: string; rotulo: string; fotos: (FotoGaleria & { forma: string; numero: string })[] }
   | { tipo: 'sedes'; numero: string; rotulo: string; titulo: string; verSede: string; sedes: VistaSedeFoto[] }
   | { tipo: 'texto_foto'; numero: string; rotulo: string; titulo: string; parrafos: string[]; foto: ImagenBloque | null }
@@ -405,6 +405,20 @@ function idSeccion(tipo: TipoSeccion, clave: string): string {
 }
 
 /** Formas de la galería del boceto, en ciclo de seis. */
+/**
+ * Un profesor de la sección. `marca` (W12f-2b): su número para la capa de edición (`data-ed-profesor`); solo en el
+ * editor. En la web no está y la tarjeta sale igual que antes.
+ */
+type ProfesorVista = ProfesorBloque & { monograma: string; marca?: number };
+
+/**
+ * Los profesores de la sección: en la web, los que tienen nombre; en el editor (W12f-2b), todos, con su número, y el que
+ * aún no tiene nombre con «?» (boceto `profeHtml`).
+ */
+function profesoresDe(bloques: BloquesWeb, editor: boolean): ProfesorVista[] {
+  return bloques.profesores(editor).map((p) => ({ ...p, monograma: monograma(p.nombre) || '?', ...(editor ? { marca: p.n } : {}) }));
+}
+
 const FORMAS_GALERIA = ['g-grande', '', 'g-alta', '', 'g-ancha', 'g-ancha'];
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
@@ -449,7 +463,7 @@ export function vistaPortada(sitio: SitioWeb, ahora: Date, editor = false): Vist
     if (oculta && !editor) {
       continue;
     }
-    const contexto: Contexto = { sitio, textos, ahora, una, edad, disciplinas, tarifa, siguiente, lugares };
+    const contexto: Contexto = { sitio, textos, ahora, una, edad, disciplinas, tarifa, siguiente, lugares, editor };
     // En el editor, lo que no sale en la web no gasta número (boceto `num`: «—»).
     const fuera: Contexto = { ...contexto, siguiente: () => SIN_NUMERO };
     let seccion = construirSeccion(tipo, clave, oculta ? fuera : contexto);
@@ -512,7 +526,14 @@ function seccionVaciaEditor(tipo: TipoSeccion, clave: string, x: Contexto): Cuer
         datos: datosDelClub(x.sitio, x),
       };
     case 'profesores':
-      return { tipo, numero: SIN_NUMERO, rotulo: textos.t('profesores.rotulo'), titulo: textos.t('profesores.titulo'), profesores: [] };
+      // W12f-2b: los que aún no tienen nombre (no salen en la web) sí se ven en el editor.
+      return {
+        tipo,
+        numero: SIN_NUMERO,
+        rotulo: textos.t('profesores.rotulo'),
+        titulo: textos.t('profesores.titulo'),
+        profesores: profesoresDe(textos.bloques, x.editor),
+      };
     case 'galeria':
       return { tipo, numero: SIN_NUMERO, rotulo: textos.t('galeria.rotulo'), fotos: [] };
     case 'sedes':
@@ -547,6 +568,8 @@ interface Contexto {
   tarifa: { importe: number; igual: boolean } | null;
   siguiente: () => string;
   lugares: string;
+  /** Con la capa de edición (W12e, W12f-2b). */
+  editor: boolean;
 }
 
 /**
@@ -588,9 +611,15 @@ function construirSeccion(tipo: TipoSeccion, clave: string, x: Contexto): Cuerpo
         : null;
     }
     case 'profesores': {
-      const profesores = bloques.profesores().map((p) => ({ ...p, monograma: monograma(p.nombre) }));
-      return profesores.length
-        ? { tipo, numero: x.siguiente(), rotulo: textos.t('profesores.rotulo'), titulo: textos.t('profesores.titulo'), profesores }
+      // Sale en la web si alguno tiene nombre; en el editor, con todos (W12f-2b).
+      return bloques.profesores().length
+        ? {
+            tipo,
+            numero: x.siguiente(),
+            rotulo: textos.t('profesores.rotulo'),
+            titulo: textos.t('profesores.titulo'),
+            profesores: profesoresDe(bloques, x.editor),
+          }
         : null;
     }
     case 'galeria': {

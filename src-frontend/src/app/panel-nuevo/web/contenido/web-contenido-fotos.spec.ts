@@ -45,7 +45,8 @@ describe('web-contenido-fotos (W12f-1)', () => {
     expect(['galeria.1', 'profesor.1.foto', 'disciplina.tkd.foto', 'texto_foto.0.foto', 'portada.alt', 'sedes.foto'].some(esFotoSuelta)).toBeFalse();
     expect(fotoDeDescripcion('presentacion.foto.alt')).toBe('presentacion.foto');
     expect(fotoDeDescripcion('galeria.1.alt')).toBe('galeria.1');
-    expect(fotoDeDescripcion('profesor.1.foto.alt')).toBeNull();
+    // W12f-2b: la de un profesor también se describe (no es suelta).
+    expect(fotoDeDescripcion('profesor.1.foto.alt')).toBe('profesor.1.foto');
   });
 
   it('queFoto: como el boceto', () => {

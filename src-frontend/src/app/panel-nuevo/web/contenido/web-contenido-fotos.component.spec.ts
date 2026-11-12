@@ -327,11 +327,11 @@ describe('WebContenidoComponent: fotos sueltas (W12f-1)', () => {
     expect(confirmar).toHaveBeenCalledWith(jasmine.objectContaining({ titulo: 'Tienes 2 cambios sin guardar' }));
   });
 
-  it('el puente no acepta subir ni tocar fotos de profesores (W12f-2b)', () => {
+  it('el puente no acepta subir ni tocar fotos de las disciplinas (fuera de esta pieza)', () => {
     abrir();
-    elegir('profesor.1.foto', foto());
-    accion('profesor.1.foto', 'quitar');
-    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'descripcion', clave: 'profesor.1.foto', texto: 'Otra' });
+    elegir('disciplina.tkd.foto', foto());
+    accion('disciplina.tkd.foto', 'quitar');
+    llegar({ canal: CANAL_EDITOR_WEB, tipo: 'descripcion', clave: 'disciplina.tkd.foto', texto: 'Otra' });
     http.expectNone(URL_IMAGENES);
     expect(q('.barra')).toBeNull();
   });

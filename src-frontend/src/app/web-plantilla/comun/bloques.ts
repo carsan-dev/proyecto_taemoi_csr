@@ -95,12 +95,15 @@ export class BloquesWeb {
     return [...numeros].sort((a, b) => a - b);
   }
 
-  /** Profesores (`profesor.<n>.nombre|cargo|foto`, §10 n.º 11): solo los que tienen nombre. */
-  profesores(): ProfesorBloque[] {
+  /**
+   * Profesores (`profesor.<n>.nombre|cargo|foto`, §10 n.º 11): solo los que tienen nombre. `sinNombre` (W12f-2b, solo el
+   * editor de «Web · Contenido»): también los que aún no lo tienen, con el nombre vacío.
+   */
+  profesores(sinNombre = false): ProfesorBloque[] {
     return this.numeros('profesor')
       .map((n) => {
-        const nombre = this.textoPropio(`profesor.${n}.nombre`);
-        return nombre
+        const nombre = this.textoPropio(`profesor.${n}.nombre`) ?? (sinNombre ? '' : null);
+        return nombre !== null
           ? {
               n,
               nombre,

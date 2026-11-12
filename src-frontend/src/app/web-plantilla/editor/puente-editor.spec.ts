@@ -138,21 +138,25 @@ describe('puente del editor de la web: fotos sueltas (W12f-1)', () => {
   const c = CANAL_EDITOR_WEB;
   const archivo = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
 
-  it('del panel: estado de las fotos y «describir», con fotos sueltas y de la galería (W12f-2a), no de profesores', () => {
+  it('del panel: estado de las fotos y «describir», con fotos sueltas, de la galería (W12f-2a) y de profesores (W12f-2b)', () => {
     const subidas = { 'portada.foto': { estado: 'subiendo', pct: 40, nombre: 'a.jpg' }, 'texto_foto.2.foto': { estado: 'error', titulo: 'T', msg: 'M' } };
     expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['presentacion.foto'], anteriores: [], subidas })).toBeTrue();
     expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['galeria.1'], anteriores: [], subidas: {} })).toBeTrue();
     expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: [], anteriores: [], subidas: { 'galeria.nueva': subidas['portada.foto'] } })).toBeTrue();
     expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['galeria.nueva'], anteriores: [], subidas: {} })).toBeFalse();
-    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['profesor.1.foto'], anteriores: [], subidas: {} })).toBeFalse();
-    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: [], anteriores: [], subidas: { 'profesor.1.foto': subidas['portada.foto'] } })).toBeFalse();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['profesor.1.foto'], anteriores: [], subidas: {} })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: [], anteriores: [], subidas: { 'profesor.1.foto': subidas['portada.foto'] } })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['profesor.0.foto'], anteriores: [], subidas: {} })).toBeFalse();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['profesor.1.nombre'], anteriores: [], subidas: {} })).toBeFalse();
     expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: [], anteriores: [], subidas: { 'portada.foto': { estado: 'subiendo', pct: 140, nombre: 'a' } } })).toBeFalse();
     expect(esMensajeDelPanel({ canal: c, tipo: 'describir', clave: 'portada.foto' })).toBeTrue();
     expect(esMensajeDelPanel({ canal: c, tipo: 'describir', clave: 'galeria.1' })).toBeTrue();
     expect(esMensajeDelPanel({ canal: c, tipo: 'describir', clave: 'galeria.nueva' })).toBeFalse();
     expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'texto_foto.3.foto.alt' })).toBeTrue();
     expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'galeria.1.alt' })).toBeTrue();
-    expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'profesor.1.foto.alt' })).toBeFalse();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'profesor.1.foto.alt' })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'profesor.1.permiso' })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'profesor.100.permiso' })).toBeFalse();
   });
 
   it('de la capa: el fichero, las acciones y la descripción (máximo 150)', () => {
@@ -160,7 +164,10 @@ describe('puente del editor de la web: fotos sueltas (W12f-1)', () => {
     expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'portada.foto', archivo: 'a.jpg' })).toBeFalse();
     expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'galeria.nueva', archivo })).toBeTrue();
     expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'galeria.2', archivo })).toBeTrue();
-    expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'profesor.1.foto', archivo })).toBeFalse();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'profesor.1.foto', archivo })).toBeTrue();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'profesor.1.nombre', archivo })).toBeFalse();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'foto', clave: 'profesor.1.foto', accion: 'quitar' })).toBeTrue();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'foto', clave: 'profesor.1.foto', accion: 'antes' })).toBeFalse();
     expect(esMensajeDelEditor({ canal: c, tipo: 'foto', clave: 'presentacion.foto', accion: 'quitar' })).toBeTrue();
     expect(esMensajeDelEditor({ canal: c, tipo: 'foto', clave: 'presentacion.foto', accion: 'antes' })).toBeFalse();
     expect(esMensajeDelEditor({ canal: c, tipo: 'foto', clave: 'galeria.3', accion: 'antes' })).toBeTrue();

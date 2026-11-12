@@ -1,4 +1,5 @@
 import { GALERIA_NUEVA, esFotoGaleria, queFotoGaleria } from './fotos-galeria';
+import { esFotoProfesor, queFotoProfesor } from './fotos-profesores';
 import { recortar } from './textos-editor';
 
 /**
@@ -6,8 +7,8 @@ import { recortar } from './textos-editor';
  * `queFoto`, `abrirMenuFoto`, `abrirDescribir`). Lógica pura que comparten el panel y la capa de edición.
  *
  * Las tres fotos sueltas: la de la portada, la de la presentación y la de cada «Texto con foto». W12f-2a añade las de la
- * galería (`fotos-galeria.ts`): `esFotoEditable` dice qué fotos se editan en el sitio (los profesores, W12f-2b, se
- * sumarán ahí). En la fila de una foto, `texto` es su descripción (W12a).
+ * galería (`fotos-galeria.ts`) y W12f-2b, las de los profesores (`fotos-profesores.ts`): `esFotoEditable` dice qué fotos
+ * se editan en el sitio. En la fila de una foto, `texto` es su descripción (W12a).
  */
 
 const FOTO_SUELTA = /^(?:portada|presentacion|texto_foto\.[1-9][0-9]?)\.foto$/;
@@ -18,11 +19,11 @@ export function esFotoSuelta(clave: unknown): clave is string {
 }
 
 /**
- * Las fotos que se editan en el sitio (menú, describir, subir, «Nueva, sin guardar»): las sueltas y las de la galería.
- * Punto de extensión de W12f-2b (profesores).
+ * Las fotos que se editan en el sitio (menú, describir, subir, «Nueva, sin guardar»): las sueltas, las de la galería y
+ * (W12f-2b) las de los profesores.
  */
 export function esFotoEditable(clave: unknown): clave is string {
-  return esFotoSuelta(clave) || esFotoGaleria(clave);
+  return esFotoSuelta(clave) || esFotoGaleria(clave) || esFotoProfesor(clave);
 }
 
 /** Las claves con subida: una foto editable o la foto nueva de la galería (`galeria.nueva`, aún sin número). */
@@ -57,14 +58,22 @@ export function bloqueDeFoto(clave: string): string | null {
 /**
  * Boceto `queFoto`: «de la portada», «de la presentación» y, en un «Texto con foto», «de «su título»» (sin título,
  * «de Texto con foto»). `titulo` da el título del bloque. En la galería, «n.º 2 de la galería»: `puesto` da el de la foto
- * (de 1 a 6).
+ * (de 1 a 6). W12f-2b: en un profesor, «de Antonio Ruiz» (sin nombre, «de el profesor nuevo»): `nombre` da el de su foto.
  */
-export function queFoto(clave: string, titulo: (bloque: string) => string, puesto?: (foto: string) => number): string {
+export function queFoto(
+  clave: string,
+  titulo: (bloque: string) => string,
+  puesto?: (foto: string) => number,
+  nombre?: (foto: string) => string,
+): string {
   if (clave === 'portada.foto') {
     return 'de la portada';
   }
   if (esFotoGaleria(clave)) {
     return queFotoGaleria(puesto?.(clave) ?? 0);
+  }
+  if (esFotoProfesor(clave)) {
+    return queFotoProfesor(nombre?.(clave) ?? '');
   }
   const bloque = bloqueDeFoto(clave);
   if (bloque) {

@@ -10,7 +10,7 @@ export const ESTILOS_CAPA_EDITOR = `
   --pn-linea:#e4e4df;--pn-linea-fuerte:#cfcfc8;--pn-borde-control:#868d97;--pn-tinta:#1a2230;--pn-tinta-2:#5d6573;--pn-tinta-3:#7a8290;
   --pn-fuente:"Public Sans","Segoe UI",system-ui,sans-serif;
   --pn-sombra-menu:0 6px 20px -6px rgb(26 34 48/22%),0 2px 4px rgb(26 34 48/6%);
-  --pn-peligro:#b42318;--pn-atencion:#a14f0b;
+  --pn-peligro:#b42318;--pn-atencion:#a14f0b;--pn-bien:#2f6b3a;
   --pn-anillo:inset 0 0 0 2px var(--pn-acento),inset 0 0 0 3px rgb(255 255 255/90%);
 }
 /* El iframe mide lo que mide la página (el panel le pone ese alto): lo que en la web depende del alto de la pantalla
@@ -213,4 +213,27 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .ed-galeria-llena{display:grid;align-content:center;gap:6px;box-sizing:border-box;height:100%;padding:16px;border:2px dashed var(--pn-linea-fuerte);color:var(--pn-tinta-2)}
 .ed-galeria-llena b{color:var(--pn-tinta);font-weight:600;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){.ed-anadir-foto{transition:none}}
+/* W12f-2b: profesores (boceto .profe, .ed-profe-barra, .ed-permiso, .ed-constancia, .ed-anadir-tarjeta y sus ajustes a
+   «La línea comarcal»). La capa de la foto de un profesor sin foto va en su caja, encima del monograma (no dentro: el
+   monograma es una imagen para el lector). El nombre vacío llega vacío al tema: su «Nombre» lo pone este CSS. */
+.lc .profe{position:relative}
+.ed-mono__capa{position:absolute;top:0;left:0;z-index:3;width:100%;aspect-ratio:4/5}
+.ed-texto.es-vacio:empty::before{content:attr(data-vacio)}
+.ed-profe-barra{position:absolute;top:10px;right:10px;z-index:6;display:flex;padding:3px;border:1px solid var(--pn-linea);border-radius:8px;background:var(--pn-superficie);box-shadow:var(--pn-sombra-menu);opacity:0;transition:opacity 150ms ease-out}
+.profe:is(:hover,:focus-within) .ed-profe-barra{opacity:1}
+.ed-permiso{margin-top:16px;padding:10px 12px;border:1px solid var(--pn-linea-fuerte);border-radius:8px;background:var(--pn-superficie-2)}
+.ed-permiso label{display:flex;align-items:flex-start;gap:10px;font-weight:600;cursor:pointer}
+.ed-permiso input{flex:none;width:20px;height:20px;margin:0;accent-color:var(--pn-acento);cursor:pointer}
+.ed-permiso input:focus-visible{outline:3px solid var(--pn-acento-borde);outline-offset:2px;border-radius:4px;box-shadow:0 0 0 2px #fff}
+.ed-permiso small{display:block;margin:6px 0 0 30px;font:400 .8125rem/1.35 var(--pn-fuente);color:var(--pn-tinta-2)}
+.ed-permiso.es-error{border-color:var(--pn-peligro);box-shadow:inset 0 0 0 1px var(--pn-peligro);background:var(--pn-superficie)}
+.ed-error--plano{margin:8px 0 0;padding:0;box-shadow:none;background:none}
+.ed-constancia{display:flex;align-items:flex-start;gap:6px;margin:14px 0 0;padding:8px 10px;border-radius:8px;background:var(--pn-superficie-2);border:1px solid var(--pn-linea);color:var(--pn-tinta-2);font-size:.8125rem}
+.ed-constancia svg{margin-top:1px;color:var(--pn-bien)}
+.ed-anadir-tarjeta{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;width:100%;height:100%;min-height:220px;padding:16px;border:2px dashed var(--pn-acento-borde);border-radius:0;background:transparent;color:var(--pn-acento);font:600 .9375rem/1.3 var(--pn-fuente);text-align:center;cursor:pointer;transition:background-color 150ms ease-out}
+.ed-anadir-tarjeta:hover{background:var(--pn-acento-suave)}
+.ed-anadir-tarjeta svg{width:24px;height:24px}
+.ed-anadir-tarjeta:focus-visible{outline:3px solid var(--pn-acento-borde);outline-offset:2px;box-shadow:0 0 0 2px #fff}
+.estrecho .ed-profe-barra{display:none}
+@media (prefers-reduced-motion:reduce){.ed-profe-barra,.ed-anadir-tarjeta{transition:none}}
 `;

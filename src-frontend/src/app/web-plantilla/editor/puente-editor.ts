@@ -33,6 +33,11 @@ import type { BloqueWeb } from '../datos/modelos';
  * `galeria.nueva`; al terminar, el panel le da su número y pide describirla con él. «Mover antes» y «Mover después» son
  * acciones de `foto`.
  *
+ * W12f-2b: profesores. Sus fotos (`profesor.<n>.foto`) van por los mismos mensajes que las demás. La capa pide añadir y
+ * quitar un profesor y marcar o desmarcar su casilla del permiso (`profesor`); el panel (que confirma, numera y guarda)
+ * le manda cada profesor con su casilla o su constancia ya en texto (`profesores`, solo para el editor: el tema nunca la
+ * recibe, d521) y a dónde va el foco (`foco-profesor`). Nunca viaja el objeto del permiso.
+ *
  * W12e: bloques de Inicio. La capa dice qué bloques hay en la página y cuáles están vacíos (`bloques`) y pide las
  * acciones de la barra (`bloque`), añadir un bloque en un puesto (`anadir-bloque`) y, con el panel estrecho, la hoja de
  * acciones del bloque (`hoja`), que vive en el panel. El panel cambia el borrador, manda a la capa qué partes tienen
@@ -54,6 +59,7 @@ import {
   esTipoBloque,
 } from './bloques-editor';
 import { GALERIA_NUEVA, esFotoGaleria } from './fotos-galeria';
+import { type EstadoProfesor, esNumeroProfesor, numeroPermiso } from './fotos-profesores';
 import { MAX_DESCRIPCION_FOTO, esClaveSubida, esFotoEditable, fotoDeDescripcion } from './fotos-sueltas';
 import { huecoDe } from './huecos-editor';
 import { esTextoEditable } from './textos-editor';
@@ -245,7 +251,26 @@ export interface MensajeCerrarHojaMenu {
   id: number;
 }
 
+/** W12f-2b: los profesores del borrador, en orden, con su nombre y su casilla o su constancia (solo el texto). */
+export interface MensajeProfesores {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'profesores';
+  lista: EstadoProfesor[];
+}
+
+/**
+ * W12f-2b: tras una acción, el foco: al «Quitar» de un profesor (`quitar:3`), a su casilla (`permiso:3`), a editar su
+ * nombre (`editar:3`) o al botón de añadir (`anadir`).
+ */
+export interface MensajeFocoProfesor {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'foco-profesor';
+  foco: string;
+}
+
 export type MensajeDelPanel =
+  | MensajeProfesores
+  | MensajeFocoProfesor
   | MensajeRespuestaHojaMenu
   | MensajeQuitarDato
   | MensajeEstadoBloques
@@ -372,7 +397,15 @@ export interface MensajePedirQuitarDato {
   despues: string;
 }
 
+/** W12f-2b: añadir un profesor, quitarlo (el panel confirma) o marcar o desmarcar su casilla del permiso. */
+export type MensajeProfesor = { canal: typeof CANAL_EDITOR_WEB; tipo: 'profesor' } & (
+  | { accion: 'anadir' }
+  | { accion: 'quitar'; n: number }
+  | { accion: 'permiso'; n: number; marcada: boolean }
+);
+
 export type MensajeDelEditor =
+  | MensajeProfesor
   | MensajeHojaMenu
   | MensajeCerrarHojaMenu
   | MensajePedirQuitarDato
@@ -453,9 +486,41 @@ function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
   return valor['estado'] === 'error' && esTextoDeSubida(valor['titulo']) && esTextoDeSubida(valor['msg']);
 }
 
-/** Las claves a las que lleva un enlace del resumen: un texto, una foto (suelta o de la galería) o su descripción. */
+/**
+ * Las claves a las que lleva un enlace del resumen: un texto, una foto (suelta, de la galería o de un profesor), su
+ * descripción o (W12f-2b) la casilla del permiso de un profesor.
+ */
 const esClaveIrA = (clave: unknown) =>
-  typeof clave === 'string' && (esTextoEditable(clave) || esFotoEditable(clave) || fotoDeDescripcion(clave) !== null);
+  typeof clave === 'string' &&
+  (esTextoEditable(clave) || esFotoEditable(clave) || fotoDeDescripcion(clave) !== null || numeroPermiso(clave) !== null);
+
+/** W12f-2b: el foco tras una acción de profesor. */
+export function esFocoProfesor(valor: unknown): valor is string {
+  if (valor === 'anadir') {
+    return true;
+  }
+  const m = typeof valor === 'string' ? /^(quitar|permiso|editar):([1-9][0-9]?)$/.exec(valor) : null;
+  return !!m;
+}
+
+function esPermisoProfesor(v: unknown): boolean {
+  if (!esObjeto(v)) {
+    return false;
+  }
+  if (v['tipo'] === 'casilla') {
+    return typeof v['marcada'] === 'boolean';
+  }
+  return v['tipo'] === 'constancia' && typeof v['texto'] === 'string' && v['texto'].length <= 200;
+}
+
+function esListaProfesores(valor: unknown): valor is EstadoProfesor[] {
+  return (
+    Array.isArray(valor) &&
+    valor.length <= 99 &&
+    valor.every((p) => esObjeto(p) && esNumeroProfesor(p['n']) && esTextoCorto(p['nombre']) && esPermisoProfesor(p['permiso'])) &&
+    new Set(valor.map((p) => (p as EstadoProfesor).n)).size === valor.length
+  );
+}
 
 const esIdHoja = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 const esMenuHoja = (v: unknown): v is MenuHoja => (MENUS_HOJA as readonly unknown[]).includes(v);
@@ -487,6 +552,10 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
     return false;
   }
   switch (valor['tipo']) {
+    case 'profesores':
+      return esListaProfesores(valor['lista']);
+    case 'foco-profesor':
+      return esFocoProfesor(valor['foco']);
     case 'borrador':
       return (
         Array.isArray(valor['bloques']) &&
@@ -536,6 +605,17 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
   switch (valor['tipo']) {
     case 'listo':
       return true;
+    case 'profesor':
+      switch (valor['accion']) {
+        case 'anadir':
+          return true;
+        case 'quitar':
+          return esNumeroProfesor(valor['n']);
+        case 'permiso':
+          return esNumeroProfesor(valor['n']) && typeof valor['marcada'] === 'boolean';
+        default:
+          return false;
+      }
     case 'alto':
       return typeof valor['alto'] === 'number' && Number.isFinite(valor['alto']) && valor['alto'] >= 0;
     case 'ir':

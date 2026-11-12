@@ -189,11 +189,12 @@ export function conFotosCambiadasDesde(
   return filas;
 }
 
-/** Boceto `queFoto` sobre el borrador (el título del «Texto con foto», el puesto en la galería). */
+/** Boceto `queFoto` sobre el borrador (el título del «Texto con foto», el puesto en la galería, el nombre del profesor). */
 export function queFoto(clave: string, borrador: readonly BloqueContenido[]): string {
   return queFotoDe(
     clave,
     (bloque) => fila(borrador, `${bloque}.titulo`)?.texto ?? '',
     (foto) => puestoGaleria(borrador, foto),
+    (foto) => fila(borrador, foto.replace(/\.foto$/, '.nombre'))?.texto ?? '',
   );
 }

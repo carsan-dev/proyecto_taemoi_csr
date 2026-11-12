@@ -1,6 +1,7 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
 import { encajarEnVista } from './colocar-flotantes';
 import { GALERIA_NUEVA, MAX_GALERIA, TEXTOS_GALERIA, esFotoGaleria, ordenGaleria } from './fotos-galeria';
+import { TEXTOS_PROFESORES, esFotoProfesor } from './fotos-profesores';
 import {
   FORMATOS_FOTO,
   MAX_DESCRIPCION_FOTO,
@@ -36,7 +37,12 @@ import { recortar } from './textos-editor';
  *
  * W12f-2a: las fotos de la galería llevan la misma capa (su menú añade «Mover antes», «Mover después» y «Quitar de la
  * galería»). Tras ellas, la capa pone su casilla de subida (`galeria.nueva`) y «Añadir foto» o, con 6, la nota del tope
- * (boceto `galeriaHtml`). Los profesores (W12f-2b) aún no: `sitios` y `abrirMenu` son sus puntos de entrada.
+ * (boceto `galeriaHtml`).
+ *
+ * W12f-2b: la foto de cada profesor (`profesor.<n>.foto`), en la tarjeta que el tema marca en el editor
+ * (`data-ed-profesor`). Sin foto, el tema pinta el monograma (`role="img"`): la capa va en una caja propia encima, no
+ * dentro (lo que hay dentro de una imagen no lo oye el lector), con «Añadir foto» (boceto `fotoCapa` con `mono`). Su menú
+ * dice «Sale con sus iniciales» en «Quitar foto».
  */
 export interface OpcionesFotosEditor {
   ventana: Window;
@@ -65,6 +71,8 @@ interface Sitio {
   clave: string;
   figura: HTMLElement;
   arriba: boolean;
+  /** W12f-2b: sobre el monograma de un profesor sin foto (boceto `fotoCapa` con `mono`). */
+  mono?: boolean;
 }
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -137,6 +145,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       clave,
       (bloque) => fila(`${bloque}.titulo`)?.texto ?? '',
       (foto) => ordenGaleria(filas).indexOf(foto) + 1,
+      (foto) => fila(foto.replace(/\.foto$/, '.nombre'))?.texto ?? '',
     );
   const boton = (clave: string) => doc.querySelector<HTMLButtonElement>(`.ed-foto[data-foto="${CSS.escape(clave)}"]`);
   /** A dónde vuelve el foco: el botón de una foto o, con `galeria.nueva`, «Añadir foto» de la galería. */
@@ -216,7 +225,44 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       }
       lista.push({ clave: `texto_foto.${n[1]}.foto`, figura: delTema ?? hueco!, arriba: false });
     });
-    lista.push(...sitiosGaleria());
+    lista.push(...sitiosGaleria(), ...sitiosProfesores());
+    return lista;
+  }
+
+  /**
+   * W12f-2b: la foto de cada tarjeta de profesor del editor (`li.profe[data-ed-profesor]`) o, sin foto, la caja de la capa
+   * sobre su monograma (se quita cuando el tema pinta la foto).
+   */
+  function sitiosProfesores(): Sitio[] {
+    if (pagina !== 'inicio') {
+      return [];
+    }
+    const lista: Sitio[] = [];
+    doc.querySelectorAll<HTMLElement>('section#profesores li.profe[data-ed-profesor]').forEach((li) => {
+      const n = li.dataset['edProfesor'] ?? '';
+      if (!/^[1-9][0-9]?$/.test(n)) {
+        return;
+      }
+      const clave = `profesor.${n}.foto`;
+      const figura = li.querySelector<HTMLElement>(':scope > figure.profe-foto');
+      const monograma = li.querySelector<HTMLElement>(':scope > .monograma');
+      let capa = li.querySelector<HTMLElement>(':scope > .ed-mono__capa');
+      if (figura || !monograma) {
+        capa?.remove();
+        if (figura) {
+          lista.push({ clave, figura, arriba: false });
+        }
+        return;
+      }
+      monograma.classList.add('ed-mono');
+      if (!capa) {
+        capa = nodo('div', 'ed ed-mono__capa');
+      }
+      if (monograma.nextElementSibling !== capa) {
+        monograma.after(capa);
+      }
+      lista.push({ clave, figura: capa, arriba: false, mono: true });
+    });
     return lista;
   }
 
@@ -321,6 +367,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   // ------------------------------------------------------------------ pintar la capa de cada foto (boceto `fotoCapa`)
   function pintar(sitio: Sitio): void {
     const { clave, figura, arriba } = sitio;
+    const mono = !!sitio.mono;
     const tiene = tieneFoto(clave);
     const otra = figura.querySelector<HTMLButtonElement>(':scope > .ed-foto')?.dataset['foto'];
     if (otra && otra !== clave) {
@@ -340,12 +387,15 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       b.setAttribute('aria-haspopup', 'menu');
       figura.appendChild(b);
     }
-    b.classList.toggle('es-vacia', !tiene);
+    // Boceto `fotoCapa`: sobre el monograma, sin el hueco punteado y con su nombre («Añadir foto de …»).
+    b.classList.toggle('es-vacia', !tiene && !mono);
     b.classList.toggle('ed-foto--arriba', arriba);
     b.classList.toggle('es-error', !!error);
     b.setAttribute('aria-expanded', String(abierto?.tipo === 'menu' && abierto.clave === clave));
     if (tiene) {
       b.setAttribute('aria-label', `Cambiar foto ${nombre}`);
+    } else if (mono) {
+      b.setAttribute('aria-label', `${TEXTOS_PROFESORES.anadirFoto} ${nombre}`);
     } else {
       b.removeAttribute('aria-label');
     }
@@ -354,11 +404,12 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     } else {
       b.removeAttribute('aria-describedby');
     }
-    const firma = `${tiene}`;
+    const firma = `${tiene}|${mono}`;
     if (b.dataset['firma'] !== firma) {
       b.dataset['firma'] = firma;
-      const pista = nodo('span', 'ed-foto__pista', icono(tiene ? 'foto' : 'mas'), tiene ? 'Cambiar foto' : textoFotoVacia(clave));
-      b.replaceChildren(pista, ...(tiene ? [] : [nodo('span', 'ed-foto__formatos', FORMATOS_FOTO)]));
+      const vacia = mono ? TEXTOS_PROFESORES.anadirFoto : textoFotoVacia(clave);
+      const pista = nodo('span', 'ed-foto__pista', icono(tiene ? 'foto' : 'mas'), tiene ? 'Cambiar foto' : vacia);
+      b.replaceChildren(pista, ...(tiene || mono ? [] : [nodo('span', 'ed-foto__formatos', FORMATOS_FOTO)]));
     }
 
     // «Nueva, sin guardar»
@@ -578,7 +629,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
 
   /**
    * Boceto `abrirMenuFoto`. W12f-2a: en la galería, «Mover antes» y «Mover después» (desactivados en los extremos) y
-   * «Quitar de la galería». Sin «Sale con sus iniciales» (profesores): W12f-2b.
+   * «Quitar de la galería». W12f-2b: en un profesor, «Quitar foto» dice «Sale con sus iniciales».
    */
   function abrirMenu(clave: string, b: HTMLElement): void {
     if (abierto?.enHoja) {
@@ -603,7 +654,8 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       );
     }
     if (tiene && fotoOpcional(clave)) {
-      datos.push(datosOpcion('quitar', galeria ? TEXTOS_GALERIA.quitar : 'Quitar foto', 'papelera', '', true));
+      const pie = esFotoProfesor(clave) ? TEXTOS_PROFESORES.quitarFotoPie : '';
+      datos.push(datosOpcion('quitar', galeria ? TEXTOS_GALERIA.quitar : 'Quitar foto', 'papelera', pie, true));
     }
     if (estrecho()) {
       // d541: hoja inferior del panel; ella devuelve la opción elegida (`respuestaMenu`). Las desactivadas no valen.

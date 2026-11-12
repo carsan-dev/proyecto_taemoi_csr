@@ -145,7 +145,10 @@ describe('web-contenido-guardar (W12d)', () => {
     expect(nombreError('texto_foto.1.titulo', ponerTexto(GUARDADO, 'texto_foto.1.titulo', 'Qué traer'))).toBe(
       'Texto con foto «Qué traer»: título',
     );
-    expect(nombreError('profesor.1.permiso', GUARDADO)).toBeNull();
+    // W12f-2b (boceto `nombreError`): el nombre del profesor o «Profesor nuevo».
+    expect(nombreError('profesor.1.permiso', GUARDADO)).toBe('Ana Ruiz: permiso para publicar');
+    expect(nombreError('profesor.1.nombre', GUARDADO)).toBe('Ana Ruiz: nombre');
+    expect(nombreError('profesor.7.permiso', GUARDADO)).toBe('Profesor nuevo: permiso para publicar');
   });
 
   it('resumen: en la foto de portada, el mensaje de la API si lo hay', () => {
@@ -162,8 +165,8 @@ describe('web-contenido-guardar (W12d)', () => {
     expect(entradaResumen('menu.horarios', 'Máximo 20 caracteres.', GUARDADO, true).texto).toBe('Cabecera: enlace del menú «Horarios»');
     expect(entradaResumen('profesor.1.permiso', 'Marca la casilla.', GUARDADO, true)).toEqual({
       clave: 'profesor.1.permiso',
-      texto: 'Marca la casilla.',
-      enlace: false,
+      texto: 'Ana Ruiz: permiso para publicar',
+      enlace: true,
     });
   });
 

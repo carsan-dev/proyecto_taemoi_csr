@@ -324,7 +324,7 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
     expect(q('.portada-foto').querySelector('.ed-error--foto')).toBeNull();
   });
 
-  it('el puente de la capa no acepta estados de fotos de profesores (W12f-2b)', () => {
+  it('una foto de profesor sin tarjeta del editor (`data-ed-profesor`) no tiene capa (W12f-2b)', () => {
     estado({ 'profesor.1.foto': { estado: 'error', titulo: 'x', msg: 'y' } } as never);
     expect(doc.querySelector('.ed-fallo')).toBeNull();
   });

@@ -37,7 +37,7 @@ const puestos = (filas: readonly BloqueContenido[]) =>
 describe('galería de «Web · Contenido» (W12f-2a, lógica pura)', () => {
   it('claves: `galeria.<n>` (1 a 99) es una foto editable; `galeria.nueva` solo sube', () => {
     expect(['galeria.1', 'galeria.99'].every(esFotoEditable)).toBeTrue();
-    expect(['galeria', 'galeria.0', 'galeria.100', 'galeria.rotulo', 'galeria.nueva', 'profesor.1.foto'].some(esFotoEditable)).toBeFalse();
+    expect(['galeria', 'galeria.0', 'galeria.100', 'galeria.rotulo', 'galeria.nueva'].some(esFotoEditable)).toBeFalse();
     expect(esClaveSubida('galeria.nueva')).toBeTrue();
     expect(esFotoGaleria('galeria.nueva')).toBeFalse();
     expect(fotoDeDescripcion('galeria.3.alt')).toBe('galeria.3');

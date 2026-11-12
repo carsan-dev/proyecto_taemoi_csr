@@ -305,7 +305,7 @@ describe('WebContenidoComponent: selector de página y «Ver el caso» (W12c-bis
       const tipos = enviar.calls
         .allArgs()
         .map(([m]) => (m as { tipo: string; caso?: string }).tipo + (m as { caso?: string }).caso)
-        .filter((t) => !t.startsWith('estado-bloques'));
+        .filter((t) => !t.startsWith('estado-bloques') && !t.startsWith('profesores'));
       expect(tipos).toEqual(['borradorundefined', 'casoespera']);
     });
 

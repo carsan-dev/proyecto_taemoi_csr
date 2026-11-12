@@ -385,6 +385,8 @@ export function pasoDeTexto(clave: string): 1 | 2 | 3 | 4 | 'flujo' | null {
 }
 
 const TEXTO_FOTO = /^texto_foto\.([1-9][0-9]?)\.(rotulo|titulo|texto)$/;
+/** W12f-2b: el nombre y el cargo de un profesor (`ClavesWeb.PROFESOR`, de 1 a 99). */
+const PROFESOR = /^profesor\.([1-9][0-9]?)\.(nombre|cargo)$/;
 /** Los puntos de la tarifa más allá del 2: hasta el 9, como la API (`ClavesWeb`, `tarifas.punto<n>` de 1 a 9). */
 const PUNTO = /^tarifas\.punto[3-9]$/;
 
@@ -403,6 +405,13 @@ function defCampo(clave: string): DefTexto | null {
       parte: 'portada',
       falta: '',
     };
+  }
+  // W12f-2b (boceto `CAMPOS` y `campoDef`): nombre y cargo de cada profesor, con el máximo de `ClavesWeb`.
+  const profesor = PROFESOR.exec(clave);
+  if (profesor) {
+    return profesor[2] === 'nombre'
+      ? { nombre: 'Nombre', max: 60, obligatorio: true, multi: false, vacio: 'Nombre', parte: 'profesores', falta: 'Escribe su nombre.' }
+      : { nombre: 'Cargo o grado', max: 40, obligatorio: false, multi: false, vacio: 'Cargo o grado (opcional)', parte: 'profesores', falta: '' };
   }
   const tf = TEXTO_FOTO.exec(clave);
   const [bloque, campo] = tf ? ['texto_foto', tf[2]] : clave.split('.');
@@ -497,6 +506,12 @@ export function defectoDeLaPagina(clave: string, texto: string): boolean {
   return CLAVES_DEFECTO_DE_LA_PAGINA.has(clave) && !!def && !!texto.trim() && texto.trim() !== def.vacio;
 }
 
+/** W12f-2b: el número del profesor de un texto suyo (`profesor.3.nombre` → 3) o null. */
+export function profesorDeTexto(clave: string): number | null {
+  const m = PROFESOR.exec(clave);
+  return m ? Number(m[1]) : null;
+}
+
 /** El bloque de un texto con foto (`texto_foto.3`) o null. */
 export function bloqueTextoFoto(clave: string): string | null {
   const tf = TEXTO_FOTO.exec(clave);
@@ -545,6 +560,15 @@ export const CAMPOS_TEXTO_MARCO: readonly CampoTexto[] = [
   { selector: '.lc > .pie .pie-creditos', clave: 'pie.creditos' },
 ];
 
+/**
+ * W12f-2b: el nombre y el cargo de un profesor. En el editor, el tema marca cada tarjeta con su número
+ * (`data-ed-profesor`); sin él (la web pública) no hay clave.
+ */
+const deProfesor = (campo: 'nombre' | 'cargo') => (el: Element) => {
+  const n = el.closest('li.profe')?.getAttribute('data-ed-profesor') ?? '';
+  return /^[1-9][0-9]?$/.test(n) ? `profesor.${n}.${campo}` : null;
+};
+
 const deSeccionTextoFoto = (campo: string) => (el: Element) => {
   const id = el.closest('section[id^="texto-foto-"]')?.id ?? '';
   const n = /^texto-foto-([1-9][0-9]?)$/.exec(id);
@@ -564,7 +588,8 @@ export function clavesPuntos(conTexto: (clave: string) => boolean): string[] {
 
 /**
  * Los de Inicio (`inicioHtml` del boceto). Fuera: lo que va dentro del horario plegado de cada sede (no se abre en el
- * editor), los profesores (W12f) y las disciplinas (su clave lleva el código, que no está en la página).
+ * editor) y las disciplinas (su clave lleva el código, que no está en la página). W12f-2b: el nombre y el cargo de cada
+ * profesor.
  */
 export function camposTextoInicio(conTexto: (clave: string) => boolean): CampoTexto[] {
   const puntos = clavesPuntos(conTexto);
@@ -584,6 +609,8 @@ export function camposTextoInicio(conTexto: (clave: string) => boolean): CampoTe
     { selector: 'section#fotos-sedes .fs-parada .enlace-flecha', clave: 'sedes.ver_sede' },
     { selector: 'section#profesores .cabeza-seccion .rotulo', clave: 'profesores.rotulo' },
     { selector: '#profesores-titulo', clave: 'profesores.titulo' },
+    { selector: 'section#profesores li.profe[data-ed-profesor] > .profe-nombre', clave: deProfesor('nombre') },
+    { selector: 'section#profesores li.profe[data-ed-profesor] > .profe-grado', clave: deProfesor('cargo') },
     { selector: '#galeria-titulo', clave: 'galeria.rotulo' },
     { selector: 'section[id^="texto-foto-"] .cabeza-seccion .rotulo', clave: deSeccionTextoFoto('rotulo') },
     { selector: 'section[id^="texto-foto-"] .cabeza-seccion .titulo-seccion', clave: deSeccionTextoFoto('titulo') },

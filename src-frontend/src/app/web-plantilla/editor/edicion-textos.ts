@@ -9,6 +9,7 @@ import {
   CampoTexto,
   bloqueTextoFoto,
   camposTextoInicio,
+  profesorDeTexto,
   camposTextoPagina,
   defTexto,
   defectoDeLaPagina,
@@ -153,12 +154,28 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     return f ? (f.texto ?? '') : (defectoFijo(clave) ?? defectos.get(clave) ?? '');
   }
 
-  /** Lo que pinta el tema: los vacíos editables con su «Escribe aquí…» y, en cada texto con foto, sus tres textos. */
+  /**
+   * Lo que pinta el tema: los vacíos editables con su «Escribe aquí…» y, en cada texto con foto, sus tres textos.
+   * W12f-2b: el nombre vacío de un profesor va vacío (el tema del editor lo pinta igual, con «?» y «Profesor nuevo»; el
+   * «Nombre» lo pone la capa) y cada profesor lleva su cargo, aunque no lo tenga, para poder escribirlo.
+   */
   function paraTema(): BloqueBorrador[] {
     const lista = filas.map((f) => {
       const def = defTexto(f.clave);
+      if (def && profesorDeTexto(f.clave) !== null && f.clave.endsWith('.nombre')) {
+        return f;
+      }
       return def && !(f.texto ?? '').trim() ? { ...f, texto: def.vacio } : f;
     });
+    const profesores = new Set(filas.map((f) => /^profesor\.([1-9][0-9]?)\./.exec(f.clave)?.[1]).filter((n) => !!n));
+    for (const n of profesores) {
+      for (const [campo, texto] of [['nombre', ''], ['cargo', defTexto(`profesor.${n}.cargo`)!.vacio]]) {
+        const clave = `profesor.${n}.${campo}`;
+        if (!fila(clave)) {
+          lista.push({ clave, texto, imagenUrl: null, orden: 0, oculto: false });
+        }
+      }
+    }
     const bloques = new Set(filas.map((f) => bloqueTextoFoto(f.clave) ?? (/^texto_foto\.\d+$/.test(f.clave) ? f.clave : null)));
     for (const bloque of bloques) {
       for (const campo of ['rotulo', 'titulo', 'texto']) {
@@ -241,6 +258,8 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     el.setAttribute('role', 'button');
     el.setAttribute('aria-label', `Editar ${def.nombre.toLowerCase()}${def.obligatorio ? ' (obligatorio)' : ''}`);
     el.classList.toggle('es-vacio', !valor(clave).trim());
+    // W12f-2b: el nombre vacío de un profesor llega vacío al tema; la capa enseña su «Nombre» (CSS `:empty`).
+    el.dataset['vacio'] = def.vacio;
   }
 
   /** Lo que pinta el tema en una clave: su texto o, vacío, su «Escribe aquí…». */
