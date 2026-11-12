@@ -9,7 +9,7 @@ import { AvisosService } from '../../avisos/avisos.service';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { CLIENTE_SUBIDAS } from '../../material-examen/material-examen-api.service';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
-import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR } from './web-contenido-vista';
+import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR, VISOR_VISUAL } from './web-contenido-vista';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
@@ -59,7 +59,7 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: ORIGEN_EDITOR, useValue: 'about:blank#' },
+        { provide: ORIGEN_EDITOR, useValue: 'about:blank#' }, { provide: VISOR_VISUAL, useValue: null },
         { provide: CLIENTE_SUBIDAS, useExisting: HttpClient },
       ],
     });

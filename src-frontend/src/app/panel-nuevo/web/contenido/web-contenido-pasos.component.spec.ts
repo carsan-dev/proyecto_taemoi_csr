@@ -6,7 +6,7 @@ import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angul
 import { environment } from '../../../../environments/environment';
 import { CANAL_EDITOR_WEB } from '../../../web-plantilla/editor/puente-editor';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
-import { ContenidoWeb, ORIGEN_EDITOR } from './web-contenido-vista';
+import { ContenidoWeb, ORIGEN_EDITOR, VISOR_VISUAL } from './web-contenido-vista';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
@@ -27,7 +27,7 @@ describe('WebContenidoComponent: selector «Paso» y casos de Preinscripción (W
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ORIGEN_EDITOR, useValue: ORIGEN }],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ORIGEN_EDITOR, useValue: ORIGEN }, { provide: VISOR_VISUAL, useValue: null }],
     });
     spyOnProperty(TestBed.inject(ActivatedRoute).snapshot, 'queryParamMap').and.returnValue(convertToParamMap({}));
     http = TestBed.inject(HttpTestingController);

@@ -11,7 +11,7 @@ import { AvisosService } from '../../avisos/avisos.service';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { salirSinGuardarGuard } from '../../productos-alumno/salir-sin-guardar.guard';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
-import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR } from './web-contenido-vista';
+import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR, VISOR_VISUAL } from './web-contenido-vista';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
@@ -53,7 +53,7 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ORIGEN_EDITOR, useValue: ORIGEN }],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), { provide: ORIGEN_EDITOR, useValue: ORIGEN }, { provide: VISOR_VISUAL, useValue: null }],
     });
     spyOnProperty(TestBed.inject(ActivatedRoute).snapshot, 'queryParamMap').and.returnValue(convertToParamMap({}));
     http = TestBed.inject(HttpTestingController);
@@ -586,7 +586,7 @@ describe('WebContenidoComponent: salir desde un candado (W12d)', () => {
           { path: 'contenido', component: WebContenidoComponent, canDeactivate: [salirSinGuardarGuard] },
           { path: 'sedes', component: PantallaVacia },
         ]),
-        { provide: ORIGEN_EDITOR, useValue: ORIGEN },
+        { provide: ORIGEN_EDITOR, useValue: ORIGEN }, { provide: VISOR_VISUAL, useValue: null },
       ],
     });
     const http = TestBed.inject(HttpTestingController);

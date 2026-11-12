@@ -44,11 +44,14 @@ describe('WebContenidoComponent (W12c)', () => {
   let fixture: ComponentFixture<WebContenidoComponent>;
   let http: HttpTestingController;
   let navegar: jasmine.Spy;
-  /** El `visualViewport` que ve la pantalla: el del navegador o uno simulado (d551, teclado del móvil). */
+  /**
+   * El `visualViewport` que ve la pantalla: ninguno (como un navegador sin él; las pruebas no dependen del tamaño de la
+   * ventana de Karma) o uno simulado (d551, teclado del móvil).
+   */
   let visor: VisualViewport | null;
 
   beforeEach(() => {
-    visor = window.visualViewport;
+    visor = null;
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -330,6 +333,9 @@ describe('WebContenidoComponent (W12c)', () => {
 
     /** Como en la zona visible, pero con el panel estrecho (móvil). */
     function preparar(): void {
+      // Los teclados de estas pruebas que miden la zona (150-200 px) dejan hueco bajo la cabecera y sobre la barra desde
+      // unos 340 px de alto (la ventana de Karma mide ~360 en la CI de Linux y ~430 en Windows).
+      expect(window.innerHeight).withContext('alto de la ventana de Karma').toBeGreaterThanOrEqual(340);
       abrir();
       fixture.componentInstance.estrecho.set(true);
       fixture.componentInstance.cambiarVista('escritorio');
@@ -355,25 +361,25 @@ describe('WebContenidoComponent (W12c)', () => {
     it('teclado abierto sin barra: la zona acaba en el borde del teclado; con el visor movido, empieza en su offsetTop', async () => {
       preparar();
       llegar(LISTO);
-      teclado(300);
+      teclado(150);
       await fotograma();
-      comoEsperada(zonas().at(-1)!, esperada(64, window.innerHeight - 300));
-      teclado(300, 100);
+      comoEsperada(zonas().at(-1)!, esperada(64, window.innerHeight - 150));
+      teclado(150, 100);
       await fotograma();
-      comoEsperada(zonas().at(-1)!, esperada(100, window.innerHeight - 300));
+      comoEsperada(zonas().at(-1)!, esperada(100, window.innerHeight - 150));
     });
 
     it('con cambios: la barra, en una línea pegada al teclado (Descartar, «1 cambio», Guardar) y la zona acaba en ella', async () => {
       preparar();
       llegar(LISTO);
       cambiar();
-      teclado(300);
+      teclado(150);
       await fotograma();
       const barra = q('.barra')!;
       expect(barra.classList).toContain('barra--teclado');
       expect(barra.classList).toContain('barra--compacta');
-      expect(getComputedStyle(barra).bottom).toBe('300px');
-      expect(Math.abs(barra.getBoundingClientRect().bottom - (window.innerHeight - 300))).toBeLessThanOrEqual(1);
+      expect(getComputedStyle(barra).bottom).toBe('150px');
+      expect(Math.abs(barra.getBoundingClientRect().bottom - (window.innerHeight - 150))).toBeLessThanOrEqual(1);
       expect(barra.getBoundingClientRect().height).toBeLessThanOrEqual(56);
       expect(texto('.barra__texto strong')).toBe('1 cambio');
       // Para el lector de pantalla, el texto entero; sin «· Al guardar se publican en tu web.».
@@ -559,17 +565,17 @@ describe('WebContenidoComponent (W12c)', () => {
       expect(Number(deSiempre.zIndex)).toBeLessThan(1001);
     });
 
-    it('el visor se desplaza (offsetTop 0 → 300) con el mismo teclado: sigue compacta y no se vuelve a pedir el campo', fakeAsync(() => {
+    it('el visor se desplaza (offsetTop 0 → 150) con el mismo teclado: sigue compacta y no se vuelve a pedir el campo', fakeAsync(() => {
       preparar();
       llegar(LISTO);
       cambiar();
-      teclado(300);
+      teclado(150);
       tick(500);
       const conCampo = () => zonas().filter((z) => z.campo).length;
       expect(conCampo()).toBe(1);
       const barra = q('.barra')!;
-      expect(getComputedStyle(barra).bottom).toBe('300px');
-      falso.offsetTop = 300;
+      expect(getComputedStyle(barra).bottom).toBe('150px');
+      falso.offsetTop = 150;
       falso.dispatchEvent(new Event('scroll'));
       falso.dispatchEvent(new Event('resize'));
       fixture.detectChanges();
@@ -585,14 +591,14 @@ describe('WebContenidoComponent (W12c)', () => {
       preparar();
       llegar(LISTO);
       const conCampo = () => zonas().filter((z) => z.campo).length;
-      teclado(300);
+      teclado(150);
       tick(16);
       // La zona normal va al momento; el campo, aún no.
       expect(zonas().length).toBeGreaterThan(0);
       expect(conCampo()).toBe(0);
       tick(100);
       // Sigue abriéndose: la espera vuelve a empezar.
-      teclado(320);
+      teclado(170);
       tick(140);
       expect(conCampo()).toBe(0);
       tick(50);
@@ -610,31 +616,31 @@ describe('WebContenidoComponent (W12c)', () => {
       tick(500);
       expect(conCampo()).toBe(1);
 
-      // Cambia el alto con el teclado abierto: otra vez (la ventana de Karma mide poco: alturas que dejan zona).
-      teclado(250);
+      // Cambia el alto con el teclado abierto: otra vez.
+      teclado(200);
       tick(500);
       expect(conCampo()).toBe(2);
 
       // Varios cambios seguidos: un solo envío al acabar.
-      teclado(230);
+      teclado(160);
       tick(50);
-      teclado(240);
+      teclado(180);
       tick(50);
-      teclado(260);
+      teclado(190);
       tick(500);
       expect(conCampo()).toBe(3);
 
       // Si se cierra antes de asentarse, nada.
       teclado(0);
       tick(500);
-      teclado(300);
+      teclado(150);
       tick(50);
       teclado(0);
       tick(500);
       expect(conCampo()).toBe(3);
 
       // Tras salir, nada.
-      teclado(300);
+      teclado(150);
       tick(50);
       fixture.destroy();
       tick(500);
@@ -649,7 +655,7 @@ describe('WebContenidoComponent (W12c)', () => {
       it(`«mostrar» con campo: scrollTo '${comportamiento}' ${reducir ? 'con' : 'sin'} reduced-motion, aunque ya esté dentro del límite`, () => {
         preparar();
         llegar(LISTO);
-        teclado(200);
+        teclado(150);
         const original = window.matchMedia.bind(window);
         spyOn(window, 'matchMedia').and.callFake((c: string) =>
           c.includes('prefers-reduced-motion') ? ({ matches: reducir } as MediaQueryList) : original(c),
@@ -658,7 +664,7 @@ describe('WebContenidoComponent (W12c)', () => {
         const escala = fixture.componentInstance.escala();
         const marcoTop = iframe()!.getBoundingClientRect().top;
         // A 100 px de arriba de la ventana: bajo la cabecera (64 + 16) y por encima del límite (teclado + margen).
-        expect(100).toBeLessThan(window.innerHeight - 200 - 56);
+        expect(100).toBeLessThan(window.innerHeight - 150 - 56);
         const arriba = Math.round((100 - marcoTop) / escala);
         llegar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba, campo: true });
         expect(ir).toHaveBeenCalledTimes(1);
