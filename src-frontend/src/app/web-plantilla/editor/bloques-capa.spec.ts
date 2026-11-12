@@ -307,6 +307,21 @@ describe('bloques en el sitio (W12e, capa de edición)', () => {
     expect(doc.activeElement).toBe(bloque('texto-foto-3').querySelector('.ed-nombre'));
   });
 
+  it('bloque añadido: se enseña donde está el texto que se edita, no arriba del todo (el original queda escondido)', async () => {
+    marco.style.height = '3000px';
+    const relleno = doc.createElement('style');
+    relleno.textContent = '#portada{height:1500px}';
+    doc.head.appendChild(relleno);
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'foco-bloque', foco: 'editar:texto_foto.3' });
+    await esperar();
+    const campo = doc.activeElement as HTMLElement;
+    expect(campo.isContentEditable).toBeTrue();
+    expect(bloque('texto-foto-3').contains(campo)).toBeTrue();
+    const arriba = mensajes('mostrar').at(-1)!['arriba'] as number;
+    expect(arriba).toBeGreaterThan(1500);
+    expect(Math.abs(arriba - Math.round(campo.closest('.ed-campo')!.getBoundingClientRect().top + ventana.scrollY))).toBeLessThanOrEqual(1);
+  });
+
   it('panel estrecho: sin acciones en la barra (clase `estrecho`) y el nombre de un bloque movible pide la hoja', () => {
     estado([], ['texto_foto.3'], true);
     expect(doc.documentElement.classList).toContain('estrecho');

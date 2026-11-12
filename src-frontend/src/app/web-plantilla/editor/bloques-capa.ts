@@ -403,7 +403,10 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
         .querySelector<HTMLElement>(`.ed-bloque[data-bloque="${CSS.escape(idEnDom(id))}"]`)
         ?.querySelector<HTMLElement>('.ed-texto.es-vacio[data-campo]');
       if (texto && editar(texto.dataset['campo']!)) {
-        mostrar(texto);
+        // Al editar, el original se esconde (`display:none`, mediría 0: la página subiría arriba del todo): se enseña la
+        // copia que se edita, que está en su sitio.
+        const copia = (doc.activeElement as HTMLElement | null)?.closest?.<HTMLElement>('.ed-campo');
+        mostrar(copia ?? el.closest<HTMLElement>('.ed-bloque') ?? el);
         return;
       }
       el.focus({ preventScroll: true });
