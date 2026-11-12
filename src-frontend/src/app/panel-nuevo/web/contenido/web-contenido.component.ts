@@ -783,7 +783,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         if (mensaje.accion === 'anadir') {
           this.anadirProfesor();
         } else if (mensaje.accion === 'quitar') {
-          void this.quitarProfesor(mensaje.n, mensaje.desde);
+          void this.quitarProfesor(mensaje.n);
         } else {
           this.marcarPermiso(mensaje.n, mensaje.marcada);
         }
@@ -891,11 +891,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.anuncio.set(TEXTOS_PROFESORES.vozAnadido);
   }
 
-  /**
-   * Boceto `quitarProfe`: con confirmación; se van todas sus filas (nombre, cargo, foto y sedes) y su subida. `desde`
-   * `foto`: desde la hoja de su foto (panel estrecho, sin la barra de la tarjeta); al cancelar, el foco vuelve a su foto.
-   */
-  private async quitarProfesor(n: number, desde?: 'foto'): Promise<void> {
+  /** Boceto `quitarProfe`: con confirmación; se van todas sus filas (nombre, cargo, foto y sedes) y su subida. */
+  private async quitarProfesor(n: number): Promise<void> {
     if (!this.puedeTocarBloques() || !numerosProfesores(this.borrador()).includes(n)) {
       return;
     }
@@ -909,7 +906,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       nombre: 'quitar-profesor',
     });
     if (!r.confirmado || !this.puedeTocarBloques() || !numerosProfesores(this.borrador()).includes(n)) {
-      this.enviarFocoProfesor(desde === 'foto' ? `foto:${n}` : `quitar:${n}`);
+      this.enviarFocoProfesor(`quitar:${n}`);
       return;
     }
     const vecino = vecinoProfesor(this.borrador(), n);
@@ -926,7 +923,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.borrador.update((filas) => quitarProfesor(filas, n));
     this.limpiarErrores([...claves, claveDescripcion(foto), clavePermiso(n), `profesor.${n}.nombre`]);
     this.enviarBorrador();
-    this.enviarFocoProfesor(vecino === null ? 'anadir' : `${desde === 'foto' ? 'foto' : 'quitar'}:${vecino}`);
+    this.enviarFocoProfesor(vecino === null ? 'anadir' : `quitar:${vecino}`);
     this.anuncio.set(vozQuitadoProfesor(nombre));
   }
 

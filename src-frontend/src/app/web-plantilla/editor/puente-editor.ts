@@ -260,7 +260,7 @@ export interface MensajeProfesores {
 
 /**
  * W12f-2b: tras una acción, el foco: al «Quitar» de un profesor (`quitar:3`), a su casilla (`permiso:3`), a editar su
- * nombre (`editar:3`), al botón de su foto o monograma (`foto:3`, quitar cancelado desde su hoja) o al de añadir (`anadir`).
+ * nombre (`editar:3`) o al de añadir (`anadir`).
  */
 export interface MensajeFocoProfesor {
   canal: typeof CANAL_EDITOR_WEB;
@@ -398,12 +398,11 @@ export interface MensajePedirQuitarDato {
 }
 
 /**
- * W12f-2b: añadir un profesor, quitarlo (el panel confirma) o marcar o desmarcar su casilla del permiso. `desde: 'foto'`:
- * quitado desde la hoja de su foto (panel estrecho); al cancelar, el foco vuelve a su foto.
+ * W12f-2b: añadir un profesor, quitarlo (el panel confirma) o marcar o desmarcar su casilla del permiso.
  */
 export type MensajeProfesor = { canal: typeof CANAL_EDITOR_WEB; tipo: 'profesor' } & (
   | { accion: 'anadir' }
-  | { accion: 'quitar'; n: number; desde?: 'foto' }
+  | { accion: 'quitar'; n: number }
   | { accion: 'permiso'; n: number; marcada: boolean }
 );
 
@@ -502,7 +501,7 @@ export function esFocoProfesor(valor: unknown): valor is string {
   if (valor === 'anadir') {
     return true;
   }
-  const m = typeof valor === 'string' ? /^(quitar|permiso|editar|foto):([1-9][0-9]?)$/.exec(valor) : null;
+  const m = typeof valor === 'string' ? /^(quitar|permiso|editar):([1-9][0-9]?)$/.exec(valor) : null;
   return !!m;
 }
 
@@ -613,7 +612,7 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
         case 'anadir':
           return true;
         case 'quitar':
-          return esNumeroProfesor(valor['n']) && (valor['desde'] === undefined || valor['desde'] === 'foto');
+          return esNumeroProfesor(valor['n']);
         case 'permiso':
           return esNumeroProfesor(valor['n']) && typeof valor['marcada'] === 'boolean';
         default:

@@ -486,56 +486,6 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
     expect(JSON.stringify(lista[0])).toContain('Permiso marcado por María Ruiz el 03/11/2026');
   });
 
-  it('quitar desde la hoja de su foto (panel estrecho): la misma confirmación; cancelada, el foco vuelve a su foto', async () => {
-    confirmar.and.resolveTo({ confirmado: false } as never);
-    abrir();
-    profesor({ accion: 'quitar', n: 3, desde: 'barra' });
-    await fixture.whenStable();
-    expect(confirmar).not.toHaveBeenCalled();
-
-    profesor({ accion: 'quitar', n: 3, desde: 'foto' });
-    await fixture.whenStable();
-    expect(confirmar).toHaveBeenCalledOnceWith(
-      jasmine.objectContaining({
-        titulo: '¿Quitar a Lucía Fernández de la web?',
-        mensaje: 'Deja de salir al guardar. Su ficha en el equipo no cambia.',
-        accion: 'Quitar profesor',
-        destructivo: true,
-      }),
-    );
-    expect(ultimo('foco-profesor')!['foco']).toBe('foto:3');
-    expect(borrador().some((b) => b.clave === 'profesor.3.nombre')).toBeTrue();
-
-    confirmar.and.resolveTo({ confirmado: true } as never);
-    profesor({ accion: 'quitar', n: 3, desde: 'foto' });
-    await fixture.whenStable();
-    fixture.detectChanges();
-    expect(borrador().some((b) => b.clave.startsWith('profesor.3.'))).toBeFalse();
-    expect(ultimo('foco-profesor')!['foco']).toBe('foto:1');
-    expect(anuncio()).toBe('Lucía Fernández: quitado. Se quita de la web al guardar.');
-  });
-
-  it('quitar desde la hoja, aceptado y con vecino: el foco va a la foto del vecino', async () => {
-    confirmar.and.resolveTo({ confirmado: true } as never);
-    abrir();
-    profesor({ accion: 'quitar', n: 3, desde: 'foto' });
-    await fixture.whenStable();
-    fixture.detectChanges();
-    expect(ultimo('foco-profesor')!['foco']).toBe('foto:1');
-  });
-
-  it('quitar desde la hoja, aceptado y siendo el único: el foco va al botón de añadir', async () => {
-    confirmar.and.resolveTo({ confirmado: true } as never);
-    abrir({
-      version: 5,
-      bloques: [fila('profesor.1.nombre', 'Antonio Ruiz', { orden: 1, permiso: PANEL })],
-    });
-    profesor({ accion: 'quitar', n: 1, desde: 'foto' });
-    await fixture.whenStable();
-    fixture.detectChanges();
-    expect(ultimo('foco-profesor')!['foco']).toBe('anadir');
-  });
-
   it('quitar sin cabeceras guardadas: la sección no se mueve y cuenta un único cambio', async () => {
     abrir({
       version: 5,

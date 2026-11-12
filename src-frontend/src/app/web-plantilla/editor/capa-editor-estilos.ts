@@ -234,6 +234,9 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .ed-anadir-tarjeta:hover{background:var(--pn-acento-suave)}
 .ed-anadir-tarjeta svg{width:24px;height:24px}
 .ed-anadir-tarjeta:focus-visible{outline:3px solid var(--pn-acento-borde);outline-offset:2px;box-shadow:0 0 0 2px #fff}
-.estrecho .ed-profe-barra{display:none}
+/* Panel estrecho (decisión del propietario, 12/11): «Quitar» siempre a la vista, en su sitio (arriba a la derecha), con
+   zona táctil de 44 px. La pista de la foto va centrada y queda por debajo: no se pisan. */
+.estrecho .ed-profe-barra{opacity:1}
+.estrecho .ed-profe-barra .ed-btn{min-width:44px;min-height:44px}
 @media (prefers-reduced-motion:reduce){.ed-profe-barra,.ed-anadir-tarjeta{transition:none}}
 `;

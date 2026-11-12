@@ -159,14 +159,11 @@ describe('puente del editor de la web: fotos sueltas (W12f-1)', () => {
     expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'profesor.100.permiso' })).toBeFalse();
   });
 
-  it('quitar un profesor desde la hoja de su foto (`desde: foto`) y el foco de vuelta a su foto (`foto:<n>`)', () => {
+  it('quitar un profesor y el foco de vuelta a su «Quitar» (`quitar:<n>`); `foto:<n>` ya no es un foco', () => {
     expect(esMensajeDelEditor({ canal: c, tipo: 'profesor', accion: 'quitar', n: 3 })).toBeTrue();
-    expect(esMensajeDelEditor({ canal: c, tipo: 'profesor', accion: 'quitar', n: 3, desde: 'foto' })).toBeTrue();
-    expect(esMensajeDelEditor({ canal: c, tipo: 'profesor', accion: 'quitar', n: 3, desde: 'barra' })).toBeFalse();
-    expect(esMensajeDelEditor({ canal: c, tipo: 'profesor', accion: 'quitar', n: 0, desde: 'foto' })).toBeFalse();
-    expect(esMensajeDelPanel({ canal: c, tipo: 'foco-profesor', foco: 'foto:3' })).toBeTrue();
-    expect(esMensajeDelPanel({ canal: c, tipo: 'foco-profesor', foco: 'foto:100' })).toBeFalse();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'profesor', accion: 'quitar', n: 0 })).toBeFalse();
     expect(esMensajeDelPanel({ canal: c, tipo: 'foco-profesor', foco: 'quitar:3' })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'foco-profesor', foco: 'foto:3' })).toBeFalse();
   });
 
   it('de la capa: el fichero, las acciones y la descripción (máximo 150)', () => {
