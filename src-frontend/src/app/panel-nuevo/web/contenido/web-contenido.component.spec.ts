@@ -420,6 +420,7 @@ describe('WebContenidoComponent (W12c)', () => {
       expect(barra.classList).toContain('barra--teclado');
       expect(barra.classList).not.toContain('barra--compacta');
       expect(getComputedStyle(barra).bottom).toBe('300px');
+      expect(getComputedStyle(barra).zIndex).toBe('1002');
       expect(texto('.barra__texto')).toContain('Otra persona cambió la web antes.');
     });
 
@@ -494,9 +495,11 @@ describe('WebContenidoComponent (W12c)', () => {
       expect(getComputedStyle(q('.barra')!).bottom).toBe('300px');
     });
 
-    it('teclado abierto con el visor desplazado hasta el fondo (tapado 0): sigue siendo el teclado y la barra queda sobre la navegación', () => {
+    it('teclado abierto con el visor desplazado (tapado 0 o 44): sigue siendo el teclado y la barra, pegada a él y sobre la navegación', () => {
       preparar();
       cambiar();
+      const sinTeclado = getComputedStyle(q('.barra')!);
+      const deSiempre = { zIndex: sinTeclado.zIndex, bottom: sinTeclado.bottom };
       // Teclado de 300 px; Chrome mueve el visor 300 px para enseñar el campo: no tapa nada de la ventana.
       falso.offsetTop = 300;
       falso.height = window.innerHeight - 300;
@@ -508,8 +511,23 @@ describe('WebContenidoComponent (W12c)', () => {
       const barra = q('.barra')!;
       expect(barra.classList).toContain('barra--teclado');
       expect(barra.classList).toContain('barra--compacta');
-      // Encima de la navegación inferior (64 px; sin safe-area en Karma), no debajo.
-      expect(getComputedStyle(barra).bottom).toBe('64px');
+      expect(getComputedStyle(barra).bottom).toBe('0px');
+      // Por encima de la navegación inferior (`.pn-barra`, 1001) y por debajo de las hojas inferiores (1020).
+      const capa = Number(getComputedStyle(barra).zIndex);
+      expect(capa).toBeGreaterThan(1001);
+      expect(capa).toBeLessThan(1020);
+      // Visor casi abajo: tapa 44 px.
+      falso.offsetTop = 256;
+      falso.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+      expect(fixture.componentInstance.tapadoAbajo()).toBe(44);
+      expect(getComputedStyle(barra).bottom).toBe('44px');
+      // Teclado cerrado: z-index y bottom de siempre.
+      teclado(0);
+      expect(barra.classList).not.toContain('barra--teclado');
+      expect(getComputedStyle(barra).zIndex).toBe(deSiempre.zIndex);
+      expect(getComputedStyle(barra).bottom).toBe(deSiempre.bottom);
+      expect(Number(deSiempre.zIndex)).toBeLessThan(1001);
     });
 
     it('el visor se desplaza (offsetTop 0 → 300) con el mismo teclado: sigue compacta y no se vuelve a pedir el campo', fakeAsync(() => {
@@ -529,7 +547,7 @@ describe('WebContenidoComponent (W12c)', () => {
       tick(500);
       expect(fixture.componentInstance.teclado()).toBeTrue();
       expect(barra.classList).toContain('barra--compacta');
-      expect(getComputedStyle(barra).bottom).toBe('64px');
+      expect(getComputedStyle(barra).bottom).toBe('0px');
       expect(conCampo()).toBe(1);
       flush();
     }));
