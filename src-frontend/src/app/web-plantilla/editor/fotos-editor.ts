@@ -109,6 +109,8 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   /** d541: numera cada apertura de la hoja; el panel lo devuelve y lo que llega con otro número se descarta. */
   let ultimaHoja = 0;
   let esperaDescribir: ReturnType<typeof setTimeout> | null = null;
+  /** La foto cuya descripción espera a abrirse (`esperaDescribir`). */
+  let esperaDescribirClave: string | null = null;
 
   const entrada = doc.createElement('input');
   entrada.type = 'file';
@@ -698,7 +700,18 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       repintar();
     },
     estado(estado) {
+      const antes = cambiadas;
       cambiadas = new Set(estado.cambiadas);
+      // La foto recién elegida deja de estar cambiada (descartar, volver a la anterior, quitar): su descripción sobra.
+      const sobra = (clave: string | null | undefined) => !!clave && antes.has(clave) && !cambiadas.has(clave);
+      if (esperaDescribir !== null && sobra(esperaDescribirClave)) {
+        clearTimeout(esperaDescribir);
+        esperaDescribir = null;
+        esperaDescribirClave = null;
+      }
+      if (abierto?.tipo === 'describir' && sobra(abierto.clave)) {
+        cerrar(false);
+      }
       anteriores = new Set(estado.anteriores);
       subidas = estado.subidas;
       repintar();
@@ -712,8 +725,10 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       if (esperaDescribir !== null) {
         clearTimeout(esperaDescribir);
       }
+      esperaDescribirClave = clave;
       esperaDescribir = setTimeout(() => {
         esperaDescribir = null;
+        esperaDescribirClave = null;
         repintar();
         abrirDescribir(clave, true);
       }, 50);
@@ -730,8 +745,10 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
         if (esperaDescribir !== null) {
           clearTimeout(esperaDescribir);
         }
+        esperaDescribirClave = foto;
         esperaDescribir = setTimeout(() => {
           esperaDescribir = null;
+          esperaDescribirClave = null;
           abrirDescribir(foto, false);
         }, 50);
       }

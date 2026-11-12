@@ -262,6 +262,42 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
     expect(texto(q('.flot h2'))).toBe('describe la foto de la presentación');
   });
 
+  it('descartar la foto recién subida cierra «Describir la foto» sin mover el foco', async () => {
+    const conFoto = [...BORRADOR, fila('presentacion.foto', '', 'https://x/n.webp')];
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: conFoto });
+    estado({}, ['presentacion.foto'], []);
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'describir', clave: 'presentacion.foto' });
+    await esperar();
+    expect(flot().hidden).toBeFalse();
+    const fuera = doc.createElement('button');
+    doc.body.appendChild(fuera);
+    fuera.focus();
+    // «Descartar» en el panel: la foto deja de estar cambiada.
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: BORRADOR });
+    estado({}, [], []);
+    expect(flot().hidden).toBeTrue();
+    expect(doc.activeElement).toBe(fuera);
+  });
+
+  it('descartar antes de que se abra «Describir la foto» cancela la espera', async () => {
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: [...BORRADOR, fila('presentacion.foto', '', 'https://x/n.webp')] });
+    estado({}, ['presentacion.foto'], []);
+    delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'describir', clave: 'presentacion.foto' });
+    estado({}, [], []);
+    await esperar();
+    expect(flot().hidden).toBeTrue();
+  });
+
+  it('«Describir la foto» de una foto sin cambiar sigue abierto al llegar el estado', () => {
+    estado({}, ['texto_foto.3.foto'], []);
+    foto('portada.foto').click();
+    opciones()[1].click();
+    expect(flot().getAttribute('role')).toBe('dialog');
+    estado({}, [], []);
+    expect(flot().hidden).toBeFalse();
+    expect(texto(q('.flot h2'))).toBe('describe la foto de la portada');
+  });
+
   it('errores: «Describe la foto.» y «Añade la foto de portada.» sobre su foto; ir al dato', async () => {
     delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'errores', errores: { 'portada.foto.alt': 'Describe la foto.', 'texto_foto.3.titulo': 'Escribe el título.' } });
     const portada = foto('portada.foto');
