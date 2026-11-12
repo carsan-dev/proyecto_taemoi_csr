@@ -49,7 +49,7 @@ export const queFotoProfesor = (nombre: string | null | undefined) => `de ${(nom
 export const TEXTOS_PROFESORES = {
   anadir: 'Añadir profesor',
   anadirPrimero: 'Añade el primer profesor',
-  quitar: 'Quitar',
+  quitar: 'Quitar profesor',
   permiso: 'Tengo su permiso para publicar su nombre y su foto',
   obligatorio: '(obligatorio)',
   permisoAyuda: 'Se guarda quién lo marca y cuándo. No sale en la web.',

@@ -156,7 +156,7 @@ describe('profesores en el sitio (W12f-2b, capa de edición)', () => {
 
   it('«Quitar» en la barra de la tarjeta (con su nombre) y «Añadir profesor» al final: piden la acción al panel', () => {
     const quitar = tarjeta(1).querySelector<HTMLButtonElement>('.ed-profe-barra button')!;
-    expect(texto(quitar)).toBe('Quitar');
+    expect(texto(quitar)).toBe('Quitar profesor');
     expect(quitar.getAttribute('aria-label')).toBe('Quitar a Antonio Ruiz de la web');
     expect(tarjeta(1).lastElementChild).toBe(quitar.parentElement);
     expect(tarjeta(4).querySelector('.ed-profe-barra button')!.getAttribute('aria-label')).toBe('Quitar a Profesor nuevo de la web');
@@ -219,7 +219,7 @@ describe('profesores en el sitio (W12f-2b, capa de edición)', () => {
       const caja = boton.getBoundingClientRect();
       expect(caja.width).toBeGreaterThanOrEqual(44);
       expect(caja.height).toBeGreaterThanOrEqual(44);
-      expect(texto(boton)).toBe('Quitar');
+      expect(texto(boton)).toBe('Quitar profesor');
       expect(boton.querySelector('svg')).not.toBeNull();
     });
 
