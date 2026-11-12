@@ -14,7 +14,7 @@ import {
 import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
 import { activarBloquesEditor } from './bloques-capa';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
-import { activarEdicionTextos } from './edicion-textos';
+import { activarEdicionTextos, iconoCandado } from './edicion-textos';
 import { activarFotosEditor } from './fotos-editor';
 import {
   BloqueBorrador,
@@ -70,6 +70,8 @@ const CONTROL_DEL_TEMA = 'a, button';
 const OCULTO_DEL_TEMA = '.horario:not(.abierto)';
 /** Envoltorio que pone la capa alrededor de una parte de un elemento del tema para darle su candado (`dato()`). */
 const ENVOLTORIO = 'ed-envoltorio';
+/** Lo que se espera a que el tema pinte el caso o el paso de un texto del resumen de errores. */
+const ESPERA_IR = 2000;
 
 /** Iconos del boceto (`#i-info`, `#i-foto`): trazo y figuras. */
 type Figura = readonly [string, Readonly<Record<string, string>>];
@@ -111,6 +113,16 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   let pasoActual: PasoPreinscripcion | null = null;
 
   const enviar = (mensaje: MensajeDelEditor) => enviarPorPuente(ventana, padre, mensaje);
+  /** El dato del resumen al que ir cuando el tema pinte su caso o su paso. */
+  let irPendiente: { clave: string; hasta: number } | null = null;
+
+  function irAlTexto(clave: string): boolean {
+    const arriba = fotos.irA(clave) ?? textos.irA(clave);
+    if (arriba !== null) {
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba });
+    }
+    return arriba !== null;
+  }
 
   // ------------------------------------------------------------------ estilos y aviso del candado
   const estilos = doc.createElement('style');
@@ -407,6 +419,13 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     bloques.decorar(pagina);
     enlacesOcultos();
     sinTabulador();
+    if (irPendiente) {
+      const { clave, hasta } = irPendiente;
+      irPendiente = null;
+      if (Date.now() <= hasta && !irAlTexto(clave)) {
+        irPendiente = { clave, hasta };
+      }
+    }
     if (datoActivo && !datoActivo.isConnected) {
       ocultarCandado(true);
     }
@@ -433,23 +452,12 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     dato.classList.add('es-activo');
     const donde = dato.dataset['donde'];
     candado.replaceChildren();
-    const icono = doc.createElementNS(SVG, 'svg');
-    icono.setAttribute('viewBox', '0 0 24 24');
-    icono.setAttribute('fill', 'none');
-    icono.setAttribute('stroke', 'currentColor');
-    icono.setAttribute('stroke-width', '2');
-    icono.setAttribute('stroke-linecap', 'round');
-    icono.setAttribute('stroke-linejoin', 'round');
-    icono.setAttribute('aria-hidden', 'true');
-    const caja = doc.createElementNS(SVG, 'rect');
-    for (const [k, v] of [['x', '5'], ['y', '10.5'], ['width', '14'], ['height', '10'], ['rx', '2']]) {
-      caja.setAttribute(k, v);
-    }
-    const arco = doc.createElementNS(SVG, 'path');
-    arco.setAttribute('d', 'M8 10.5V7.5a4 4 0 0 1 8 0v3');
-    icono.append(caja, arco);
+    const icono = iconoCandado(doc);
     const texto = doc.createElement('span');
-    const verbo = donde === 'equipo' ? 'Lo cambia' : donde === 'web' ? 'Lo pone la web' : 'Se cambia en';
+    // W12d-bis: la ficha de un hueco puede traer su propio texto (`DefHueco.candado`, aprobado por el propietario):
+    // el teléfono que escribe la familia, o «Lleno», que se cambia en otro texto de esta página.
+    const verbo =
+      dato.dataset['candado'] ?? (donde === 'equipo' ? 'Lo cambia' : donde === 'web' ? 'Lo pone la web' : 'Se cambia en');
     texto.textContent = `${dato.dataset['que']} · ${verbo}`;
     candado.append(icono, texto);
     if (donde === 'equipo') {
@@ -576,7 +584,8 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
 
   const alPasar = (evento: MouseEvent) => {
     const t = elemento(evento);
-    const dato = t?.closest<HTMLElement>('.ed-dato');
+    // W12d-bis: también la ficha de un hueco dentro de un texto (boceto `mouseover` con `.ed-ficha, .ed-dato`).
+    const dato = t?.closest<HTMLElement>('.ed-dato, .ed-ficha');
     if (dato) {
       mostrarCandado(dato);
     } else if (t?.closest('#ed-candado')) {
@@ -623,7 +632,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   // Lo que escribe la propia capa (aviso del candado, barras, enlaces ocultos) no vuelve a decorar la página.
   const esNodoDeLaCapa = (nodo: Node) =>
     nodo.nodeType === Node.ELEMENT_NODE &&
-    ['ed', 'ed-campo', 'ed-dato__ir', ENVOLTORIO].some((clase) => (nodo as Element).classList.contains(clase));
+    ['ed', 'ed-campo', 'ed-dato__ir', 'ed-envuelto', ENVOLTORIO].some((clase) => (nodo as Element).classList.contains(clase));
   const esDeLaCapa = (cambio: MutationRecord) => {
     if ((cambio.target as Element).closest?.('.ed, .ed-campo')) {
       return true;
@@ -698,10 +707,15 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       fotos.describir(mensaje.clave);
       return;
     }
+    if (mensaje.tipo === 'quitar-dato') {
+      textos.quitarDato(mensaje.quitar);
+      return;
+    }
     if (mensaje.tipo === 'ir-texto') {
-      const arriba = fotos.irA(mensaje.clave) ?? textos.irA(mensaje.clave);
-      if (arriba !== null) {
-        enviar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba });
+      // W12d-bis: el texto de un caso o de un paso sale cuando el tema lo pinta; hasta entonces se espera (poco).
+      irPendiente = null;
+      if (!irAlTexto(mensaje.clave)) {
+        irPendiente = { clave: mensaje.clave, hasta: Date.now() + ESPERA_IR };
       }
       return;
     }

@@ -79,6 +79,13 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .ed-campo__texto:focus{outline:2px solid var(--pn-acento)}
 .ed-campo__texto:empty::before{content:attr(data-vacio);opacity:.45}
 .ed-campo__texto[aria-invalid="true"]{outline-color:var(--pn-peligro)}
+/* W12d-bis: el dato de otra pantalla dentro de un texto (boceto: .ed-ficha): se escribe alrededor, no dentro.
+   Más visible que el boceto (decisión del propietario): fondo suave del color del texto (vale en claro y en la banda
+   oscura de Tarifas) y el candado de la capa delante, en la línea base. Sin transiciones; el foco no cambia su tamaño. */
+.ed-campo__texto .ed-ficha{display:inline;padding:0 .3em;border-radius:3px;background:color-mix(in srgb,currentColor 10%,transparent);outline:1px dashed var(--pn-borde-control);outline-offset:1px;cursor:default;-webkit-user-select:none;user-select:none;white-space:nowrap;opacity:.92}
+.ed-campo__texto .ed-ficha > svg{display:inline-block;width:.8em;height:.8em;margin:0 .25em 0 0;vertical-align:-.1em;pointer-events:none}
+.ed-campo__texto .ed-ficha.es-activo{outline-style:solid}
+.tarifas .ed-campo__texto .ed-ficha{outline-color:rgb(255 255 255/75%)}
 .ed-multi{display:block;white-space:pre-wrap}
 .ed-error{display:flex;align-items:flex-start;gap:6px;width:fit-content;max-width:100%;margin:10px 0 0;padding:6px 10px;border-radius:6px;background:var(--pn-superficie);color:var(--pn-peligro);font:600 .875rem/1.35 var(--pn-fuente);box-shadow:var(--pn-sombra-menu)}
 .ed-error svg{margin-top:1px}

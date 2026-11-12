@@ -25,7 +25,7 @@ import {
   turnosElegidos,
 } from '../../../comun/preinscripcion/preinscripcion';
 import { SedeWeb, SitioWeb } from '../../../datos/modelos';
-import { TextosTema, claveSede, tarifaPrincipal } from '../contenido';
+import { TextosTema, claveSede, rellenarHuecos, tarifaPrincipal } from '../contenido';
 import { TEXTOS_PREINSCRIPCION_LINEA_COMARCAL as T } from '../textos';
 
 /**
@@ -33,6 +33,84 @@ import { TEXTOS_PREINSCRIPCION_LINEA_COMARCAL as T } from '../textos';
  * a partir de `GET /api/publico/web`: sedes del paso 1, filas de grupos del paso 2, resumen lateral y confirmación. Sin
  * Angular; la lógica del formulario es la común (`comun/preinscripcion`).
  */
+
+/**
+ * Los textos de la preinscripción (W12d-bis): los de la escuela (`pre.*`, con el del tema por defecto) y los fijos sin
+ * clave (plurales, errores, campos sin clave). Mismos nombres que antes en la plantilla y en el componente. Solo cambia
+ * de dónde sale cada texto: la lógica, las validaciones y el envío del formulario no dependen de ellos.
+ */
+export function textosPreinscripcion(textos: TextosTema) {
+  return {
+    ...T,
+    atras: textos.t('pre.atras'),
+    pasoNdeM: textos.t('pre.paso_n'),
+    pasoPueblo: textos.t('pre.paso_pueblo'),
+    pasoGrupo: textos.t('pre.paso_grupo'),
+    pasoDatos: textos.t('pre.paso_datos'),
+    // Resumen lateral
+    resumenTitulo: textos.t('pre.resumen_titulo'),
+    resumenPueblo: textos.t('pre.resumen_pueblo'),
+    resumenGrupo: textos.t('pre.resumen_grupo'),
+    resumenDias: textos.t('pre.resumen_dias'),
+    sinElegir: textos.t('pre.sin_elegir'),
+    // Paso 1
+    tituloPueblo: textos.t('pre.titulo_pueblo'),
+    pistaPueblo: textos.t('pre.pista_pueblo'),
+    continuar: textos.t('pre.continuar'),
+    // Paso 2
+    tituloGrupo: textos.t('pre.titulo_grupo'),
+    cambiarDePueblo: textos.t('pre.cambiar_pueblo'),
+    fechaLeyenda: textos.t('pre.fecha_leyenda'),
+    fechaPista: textos.t('pre.fecha_pista'),
+    dia: textos.t('pre.dia'),
+    mes: textos.t('pre.mes'),
+    anio: textos.t('pre.anio'),
+    verGrupos: textos.t('pre.ver_grupos'),
+    esperaFecha: textos.t('pre.espera_fecha'),
+    vacioTitulo: textos.t('pre.vacio_titulo'),
+    vacioOtras: textos.t('pre.vacio_otras'),
+    vacioLlamar: textos.t('pre.vacio_llamar'),
+    vacioLlamarFin: textos.t('pre.vacio_llamar_fin'),
+    revisarFecha: textos.t('pre.revisar_fecha'),
+    // Paso 3
+    tituloDatos: textos.t('pre.titulo_datos'),
+    avisoEsperaTitulo: textos.t('pre.espera_titulo'),
+    avisoEsperaTexto: textos.t('pre.espera_texto'),
+    pistaDatos: textos.t('pre.pista_datos'),
+    bloqueAlumno: textos.t('pre.bloque_alumno'),
+    nombre: textos.t('pre.nombre'),
+    apellidos: textos.t('pre.apellidos'),
+    bloqueContacto: textos.t('pre.bloque_contacto'),
+    telefono: textos.t('pre.telefono'),
+    email: textos.t('pre.email'),
+    emailPista: textos.t('pre.email_pista'),
+    bloqueNormas: textos.t('pre.bloque_normas'),
+    aceptoNormas: textos.t('pre.acepto'),
+    fotos: textos.t('pre.fotos'),
+    bloqueFirma: textos.t('pre.bloque_firma'),
+    firmaPista: textos.t('pre.firma_pista'),
+    enviar: textos.t('pre.enviar'),
+    enviarEspera: textos.t('pre.enviar_espera'),
+    // Paso 4
+    finPlaza: textos.t('pre.fin_plaza'),
+    finEspera: textos.t('pre.fin_espera'),
+    referencia: textos.t('pre.referencia'),
+    estadoPlaza: textos.t('pre.estado_plaza'),
+    estadoEsperaPosicion: textos.t('pre.estado_espera'),
+    /** Variante de `pre.estado_espera` sin posición: si la escuela guarda la clave, su texto vale para las dos. */
+    estadoEspera: textos.variante('pre.estado_espera', T.estadoEspera),
+    queAhora: textos.t('pre.que_ahora'),
+    pasoCorreo: textos.t('pre.paso_correo'),
+    pasoCorreoPlaza: textos.t('pre.paso_correo_texto'),
+    pasoCorreoEspera: textos.t('pre.paso_correo_espera'),
+    pasoRevisa: textos.t('pre.paso_revisa'),
+    pasoRevisaTexto: textos.t('pre.paso_revisa_texto'),
+    descargar: textos.t('pre.descargar'),
+    volverInicio: textos.t('pre.volver_inicio'),
+  };
+}
+
+export type TextosPreinscripcion = ReturnType<typeof textosPreinscripcion>;
 
 /** Sustituye `{clave}` por su valor. */
 export function rellenar(texto: string, valores: Record<string, string | number>): string {
@@ -191,6 +269,7 @@ export interface VistaVacio {
 /** Sin grupo de su edad en la sede: otras sedes que sí lo tienen, o por qué no hay ninguna; y el teléfono de la sede. */
 export function vistaVacio(sitio: SitioWeb, sede: SedeWeb, edad: number): VistaVacio {
   const textos = new TextosTema(sitio);
+  const t = textosPreinscripcion(textos);
   const textosPlazas = { lleno: textos.t('horarios.lleno'), espera: textos.t('horarios.espera') };
   const otras = sitio.sedes
     .filter((s) => s.id !== sede.id)
@@ -207,7 +286,7 @@ export function vistaVacio(sitio: SitioWeb, sede: SedeWeb, edad: number): VistaV
   const minimo = minimos.length ? Math.min(...minimos) : null;
   const telefono = sede.telefono?.trim();
   return {
-    titulo: rellenar(T.vacioTitulo, { x: sede.nombre, n: edad }),
+    titulo: rellenar(t.vacioTitulo, { x: sede.nombre, n: edad }),
     otras,
     texto: otras.length
       ? null
@@ -215,7 +294,7 @@ export function vistaVacio(sitio: SitioWeb, sede: SedeWeb, edad: number): VistaV
         ? rellenar(T.vacioMinimo, { min: minimo, n: edad })
         : rellenar(T.vacioNinguna, { n: edad }),
     telefono: telefono
-      ? { texto: telefonoVisible(telefono), enlace: telefonoEnlace(telefono), antes: rellenar(T.vacioLlamar, { x: sede.nombre }) }
+      ? { texto: telefonoVisible(telefono), enlace: telefonoEnlace(telefono), antes: rellenar(t.vacioLlamar, { x: sede.nombre }) }
       : null,
   };
 }
@@ -253,13 +332,18 @@ export function textoPlaza(sitio: SitioWeb, eleccion: Eleccion): string | null {
     : textoPlazas({ estado: 'QUEDAN', quedan: libres }, { lleno: textos.t('horarios.lleno'), espera: textos.t('horarios.espera') });
 }
 
-/** «25 € al mes, igual en todas las sedes.»; null sin tarifa o si alguna sede tiene la suya. */
+/**
+ * «25 € al mes, igual en todas las sedes.»; null sin tarifa o si alguna sede tiene la suya. Con una sede, la variante
+ * «…para todos los grupos.»: si la escuela guarda `pre.tarifa_igual`, su texto vale para las dos (vacío, no se pinta).
+ */
 export function textoTarifa(sitio: SitioWeb, ahora: Date): string | null {
   const tarifa = tarifaPrincipal(sitio, ahora);
   if (!tarifa || !tarifa.igual) {
     return null;
   }
-  return rellenar(sitio.sedes.length === 1 ? T.tarifaUna : T.tarifaIgual, { x: importeEnTexto(tarifa.importe) });
+  const textos = new TextosTema(sitio);
+  const plantilla = sitio.sedes.length === 1 ? textos.variante('pre.tarifa_igual', T.tarifaUna) : textos.t('pre.tarifa_igual');
+  return rellenarHuecos(plantilla, { x: importeEnTexto(tarifa.importe) });
 }
 
 /** Si la salida elegida sigue siendo de esa edad (paso 3: si no, se avisa). */
@@ -295,41 +379,46 @@ export function vistaFin(
   eleccion: { sede: SedeWeb; salida: Salida; dias: number[] },
   datos: { nombre: string; apellidos: string; telefono: string; email: string; tutorNombre: string },
   menor: boolean,
+  t: TextosPreinscripcion,
 ): VistaFin {
   const { sede, salida, dias } = eleccion;
   const plaza = respuesta.plazaAsignada;
   const grupo = salida.grupo.nombre;
   const lugar = sede.lugar?.trim() || sede.nombre;
-  const valores = { grupo, sede: sede.nombre, dias: textoDiasLista(dias), n: respuesta.posicionListaEspera ?? '' };
+  const posicion = respuesta.posicionListaEspera;
+  const valores = { grupo, sede: sede.nombre, dias: textoDiasLista(dias), n: posicion ?? '' };
+  // Sin posición, `{n}` no tiene dato: si la escuela lo dejó en su texto, sale vacío y se limpia (`rellenarHuecos`).
   const estado = plaza
-    ? rellenar(T.estadoPlaza, valores)
-    : rellenar(respuesta.posicionListaEspera ? T.estadoEsperaPosicion : T.estadoEspera, valores);
+    ? rellenar(t.estadoPlaza, valores)
+    : posicion
+      ? rellenar(t.estadoEsperaPosicion, valores)
+      : rellenarHuecos(t.estadoEspera, { ...valores, n: null });
   const dobok = salida.grupo.disciplina.toLowerCase() === 'taekwondo';
   const pasos = plaza
     ? [
-        { titulo: T.pasoCorreo, texto: T.pasoCorreoPlaza },
-        { titulo: T.pasoRevisa, texto: rellenar(T.pasoRevisaTexto, { x: datos.telefono.trim() }) },
+        { titulo: t.pasoCorreo, texto: t.pasoCorreoPlaza },
+        { titulo: t.pasoRevisa, texto: rellenar(t.pasoRevisaTexto, { x: datos.telefono.trim() }) },
         {
-          titulo: T.pasoPrimer,
-          texto: rellenar(T.pasoPrimerTexto, { horario: textoHorario(salida, dias), lugar }) + (dobok ? T.pasoPrimerDobok : '.'),
+          titulo: t.pasoPrimer,
+          texto: rellenar(t.pasoPrimerTexto, { horario: textoHorario(salida, dias), lugar }) + (dobok ? t.pasoPrimerDobok : '.'),
         },
       ]
     : [
-        { titulo: T.pasoCorreo, texto: T.pasoCorreoEspera },
-        { titulo: T.pasoEsperas, texto: T.pasoEsperasTexto },
-        { titulo: T.pasoAviso, texto: rellenar(T.pasoAvisoTexto, { grupo }) },
+        { titulo: t.pasoCorreo, texto: t.pasoCorreoEspera },
+        { titulo: t.pasoEsperas, texto: t.pasoEsperasTexto },
+        { titulo: t.pasoAviso, texto: rellenar(t.pasoAvisoTexto, { grupo }) },
       ];
   const resto = textoResto(salida, dias);
   const ficha: VistaFin['ficha'] = [
-    { rotulo: T.fichaEstado, texto: plaza ? T.fichaEstadoPlaza : T.fichaEstadoEspera },
-    { rotulo: T.fichaPueblo, texto: [sede.nombre, sede.lugar?.trim()].filter(Boolean).join(' · ') },
-    { rotulo: T.fichaGrupo, texto: textoGrupo(salida) },
-    { rotulo: T.fichaDias, texto: textoHorario(salida, dias), ...(resto ? { resto } : {}) },
-    { rotulo: T.fichaAlumno, texto: `${datos.nombre.trim()} ${datos.apellidos.trim()}`.trim() },
+    { rotulo: t.fichaEstado, texto: plaza ? t.fichaEstadoPlaza : t.fichaEstadoEspera },
+    { rotulo: t.fichaPueblo, texto: [sede.nombre, sede.lugar?.trim()].filter(Boolean).join(' · ') },
+    { rotulo: t.fichaGrupo, texto: textoGrupo(salida) },
+    { rotulo: t.fichaDias, texto: textoHorario(salida, dias), ...(resto ? { resto } : {}) },
+    { rotulo: t.fichaAlumno, texto: `${datos.nombre.trim()} ${datos.apellidos.trim()}`.trim() },
   ];
   if (menor && datos.tutorNombre.trim()) {
-    ficha.push({ rotulo: T.fichaResponsable, texto: datos.tutorNombre.trim() });
+    ficha.push({ rotulo: t.fichaResponsable, texto: datos.tutorNombre.trim() });
   }
-  ficha.push({ rotulo: T.fichaContacto, texto: datos.email.trim() });
-  return { titulo: plaza ? T.finPlaza : T.finEspera, referencia: respuesta.referencia, estado, pasos, ficha };
+  ficha.push({ rotulo: t.fichaContacto, texto: datos.email.trim() });
+  return { titulo: plaza ? t.finPlaza : t.finEspera, referencia: respuesta.referencia, estado, pasos, ficha };
 }

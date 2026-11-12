@@ -54,11 +54,11 @@ import { RELOJ_WEB } from '../../../comun/reloj';
 import { Salida } from '../../../comun/horario';
 import type { EjemploPreinscripcion } from '../../../editor/casos-vista';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
-import { CLAVE_SEDE_RECORDADA, claveSede } from '../contenido';
+import { CLAVE_SEDE_RECORDADA, TextosTema, claveSede } from '../contenido';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
-import { TEXTOS_PREINSCRIPCION_LINEA_COMARCAL } from '../textos';
 import {
   FilaGrupo,
+  TextosPreinscripcion,
   VistaFin,
   avisoEdad,
   casillasDia,
@@ -75,6 +75,7 @@ import {
   textoPlaza,
   textoResto,
   textoTarifa,
+  textosPreinscripcion,
   vistaFin,
   vistaVacio,
 } from './preinscripcion';
@@ -119,7 +120,6 @@ export class PreinscripcionLineaComarcalComponent {
   private readonly envio = envioPreinscripcion();
   private readonly cargaNormas = normasPreinscripcion();
 
-  protected readonly t = TEXTOS_PREINSCRIPCION_LINEA_COMARCAL;
   protected readonly rellenar = rellenar;
   protected readonly maxObservaciones = MAX_OBSERVACIONES;
   /** El `maxlength` de cada campo de texto: las longitudes de la API. */
@@ -133,6 +133,13 @@ export class PreinscripcionLineaComarcalComponent {
     firmante: MAX_FIRMANTE,
   } as const;
   protected readonly pagina = paginaWeb('preinscripcion', () => '/preinscripcion');
+  /** W12d-bis: los textos de la escuela (`pre.*`) con los del tema por defecto. Solo cambia de dónde sale cada texto. */
+  private readonly textos = computed(() => textosPreinscripcion(new TextosTema(this.pagina.sitio())));
+
+  /** Lo que leen la plantilla y el componente (`t.x`); al leer la señal, la plantilla se repinta si cambian los textos. */
+  protected get t(): TextosPreinscripcion {
+    return this.textos();
+  }
 
   /**
    * W12c-ter: en el editor de la web («Web · Contenido»), el paso de ejemplo que da la capa de edición, en memoria;
@@ -402,7 +409,7 @@ export class PreinscripcionLineaComarcalComponent {
     if (ejemplo.respuesta && paso === 3 && sede && salida) {
       const dias = diasElegidos(salida, diasDeParametro(ejemplo.consulta.dias));
       // Decisión del propietario (11/11): la ficha sale entera, con el solicitante de ejemplo de la capa.
-      const vista = vistaFin(ejemplo.respuesta, { sede, salida, dias }, this.datos(), this.menor());
+      const vista = vistaFin(ejemplo.respuesta, { sede, salida, dias }, this.datos(), this.menor(), this.t);
       this.fin.set({ ...vista, documento: enlaceDocumento(ejemplo.respuesta) });
       this.paso.set(4);
     }
@@ -753,7 +760,7 @@ export class PreinscripcionLineaComarcalComponent {
       return;
     }
     this.fin.set({
-      ...vistaFin(respuesta, { sede, salida, dias: this.dias() }, this.datos(), this.menor()),
+      ...vistaFin(respuesta, { sede, salida, dias: this.dias() }, this.datos(), this.menor(), this.t),
       documento: enlaceDocumento({ referencia: respuesta.referencia, tokenDocumento: respuesta.tokenDocumento }),
     });
     this.paso.set(4);

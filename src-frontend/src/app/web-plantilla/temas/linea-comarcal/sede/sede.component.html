@@ -57,7 +57,7 @@
             <div class="tablero">
               <p class="proxima">
                 @if (v.horarios.proxima; as p) {
-                  <span class="proxima-rotulo">{{ p.rotulo }}</span>
+                  @if (p.rotulo) {<span class="proxima-rotulo">{{ p.rotulo }}</span>}
                   <span class="proxima-cuando">@if (p.hoy) {<mark class="hoy">HOY</mark>} @else {<ng-container>{{ p.cuando }} </ng-container>}<span class="hora">{{ p.hora }}</span></span>
                   @if (p.grupo) {<span class="proxima-grupo">{{ p.grupo }}</span>}
                 } @else {

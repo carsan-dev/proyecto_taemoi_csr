@@ -69,7 +69,7 @@
                       @for (x of fila.importes; track $index; let primera = $first) {
                         <tr>
                           @if (primera) {<th scope="rowgroup" [attr.rowspan]="fila.importes.length">{{ fila.nombre }}</th>}
-                          <td class="quien">{{ x.quien }}</td>
+                          <td class="quien" [attr.data-quien]="x.tipo">{{ x.quien }}</td>
                           <td class="importe cifras">{{ x.importe }}<small>{{ alMes }}</small></td>
                         </tr>
                       }
@@ -78,14 +78,16 @@
                     <tbody>
                       <tr>
                         <th scope="row">{{ fila.nombre }}</th>
-                        <td class="quien">{{ fila.importes[0].quien }}</td>
+                        <td class="quien" [attr.data-quien]="fila.importes[0].tipo">{{ fila.importes[0].quien }}</td>
                         <td class="importe cifras">{{ fila.importes[0].importe }}<small>{{ alMes }}</small></td>
                       </tr>
                     </tbody>
                   }
                 }
               </table>
-              <p class="cuadro-pie">{{ textos.pieCuadro }}</p>
+              @if (textos.pieCuadro) {
+                <p class="cuadro-pie">{{ textos.pieCuadro }}</p>
+              }
             </div>
           </div>
         </section>
@@ -138,7 +140,9 @@
                   <li><span class="aparte-concepto">{{ x.concepto }}</span><span class="aparte-precio" [attr.data-dato]="x.dato">{{ x.precio }}</span></li>
                 }
               </ul>
-              <p class="aparte-nota">{{ textos.notaAparte }}</p>
+              @if (textos.notaAparte) {
+                <p class="aparte-nota">{{ textos.notaAparte }}</p>
+              }
               <div class="cierre">
                 @if (v.boton) {
                   <a class="boton" routerLink="/preinscripcion" [queryParams]="null | vistaPrevia">{{ v.boton }}<ng-container *ngTemplateOutlet="flecha" /></a>

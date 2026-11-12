@@ -1,7 +1,7 @@
 import { enlaceMapa, edadesEnTexto, importeEnTexto, proximaClaseConGrupo, telefonoEnlace, telefonoVisible } from '../../../comun/horario';
 import { tarifaPorSede } from '../../../comun/tarifas';
 import { SedeWeb, SitioWeb } from '../../../datos/modelos';
-import { TextosTema, VistaSalida, altFotoSede, claveSede, tarifaPrincipal, vistaSalidas } from '../contenido';
+import { TextosTema, VistaSalida, altFotoSede, claveSede, rellenarHuecos, tarifaPrincipal, vistaSalidas } from '../contenido';
 import { TEXTOS_FIJOS_LINEA_COMARCAL as FIJOS, TEXTOS_PAGINAS_LINEA_COMARCAL as P } from '../textos';
 
 /**
@@ -65,6 +65,32 @@ export interface VistaPaginaSede {
   ruta: { clave: string; nombre: string; enlace: string | null; detalle: string; actual: boolean }[] | null;
 }
 
+/**
+ * Los textos que la plantilla de la página pinta tal cual (W12d-bis): los de la escuela (`sede.*`, con el del tema por
+ * defecto) y los fijos sin clave. Mismos nombres que antes en la plantilla.
+ */
+export function textosSede(textos: TextosTema) {
+  return {
+    ...P,
+    anterior: textos.t('sede.anterior'),
+    siguiente: textos.t('sede.siguiente'),
+    verGrupos: textos.t('sede.ver_grupos'),
+    sinClases: textos.t('sede.sin_clases'),
+    cabezaHora: textos.t('sede.cabeza_hora'),
+    cabezaGrupo: textos.t('sede.cabeza_grupo'),
+    cabezaDias: textos.t('sede.cabeza_dias'),
+    leyendaQuedan: textos.t('sede.leyenda_quedan'),
+    leyendaEspera: textos.t('sede.leyenda_espera'),
+    rotuloLlegar: textos.t('sede.rotulo_llegar'),
+    tituloLlegar: textos.t('sede.titulo_llegar'),
+    abrirMapa: textos.t('sede.abrir_mapa'),
+    rotuloTarifaSede: textos.t('sede.rotulo_tarifa'),
+    rotuloRuta: textos.t('sede.rotulo_ruta'),
+    tituloRuta: textos.t('sede.titulo_ruta'),
+    estasAqui: textos.t('sede.estas_aqui'),
+  };
+}
+
 /** La sede del slug; null si ninguna lo tiene (la página pinta la 404 del tema). */
 export function sedeDelSlug(sitio: SitioWeb, slug: string | null): SedeWeb | null {
   return slug ? (sitio.sedes.find((s) => s.slug != null && s.slug === slug) ?? null) : null;
@@ -87,12 +113,18 @@ export function vistaPaginaSede(sitio: SitioWeb, sede: SedeWeb, ahora: Date): Vi
     direccion,
     consulta: { sede: sede.slug ?? String(sede.id) },
     preinscribirme,
-    preinscribirmeEtiqueta: `${preinscribirme} en ${sede.nombre}`,
+    // `sede.preinscribirme_en` da solo el `aria-label` (decisión del propietario, 12/11); el texto visible es `horarios.boton`.
+    preinscribirmeEtiqueta: textos.bloques.tiene('sede.preinscribirme_en')
+      ? rellenarHuecos(textos.t('sede.preinscribirme_en'), { x: sede.nombre })
+      : `${preinscribirme} en ${sede.nombre}`,
     foto: sede.fotoUrl ? { url: sede.fotoUrl, alt: altFotoSede(sede, 1) } : null,
     tramo: tramo(sedes, sede),
     horarios: {
-      rotulo: sitio.temporada ? t(P.rotuloHorariosCurso, { x: sitio.temporada }) : P.rotuloHorarios,
-      titulo: P.tituloHorarios,
+      rotulo: rellenarHuecos(
+        sitio.temporada ? textos.t('sede.rotulo_horarios') : textos.variante('sede.rotulo_horarios', P.rotuloHorarios),
+        { x: sitio.temporada },
+      ),
+      titulo: textos.t('sede.titulo_horarios'),
       proxima: proxima
         ? {
             rotulo: textos.t('sedes.proxima_rotulo'),
@@ -105,9 +137,10 @@ export function vistaPaginaSede(sitio: SitioWeb, sede: SedeWeb, ahora: Date): Vi
           }
         : null,
       salidas: vistaSalidas(sede, textos, ahora),
-      leyenda: { lleno: t(P.leyendaLleno, { x: textos.t('horarios.lleno') }) },
+      // Enlazada con `horarios.lleno`: `{x}` es el texto de «Lleno» que tenga la escuela.
+      leyenda: { lleno: rellenarHuecos(textos.t('sede.leyenda_lleno'), { x: textos.t('horarios.lleno') }) },
     },
-    llegar: llegar(sede, lugar, direccion, localidad),
+    llegar: llegar(sede, lugar, direccion, localidad, textos),
     tarifa: tarifaDeSede(sitio, sede, textos, una, ahora),
     ruta: una
       ? null
@@ -147,18 +180,30 @@ function tramo(sedes: SedeWeb[], sede: SedeWeb): VistaTramo {
   };
 }
 
-function llegar(sede: SedeWeb, lugar: string | null, direccion: string | null, localidad: string): VistaPaginaSede['llegar'] {
+function llegar(
+  sede: SedeWeb,
+  lugar: string | null,
+  direccion: string | null,
+  localidad: string,
+  textos: TextosTema,
+): VistaPaginaSede['llegar'] {
   const filas: FilaFicha[] = [];
   if (lugar || direccion) {
-    filas.push({ rotulo: P.fichaLugar, texto: lugar ?? direccion!, nota: lugar ? direccion : null, enlace: null, dato: 'lugar' });
+    filas.push({ rotulo: textos.t('sede.ficha_lugar'), texto: lugar ?? direccion!, nota: lugar ? direccion : null, enlace: null, dato: 'lugar' });
   }
   const acceso = sede.indicacionesAcceso?.trim();
   if (acceso) {
-    filas.push({ rotulo: P.fichaEntrada, texto: acceso, nota: null, enlace: null, dato: 'acceso' });
+    filas.push({ rotulo: textos.t('sede.ficha_entrada'), texto: acceso, nota: null, enlace: null, dato: 'acceso' });
   }
   const telefono = sede.telefono?.trim();
   if (telefono) {
-    filas.push({ rotulo: P.fichaTelefono, texto: telefonoVisible(telefono), nota: null, enlace: telefonoEnlace(telefono), dato: 'telefono' });
+    filas.push({
+      rotulo: textos.t('sede.ficha_telefono'),
+      texto: telefonoVisible(telefono),
+      nota: null,
+      enlace: telefonoEnlace(telefono),
+      dato: 'telefono',
+    });
   }
   const mapa = lugar || sede.direccion?.trim() ? enlaceMapa([sede.lugar, sede.direccion, localidad]) : null;
   const foto = sede.foto2Url ? { url: sede.foto2Url, alt: altFotoSede(sede, 2) } : null;
@@ -183,7 +228,10 @@ function tarifaDeSede(sitio: SitioWeb, sede: SedeWeb, textos: TextosTema, una: b
   return {
     importe: importeEnTexto(enSede?.importe ?? principal.importe),
     alMes: textos.t('tarifas.al_mes'),
-    igual: principal.igual ? (una ? FIJOS.igualUnaSede : FIJOS.igualEnTodasLasSedes) : null,
+    // `tarifas.igual`, como en Inicio: si la escuela la guarda, vale para las dos variantes; vacía, no se pinta.
+    igual: principal.igual
+      ? textos.bloques.texto('tarifas.igual', una ? FIJOS.igualUnaSede : FIJOS.igualEnTodasLasSedes) || null
+      : null,
     puntos: puntos.filter(Boolean),
     boton: textos.t('tarifas.boton_preinscripcion'),
   };

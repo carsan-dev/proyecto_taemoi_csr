@@ -38,7 +38,7 @@ const PAGINAS: Record<string, string> = {
   },
   tarifas: `<div class="p-tarifas">
     <section class="tarifas" id="tarifas"><h1 class="rotulo">Tarifas</h1><p class="tarifa-cifra"><span class="tarifa-importe">25 €</span></p></section>
-    <section class="seccion" id="cuadro"><table class="cuadro"><tbody><tr><th scope="row">General</th><td class="quien">Cada alumno</td><td class="importe cifras">25 €<small>al mes</small></td></tr></tbody></table></section>
+    <section class="seccion" id="cuadro"><table class="cuadro"><tbody><tr><th scope="row">General</th><td class="quien" data-quien="alumno">Cada alumno</td><td class="importe cifras">25 €<small>al mes</small></td></tr></tbody></table></section>
     <section class="seccion" id="por-sede"><ol class="linea-tarifa"><li class="lt-parada"><div class="lt-cabeza"><a class="lt-nombre" href="/sedes/herrera">Herrera</a><p class="lt-importe">25 €</p></div></li></ol></section>
     <section class="seccion" id="aparte"><ul class="aparte"><li><span class="aparte-concepto">Licencia</span><span class="aparte-precio" data-dato="licencia">40 €</span></li>
       <li><span class="aparte-concepto">Examen</span><span class="aparte-precio" data-dato="examen">desde 30 €</span></li></ul></section>

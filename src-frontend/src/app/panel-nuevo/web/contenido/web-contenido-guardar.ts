@@ -4,11 +4,13 @@ import {
   defTexto,
   defectoFijo,
   esTextoEditable,
+  paginaDeTexto,
   recortar,
 } from '../../../web-plantilla/editor/textos-editor';
+import type { PaginaEditor } from '../../../web-plantilla/editor/candados-linea-comarcal';
 import { bloqueDeFoto, claveDescripcion, esFotoSuelta, fotoDeDescripcion } from '../../../web-plantilla/editor/fotos-sueltas';
 import { TEXTOS_FOTOS, queFoto } from './web-contenido-fotos';
-import type { BloqueContenido } from './web-contenido-vista';
+import { type BloqueContenido, nombrePagina } from './web-contenido-vista';
 
 /**
  * Borrador y guardado de «Web · Contenido» (W12d; boceto `boceto-panel-contenido-web-comarcal.html`: `cambios`,
@@ -137,7 +139,10 @@ export function nombreError(clave: string, borrador: readonly BloqueContenido[])
     return null;
   }
   if (def.ejemplo !== undefined) {
-    return `${NOMBRE_PARTE[def.parte]}: ${def.nombre.toLowerCase()} «${recortar(def.ejemplo, 30)}»`;
+    // W12d-bis (boceto `nombreError`): fuera de Inicio, delante el nombre de la página («Una sede · Cartel de la sede: …»).
+    const pagina = paginaDeTexto(clave);
+    const delante = pagina === 'inicio' ? '' : `${nombrePagina(pagina)} · `;
+    return `${delante}${NOMBRE_PARTE[def.parte]}: ${def.nombre.toLowerCase()} «${recortar(def.ejemplo, 30)}»`;
   }
   return `${nombreBloque(clave, def.parte, borrador)}: ${def.nombre.toLowerCase()}`;
 }
@@ -167,6 +172,22 @@ function nombreBloque(clave: string, parte: string, borrador: readonly BloqueCon
   }
   const titulo = (borrador.find((f) => f.clave === `${bloque}.titulo`)?.texto ?? '').trim();
   return titulo ? `Texto con foto «${recortar(titulo, 40)}»` : 'Texto con foto';
+}
+
+/**
+ * W12d-bis (boceto `cambios`, `porPag`): los cambios de cada página para el selector «Página». Cada texto cuenta en su
+ * página; las fotos, los bloques y los textos de la cabecera y el pie, en Inicio.
+ */
+export function cambiosPorPagina(claves: readonly string[], nBloques: number): Partial<Record<PaginaEditor, number>> {
+  const n: Partial<Record<PaginaEditor, number>> = {};
+  for (const clave of claves) {
+    const pagina = esTextoEditable(clave) ? paginaDeTexto(clave) : 'inicio';
+    n[pagina] = (n[pagina] ?? 0) + 1;
+  }
+  if (nBloques) {
+    n.inicio = (n.inicio ?? 0) + nBloques;
+  }
+  return n;
 }
 
 export const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;

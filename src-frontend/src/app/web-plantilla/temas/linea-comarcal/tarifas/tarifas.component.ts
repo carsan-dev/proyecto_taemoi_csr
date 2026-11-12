@@ -6,9 +6,9 @@ import { paginaWeb } from '../../../comun/pagina-web';
 import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { RELOJ_WEB } from '../../../comun/reloj';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
+import { TextosTema } from '../contenido';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
-import { TEXTOS_FIJOS_LINEA_COMARCAL, TEXTOS_PAGINAS_LINEA_COMARCAL } from '../textos';
-import { vistaTarifas } from './tarifas';
+import { textosTarifas, vistaTarifas } from './tarifas';
 
 /**
  * Página de tarifas del tema «La línea comarcal» (`/tarifas`, boceto `fase4-web/boceto-linea-comarcal-tarifas.html`)
@@ -27,11 +27,21 @@ import { vistaTarifas } from './tarifas';
 export class TarifasLineaComarcalComponent {
   private readonly reloj = inject(RELOJ_WEB);
 
-  protected readonly textos = TEXTOS_PAGINAS_LINEA_COMARCAL;
-  protected readonly alMes = TEXTOS_FIJOS_LINEA_COMARCAL.alMes;
   protected readonly pagina = paginaWeb('tarifas', () => '/tarifas');
   protected readonly vista = computed(() => {
     const sitio = this.pagina.sitio();
     return sitio ? vistaTarifas(sitio, this.reloj()) : null;
   });
+  /** W12d-bis: los textos de la escuela (`tarifas.*`) con los del tema por defecto. */
+  private readonly textosPagina = computed(() => textosTarifas(new TextosTema(this.pagina.sitio())));
+
+  /** Lo que lee la plantilla (`textos.x`); al leer la señal, la plantilla se repinta si cambian los textos. */
+  protected get textos(): ReturnType<typeof textosTarifas> {
+    return this.textosPagina();
+  }
+
+  /** «al mes» del cuadro y de «Por sede»: `tarifas.al_mes`, como en la banda. */
+  protected get alMes(): string {
+    return this.textosPagina().alMes;
+  }
 }

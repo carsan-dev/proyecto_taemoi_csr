@@ -47,7 +47,7 @@ Nota: la fila W12 del §8 dice «Migración: no». `oculto` exige una (V32_9): W
 
 ## 2. Piezas, en orden (cada una se fusiona y se despliega sola)
 
-Orden: W12a → W12b → W12c → W12c-bis → W12c-ter → W12d → W12e → W12f. W12g es independiente (su interfaz está en el
+Orden: W12a → W12b → W12c → W12c-bis → W12c-ter → W12d → W12d-bis → W12e → W12f. W12g es independiente (su interfaz está en el
 boceto aprobado, d524) y puede ir en cualquier momento. Entrada de menú «Contenido» visible a partir de W12d (antes,
 la ruta existe pero no se enlaza: una pantalla que no guarda no debe verse; decisión 341: lo que se despliega se ve).
 
@@ -184,6 +184,44 @@ la ruta existe pero no se enlaza: una pantalla que no guarda no debe verse; deci
   descartar, `salir()`; estados `contenido`, `errores`, `guardando`, `guardado`, `error`.
 - **Moiskimdo igual**: entrada oculta por `webPlantilla`. **Tamaño**: ~900-1.100 líneas.
 
+### W12d-bis · Textos de las otras seis páginas (medium; careful en Preinscripción y Legales)
+
+- **Por qué**: W12d solo deja editar Inicio, la cabecera y el pie (`editor/textos-editor.ts`, `campos()` de
+  `editor/edicion-textos.ts`); el tema pinta fijos los textos de Una sede, Tarifas, Eventos, Un evento, Legales y
+  Preinscripción (`TEXTOS_PAGINAS_LINEA_COMARCAL`, `TEXTOS_PREINSCRIPCION_LINEA_COMARCAL` y literales de Legales), d538.
+- **Claves**: ninguna nueva en la API. `ClavesWeb` (W12a) ya tiene las 195 del `TX` del boceto con su máximo y si son
+  obligatorias (184 en `TEXTOS` y 11 por patrón); las 148 de las seis páginas y `cabecera.menu` faltan solo en el
+  frontend. El tema lee 142 de ellas (Legales, 20 de 26) más `cabecera.menu`. `tarifas.al_mes` ya se lee en Inicio y en Una sede; falta en la página Tarifas (hoy `FIJOS.alMes`).
+- **Frontend · tema**: `TEXTOS_LINEA_COMARCAL` con las 143 claves (142 de las seis páginas y `cabecera.menu`; defecto = el del tema de hoy); las vistas de cada
+  página leen con `TextosTema.t()` y sustituyen `{x}`, `{n}`… después; clave guardada vacía, no se pinta. `cabecera.menu`
+  en el marco. Los textos del tema sin clave en el `TX` (variantes por datos, plurales de preinscripción, errores del
+  formulario, d527) siguen fijos. Sin editor, la web se ve igual que hoy.
+- **Frontend · editor**: el `TX` del editor y los selectores de texto de cada página (partes `sp-`, `tp-`, `ep-`, `ev-`,
+  `lg-`, `pr-` del boceto); los huecos `{x}` como ficha no editable con su candado (`conFichas` del boceto); textos de
+  los casos (`CASO_DE`) editables con «Ver el caso»; el resumen «Faltan N datos» lleva a la página, el caso y el paso
+  del dato.
+- **API/DB**: no. **Migración**: no (las claves son filas de `web_bloque`, `clave VARCHAR(60)`).
+- **Decisiones (d542-d544, 12/11)**: Legales: solo se editan las 20 claves que coinciden con el tema (títulos,
+  entrada, rótulos de ficha, párrafos iguales); `legal.priv.h1/p1`, `legal.aviso.p3`, `legal.priv.p2`,
+  `legal.cookies.p0` y `legal.normas.p0` siguen fijos. `sede.preinscribirme_en` solo alimenta el `aria-label` y no se
+  ofrece en el editor. Variantes por datos: un solo texto por clave; `tarifas.cada_alumno` solo rotula la fila
+  genérica («Cada adulto» y «Cada menor» fijos). Los huecos van como ficha con fondo suave y candado (más visible que
+  el boceto); quitarla pide confirmación con el diálogo del panel («¿Quitar «{dato}» de este texto?», con la frase de
+  hoy y cómo quedará; «Cancelar» / «Quitar dato»). `sede.leyenda_lleno` va enlazada a `horarios.lleno`;
+  `tarifas.punto1`, enlazada también en Tarifas. El hueco de `pre.paso_revisa_texto` es «Teléfono de la familia».
+- **Criterios de aceptación**: sin filas, las seis páginas idénticas a hoy (specs de vista y revisión en navegador);
+  con fila, el texto de la escuela en su sitio y en todas las páginas que comparten la clave; fila vacía, no se pinta;
+  `{x}` sustituido; en el editor, cada texto del `TX` de la página con chip, máximo y obligatoriedad del boceto,
+  guardado con el 400 de la API en el resumen; Moiskimdo sin cambios.
+- **Fuera de alcance**: textos del tema sin clave en el `TX`; errores del formulario de preinscripción (d527); el visor
+  de fotos del evento («Anterior»/«Siguiente»); `disciplina.*` en el editor; fotos (W12f).
+- **Tests**: Karma de cada vista (defecto, propia, vacía, hueco), de `defTexto` y selectores por página, del guardado
+  con claves de otras páginas y del enlace del resumen; specs nuevos en el `include` de `angular.json`.
+- **Boceto**: `TX` (líneas 1527-1678), `LEGAL`, `CASOS`, `CASO_DE`, `texto()`, `conFichas`, `sedePagHtml`,
+  `tarifasPagHtml`, `eventosPagHtml`, `eventoPagHtml`, `legalesHtml`, `preinscripcionHtml`.
+- **Moiskimdo igual**: chunk de la plantilla; bundle inicial sin cambios. **Tamaño**: ~1.500-1.900 líneas con tests,
+  en dos unidades (tema; editor).
+
 ### W12e · Bloques: subir, bajar, ocultar, añadir y quitar (medium)
 
 - **Frontend**: barra del bloque (Subir/Bajar deshabilitados en los extremos; Ocultar/Mostrar; Quitar solo en
@@ -244,6 +282,10 @@ Cierran las ocho preguntas que dejaba abiertas el primer desglose. El boceto apr
 | d535 | En el editor, en «Enviada», la frase «te llaman al {x}» usa un teléfono de solicitante de ejemplo (600 000 000), no el de la sede (11/11). | — |
 | d536 | Con una sola sede, el selector «Paso» del editor omite «Pueblo» y renumera como la web: «1 · Grupo», «2 · Datos y firma», «Enviada» (11/11). | — |
 | d537 | En el editor, la ficha de «Enviada» se pinta con un solicitante de ejemplo (alumno menor, responsable, correo y teléfono); sustituye a d534 (11/11). | — |
+| d538 | Pieza W12d-bis: el tema lee también las claves de las otras seis páginas (sede, tarifas, eventos, evento, legales y preinscripción) y se añaden a `ClavesWeb` las que falten (12/11; contraste: no falta ninguna en la API). | — |
+| d542 | W12d-bis: en Legales solo se editan las 20 claves que coinciden con el tema (el resto del texto legal sigue fijo); `sede.preinscribirme_en` solo va al `aria-label` y no sale en el editor (12/11). | — |
+| d543 | W12d-bis: variantes por datos con un solo texto por clave; `tarifas.cada_alumno` solo rotula la fila genérica, con «Cada adulto» y «Cada menor» fijos (12/11). | — |
+| d544 | W12d-bis: los huecos, ficha con fondo suave y candado (más visible que el boceto) que solo se quita confirmando en el diálogo del panel; `sede.leyenda_lleno` enlazada a `horarios.lleno`, `tarifas.punto1` también en Tarifas y el hueco de `pre.paso_revisa_texto` es «Teléfono de la familia» (12/11). | — |
 
 Con d519 y d518, el alcance de W12c-W12f crece respecto a la estimación del §2: selector de página, bloques «Fotos de
 las sedes» y «Texto con foto», sedes del profesor y estado de conflicto. W12g (d524) ya no espera boceto.

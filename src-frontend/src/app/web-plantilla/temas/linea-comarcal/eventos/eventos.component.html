@@ -9,7 +9,9 @@
     <div class="p-eventos">
       <div class="envoltura pagina-cabeza">
         <h1 class="pagina-titular">{{ textos.tituloEventos }}</h1>
-        <p class="pagina-entrada">{{ textos.entradaEventos }}</p>
+        @if (textos.entradaEventos) {
+          <p class="pagina-entrada">{{ textos.entradaEventos }}</p>
+        }
       </div>
 
       <section class="proximos" id="proximos" aria-labelledby="proximos-titulo">
@@ -59,7 +61,9 @@
           } @else {
             <div class="ev-vacio">
               <h3>{{ textos.sinProximosTitular }}</h3>
-              <p>{{ textos.sinProximosTexto }}</p>
+              @if (textos.sinProximosTexto) {
+                <p>{{ textos.sinProximosTexto }}</p>
+              }
               @if (v.anios.length) {
                 <a class="enlace-flecha" routerLink="/eventos" fragment="anteriores" [queryParams]="null | vistaPrevia">{{ textos.verAnteriores }}<ng-container *ngTemplateOutlet="flecha" /></a>
               }

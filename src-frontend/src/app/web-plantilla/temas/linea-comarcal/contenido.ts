@@ -36,17 +36,57 @@ import {
  * componentes del tema solo lo pintan.
  */
 
-/** Los textos de la escuela con el del boceto por defecto. */
+/** Los textos de la escuela con el del boceto por defecto. Sin sitio (aún sin cargar), los del tema. */
 export class TextosTema {
   readonly bloques: BloquesWeb;
 
-  constructor(sitio: SitioWeb) {
-    this.bloques = new BloquesWeb(sitio.bloques);
+  constructor(sitio: Pick<SitioWeb, 'bloques'> | null) {
+    this.bloques = new BloquesWeb(sitio?.bloques ?? []);
   }
 
   t(clave: ClaveTexto): string {
     return this.bloques.texto(clave, TEXTOS_LINEA_COMARCAL[clave]);
   }
+
+  /**
+   * Una variante que depende de los datos (W12d-bis: una sede, sin temporada, sin contacto…): si la escuela guardó la
+   * clave, su texto (vale para todas las variantes); si no, el de esa variante.
+   */
+  variante(clave: ClaveTexto, porDefecto: string): string {
+    return this.bloques.texto(clave, porDefecto);
+  }
+}
+
+/**
+ * Sustituye los huecos `{x}`, `{n}`, `{grupo}`… de un texto por sus datos. Un hueco sin dato (la variante no lo tiene,
+ * o la escuela guardó un texto con un hueco que aquí no hay) se queda vacío y se limpia, siempre igual y solo entonces:
+ * fuera los paréntesis vacíos; «· ·» seguidos, uno; fuera el «·» sin texto a un lado (al principio o al final del texto
+ * o de una línea, tras «(» o antes de puntuación); espacios seguidos, uno; sin espacio antes de «. , ; : ! ? ) »» ni
+ * después de «( « ¿ ¡»; sin «, ; :» justo antes de «. ! ?»; sin puntuación ni espacios al principio; y sin espacios al
+ * final. Con todos los datos, el texto no se toca.
+ */
+export function rellenarHuecos(texto: string, valores: Readonly<Record<string, string | number | null | undefined>>): string {
+  let sinDato = false;
+  const relleno = texto.replace(/\{(\w+)\}/g, (_hueco, clave: string) => {
+    const valor = valores[clave];
+    const cadena = valor == null ? '' : String(valor);
+    sinDato ||= cadena === '';
+    return cadena;
+  });
+  if (!sinDato) {
+    return relleno;
+  }
+  return relleno
+    .replace(/\([ \t]*\)/g, '')
+    .replace(/·(?:[ \t]*·)+/g, '·')
+    .replace(/(^|[\n(«¿¡])[ \t]*·[ \t]*/g, '$1')
+    .replace(/[ \t]*·[ \t]*(?=[\n.,;:!?)»]|$)/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+([.,;:!?)»])/g, '$1')
+    .replace(/([(«¿¡])[ \t]+/g, '$1')
+    .replace(/[,;:]+(?=[.!?])/g, '')
+    .replace(/^[\s.,;:]+/, '')
+    .trimEnd();
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -84,6 +124,8 @@ export interface VistaMarco {
   /** Variables CSS del color de la escuela (derivarColores). */
   colores: Record<string, string>;
   menu: EnlaceAncla[];
+  /** El texto del botón del menú en el móvil (`cabecera.menu`). */
+  textoMenu: string;
   cta: string;
   anio: number;
   legales: EnlaceAncla[];
@@ -132,6 +174,7 @@ export function vistaMarco(sitio: SitioWeb, ahora: Date, pagina: PaginaMarco = '
           : { texto, ruta: '/', fragmento };
       })
       .filter((e) => e.texto),
+    textoMenu: textos.t('cabecera.menu'),
     cta: textos.t('cabecera.boton'),
     anio: ahora.getFullYear(),
     legales: (
@@ -835,7 +878,8 @@ export function altFotoSede(sede: SedeWeb, n: 1 | 2): string {
   return propia || TEXTOS_PAGINAS_LINEA_COMARCAL.fotoSede.replace('{x}', () => sede.nombre);
 }
 
-function enParrafos(texto: string): string[] {
+/** Un texto en párrafos: los separa una línea en blanco; un salto simple se queda dentro del párrafo. Vacío, ninguno. */
+export function enParrafos(texto: string): string[] {
   return texto
     .split(/\n\s*\n/)
     .map((p) => p.trim())

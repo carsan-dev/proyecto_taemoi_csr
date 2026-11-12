@@ -43,7 +43,8 @@ import {
   nombreBloque,
   ordenCompleto,
 } from '../../../web-plantilla/editor/bloques-editor';
-import { defTexto, defectoDeLaPagina } from '../../../web-plantilla/editor/textos-editor';
+import { casoDeTexto, defTexto, defectoDeLaPagina, esTextoEditable, paginaDeTexto, pasoDeTexto } from '../../../web-plantilla/editor/textos-editor';
+import { textosQuitarDato } from '../../../web-plantilla/editor/huecos-editor';
 import { AcentoEscuelaDirective } from '../../acento-escuela.directive';
 import { AvisosService } from '../../avisos/avisos.service';
 import { BloqueErrorComponent } from '../../carga/bloque-error.component';
@@ -87,6 +88,7 @@ import {
   Defectos,
   TEXTOS_GUARDAR,
   barraConflicto,
+  cambiosPorPagina,
   clavesCambiadas,
   cuerpoGuardar,
   entradaResumen,
@@ -354,13 +356,17 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       sedes.filter((s) => !s.slug).map((s) => s.nombre),
     );
   });
-  /** Las opciones del selector «Página», con «· N cambios» (boceto `pintarSelector`): los textos de W12d son de Inicio. */
-  readonly opcionesPagina = computed(() =>
-    PAGINAS_CONTENIDO.map((p) => {
-      const n = p.id === 'inicio' ? this.nCambios() : 0;
+  /**
+   * Las opciones del selector «Página», con «· N cambios» (boceto `pintarSelector`): cada texto en su página (W12d-bis);
+   * las fotos y los bloques, en Inicio.
+   */
+  readonly opcionesPagina = computed(() => {
+    const porPagina = cambiosPorPagina(this.clavesQueCuentan(), this.cambiosBloques().n);
+    return PAGINAS_CONTENIDO.map((p) => {
+      const n = porPagina[p.id] ?? 0;
       return { ...p, texto: n ? `${p.opcion} · ${plural(n, 'cambio', 'cambios')}` : p.opcion };
-    }),
-  );
+    });
+  });
   readonly casos = computed<readonly CasoPagina[]>(() => CASOS_PAGINA[this.pagina()]);
   readonly casoActivo = computed(() => this.casos().find((c) => c.id === this.caso()) ?? null);
   readonly tituloMenu = computed(() => tituloMenuCasos(this.pagina()));
@@ -695,6 +701,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       case 'texto':
         this.alCambiarTexto(mensaje.clave, mensaje.texto);
         break;
+      case 'pedir-quitar-dato':
+        void this.confirmarQuitarDato(mensaje.clave, mensaje.huecos, mensaje.antes, mensaje.despues);
+        break;
       case 'defectos': {
         // Solo los que dependen de los datos y nunca el «Escribe aquí…» de un vacío (como la capa).
         const validos = Object.fromEntries(Object.entries(mensaje.textos).filter(([clave, texto]) => defectoDeLaPagina(clave, texto)));
@@ -959,19 +968,74 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.enfocarTitulo();
   }
 
-  /** Un enlace del resumen: al dato, en su página (los de W12d son de Inicio, con la cabecera y el pie). */
+  /**
+   * Un enlace del resumen: al dato, en su página, su caso y su paso (boceto: `[data-ir]`; W12d-bis). Las fotos, en
+   * Inicio. Con otra página, el iframe se recarga y el dato va cuando la capa nueva está lista (con el caso y el paso).
+   */
   irAlDato(evento: Event, clave: string): void {
     evento.preventDefault();
     this.mostrarDato = true;
-    if (this.pagina() !== 'inicio') {
+    const texto = esTextoEditable(clave);
+    const pagina = texto ? paginaDeTexto(clave) : 'inicio';
+    const caso = texto ? this.casoDe(pagina, clave) : null;
+    const paso = texto ? this.pasoPara(clave, caso) : null;
+    if (this.pagina() !== pagina) {
       this.irPendiente = clave;
-      this.ponerPagina('inicio');
+      this.ponerPagina(pagina);
+      // La capa nueva recibe el caso y el paso al estar lista (`listo`), antes que el dato.
+      this.caso.set(caso?.id ?? null);
+      if (paso !== null) {
+        this.paso.set(paso);
+      }
       return;
     }
-    if (this.caso()) {
-      this.ponerCaso(null);
+    if ((caso?.id ?? null) !== this.caso()) {
+      this.ponerCaso(caso?.id ?? null);
+    }
+    if (paso !== null && paso !== this.paso()) {
+      this.paso.set(paso);
+      this.enviarPaso();
     }
     this.enviarIrTexto(clave);
+  }
+
+  /** El caso de la página en el que sale el texto (boceto `CASO_DE`), o null (los datos reales). */
+  private casoDe(pagina: PaginaEditor, clave: string): CasoPagina | null {
+    const id = casoDeTexto(clave);
+    return CASOS_PAGINA[pagina].find((c) => c.id === id) ?? null;
+  }
+
+  /** El paso de la preinscripción donde sale el texto; null si no cambia (no es de la preinscripción o ya se ve). */
+  private pasoPara(clave: string, caso: CasoPagina | null): PasoPreinscripcion | null {
+    if (caso?.paso !== undefined) {
+      return caso.paso;
+    }
+    const paso = pasoDeTexto(clave);
+    const primero: PasoPreinscripcion = this.unaSede() ? 2 : 1;
+    if (paso === null) {
+      return null;
+    }
+    if (paso === 'flujo') {
+      return this.paso() === 4 ? primero : null;
+    }
+    // Con una sede no hay paso «Pueblo».
+    return paso === 1 && this.unaSede() ? null : paso;
+  }
+
+  /**
+   * W12d-bis: borrar la ficha de un dato dentro de un texto pide confirmación (decisión del propietario, 12/11). El
+   * diálogo del panel (hoja inferior en el móvil); la respuesta vuelve a la capa, que quita el dato o lo deja todo como
+   * estaba. El foco vuelve a la vista previa y la capa lo pone en el texto.
+   */
+  private async confirmarQuitarDato(clave: string, huecos: string[], antes: string, despues: string): Promise<void> {
+    const textos = textosQuitarDato(clave, huecos, antes, despues);
+    const r = textos ? await this.confirmacion.confirmar({ ...textos, destructivo: true, nombre: 'quitar-dato' }) : { confirmado: false };
+    const iframe = this.iframe()?.nativeElement;
+    if (!this.ventana || !iframe) {
+      return;
+    }
+    iframe.focus({ preventScroll: true });
+    enviarPorPuente(this.ventana, iframe.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'quitar-dato', quitar: r.confirmado });
   }
 
   private enviarIrTexto(clave: string): void {

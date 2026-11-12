@@ -9,7 +9,9 @@
     <div class="p-legales">
       <div class="envoltura legal-cabeza">
         <h1 class="legal-titular">{{ textos.tituloLegal }}</h1>
-        <p class="legal-entrada">{{ textos.entradaLegal }}</p>
+        @if (textos.entradaLegal) {
+          <p class="legal-entrada">{{ textos.entradaLegal }}</p>
+        }
         @if (v.actualizada; as a) {
           <p class="actualizado">{{ textos.actualizada }} <time [attr.datetime]="a.iso">{{ a.texto }}</time></p>
         }
@@ -28,27 +30,27 @@
         <div class="legal-texto">
           <section class="legal-seccion" id="aviso-legal" aria-labelledby="t-aviso">
             <h2 class="legal-h2" id="t-aviso">{{ textos.avisoLegal }}</h2>
-            <p>En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI), estos son los datos del titular de esta web.</p>
+            @for (p of textos.avisoP0; track $index) {<p>{{ p }}</p>}
             <dl class="ficha">
-              <div class="ficha-fila"><dt>Titular</dt><dd data-dato="titular">{{ v.titular }}</dd></div>
+              <div class="ficha-fila"><dt>{{ textos.fichaTitular }}</dt><dd data-dato="titular">{{ v.titular }}</dd></div>
               @if (v.cif) {
-                <div class="ficha-fila"><dt>CIF</dt><dd data-dato="cif"><span class="cifras">{{ v.cif }}</span></dd></div>
+                <div class="ficha-fila"><dt>{{ textos.fichaCif }}</dt><dd data-dato="cif"><span class="cifras">{{ v.cif }}</span></dd></div>
               }
               @if (v.domicilio) {
-                <div class="ficha-fila"><dt>Domicilio</dt><dd data-dato="domicilio">{{ v.domicilio }}</dd></div>
+                <div class="ficha-fila"><dt>{{ textos.fichaDomicilio }}</dt><dd data-dato="domicilio">{{ v.domicilio }}</dd></div>
               }
               @if (v.correo; as c) {
-                <div class="ficha-fila"><dt>Correo</dt><dd data-dato="correo"><a [href]="c.enlace">{{ c.texto }}</a></dd></div>
+                <div class="ficha-fila"><dt>{{ textos.fichaCorreo }}</dt><dd data-dato="correo"><a [href]="c.enlace">{{ c.texto }}</a></dd></div>
               }
               @if (v.telefono; as tel) {
                 <div class="ficha-fila"><dt>Teléfono</dt><dd><a class="cifras" [href]="tel.enlace">{{ tel.texto }}</a></dd></div>
               }
             </dl>
-            <h3 class="legal-h3">Para qué sirve esta web</h3>
-            <p>Informa de las actividades, sedes, horarios y tarifas del club, y permite enviar una preinscripción. La preinscripción es una solicitud: el club la revisa y te contesta.</p>
-            <h3 class="legal-h3">Propiedad intelectual</h3>
-            <p>Los textos, fotos, logotipos y diseño de esta web son de {{ v.titular }} o de sus autores. No se pueden copiar ni usar con otros fines sin permiso.</p>
-            <h3 class="legal-h3">Responsabilidad</h3>
+            <h3 class="legal-h3">{{ textos.avisoH1 }}</h3>
+            @for (p of textos.avisoP1; track $index) {<p>{{ p }}</p>}
+            <h3 class="legal-h3">{{ textos.avisoH2 }}</h3>
+            @for (p of textos.avisoP2; track $index) {<p>{{ p }}</p>}
+            <h3 class="legal-h3">{{ textos.avisoH3 }}</h3>
             <p>Procuramos que la información esté al día, pero los horarios y las plazas pueden cambiar durante el curso. Si tienes dudas, confírmalo en tu sede. No respondemos del contenido de las webs de otros a las que enlazamos.</p>
             <h3 class="legal-h3">Legislación</h3>
             <p>Esta web se rige por la legislación española.</p>
@@ -56,7 +58,7 @@
 
           <section class="legal-seccion" id="privacidad" aria-labelledby="t-privacidad">
             <h2 class="legal-h2" id="t-privacidad">{{ textos.privacidad }}</h2>
-            <p>Tratamos tus datos según el Reglamento (UE) 2016/679, general de protección de datos (RGPD), y la Ley Orgánica 3/2018, de protección de datos personales y garantía de los derechos digitales.</p>
+            @for (p of textos.privP0; track $index) {<p>{{ p }}</p>}
             <h3 class="legal-h3">Quién es el responsable</h3>
             <p>{{ v.titular }}@if (v.cif) {, con CIF <span class="cifras">{{ v.cif }}</span>}.@if (v.correo; as c) { Para cualquier cosa sobre tus datos, escribe a <a [href]="c.enlace">{{ c.texto }}</a>.}</p>
             <h3 class="legal-h3">Qué datos tratamos y para qué</h3>
@@ -73,7 +75,7 @@
             <p>Mientras dure la relación con el club y, después, el tiempo que exija la ley. Las preinscripciones que no terminan en alta se borran cuando ya no hacen falta.</p>
             <h3 class="legal-h3">A quién se comunican</h3>
             <p>Solo a quien hace falta para prestar el servicio: la federación deportiva, para tramitar la licencia; el banco, para los cobros, y el proveedor que aloja la web y la gestión del club, con contrato de encargado del tratamiento. No vendemos ni cedemos tus datos con otros fines.</p>
-            <h3 class="legal-h3">Tus derechos</h3>
+            <h3 class="legal-h3">{{ textos.privH2 }}</h3>
             <p>Puedes pedir el acceso, la rectificación o la supresión de tus datos, oponerte a su tratamiento, limitarlo y pedir su portabilidad@if (v.correo; as c) { escribiendo a <a [href]="c.enlace">{{ c.texto }}</a>}. Si crees que no los tratamos bien, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p>
           </section>
 

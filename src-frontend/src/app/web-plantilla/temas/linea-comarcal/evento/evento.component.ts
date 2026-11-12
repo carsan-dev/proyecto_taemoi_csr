@@ -22,8 +22,9 @@ import { WebPublicaService } from '../../../datos/web-publica.service';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
 import { MarcoLineaComarcalComponent } from '../marco/marco.component';
 import { ContenidoNoEncontradaLineaComarcalComponent } from '../no-encontrada/no-encontrada.component';
-import { TEXTOS_FIJOS_LINEA_COMARCAL, TEXTOS_PAGINAS_LINEA_COMARCAL } from '../textos';
-import { vistaEventoDetalle } from './evento';
+import { TextosTema } from '../contenido';
+import { TEXTOS_FIJOS_LINEA_COMARCAL } from '../textos';
+import { textosEvento, vistaEventoDetalle } from './evento';
 
 const NO_ENCONTRADO: EstadoRecurso<EventoDetalleWeb> = { estado: 'no-encontrado' };
 
@@ -66,7 +67,6 @@ export class EventoLineaComarcalComponent {
   private readonly visor = viewChild<ElementRef<HTMLDialogElement>>('visor');
   private origen: HTMLElement | null = null;
 
-  protected readonly textos = TEXTOS_PAGINAS_LINEA_COMARCAL;
   protected readonly fijos = TEXTOS_FIJOS_LINEA_COMARCAL;
   /** La petición se lanza (o se reutiliza de la caché) fuera del contexto reactivo: escribe en signals. */
   private readonly recurso = computed(() => {
@@ -80,10 +80,18 @@ export class EventoLineaComarcalComponent {
   });
   protected readonly pagina = paginaWeb('evento', () => `/eventos/${this.id() ?? ''}`, { evento: this.evento });
   protected readonly estadoEvento = computed(() => this.evento().estado);
+  /** W12d-bis: los textos de la escuela (`evento.*`) con los del tema por defecto. */
+  private readonly textosTema = computed(() => new TextosTema(this.pagina.sitio()));
+  private readonly textosPagina = computed(() => textosEvento(this.textosTema()));
   protected readonly vista = computed(() => {
     const actual = this.evento();
-    return actual.estado === 'listo' ? vistaEventoDetalle(actual.datos) : null;
+    return actual.estado === 'listo' ? vistaEventoDetalle(actual.datos, this.textosTema()) : null;
   });
+
+  /** Lo que lee la plantilla (`textos.x`); al leer la señal, la plantilla se repinta si cambian los textos. */
+  protected get textos(): ReturnType<typeof textosEvento> {
+    return this.textosPagina();
+  }
 
   private readonly indice = signal(0);
   protected readonly visorAbierto = signal(false);
