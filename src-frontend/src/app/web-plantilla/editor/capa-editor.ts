@@ -14,6 +14,7 @@ import {
 import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
 import { activarBloquesEditor } from './bloques-capa';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
+import { cajasVisibles, colocarEvitando, MARGEN_VERTICAL } from './colocar-flotantes';
 import { activarEdicionTextos, iconoCandado } from './edicion-textos';
 import { activarFotosEditor } from './fotos-editor';
 import {
@@ -477,12 +478,22 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     const r = dato.getBoundingClientRect();
     const alto = candado.offsetHeight;
     const ancho = candado.offsetWidth;
-    let arriba = r.top + ventana.scrollY - alto - 8;
-    if (r.top - alto - 8 < 4) {
-      arriba = r.bottom + ventana.scrollY + 8;
-    }
-    candado.style.top = `${arriba}px`;
-    candado.style.left = `${Math.max(8, Math.min(r.left + ventana.scrollX, doc.documentElement.clientWidth - ancho - 8))}px`;
+    // Sobre el dato, o bajo él si arriba no cabe; y sin pisar la etiqueta del campo ni la barra del bloque.
+    const sitio = colocarEvitando({
+      ancho,
+      alto,
+      ancla: r,
+      separacion: 8,
+      izquierda: r.left,
+      arriba: r.top - alto - 8 >= MARGEN_VERTICAL,
+      vista: { ancho: doc.documentElement.clientWidth, alto: ventana.innerHeight },
+      evitar: [
+        ...cajasVisibles(doc, [doc.body], ':scope > .ed-chip'),
+        ...cajasVisibles(doc, [dato.closest('.ed-bloque')], ':scope > .ed-barra .ed-nombre, :scope > .ed-barra .ed-acciones, .ed-error'),
+      ],
+    });
+    candado.style.top = `${sitio.top + ventana.scrollY}px`;
+    candado.style.left = `${sitio.left + ventana.scrollX}px`;
   }
 
   function ocultarCandado(ya = false): void {

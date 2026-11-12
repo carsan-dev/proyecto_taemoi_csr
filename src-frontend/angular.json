@@ -355,6 +355,7 @@
               "src/app/web-plantilla/editor/capa-editor.spec.ts",
               "src/app/web-plantilla/editor/capa-editor-paginas.spec.ts",
               "src/app/web-plantilla/editor/capa-editor-pasos.spec.ts",
+              "src/app/web-plantilla/editor/colocar-flotantes.spec.ts",
               "src/app/web-plantilla/editor/edicion-textos.spec.ts",
               "src/app/web-plantilla/editor/edicion-textos-paginas.spec.ts",
               "src/app/web-plantilla/editor/textos-editor-paginas.spec.ts",

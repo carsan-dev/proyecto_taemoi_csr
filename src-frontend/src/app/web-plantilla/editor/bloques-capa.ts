@@ -1,4 +1,5 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
+import { encajarEnVista } from './colocar-flotantes';
 import {
   type AccionBloque,
   MENU_TIPOS,
@@ -473,6 +474,8 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
     if (arriba + alto > ventana.scrollY + ventana.innerHeight - 8 && r.top + ventana.scrollY - alto - 8 > ventana.scrollY) {
       arriba = r.top + ventana.scrollY - alto - 8;
     }
+    // Ni abajo ni arriba cabe entero: se desplaza lo justo para que se vea dentro de la vista.
+    arriba = encajarEnVista(arriba - ventana.scrollY, alto, ventana.innerHeight) + ventana.scrollY;
     flot.style.left = `${Math.max(8, izquierda)}px`;
     flot.style.top = `${arriba}px`;
     flot.querySelector<HTMLElement>('[role=menuitem]:not([aria-disabled=true])')?.focus({ preventScroll: true });

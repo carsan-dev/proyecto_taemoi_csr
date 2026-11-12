@@ -1,6 +1,7 @@
 import { rellenarHuecos } from '../temas/linea-comarcal/contenido';
 import { TEXTOS_LINEA_COMARCAL } from '../temas/linea-comarcal/textos';
 import type { PaginaEditor } from './candados-linea-comarcal';
+import { cajasVisibles, colocarEvitando } from './colocar-flotantes';
 import { type DefHueco, HUECOS, huecoDe } from './huecos-editor';
 import { type BloqueBorrador, CANAL_EDITOR_WEB, type MensajeDelEditor } from './puente-editor';
 import {
@@ -956,12 +957,19 @@ export function activarEdicionTextos(opciones: OpcionesEdicionTextos): EdicionTe
     chip.classList.toggle('es-tope', tope);
     chip.hidden = false;
     const r = activa.campo.getBoundingClientRect();
-    let arriba = r.top + ventana.scrollY - chip.offsetHeight - 14;
-    if (arriba < 4) {
-      arriba = r.bottom + ventana.scrollY + 14;
-    }
-    chip.style.top = `${arriba}px`;
-    chip.style.left = `${Math.max(8, Math.min(r.right + ventana.scrollX - chip.offsetWidth + 4, doc.documentElement.clientWidth - chip.offsetWidth - 8))}px`;
+    // Sobre el campo (bajo él si arriba no cabe en la página), sin pisar el nombre ni la barra del bloque.
+    const sitio = colocarEvitando({
+      ancho: chip.offsetWidth,
+      alto: chip.offsetHeight,
+      ancla: r,
+      separacion: 14,
+      izquierda: r.right - chip.offsetWidth + 4,
+      arriba: r.top + ventana.scrollY - chip.offsetHeight - 14 >= 4,
+      vista: { ancho: doc.documentElement.clientWidth, alto: ventana.innerHeight },
+      evitar: cajasVisibles(doc, [activa.campo.closest('.ed-bloque')], ':scope > .ed-barra .ed-nombre, :scope > .ed-barra .ed-acciones'),
+    });
+    chip.style.top = `${sitio.top + ventana.scrollY}px`;
+    chip.style.left = `${sitio.left + ventana.scrollX}px`;
   }
 
   function alTope(): void {
