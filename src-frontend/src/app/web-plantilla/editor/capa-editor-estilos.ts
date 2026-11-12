@@ -48,11 +48,14 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .ed-dato:is(:hover,.es-activo){outline-color:var(--pn-borde-control)}
 .ed-dato:focus-within{outline:2px solid var(--pn-acento-borde)}
 .presentacion-velo .ed-dato:is(:hover,.es-activo),.tarifas .ed-dato:is(:hover,.es-activo){outline-color:rgb(255 255 255/75%)}
-.ed-candado{position:absolute;z-index:30;display:flex;align-items:center;gap:6px;margin:0;padding:6px 12px 6px 10px;border-radius:999px;background:var(--pn-superficie);box-shadow:var(--pn-sombra-menu);white-space:nowrap}
+/* En estrecho el aviso se parte en varias líneas (como mucho, el ancho visible menos 8 px por lado); en ancho cabe en una */
+.ed-candado{position:absolute;z-index:30;display:flex;align-items:center;gap:6px;max-width:calc(100vw - 16px);box-sizing:border-box;margin:0;padding:6px 12px 6px 10px;border-radius:999px;background:var(--pn-superficie);box-shadow:var(--pn-sombra-menu);white-space:normal;text-align:left}
 .ed-candado[hidden]{display:none}
-.ed-candado svg{color:var(--pn-tinta-2)}
+.ed-candado svg{flex:none;color:var(--pn-tinta-2)}
+.ed-candado__t{min-width:0}
+.ed-candado__t > wbr + *{margin-left:6px}
 .ed-candado a{color:var(--pn-acento);font-weight:600;text-decoration:underline;text-underline-offset:2px}
-.ed-candado > span + span{font-weight:600}
+.ed-candado__t > span ~ span{font-weight:600}
 /* Una sede sin foto (el hueco solo sale en el editor) y notas del editor en los casos */
 .fs-foto--vacia{display:grid;place-items:center;aspect-ratio:3/4;margin-top:16px;background:var(--anden)}
 @media (min-width:900px){.fs-foto--vacia{margin-top:20px}}

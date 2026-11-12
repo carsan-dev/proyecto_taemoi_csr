@@ -126,7 +126,7 @@ describe('flotantes de la capa sin pisarse (maquetación real)', () => {
     expect(c.left).toBeGreaterThanOrEqual(8 - 0.5);
     expect(c.right).toBeLessThanOrEqual(ancho - 8 + 0.5);
   }
-  function sinPisarse(ancho: number, anchoLibre = false): void {
+  function sinPisarse(ancho: number): void {
     const chip = rect(q('.ed-chip'));
     const candado = rect(q('#ed-candado'));
     expect(cortan(chip, candado)).withContext('etiqueta del campo y aviso del candado').toBeFalse();
@@ -138,11 +138,7 @@ describe('flotantes de la capa sin pisarse (maquetación real)', () => {
       }
     });
     dentroDelAncho(chip, ancho);
-    if (anchoLibre) {
-      expect(candado.left).toBeGreaterThanOrEqual(8 - 0.5);
-    } else {
-      dentroDelAncho(candado, ancho);
-    }
+    dentroDelAncho(candado, ancho);
   }
 
   describe('a 360 px', () => {
@@ -164,9 +160,32 @@ describe('flotantes de la capa sin pisarse (maquetación real)', () => {
       editar(li);
       expect(ficha().dataset['token']).toBe('{x}');
       mostrarCandado();
-      // Su aviso lleva un texto largo que no cabe en 360 px de una línea: aquí solo se comprueba que no pisa y no sale por la izquierda.
-      sinPisarse(360, true);
+      // Su aviso lleva un texto largo que no cabe en 360 px de una línea: se parte en varias y queda dentro de [8, 352].
+      sinPisarse(360);
       expect(Math.round(rect(q('#ed-candado')).left)).toBe(8);
+      const candado = q('#ed-candado');
+      expect(candado.offsetHeight).toBeGreaterThan(40);
+      // El candado no se encoge ni se separa del texto.
+      const icono = candado.querySelector('svg')!.getBoundingClientRect();
+      expect(Math.round(icono.width)).toBe(Math.round(parseFloat(ventana.getComputedStyle(candado.querySelector('svg')!).width)));
+      expect(icono.width).toBeGreaterThan(0);
+    });
+
+    it('el aviso largo se mide ya con su ancho máximo, aunque antes estuviera más a la derecha', () => {
+      montar(360, '.cabeza-seccion{text-align:right}');
+      const rotulo = q('#horarios .rotulo');
+      ponerEn(rotulo, 300);
+      editar(rotulo);
+      mostrarCandado();
+      const corto = rect(q('#ed-candado'));
+      expect(corto.left).toBeGreaterThan(100);
+      // Del aviso corto (a la derecha) al largo: no se queda estrecho por medirse donde estaba el anterior.
+      const li = q('.leyenda li:nth-child(2)');
+      editar(li);
+      mostrarCandado();
+      const largo = rect(q('#ed-candado'));
+      dentroDelAncho(largo, 360);
+      expect(largo.right - largo.left).toBeGreaterThan(300);
     });
 
     it('ficha al final del texto, con el texto pegado a la derecha (borde derecho)', () => {
@@ -237,6 +256,8 @@ describe('flotantes de la capa sin pisarse (maquetación real)', () => {
       editar(li);
       mostrarCandado();
       expect(cortan(rect(q('.ed-chip')), rect(q('#ed-candado')))).toBeFalse();
+      // En ancho, el aviso largo sigue en una línea, como siempre.
+      expect(q('#ed-candado').offsetHeight).toBeLessThan(40);
     });
   });
 });

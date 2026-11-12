@@ -460,11 +460,14 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     const verbo =
       dato.dataset['candado'] ?? (donde === 'equipo' ? 'Lo cambia' : donde === 'web' ? 'Lo pone la web' : 'Se cambia en');
     texto.textContent = `${dato.dataset['que']} · ${verbo}`;
-    candado.append(icono, texto);
+    // El texto y lo que le sigue van juntos (en estrecho se parten como un párrafo); el candado, aparte y sin encogerse.
+    const linea = doc.createElement('span');
+    linea.className = 'ed-candado__t';
+    linea.appendChild(texto);
     if (donde === 'equipo') {
       const quien = doc.createElement('span');
       quien.textContent = NOMBRE_EQUIPO;
-      candado.appendChild(quien);
+      linea.append(doc.createElement('wbr'), quien);
     } else if (esDestinoPanel(donde)) {
       const ir = doc.createElement('a');
       ir.href = '#';
@@ -472,9 +475,13 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       ir.dataset['accion'] = 'ir';
       ir.dataset['destino'] = donde;
       ir.textContent = NOMBRE_DESTINO[donde];
-      candado.appendChild(ir);
+      linea.append(doc.createElement('wbr'), ir);
     }
+    // Se monta entero antes de ponerlo: un cambio dentro de un nodo que ya no está no lo reconocería el observador.
+    candado.append(icono, linea);
     candado.hidden = false;
+    // Se mide desde el borde izquierdo: puesto donde estaba el anterior, su ancho saldría recortado por la derecha.
+    candado.style.left = '0px';
     const r = dato.getBoundingClientRect();
     const alto = candado.offsetHeight;
     const ancho = candado.offsetWidth;
