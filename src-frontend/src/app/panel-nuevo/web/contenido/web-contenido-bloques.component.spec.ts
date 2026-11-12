@@ -50,9 +50,11 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
   let http: HttpTestingController;
   let confirmar: jasmine.Spy;
   let estrecho = false;
+  let alCambiarAncho: ((e: { matches: boolean }) => void) | null = null;
 
   beforeEach(() => {
     estrecho = false;
+    alCambiarAncho = null;
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -71,7 +73,7 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     spyOn(avisos, 'info').and.returnValue(3);
     const original = window.matchMedia.bind(window);
     spyOn(window, 'matchMedia').and.callFake((q: string) =>
-      q === '(max-width: 767.98px)' ? ({ matches: estrecho, addEventListener: () => undefined, removeEventListener: () => undefined } as unknown as MediaQueryList) : original(q),
+      q === '(max-width: 767.98px)' ? ({ matches: estrecho, addEventListener: (_: string, f: (e: { matches: boolean }) => void) => (alCambiarAncho = f), removeEventListener: () => undefined } as unknown as MediaQueryList) : original(q),
     );
   });
 
@@ -399,6 +401,7 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     const MENU_FOTO = {
       canal: CANAL_EDITOR_WEB,
       tipo: 'hoja-menu',
+      id: 7,
       menu: 'foto',
       titulo: 'Foto de «Nuestra sala»',
       opciones: [
@@ -410,6 +413,7 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     const MENU_ANADIR = {
       canal: CANAL_EDITOR_WEB,
       tipo: 'hoja-menu',
+      id: 8,
       menu: 'anadir',
       titulo: 'Añadir bloque en el puesto 3',
       opciones: [
@@ -420,10 +424,11 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     };
     const items = () => Array.from(el().querySelectorAll<HTMLButtonElement>('.flot--capa [role="menuitem"]'));
     const respuestas = (enviados: jasmine.Spy) => mensajes(enviados, 'respuesta-hoja-menu');
-    const respuesta = (menu: string, op: string | null, devolverFoco: boolean) => ({
+    const respuesta = (menu: string, op: string | null, devolverFoco: boolean, id = menu === 'foto' ? 7 : 8) => ({
       canal: CANAL_EDITOR_WEB,
       tipo: 'respuesta-hoja-menu',
       menu,
+      id,
       op,
       devolverFoco,
     });
@@ -560,6 +565,53 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
         llegar(MENU_ANADIR);
         expect(q('.hoja')).toBeNull();
         expect(q('.flot--capa')).not.toBeNull();
+      });
+
+      it('la respuesta lleva el id de la hoja que pinta; si llega otra hoja, la anterior se responde con su id', async () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        llegar({ ...MENU_FOTO, id: 9 });
+        fixture.detectChanges();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, false, 7)]);
+        items()[0].click();
+        expect(respuestas(enviados).at(-1)).toEqual(respuesta('foto', 'subir', false, 9));
+      });
+
+      it('cerrar-hoja-menu de la capa quita la hoja si es la misma (menú e id), sin responder ni mover el foco', () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        fixture.detectChanges();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'foto', id: 6 });
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'anadir', id: 7 });
+        fixture.detectChanges();
+        expect(q('.flot--capa')).not.toBeNull();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'foto', id: 7 });
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([]);
+        expect(document.activeElement).not.toBe(iframe());
+      });
+
+      it('abrir la hoja de acciones de un bloque cierra antes la del menú y se lo dice a la capa', () => {
+        const enviados = abrir();
+        llegar(MENU_ANADIR);
+        fixture.detectChanges();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja', bloque: 'galeria' });
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(q('.hoja')).not.toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('anadir', null, false, 8)]);
+      });
+
+      it('si el panel se ensancha con la hoja abierta, se cierra y la capa recibe la respuesta null', () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        fixture.detectChanges();
+        expect(alCambiarAncho).not.toBeNull();
+        alCambiarAncho!({ matches: false });
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, false, 7)]);
       });
 
       it('mensajes mal formados o de otro origen no abren nada', () => {

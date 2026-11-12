@@ -42,7 +42,7 @@ export interface OpcionesFotosEditor {
 
 export interface FotosEditor {
   /** d541: la respuesta de la hoja del panel al menú de la foto (`op` null: se cerró sin elegir). */
-  respuestaMenu(op: string | null, devolverFoco: boolean): void;
+  respuestaMenu(id: number, op: string | null, devolverFoco: boolean): void;
   /** Llega el borrador del panel. */
   borrador(bloques: BloqueBorrador[]): void;
   /** Fotos cambiadas, con anterior y subidas (`fotos`). */
@@ -103,7 +103,10 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   let eligiendo: string | null = null;
   /** Tras volver a la anterior o quitar: si el foco se pierde al repintar, vuelve a esta foto. */
   let enfocarFoto: string | null = null;
-  let abierto: { clave: string; tipo: 'menu' | 'describir'; enHoja?: string[] } | null = null;
+  /** `enHoja`: el menú está en la hoja del panel (con su `id`, las opciones ofrecidas y si hay que avisar al cerrarlo). */
+  let abierto: { clave: string; tipo: 'menu' | 'describir'; enHoja?: { id: number; ops: string[]; avisar: boolean } } | null = null;
+  /** d541: numera cada apertura de la hoja; el panel lo devuelve y lo que llega con otro número se descarta. */
+  let ultimaHoja = 0;
   let esperaDescribir: ReturnType<typeof setTimeout> | null = null;
 
   const entrada = doc.createElement('input');
@@ -391,7 +394,12 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       return;
     }
     const clave = abierto?.clave ?? null;
+    const hoja = abierto?.enHoja;
     abierto = null;
+    if (hoja?.avisar) {
+      // d541: la capa cierra sola el menú que el panel tiene en su hoja: que la quite.
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'foto', id: hoja.id });
+    }
     flot.hidden = true;
     flot.replaceChildren();
     if (clave) {
@@ -427,6 +435,9 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
 
   /** Boceto `abrirMenuFoto`, sin «Mover» (galería) ni «Sale con sus iniciales» (profesores): W12f-2. */
   function abrirMenu(clave: string, b: HTMLElement): void {
+    if (abierto?.enHoja) {
+      cerrar(false);
+    }
     const tiene = tieneFoto(clave);
     const alt = fila(clave)?.texto ?? '';
     const datos: OpcionHojaMenu[] = [datosOpcion('subir', tiene ? 'Cambiar foto' : 'Añadir foto', 'foto', FORMATOS_FOTO)];
@@ -441,9 +452,10 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     }
     if (estrecho()) {
       // d541: hoja inferior del panel; ella devuelve la opción elegida (`respuestaMenu`).
-      abierto = { clave, tipo: 'menu', enHoja: datos.map((d) => d.op) };
+      const id = ++ultimaHoja;
+      abierto = { clave, tipo: 'menu', enHoja: { id, ops: datos.map((d) => d.op), avisar: true } };
       b.setAttribute('aria-expanded', 'true');
-      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-menu', menu: 'foto', titulo: `Foto ${que(clave)}`, opciones: datos });
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-menu', menu: 'foto', id, titulo: `Foto ${que(clave)}`, opciones: datos });
       return;
     }
     const ops: HTMLElement[] = [];
@@ -661,16 +673,21 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   flot.addEventListener('input', alEscribirFlot);
 
   return {
-    respuestaMenu(op, devolverFoco) {
+    respuestaMenu(id, op, devolverFoco) {
       const actual = abierto;
-      if (!actual?.enHoja) {
+      if (!actual?.enHoja || actual.enHoja.id !== id || (op !== null && !actual.enHoja.ops.includes(op))) {
         return;
       }
+      // La respuesta es del panel: cerrar ahora no se le avisa (eco). Cada opción sigue su camino, como en el menú flotante.
+      actual.enHoja.avisar = false;
       if (op === null) {
         cerrar(devolverFoco);
-      } else if (actual.enHoja.includes(op)) {
-        // Como en el menú flotante, cada opción sigue su camino; la hoja ya está cerrada.
+      } else {
         ejecutar(op);
+        if (abierto === actual) {
+          // La opción no cerró el menú (p. ej. la foto ya no está): la hoja del panel ya se cerró.
+          cerrar(false);
+        }
       }
     },
     borrador(bloques) {
@@ -724,6 +741,9 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     quitar() {
       if (esperaDescribir !== null) {
         clearTimeout(esperaDescribir);
+      }
+      if (abierto?.enHoja) {
+        cerrar(false);
       }
       doc.removeEventListener('click', alPulsar);
       doc.removeEventListener('mousedown', alBajar);

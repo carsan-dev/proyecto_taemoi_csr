@@ -16,7 +16,13 @@ import {
   nombreBloque,
   tituloMenuAnadir,
 } from './bloques-editor';
-import { type BloqueBorrador, CANAL_EDITOR_WEB, type MensajeDelEditor, type MensajeEstadoBloques } from './puente-editor';
+import {
+  type BloqueBorrador,
+  CANAL_EDITOR_WEB,
+  type MensajeDelEditor,
+  type MensajeEstadoBloques,
+  type OpcionHojaMenu,
+} from './puente-editor';
 
 /**
  * Bloques de Inicio en el sitio (W12e; boceto `boceto-panel-contenido-web-comarcal.html`: `barraHtml`, `estadosHtml`,
@@ -48,7 +54,7 @@ export interface BloquesEditor {
   /** Con el panel estrecho, pide la hoja de un bloque movible (id del DOM); false si no es movible. */
   abrirHoja(idDom: string): boolean;
   /** d541: la respuesta de la hoja del panel al menú «Añadir bloque» (`op` null: se cerró sin elegir). */
-  respuestaMenu(op: string | null, devolverFoco: boolean): void;
+  respuestaMenu(id: number, op: string | null, devolverFoco: boolean): void;
   decorar(pagina: PaginaEditor): void;
   quitar(): void;
 }
@@ -114,6 +120,9 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
   let ultimoInforme = '';
   let focoPendiente: { foco: string; hasta: number; mostrado: boolean } | null = null;
   let menuAbierto: number | null = null;
+  /** d541: id de la apertura del menú cuando está en la hoja del panel (null: flotante o cerrado). */
+  let idHoja: number | null = null;
+  let ultimaHoja = 0;
 
   const flot = doc.createElement('div');
   flot.className = 'ed flot flot--anadir';
@@ -431,26 +440,19 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
 
   function abrirMenu(pos: number, ancla: HTMLElement): void {
     cerrarMenu(false);
-    const ops = MENU_TIPOS.map((t) => {
+    const datos: OpcionHojaMenu[] = MENU_TIPOS.map((t) => {
       const ya = existeTipo(filas, t.tipo);
-      return opcion(t.tipo, t.nombre, t.icono, ya ? YA_ESTA : t.desc, ya);
+      return { op: t.tipo, texto: t.nombre, pie: ya ? YA_ESTA : t.desc, icono: t.icono, desactivada: ya, peligro: false };
     });
     if (esEstrecho) {
       // d541: con el panel estrecho el menú sale como hoja inferior del panel (la vista previa no llega al borde de la pantalla).
       menuAbierto = pos;
+      idHoja = ++ultimaHoja;
       ancla.setAttribute('aria-expanded', 'true');
-      enviar({
-        canal: CANAL_EDITOR_WEB,
-        tipo: 'hoja-menu',
-        menu: 'anadir',
-        titulo: tituloMenuAnadir(pos),
-        opciones: MENU_TIPOS.map((t) => {
-          const ya = existeTipo(filas, t.tipo);
-          return { op: t.tipo, texto: t.nombre, pie: ya ? YA_ESTA : t.desc, icono: t.icono, desactivada: ya, peligro: false };
-        }),
-      });
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-menu', menu: 'anadir', id: idHoja, titulo: tituloMenuAnadir(pos), opciones: datos });
       return;
     }
+    const ops = datos.map((d) => opcion(d.op, d.texto, d.icono, d.pie, d.desactivada));
     const titulo = nodo('p', 'flot__titulo', tituloMenuAnadir(pos));
     titulo.id = 'ed-anadir-t';
     const lista = nodo('div', 'flot__lista', ...ops);
@@ -476,12 +478,18 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
     flot.querySelector<HTMLElement>('[role=menuitem]:not([aria-disabled=true])')?.focus({ preventScroll: true });
   }
 
-  function cerrarMenu(devolverFoco: boolean): void {
+  function cerrarMenu(devolverFoco: boolean, avisar = true): void {
     if (menuAbierto === null) {
       return;
     }
     const pos = menuAbierto;
+    const enHoja = idHoja;
     menuAbierto = null;
+    idHoja = null;
+    if (enHoja !== null && avisar) {
+      // d541: la capa cierra sola el menú que el panel tiene en su hoja: que la quite.
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'anadir', id: enHoja });
+    }
     flot.hidden = true;
     flot.replaceChildren();
     if (pos !== null) {
@@ -598,20 +606,20 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
       ventana.setTimeout(() => aplicarFoco(), 0);
     },
     estrecho: () => esEstrecho,
-    respuestaMenu(op, devolverFoco) {
+    respuestaMenu(id, op, devolverFoco) {
       const pos = menuAbierto;
-      if (pos === null || !flot.hidden) {
+      if (pos === null || idHoja === null || id !== idHoja) {
         return;
       }
       if (op === null) {
-        cerrarMenu(devolverFoco);
+        cerrarMenu(devolverFoco, false);
         return;
       }
       // Solo lo que la hoja ofreció: un tipo y que no esté ya (los únicos que ya están salen desactivados).
       if (!esTipoBloque(op) || existeTipo(filas, op)) {
         return;
       }
-      cerrarMenu(false);
+      cerrarMenu(false, false);
       enviar({ canal: CANAL_EDITOR_WEB, tipo: 'anadir-bloque', pos, bloque: op });
     },
     abrirHoja(idDom) {
@@ -627,6 +635,9 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
       doc.removeEventListener('click', alPulsar);
       doc.removeEventListener('mousedown', alBajar);
       doc.removeEventListener('focusin', alEnfocar);
+      if (idHoja !== null) {
+        cerrarMenu(false);
+      }
       doc.querySelectorAll('.ed-hueco').forEach((h) => h.remove());
       doc.documentElement.classList.remove('estrecho');
       flot.remove();

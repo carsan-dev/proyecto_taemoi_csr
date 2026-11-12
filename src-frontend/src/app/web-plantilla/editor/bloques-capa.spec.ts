@@ -200,8 +200,9 @@ describe('bloques en el sitio (W12e, capa de edición)', () => {
 
   describe('panel estrecho (d541): el menú «Añadir bloque» sale como hoja del panel', () => {
     const hueco = () => doc.querySelector<HTMLButtonElement>('.ed-anadir[data-pos="2"]')!;
-    const respuesta = (op: string | null, devolverFoco = false) =>
-      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'anadir', op, devolverFoco });
+    const idActual = () => mensajes('hoja-menu').at(-1)!['id'] as number;
+    const respuesta = (op: string | null, devolverFoco = false, id = idActual()) =>
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'anadir', id, op, devolverFoco });
 
     beforeEach(() => estado([], ['texto_foto.3'], true));
 
@@ -251,8 +252,45 @@ describe('bloques en el sitio (W12e, capa de edición)', () => {
     });
 
     it('una respuesta sin hoja abierta no hace nada', () => {
-      respuesta('texto_foto');
+      respuesta('texto_foto', false, 0);
       expect(mensajes('anadir-bloque')).toEqual([]);
+    });
+
+    it('B1: una respuesta con el id de un menú anterior no cierra ni ejecuta nada sobre el nuevo; la del id actual sí', () => {
+      hueco().click();
+      const viejo = idActual();
+      doc.querySelector<HTMLButtonElement>('.ed-anadir[data-pos="1"]')!.click();
+      const nuevo = idActual();
+      expect(nuevo).not.toBe(viejo);
+      respuesta(null, false, viejo);
+      respuesta('texto_foto', false, viejo);
+      expect(mensajes('anadir-bloque')).toEqual([]);
+      expect(doc.querySelector('.ed-anadir[data-pos="1"]')!.getAttribute('aria-expanded')).toBe('true');
+      respuesta('texto_foto', false, nuevo);
+      expect(mensajes('anadir-bloque')).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'anadir-bloque', pos: 1, bloque: 'texto_foto' }]);
+    });
+
+    it('B2: si la capa cierra sola el menú (segundo toque en el mismo hueco), avisa con menu e id', () => {
+      hueco().click();
+      const id = idActual();
+      hueco().click();
+      expect(mensajes('cerrar-hoja-menu')).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'anadir', id }]);
+      expect(esMensajeDelEditor(mensajes('cerrar-hoja-menu')[0])).toBeTrue();
+    });
+
+    it('B2: abrir el menú de otro hueco cierra el anterior avisando con el id viejo', () => {
+      hueco().click();
+      const viejo = idActual();
+      doc.querySelector<HTMLButtonElement>('.ed-anadir[data-pos="1"]')!.click();
+      expect(mensajes('cerrar-hoja-menu').map((c) => c['id'])).toEqual([viejo]);
+    });
+
+    it('B2: al cerrar por la respuesta del panel (con opción o sin ella) no se emite cerrar-hoja-menu', () => {
+      hueco().click();
+      respuesta(null, true);
+      hueco().click();
+      respuesta('texto_foto');
+      expect(mensajes('cerrar-hoja-menu')).toEqual([]);
     });
   });
 
@@ -324,14 +362,21 @@ describe('puente: mensajes de bloques (W12e)', () => {
 
   it('d541: la hoja de un menú de la capa pide y responde con forma conocida', () => {
     const op = { op: 'quitar', texto: 'Quitar foto', pie: '', icono: 'papelera', desactivada: false, peligro: true };
-    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', titulo: 'Foto de la portada', opciones: [op] }))).toBeTrue();
-    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'otro', titulo: 'x', opciones: [op] }))).toBeFalse();
-    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', titulo: 'x', opciones: [] }))).toBeFalse();
-    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', titulo: 'x', opciones: [{ ...op, icono: 'script' }] }))).toBeFalse();
-    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', titulo: 'x'.repeat(121), opciones: [op] }))).toBeFalse();
-    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'anadir', op: 'galeria', devolverFoco: false }))).toBeTrue();
-    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', op: null, devolverFoco: true }))).toBeTrue();
-    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', op: 3, devolverFoco: true }))).toBeFalse();
-    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', op: null }))).toBeFalse();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', id: 1, titulo: 'Foto de la portada', opciones: [op] }))).toBeTrue();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'otro', id: 1, titulo: 'x', opciones: [op] }))).toBeFalse();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', id: 1, titulo: 'x', opciones: [] }))).toBeFalse();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', id: 1, titulo: 'x', opciones: [{ ...op, icono: 'script' }] }))).toBeFalse();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', id: 1, titulo: 'x'.repeat(121), opciones: [op] }))).toBeFalse();
+    for (const id of [undefined, -1, 1.5, '1', Number.MAX_SAFE_INTEGER + 1, NaN]) {
+      expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', id, titulo: 'x', opciones: [op] }))).toBeFalse();
+      expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', id, op: null, devolverFoco: true }))).toBeFalse();
+      expect(esMensajeDelEditor(m({ tipo: 'cerrar-hoja-menu', menu: 'foto', id }))).toBeFalse();
+    }
+    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'anadir', id: 0, op: 'galeria', devolverFoco: false }))).toBeTrue();
+    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', id: 4, op: null, devolverFoco: true }))).toBeTrue();
+    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', id: 4, op: 3, devolverFoco: true }))).toBeFalse();
+    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', id: 4, op: null }))).toBeFalse();
+    expect(esMensajeDelEditor(m({ tipo: 'cerrar-hoja-menu', menu: 'foto', id: 4 }))).toBeTrue();
+    expect(esMensajeDelEditor(m({ tipo: 'cerrar-hoja-menu', menu: 'otro', id: 4 }))).toBeFalse();
   });
 });

@@ -692,7 +692,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     }
     if (mensaje.tipo === 'respuesta-hoja-menu') {
       // d541: la hoja del panel (panel estrecho) devuelve la opción del menú de la foto o de «Añadir bloque».
-      (mensaje.menu === 'foto' ? fotos : bloques).respuestaMenu(mensaje.op, mensaje.devolverFoco);
+      (mensaje.menu === 'foto' ? fotos : bloques).respuestaMenu(mensaje.id, mensaje.op, mensaje.devolverFoco);
       return;
     }
     if (mensaje.tipo === 'foco-bloque') {

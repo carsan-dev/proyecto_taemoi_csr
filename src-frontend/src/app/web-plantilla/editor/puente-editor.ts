@@ -209,6 +209,8 @@ export interface MensajeHojaMenu {
   canal: typeof CANAL_EDITOR_WEB;
   tipo: 'hoja-menu';
   menu: MenuHoja;
+  /** Número de esta apertura (la capa lo incrementa en cada una): el panel lo devuelve y la capa descarta lo de otro número. */
+  id: number;
   titulo: string;
   opciones: OpcionHojaMenu[];
 }
@@ -221,8 +223,21 @@ export interface MensajeRespuestaHojaMenu {
   canal: typeof CANAL_EDITOR_WEB;
   tipo: 'respuesta-hoja-menu';
   menu: MenuHoja;
+  /** El `id` del `hoja-menu` al que responde. */
+  id: number;
   op: string | null;
   devolverFoco: boolean;
+}
+
+/**
+ * d541: la capa cerró sola un menú que estaba en la hoja del panel (segundo toque, repintado, otro menú…): que el panel
+ * la quite si sigue siendo esa (mismo `menu` e `id`), sin responder ni mover el foco.
+ */
+export interface MensajeCerrarHojaMenu {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'cerrar-hoja-menu';
+  menu: MenuHoja;
+  id: number;
 }
 
 export type MensajeDelPanel =
@@ -354,6 +369,7 @@ export interface MensajePedirQuitarDato {
 
 export type MensajeDelEditor =
   | MensajeHojaMenu
+  | MensajeCerrarHojaMenu
   | MensajePedirQuitarDato
   | MensajeBloques
   | MensajeAccionBloque
@@ -436,6 +452,7 @@ function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
 const esClaveIrA = (clave: unknown) =>
   typeof clave === 'string' && (esTextoEditable(clave) || esFotoSuelta(clave) || fotoDeDescripcion(clave) !== null);
 
+const esIdHoja = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 const esMenuHoja = (v: unknown): v is MenuHoja => (MENUS_HOJA as readonly unknown[]).includes(v);
 
 function esOpcionHojaMenu(v: unknown): v is OpcionHojaMenu {
@@ -497,6 +514,7 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
     case 'respuesta-hoja-menu':
       return (
         esMenuHoja(valor['menu']) &&
+        esIdHoja(valor['id']) &&
         (valor['op'] === null || (typeof valor['op'] === 'string' && valor['op'].length <= 40)) &&
         typeof valor['devolverFoco'] === 'boolean'
       );
@@ -544,9 +562,12 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
     }
     case 'hoja':
       return esIdBloque(valor['bloque']);
+    case 'cerrar-hoja-menu':
+      return esMenuHoja(valor['menu']) && esIdHoja(valor['id']);
     case 'hoja-menu':
       return (
         esMenuHoja(valor['menu']) &&
+        esIdHoja(valor['id']) &&
         typeof valor['titulo'] === 'string' &&
         valor['titulo'].length <= 120 &&
         Array.isArray(valor['opciones']) &&

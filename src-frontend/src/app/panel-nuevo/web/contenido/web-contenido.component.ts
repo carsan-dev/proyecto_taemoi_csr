@@ -714,6 +714,14 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       case 'hoja-menu':
         this.abrirHojaMenu(mensaje);
         break;
+      case 'cerrar-hoja-menu': {
+        // La capa cerró sola su menú: solo se quita la hoja si es esa; sin responder ni mover el foco.
+        const abierta = this.hojaMenu();
+        if (abierta && abierta.menu === mensaje.menu && abierta.id === mensaje.id) {
+          this.hojaMenu.set(null);
+        }
+        break;
+      }
       case 'texto':
         this.alCambiarTexto(mensaje.clave, mensaje.texto);
         break;
@@ -1168,6 +1176,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (!this.estrecho() || !esMovible(id) || this.pagina() !== 'inicio') {
       return;
     }
+    // Una sola hoja a la vez: la del menú de la vista previa se cierra y la capa lo sabe.
+    this.cerrarHojaMenu(null, false);
     this.hoja.set(id);
     if (this.vistaHoja() === null) {
       this.hoja.set(null);
@@ -1219,12 +1229,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private abrirHojaMenu(menu: MensajeHojaMenu): void {
     if (!this.estrecho()) {
       // La capa creía el panel estrecho y ya no lo es: que vuelva a su menú flotante.
-      this.responderHojaMenu(menu.menu, null, false);
+      this.responderHojaMenu(menu.menu, menu.id, null, false);
       return;
     }
     const abierta = this.hojaMenu();
-    if (abierta && abierta.menu !== menu.menu) {
-      this.responderHojaMenu(abierta.menu, null, false);
+    if (abierta) {
+      this.responderHojaMenu(abierta.menu, abierta.id, null, false);
     }
     this.hoja.set(null);
     this.cerrarMenuCasos(false);
@@ -1246,10 +1256,10 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       return;
     }
     this.hojaMenu.set(null);
-    this.responderHojaMenu(abierta.menu, op, devolverFoco);
+    this.responderHojaMenu(abierta.menu, abierta.id, op, devolverFoco);
   }
 
-  private responderHojaMenu(menu: MensajeHojaMenu['menu'], op: string | null, devolverFoco: boolean): void {
+  private responderHojaMenu(menu: MensajeHojaMenu['menu'], id: number, op: string | null, devolverFoco: boolean): void {
     const iframe = this.iframe()?.nativeElement;
     if (!this.ventana || !iframe) {
       return;
@@ -1258,7 +1268,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       // El foco pasa a la vista previa (el panel lo tenía en la hoja que se cierra).
       iframe.focus({ preventScroll: true });
     }
-    enviarPorPuente(this.ventana, iframe.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu, op, devolverFoco });
+    enviarPorPuente(this.ventana, iframe.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu, id, op, devolverFoco });
   }
 
   /** Teclado de la hoja (como el boceto): flechas, Inicio y Fin entre opciones; Escape y Tab la cierran devolviendo el foco. */

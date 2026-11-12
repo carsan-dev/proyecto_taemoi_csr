@@ -294,8 +294,9 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
 
   describe('panel estrecho (d541): el menú de la foto sale como hoja del panel', () => {
     const estrecho = () => delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'estado-bloques', sinGuardar: [], quitables: [], estrecho: true });
-    const respuesta = (op: string | null, devolverFoco = false) =>
-      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'foto', op, devolverFoco });
+    const idActual = () => mensajes('hoja-menu').at(-1)!['id'] as number;
+    const respuesta = (op: string | null, devolverFoco = false, id = idActual()) =>
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'foto', id, op, devolverFoco });
 
     beforeEach(() => {
       delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: [...BORRADOR, fila('texto_foto.3.foto', '', 'https://x/n.webp')] });
@@ -358,6 +359,48 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
       foto('portada.foto').click();
       respuesta('quitar');
       expect(mensajes('foto')).toEqual([]);
+    });
+
+    it('B1: una respuesta con el id de un menú anterior no cierra ni ejecuta nada sobre el nuevo; la del id actual sí', () => {
+      foto('texto_foto.3.foto').click();
+      const viejo = idActual();
+      foto('portada.foto').click();
+      const nuevo = idActual();
+      expect(nuevo).not.toBe(viejo);
+      respuesta(null, false, viejo);
+      respuesta('describir', false, viejo);
+      expect(foto('portada.foto').getAttribute('aria-expanded')).toBe('true');
+      expect(flot().hidden).toBeTrue();
+      respuesta('describir', false, nuevo);
+      expect(flot().hidden).toBeFalse();
+      expect(texto(q('.flot__titulo'))).toBe('describe la foto de la portada');
+    });
+
+    it('B2: el segundo toque en la misma foto cierra el menú y avisa con menu e id', () => {
+      foto('portada.foto').click();
+      const id = idActual();
+      foto('portada.foto').click();
+      expect(foto('portada.foto').getAttribute('aria-expanded')).toBe('false');
+      expect(mensajes('cerrar-hoja-menu')).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'foto', id }]);
+      expect(esMensajeDelEditor(mensajes('cerrar-hoja-menu')[0])).toBeTrue();
+    });
+
+    it('B2: abrir el menú de otra foto cierra el anterior avisando con el id viejo', () => {
+      foto('texto_foto.3.foto').click();
+      const viejo = idActual();
+      foto('portada.foto').click();
+      expect(foto('texto_foto.3.foto').getAttribute('aria-expanded')).toBe('false');
+      expect(mensajes('cerrar-hoja-menu').map((c) => c['id'])).toEqual([viejo]);
+    });
+
+    it('B2: al cerrar por la respuesta del panel (sin elegir o eligiendo) no se emite cerrar-hoja-menu', () => {
+      foto('portada.foto').click();
+      respuesta(null, true);
+      foto('portada.foto').click();
+      respuesta('describir');
+      foto('texto_foto.3.foto').click();
+      respuesta('quitar');
+      expect(mensajes('cerrar-hoja-menu')).toEqual([]);
     });
 
     it('con el panel ancho sigue el menú flotante y no hay hoja', () => {
