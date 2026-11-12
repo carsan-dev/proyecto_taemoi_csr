@@ -28,7 +28,23 @@ import type { BloqueWeb } from '../datos/modelos';
  * la API. La descripción (`descripcion`), «Volver a la anterior», «Quitar foto» y «Cancelar subida» (`foto`) también los
  * guarda el panel en el borrador. Al terminar una subida, el panel pide a la capa abrir el diálogo de describir
  * (`describir`).
+ *
+ * W12e: bloques de Inicio. La capa dice qué bloques hay en la página y cuáles están vacíos (`bloques`) y pide las
+ * acciones de la barra (`bloque`), añadir un bloque en un puesto (`anadir-bloque`) y, con el panel estrecho, la hoja de
+ * acciones del bloque (`hoja`), que vive en el panel. El panel cambia el borrador, manda a la capa qué partes tienen
+ * cambios sin guardar, qué bloques se pueden quitar y si el panel es estrecho (`estado-bloques`) y a dónde va el foco
+ * tras cada acción (`foco-bloque`).
  */
+import {
+  ACCIONES_BLOQUE,
+  type AccionBloque,
+  MAX_BLOQUES,
+  type TipoBloque,
+  esFocoBloque,
+  esIdBloque,
+  esParteInicio,
+  esTipoBloque,
+} from './bloques-editor';
 import { MAX_DESCRIPCION_FOTO, esFotoSuelta, fotoDeDescripcion } from './fotos-sueltas';
 import { esTextoEditable } from './textos-editor';
 
@@ -136,7 +152,28 @@ export interface MensajeDescribir {
   clave: string;
 }
 
+/** W12e: el estado de los bloques que no está en el borrador. */
+export interface MensajeEstadoBloques {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'estado-bloques';
+  /** Bloques y partes con cambios sin guardar (pastilla «Sin guardar»). */
+  sinGuardar: string[];
+  /** Bloques que se pueden quitar: cada «Texto con foto» y los añadidos sin guardar. */
+  quitables: string[];
+  /** El panel mide menos de 768 px: las acciones van en la hoja inferior del panel. */
+  estrecho: boolean;
+}
+
+/** W12e: tras una acción, el foco a un botón de la barra, al nombre del bloque o a un hueco «Añadir bloque». */
+export interface MensajeFocoBloque {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'foco-bloque';
+  foco: string;
+}
+
 export type MensajeDelPanel =
+  | MensajeEstadoBloques
+  | MensajeFocoBloque
   | MensajeBorrador
   | MensajeCaso
   | MensajePaso
@@ -216,7 +253,42 @@ export interface MensajeDescripcion {
   texto: string;
 }
 
+/** W12e: los bloques de Inicio que hay en la página, en su orden, y los vacíos. */
+export interface MensajeBloques {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'bloques';
+  orden: string[];
+  vacios: string[];
+}
+
+/** W12e: una acción de la barra de un bloque. */
+export interface MensajeAccionBloque {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'bloque';
+  accion: AccionBloque;
+  bloque: string;
+}
+
+/** W12e: añadir un bloque de ese tipo en el puesto `pos` (0: antes del primero). */
+export interface MensajeAnadirBloque {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'anadir-bloque';
+  pos: number;
+  bloque: TipoBloque;
+}
+
+/** W12e: con el panel estrecho, abrir la hoja de acciones del bloque. */
+export interface MensajeHoja {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'hoja';
+  bloque: string;
+}
+
 export type MensajeDelEditor =
+  | MensajeBloques
+  | MensajeAccionBloque
+  | MensajeAnadirBloque
+  | MensajeHoja
   | MensajeListo
   | MensajeAlto
   | MensajeIr
@@ -294,6 +366,11 @@ function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
 const esClaveIrA = (clave: unknown) =>
   typeof clave === 'string' && (esTextoEditable(clave) || esFotoSuelta(clave) || fotoDeDescripcion(clave) !== null);
 
+/** Lista de ids sin repetir, cada uno válido, como mucho `MAX_BLOQUES` + las partes fijas. */
+function esListaDeIds(valor: unknown, valido: (id: unknown) => boolean): valor is string[] {
+  return Array.isArray(valor) && valor.length <= MAX_BLOQUES + 20 && valor.every(valido) && new Set(valor).size === valor.length;
+}
+
 /** Lo que el iframe acepta del panel. */
 export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
   if (!esObjeto(valor) || valor['canal'] !== CANAL_EDITOR_WEB) {
@@ -323,6 +400,10 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
       );
     case 'describir':
       return esFotoSuelta(valor['clave']);
+    case 'estado-bloques':
+      return esListaDeIds(valor['sinGuardar'], esParteInicio) && esListaDeIds(valor['quitables'], esIdBloque) && typeof valor['estrecho'] === 'boolean';
+    case 'foco-bloque':
+      return esFocoBloque(valor['foco']);
     default:
       return false;
   }
@@ -357,6 +438,16 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
       const texto = valor['texto'];
       return esFotoSuelta(valor['clave']) && typeof texto === 'string' && texto.length <= MAX_DESCRIPCION_FOTO;
     }
+    case 'bloques':
+      return esListaDeIds(valor['orden'], esIdBloque) && esListaDeIds(valor['vacios'], esIdBloque);
+    case 'bloque':
+      return esIdBloque(valor['bloque']) && (ACCIONES_BLOQUE as readonly unknown[]).includes(valor['accion']);
+    case 'anadir-bloque': {
+      const pos = valor['pos'];
+      return Number.isInteger(pos) && (pos as number) >= 0 && (pos as number) <= MAX_BLOQUES && esTipoBloque(valor['bloque']);
+    }
+    case 'hoja':
+      return esIdBloque(valor['bloque']);
     default:
       return false;
   }

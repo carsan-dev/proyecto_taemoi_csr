@@ -366,7 +366,12 @@ const FORMAS_GALERIA = ['g-grande', '', 'g-alta', '', 'g-ancha', 'g-ancha'];
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
 
-export function vistaPortada(sitio: SitioWeb, ahora: Date): VistaPortada {
+/**
+ * `editor` (W12e, solo con la capa de edición de «Web · Contenido»): las secciones movibles ocultas o vacías también se
+ * pintan, para moverlas, mostrarlas o llenarlas, sin número de sección («—») y sin fondo alterno (boceto `numerar`, que
+ * solo cuenta lo que sale en la web). En la web, igual que antes.
+ */
+export function vistaPortada(sitio: SitioWeb, ahora: Date, editor = false): VistaPortada {
   const textos = new TextosTema(sitio);
   const { bloques } = textos;
   const sedes = sitio.sedes;
@@ -397,11 +402,20 @@ export function vistaPortada(sitio: SitioWeb, ahora: Date): VistaPortada {
   const secciones: VistaSeccion[] = [];
   let conFondo = 0;
   for (const { clave, tipo } of ordenarSecciones(seccionesDelTema(bloques), bloques)) {
-    if (OCULTABLES.has(tipo) && bloques.oculto(clave)) {
+    const oculta = OCULTABLES.has(tipo) && bloques.oculto(clave);
+    if (oculta && !editor) {
       continue;
     }
-    const seccion = construirSeccion(tipo, clave, { sitio, textos, ahora, una, edad, disciplinas, tarifa, siguiente, lugares });
-    if (seccion) {
+    const contexto: Contexto = { sitio, textos, ahora, una, edad, disciplinas, tarifa, siguiente, lugares };
+    // En el editor, lo que no sale en la web no gasta número (boceto `num`: «—»).
+    const fuera: Contexto = { ...contexto, siguiente: () => SIN_NUMERO };
+    let seccion = construirSeccion(tipo, clave, oculta ? fuera : contexto);
+    if (!seccion && editor && OCULTABLES.has(tipo)) {
+      seccion = seccionVaciaEditor(tipo, clave, fuera);
+    }
+    if (seccion && seccion.numero === SIN_NUMERO) {
+      secciones.push({ ...seccion, id: idSeccion(tipo, clave), anden: false });
+    } else if (seccion) {
       // Con cabeceras, alternan (boceto del editor); sin ellas, el fondo es fijo por tipo, como antes de W12b.
       const anden = bloques.hayCabeceras() ? tipo !== 'tarifas' && conFondo++ % 2 === 1 : TIPOS_CON_ANDEN.has(tipo);
       secciones.push({ ...seccion, id: idSeccion(tipo, clave), anden });
@@ -432,6 +446,52 @@ function fotoPortada(bloques: BloquesWeb): ImagenBloque | null {
     return antigua ? { ...foto, alt: antigua } : foto;
   }
   return foto;
+}
+
+/** El número de una sección que no sale en la web (solo en el editor; boceto `num`). */
+const SIN_NUMERO = '—';
+
+/**
+ * W12e: una sección movible vacía tal como la pinta el editor (boceto `estaVacio`: sin texto ni foto, sin profesores,
+ * sin fotos o sin fotos de sedes). Solo con la capa de edición.
+ */
+function seccionVaciaEditor(tipo: TipoSeccion, clave: string, x: Contexto): CuerpoSeccion | null {
+  const { textos } = x;
+  switch (tipo) {
+    case 'presentacion':
+      return {
+        tipo,
+        numero: SIN_NUMERO,
+        rotulo: textos.t('presentacion.rotulo'),
+        titulo: textos.t('presentacion.titulo'),
+        parrafos: [],
+        foto: null,
+        datos: datosDelClub(x.sitio, x),
+      };
+    case 'profesores':
+      return { tipo, numero: SIN_NUMERO, rotulo: textos.t('profesores.rotulo'), titulo: textos.t('profesores.titulo'), profesores: [] };
+    case 'galeria':
+      return { tipo, numero: SIN_NUMERO, rotulo: textos.t('galeria.rotulo'), fotos: [] };
+    case 'sedes':
+      return {
+        tipo,
+        numero: SIN_NUMERO,
+        rotulo: textos.t('sedes.rotulo'),
+        titulo: textos.t('sedes.titulo'),
+        verSede: textos.t('sedes.ver_sede'),
+        sedes: x.sitio.sedes.map((s) => ({
+          clave: claveSede(s),
+          nombre: s.nombre,
+          lugar: s.lugar?.trim() || null,
+          foto: null,
+          enlace: s.slug ? `/sedes/${s.slug}` : null,
+        })),
+      };
+    case 'texto_foto':
+      return { tipo, numero: SIN_NUMERO, rotulo: x.textos.bloques.textoPropio(`${clave}.rotulo`) ?? '', titulo: '', parrafos: [], foto: null };
+    default:
+      return null;
+  }
 }
 
 interface Contexto {

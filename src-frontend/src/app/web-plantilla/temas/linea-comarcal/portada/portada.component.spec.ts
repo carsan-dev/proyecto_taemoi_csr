@@ -7,6 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 
 import { environment } from '../../../../../environments/environment';
 import { derivarColores } from '../../../comun/colores';
+import { EditorWebService } from '../../../comun/editor-web';
 import { RELOJ_WEB } from '../../../comun/reloj';
 import {
   PLAZAS,
@@ -283,6 +284,19 @@ describe('PortadaLineaComarcalComponent', () => {
   });
 
   describe('bloques (§9 n.º 4 y 11)', () => {
+    it('W12e: con `?editor=1` pero sin la vista previa de la gestión (visitante), no pinta ocultas ni vacías ni la capa', async () => {
+      const cab = (clave: string, orden: number, oculto = false): BloqueWeb => ({ clave, texto: null, imagenUrl: null, orden, oculto });
+      const raiz = await abrir(
+        sitioConSedes(6, { vistaPrevia: false, bloques: [cab('presentacion', 0, true), cab('galeria', 1), cab('texto_foto.1', 2)] }),
+        '/?vista-previa=abc&editor=1',
+      );
+      expect(TestBed.inject(EditorWebService).enEditor()).toBeFalse();
+      expect(raiz.querySelector('#presentacion')).toBeNull();
+      expect(raiz.querySelector('#galeria')).toBeNull();
+      expect(raiz.querySelector('#texto-foto-1')).toBeNull();
+      expect(document.querySelector('[data-bloque-id], [data-accion]')).toBeNull();
+    });
+
     it('los que faltan llevan el texto del boceto; los propios mandan', async () => {
       const raiz = await abrir(
         sitioConSedes(6, {

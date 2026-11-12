@@ -259,8 +259,10 @@ describe('WebContenidoComponent (W12c)', () => {
       abrir();
       const enviar = spyOn(iframe()!.contentWindow!, 'postMessage');
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
-      expect(enviar).toHaveBeenCalledTimes(1);
-      const [mensaje, destino] = enviar.calls.mostRecent().args as unknown as [Record<string, unknown>, string];
+      // W12e: con el panel estrecho la capa nueva recibe también `estado-bloques`; aquí no cuenta.
+      const llamadas = enviar.calls.allArgs().filter(([m]) => (m as { tipo: string }).tipo !== 'estado-bloques');
+      expect(llamadas.length).toBe(1);
+      const [mensaje, destino] = llamadas[0] as unknown as [Record<string, unknown>, string];
       expect(destino).toBe(location.origin);
       expect(destino).not.toBe('*');
       expect(mensaje['canal']).toBe(CANAL_EDITOR_WEB);

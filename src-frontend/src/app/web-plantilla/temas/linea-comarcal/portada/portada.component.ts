@@ -13,6 +13,7 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
+import { EditorWebService } from '../../../comun/editor-web';
 import { paginaWeb } from '../../../comun/pagina-web';
 import { VistaPreviaPipe } from '../../../comun/vista-previa';
 import { SinPublicarComponent } from '../../../paginas/sin-publicar.component';
@@ -42,12 +43,14 @@ export class PortadaLineaComarcalComponent {
   private readonly reloj = inject(RELOJ_WEB);
   private readonly documento = inject(DOCUMENT);
   private readonly injector = inject(Injector);
+  /** W12e: con la capa de edición, las secciones ocultas o vacías también se pintan. */
+  private readonly editor = inject(EditorWebService);
   private readonly fragmento = toSignal(inject(ActivatedRoute).fragment, { initialValue: null });
 
   protected readonly pagina = paginaWeb('portada', () => '/');
   protected readonly vista = computed(() => {
     const sitio = this.pagina.sitio();
-    return sitio ? vistaPortada(sitio, this.reloj()) : null;
+    return sitio ? vistaPortada(sitio, this.reloj(), this.editor.enEditor()) : null;
   });
 
   constructor() {

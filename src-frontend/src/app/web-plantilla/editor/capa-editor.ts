@@ -12,6 +12,7 @@ import {
   partesDe,
 } from './candados-linea-comarcal';
 import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
+import { activarBloquesEditor } from './bloques-capa';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
 import { activarEdicionTextos } from './edicion-textos';
 import { activarFotosEditor } from './fotos-editor';
@@ -40,7 +41,8 @@ import {
  * - los enlaces y botones de la web, fuera del orden de tabulación y sin navegar;
  * - W12c-ter: los formularios de la web, inertes: no se escribe, no se marca, no se firma y no se envía;
  * - W12d: los textos que se cambian en el sitio (`edicion-textos.ts`);
- * - W12f-1: las fotos sueltas (portada, presentación y «Texto con foto»: `fotos-editor.ts`).
+ * - W12f-1: las fotos sueltas (portada, presentación y «Texto con foto»: `fotos-editor.ts`);
+ * - W12e: la barra de acciones de cada bloque de Inicio, sus pastillas y los huecos «Añadir bloque» (`bloques-capa.ts`).
  * Los enlaces de los candados no navegan aquí: piden el destino al panel por el puente.
  */
 
@@ -127,6 +129,8 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   const textos = activarEdicionTextos({ ventana, enviar: (m) => enviar(m), alTema: alBorrador, seleccionar: (id) => seleccionar(id) });
   // W12f-1: fotos sueltas. El panel sube el fichero; la capa solo lo elige y pinta el estado.
   const fotos = activarFotosEditor({ ventana, enviar: (m) => enviar(m) });
+  // W12e: bloques de Inicio. El panel hace cada acción; la capa la pide y pinta el estado.
+  const bloques = activarBloquesEditor({ ventana, enviar: (m) => enviar(m), editar: (clave) => textos.editar(clave) });
 
   // ------------------------------------------------------------------ anotar el DOM del tema
   function nombreDe(parte: Parte, el: HTMLElement): string {
@@ -400,6 +404,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     notaDePagina(pagina);
     textos.decorar(pagina);
     fotos.decorar(pagina);
+    bloques.decorar(pagina);
     enlacesOcultos();
     sinTabulador();
     if (datoActivo && !datoActivo.isConnected) {
@@ -510,7 +515,15 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       evento.preventDefault();
       if (accion.dataset['accion'] === 'sel') {
         const id = accion.dataset['bloque'] ?? null;
-        seleccionar(seleccionado === id ? null : id);
+        // W12e (boceto, panel estrecho): el nombre de un bloque movible lo elige y abre su hoja en el panel.
+        if (bloques.estrecho()) {
+          seleccionar(id);
+          if (id) {
+            bloques.abrirHoja(id);
+          }
+        } else {
+          seleccionar(seleccionado === id ? null : id);
+        }
       } else if (accion.dataset['accion'] === 'ir' && esDestinoPanel(accion.dataset['destino'])) {
         ocultarCandado(true);
         enviar({ canal: CANAL_EDITOR_WEB, tipo: 'ir', destino: accion.dataset['destino'] });
@@ -664,6 +677,14 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   }
 
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
+    if (mensaje.tipo === 'estado-bloques') {
+      bloques.estado(mensaje);
+      return;
+    }
+    if (mensaje.tipo === 'foco-bloque') {
+      bloques.enfocar(mensaje.foco);
+      return;
+    }
     if (mensaje.tipo === 'errores') {
       textos.errores(mensaje.errores);
       fotos.errores(mensaje.errores);
@@ -706,6 +727,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     }
     textos.borrador(mensaje.bloques);
     fotos.borrador(mensaje.bloques);
+    bloques.borrador(mensaje.bloques);
   });
 
   decorar();
@@ -731,6 +753,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     doc.removeEventListener('pointerdown', alFirmar, true);
     textos.quitar();
     fotos.quitar();
+    bloques.quitar();
     estilos.remove();
     candado.remove();
   };

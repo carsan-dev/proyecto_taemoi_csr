@@ -302,7 +302,10 @@ describe('WebContenidoComponent: selector de página y «Ver el caso» (W12c-bis
       expect(q('.caso-activo')).not.toBeNull();
       const enviar = spyOn(iframe()!.contentWindow!, 'postMessage');
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
-      const tipos = enviar.calls.allArgs().map(([m]) => (m as { tipo: string; caso?: string }).tipo + (m as { caso?: string }).caso);
+      const tipos = enviar.calls
+        .allArgs()
+        .map(([m]) => (m as { tipo: string; caso?: string }).tipo + (m as { caso?: string }).caso)
+        .filter((t) => !t.startsWith('estado-bloques'));
       expect(tipos).toEqual(['borradorundefined', 'casoespera']);
     });
 
