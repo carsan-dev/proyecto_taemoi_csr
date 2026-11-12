@@ -181,6 +181,29 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
     }
   });
 
+  it('Descartar no lleva la página arriba: el foco va al título sin desplazar la vista', () => {
+    abrir();
+    const relleno = document.createElement('div');
+    relleno.style.height = '6000px';
+    document.body.appendChild(relleno);
+    try {
+      cambiar('menu.horarios', 'Horas');
+      const titulo = q('h1')!;
+      window.scrollTo({ top: titulo.getBoundingClientRect().top + window.scrollY + 2000, behavior: 'auto' });
+      const antes = window.scrollY;
+      expect(antes).toBeGreaterThan(1000);
+      boton('Descartar').focus({ preventScroll: true });
+      boton('Descartar').click();
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(titulo);
+      expect(titulo.getBoundingClientRect().bottom).toBeLessThan(-1000);
+      expect(Math.abs(window.scrollY - antes)).toBeLessThan(400);
+    } finally {
+      relleno.remove();
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  });
+
   it('web nueva: «Saldrán en tu web cuando la publiques.»', () => {
     abrir(NUEVA);
     cambiar('menu.horarios', 'Horas');

@@ -975,7 +975,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.mostrarErrores.set(false);
     this.erroresServidor.set({});
     this.enviarBorrador();
-    this.enfocarTitulo();
+    // Sin desplazar, como al guardar: se ve cómo vuelve lo que se estaba mirando.
+    this.enfocarTitulo(false);
     this.anuncio.set(this.textosGuardar.descartados);
   }
 
