@@ -198,6 +198,64 @@ describe('bloques en el sitio (W12e, capa de edición)', () => {
     expect(ops[3].getAttribute('aria-disabled')).toBe('true');
   });
 
+  describe('panel estrecho (d541): el menú «Añadir bloque» sale como hoja del panel', () => {
+    const hueco = () => doc.querySelector<HTMLButtonElement>('.ed-anadir[data-pos="2"]')!;
+    const respuesta = (op: string | null, devolverFoco = false) =>
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'anadir', op, devolverFoco });
+
+    beforeEach(() => estado([], ['texto_foto.3'], true));
+
+    it('pide la hoja con título y opciones, sin abrir el menú flotante', () => {
+      hueco().click();
+      expect(doc.querySelector<HTMLElement>('.flot--anadir')!.hidden).toBeTrue();
+      expect(hueco().getAttribute('aria-expanded')).toBe('true');
+      const [m] = mensajes('hoja-menu');
+      expect(esMensajeDelEditor(m)).toBeTrue();
+      expect(m['menu']).toBe('anadir');
+      expect(m['titulo']).toBe('Añadir bloque en el puesto 3');
+      const ops = m['opciones'] as { op: string; texto: string; pie: string; icono: string; desactivada: boolean; peligro: boolean }[];
+      expect(ops.map((o) => [o.op, o.desactivada])).toEqual([
+        ['presentacion', true],
+        ['profesores', true],
+        ['galeria', true],
+        ['sedes', false],
+        ['texto_foto', false],
+      ]);
+      expect(ops[0].pie).toBe('Ya está en tu web. Si no lo quieres, ocúltalo.');
+      expect(ops[4].icono).toBe('texto');
+    });
+
+    it('la opción elegida llega como con el menú flotante y quita el estado abierto', () => {
+      hueco().click();
+      respuesta('texto_foto');
+      expect(mensajes('anadir-bloque')).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'anadir-bloque', pos: 2, bloque: 'texto_foto' }]);
+      expect(hueco().getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('una opción que no estaba ofrecida (ya existe o no es un tipo) no se añade', () => {
+      hueco().click();
+      respuesta('presentacion');
+      respuesta('portada');
+      expect(mensajes('anadir-bloque')).toEqual([]);
+    });
+
+    it('cerrada sin elegir: devuelve el foco al hueco solo si el panel lo pide', () => {
+      hueco().click();
+      respuesta(null, false);
+      expect(hueco().getAttribute('aria-expanded')).toBe('false');
+      expect(doc.activeElement).not.toBe(hueco());
+      hueco().click();
+      respuesta(null, true);
+      expect(doc.activeElement).toBe(hueco());
+      expect(mensajes('anadir-bloque')).toEqual([]);
+    });
+
+    it('una respuesta sin hoja abierta no hace nada', () => {
+      respuesta('texto_foto');
+      expect(mensajes('anadir-bloque')).toEqual([]);
+    });
+  });
+
   it('foco tras una acción: al botón pedido por el panel, al hueco o al nombre', async () => {
     delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'foco-bloque', foco: 'bajar:presentacion' });
     await esperar();
@@ -262,5 +320,18 @@ describe('puente: mensajes de bloques (W12e)', () => {
     expect(esMensajeDelPanel(m({ tipo: 'foco-bloque', foco: 'editar:texto_foto.1' }))).toBeTrue();
     expect(esMensajeDelPanel(m({ tipo: 'foco-bloque', foco: 'subir:contacto' }))).toBeFalse();
     expect(esMensajeDelPanel(m({ tipo: 'foco-bloque', foco: 'x"]:galeria' }))).toBeFalse();
+  });
+
+  it('d541: la hoja de un menú de la capa pide y responde con forma conocida', () => {
+    const op = { op: 'quitar', texto: 'Quitar foto', pie: '', icono: 'papelera', desactivada: false, peligro: true };
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', titulo: 'Foto de la portada', opciones: [op] }))).toBeTrue();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'otro', titulo: 'x', opciones: [op] }))).toBeFalse();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', titulo: 'x', opciones: [] }))).toBeFalse();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', titulo: 'x', opciones: [{ ...op, icono: 'script' }] }))).toBeFalse();
+    expect(esMensajeDelEditor(m({ tipo: 'hoja-menu', menu: 'foto', titulo: 'x'.repeat(121), opciones: [op] }))).toBeFalse();
+    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'anadir', op: 'galeria', devolverFoco: false }))).toBeTrue();
+    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', op: null, devolverFoco: true }))).toBeTrue();
+    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', op: 3, devolverFoco: true }))).toBeFalse();
+    expect(esMensajeDelPanel(m({ tipo: 'respuesta-hoja-menu', menu: 'foto', op: null }))).toBeFalse();
   });
 });

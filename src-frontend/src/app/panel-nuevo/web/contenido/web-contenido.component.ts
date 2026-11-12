@@ -26,6 +26,7 @@ import {
   CasoVista,
   EstadoSubidaFoto,
   MensajeDelEditor,
+  type MensajeHojaMenu,
   PasoPreinscripcion,
   enviarPorPuente,
   esMensajeDelEditor,
@@ -246,6 +247,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly estrecho = signal(this.ventana?.matchMedia?.(CONSULTA_ESTRECHO).matches ?? false);
   /** El bloque de la hoja inferior abierta (panel estrecho), o null. */
   readonly hoja = signal<string | null>(null);
+  /** d541: el menú de la vista previa (foto, «Añadir bloque») abierto como hoja inferior, o null. */
+  readonly hojaMenu = signal<MensajeHojaMenu | null>(null);
   readonly textosBloques = TEXTOS_BLOQUES;
   readonly etiquetaAccion = etiquetaAccion;
   /** Boceto `pintarHoja`. */
@@ -420,6 +423,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         this.hoja.set(null);
       }
     });
+    // Ni la hoja de un menú de la vista previa: si el panel se ensancha, la capa vuelve a su menú flotante.
+    effect(() => {
+      if (this.hojaMenu() !== null && !this.estrecho()) {
+        this.cerrarHojaMenu(null, false);
+      }
+    });
     const consulta = this.ventana?.matchMedia?.(CONSULTA_ESTRECHO);
     const alCambiarAncho = (e: MediaQueryListEvent) => this.estrecho.set(e.matches);
     consulta?.addEventListener?.('change', alCambiarAncho);
@@ -570,6 +579,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.alto.set(ALTO_INICIAL);
     this.presentes.set(null);
     this.hoja.set(null);
+    this.hojaMenu.set(null);
     if (this.estado() === 'listo') {
       this.iniciarCarga();
     }
@@ -654,6 +664,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.menuCasos() && !t?.closest?.('.flot--casos, .ver-caso')) {
       this.cerrarMenuCasos(false);
     }
+    if (this.hojaMenu() !== null && !t?.closest?.('.flot--capa')) {
+      this.cerrarHojaMenu(null, false);
+    }
   }
 
   // ------------------------------------------------------------------ puente
@@ -697,6 +710,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         break;
       case 'hoja':
         this.abrirHoja(mensaje.bloque);
+        break;
+      case 'hoja-menu':
+        this.abrirHojaMenu(mensaje);
         break;
       case 'texto':
         this.alCambiarTexto(mensaje.clave, mensaje.texto);
@@ -1184,8 +1200,98 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   /** Escape cierra la hoja (si no hay un diálogo abierto encima). */
   @HostListener('document:keydown.escape')
   alEscaparHoja(): void {
-    if (this.hoja() !== null && !this.host.nativeElement.ownerDocument.querySelector('dialog[open]')) {
+    if (this.host.nativeElement.ownerDocument.querySelector('dialog[open]')) {
+      return;
+    }
+    if (this.hojaMenu() !== null) {
+      this.cerrarHojaMenu(null, true);
+    } else if (this.hoja() !== null) {
       this.cerrarHoja(true);
+    }
+  }
+
+  // ------------------------------------------------------------------ menús de la vista previa como hoja (d541)
+
+  /**
+   * La capa (panel estrecho) pide su menú de foto o de «Añadir bloque» como hoja inferior: la vista previa ocupa toda su
+   * altura y un menú dentro de ella no queda pegado al borde de la pantalla. Aquí se elige y se devuelve la opción.
+   */
+  private abrirHojaMenu(menu: MensajeHojaMenu): void {
+    if (!this.estrecho()) {
+      // La capa creía el panel estrecho y ya no lo es: que vuelva a su menú flotante.
+      this.responderHojaMenu(menu.menu, null, false);
+      return;
+    }
+    const abierta = this.hojaMenu();
+    if (abierta && abierta.menu !== menu.menu) {
+      this.responderHojaMenu(abierta.menu, null, false);
+    }
+    this.hoja.set(null);
+    this.cerrarMenuCasos(false);
+    this.hojaMenu.set(menu);
+    this.enfocarDespues('.flot--capa [role="menuitem"]:not([aria-disabled="true"])');
+  }
+
+  /** Una opción de la hoja: la capa hace lo mismo que con su menú flotante. Las desactivadas no hacen nada. */
+  elegirHojaMenu(op: string, desactivada: boolean): void {
+    if (!desactivada) {
+      this.cerrarHojaMenu(op, false);
+    }
+  }
+
+  /** Cierra la hoja y se lo dice a la capa; `op` null: sin elegir. El foco va a la vista previa si se elige o se pide. */
+  private cerrarHojaMenu(op: string | null, devolverFoco: boolean): void {
+    const abierta = this.hojaMenu();
+    if (abierta === null) {
+      return;
+    }
+    this.hojaMenu.set(null);
+    this.responderHojaMenu(abierta.menu, op, devolverFoco);
+  }
+
+  private responderHojaMenu(menu: MensajeHojaMenu['menu'], op: string | null, devolverFoco: boolean): void {
+    const iframe = this.iframe()?.nativeElement;
+    if (!this.ventana || !iframe) {
+      return;
+    }
+    if (op !== null || devolverFoco) {
+      // El foco pasa a la vista previa (el panel lo tenía en la hoja que se cierra).
+      iframe.focus({ preventScroll: true });
+    }
+    enviarPorPuente(this.ventana, iframe.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu, op, devolverFoco });
+  }
+
+  /** Teclado de la hoja (como el boceto): flechas, Inicio y Fin entre opciones; Escape y Tab la cierran devolviendo el foco. */
+  alTeclearHojaMenu(evento: KeyboardEvent): void {
+    if (evento.key === 'Escape' || evento.key === 'Tab') {
+      evento.preventDefault();
+      evento.stopPropagation();
+      this.cerrarHojaMenu(null, true);
+      return;
+    }
+    const opciones = Array.from(this.host.nativeElement.querySelectorAll<HTMLElement>('.flot--capa [role="menuitem"]'));
+    const i = opciones.indexOf(this.host.nativeElement.ownerDocument.activeElement as HTMLElement);
+    if (i === -1) {
+      return;
+    }
+    const destino: Record<string, number> = {
+      ArrowDown: (i + 1) % opciones.length,
+      ArrowUp: (i - 1 + opciones.length) % opciones.length,
+      Home: 0,
+      End: opciones.length - 1,
+    };
+    if (evento.key in destino) {
+      evento.preventDefault();
+      opciones[destino[evento.key]].focus();
+    }
+  }
+
+  /** Pulsar la vista previa (el foco pasa al iframe) cierra la hoja sin mover el foco, como pulsar fuera del menú. */
+  @HostListener('window:blur')
+  alPerderElFoco(): void {
+    const doc = this.host.nativeElement.ownerDocument;
+    if (this.hojaMenu() !== null && doc.activeElement === this.iframe()?.nativeElement) {
+      this.cerrarHojaMenu(null, false);
     }
   }
 

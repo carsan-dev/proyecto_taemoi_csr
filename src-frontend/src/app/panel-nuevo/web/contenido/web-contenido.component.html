@@ -251,6 +251,41 @@
       <button type="button" class="secundario hoja__listo" (click)="cerrarHoja(true)">{{ textosBloques.listo }}</button>
     </div>
     }
+    @if (hojaMenu(); as m) {
+    <!-- d541: menú de la vista previa (foto, «Añadir bloque») como hoja inferior (panel < 768 px; boceto `.flot` en estrecho) -->
+    <div class="flot flot--capa" (keydown)="alTeclearHojaMenu($event)">
+      <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m"></div></div>
+      <p class="flot__titulo" id="hoja-menu-t">{{ m.titulo }}</p>
+      <div class="flot__lista" role="menu" aria-labelledby="hoja-menu-t">
+        @for (o of m.opciones; track o.op) {
+        @if (o.peligro && !$first) {
+        <div class="flot__sep" role="separator"></div>
+        }
+        <button type="button" role="menuitem" class="flot__op" [class.flot__op--peligro]="o.peligro" [attr.data-op]="o.op"
+          [attr.aria-disabled]="o.desactivada ? 'true' : null" (click)="elegirHojaMenu(o.op, o.desactivada)">
+          @switch (o.icono) {
+          @case ('foto') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="9" cy="10" r="1.8"></circle><path d="m4 17 5-5 4 4 2.5-2.5L20 17"></path></svg>
+          }
+          @case ('texto') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke-width="2"><path d="M4 6h16M4 11h16M4 16h10"></path></svg>
+          }
+          @case ('deshacer') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke-width="2"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg>
+          }
+          @case ('papelera') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke-width="2"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4.5h6V7"></path></svg>
+          }
+          @case ('alumnos') {
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" stroke-width="1.8"><circle cx="9" cy="8.5" r="3.5"></circle><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 5.2a3.5 3.5 0 0 1 0 6.6M18.5 14.8c1.7.7 2.8 2.4 3 5.2"></path></svg>
+          }
+          }
+          <span>{{ o.texto }}@if (o.pie) {<small>{{ o.pie }}</small>}</span>
+        </button>
+        }
+      </div>
+    </div>
+    }
     <!-- Fuera de los estados: tiene que existir antes de que cambie su texto para que se anuncie («Contenido cargado.»). -->
     <p class="oculto" role="status">{{ anuncio() }}</p>
   </div>

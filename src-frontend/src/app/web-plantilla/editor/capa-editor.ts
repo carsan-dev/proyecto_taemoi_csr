@@ -140,7 +140,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   // W12d: textos en el sitio. El tema recibe el borrador por aquí (con los vacíos marcados para el editor).
   const textos = activarEdicionTextos({ ventana, enviar: (m) => enviar(m), alTema: alBorrador, seleccionar: (id) => seleccionar(id) });
   // W12f-1: fotos sueltas. El panel sube el fichero; la capa solo lo elige y pinta el estado.
-  const fotos = activarFotosEditor({ ventana, enviar: (m) => enviar(m) });
+  const fotos = activarFotosEditor({ ventana, enviar: (m) => enviar(m), estrecho: () => bloques.estrecho() });
   // W12e: bloques de Inicio. El panel hace cada acción; la capa la pide y pinta el estado.
   const bloques = activarBloquesEditor({ ventana, enviar: (m) => enviar(m), editar: (clave) => textos.editar(clave) });
 
@@ -688,6 +688,11 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
     if (mensaje.tipo === 'estado-bloques') {
       bloques.estado(mensaje);
+      return;
+    }
+    if (mensaje.tipo === 'respuesta-hoja-menu') {
+      // d541: la hoja del panel (panel estrecho) devuelve la opción del menú de la foto o de «Añadir bloque».
+      (mensaje.menu === 'foto' ? fotos : bloques).respuestaMenu(mensaje.op, mensaje.devolverFoco);
       return;
     }
     if (mensaje.tipo === 'foco-bloque') {

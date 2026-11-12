@@ -1,5 +1,5 @@
 import { activarCapaEditor } from './capa-editor';
-import { BloqueBorrador, CANAL_EDITOR_WEB, EstadoSubidaFoto } from './puente-editor';
+import { BloqueBorrador, CANAL_EDITOR_WEB, EstadoSubidaFoto, esMensajeDelEditor } from './puente-editor';
 
 /** Lo justo de Inicio de «La línea comarcal» para las fotos sueltas (W12f-1). */
 const WEB = `
@@ -290,5 +290,81 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
   it('el puente de la capa no acepta estados de fotos de la galería', () => {
     estado({ 'galeria.1': { estado: 'error', titulo: 'x', msg: 'y' } } as never);
     expect(doc.querySelector('.ed-fallo')).toBeNull();
+  });
+
+  describe('panel estrecho (d541): el menú de la foto sale como hoja del panel', () => {
+    const estrecho = () => delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'estado-bloques', sinGuardar: [], quitables: [], estrecho: true });
+    const respuesta = (op: string | null, devolverFoco = false) =>
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'foto', op, devolverFoco });
+
+    beforeEach(() => {
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: [...BORRADOR, fila('texto_foto.3.foto', '', 'https://x/n.webp')] });
+      estado({}, ['texto_foto.3.foto'], ['texto_foto.3.foto']);
+      estrecho();
+    });
+
+    it('pide la hoja con título y opciones (el quitar, en peligro) y no abre el menú flotante', () => {
+      foto('texto_foto.3.foto').click();
+      expect(flot().hidden).toBeTrue();
+      expect(foto('texto_foto.3.foto').getAttribute('aria-expanded')).toBe('true');
+      const [m] = mensajes('hoja-menu');
+      expect(esMensajeDelEditor(m)).toBeTrue();
+      expect(m['menu']).toBe('foto');
+      expect(m['titulo']).toBe('Foto de «Nuestra sala»');
+      const ops = m['opciones'] as { op: string; texto: string; pie: string; icono: string; peligro: boolean }[];
+      expect(ops.map((o) => [o.op, o.texto, o.icono, o.peligro])).toEqual([
+        ['subir', 'Cambiar foto', 'foto', false],
+        ['describir', 'Describir la foto', 'texto', false],
+        ['anterior', 'Volver a la anterior', 'deshacer', false],
+        ['quitar', 'Quitar foto', 'papelera', true],
+      ]);
+      expect(ops[0].pie).toBe('JPG, PNG o WebP, hasta 50 MB');
+    });
+
+    it('Cambiar foto, Volver a la anterior y Quitar foto llegan igual que con el menú flotante', () => {
+      const entrada = q<HTMLInputElement>('input[type=file]');
+      const abrirSelector = spyOn(entrada, 'click');
+      foto('texto_foto.3.foto').click();
+      respuesta('subir');
+      expect(abrirSelector).toHaveBeenCalled();
+      expect(foto('texto_foto.3.foto').getAttribute('aria-expanded')).toBe('false');
+      foto('texto_foto.3.foto').click();
+      respuesta('anterior');
+      expect(mensajes('foto').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave: 'texto_foto.3.foto', accion: 'anterior' });
+      foto('texto_foto.3.foto').click();
+      respuesta('quitar');
+      expect(mensajes('foto').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave: 'texto_foto.3.foto', accion: 'quitar' });
+    });
+
+    it('Describir la foto abre su descripción', () => {
+      foto('texto_foto.3.foto').click();
+      respuesta('describir');
+      expect(flot().hidden).toBeFalse();
+      expect(texto(q('.flot__titulo'))).toBe('describe la foto de «Nuestra sala»');
+    });
+
+    it('cerrada sin elegir: el foco vuelve a la foto solo si el panel lo pide', () => {
+      foto('portada.foto').click();
+      respuesta(null, false);
+      expect(foto('portada.foto').getAttribute('aria-expanded')).toBe('false');
+      expect(doc.activeElement).not.toBe(foto('portada.foto'));
+      foto('portada.foto').click();
+      respuesta(null, true);
+      expect(doc.activeElement).toBe(foto('portada.foto'));
+      expect(mensajes('foto')).toEqual([]);
+    });
+
+    it('una opción que la hoja no ofrecía (la portada no se quita) no hace nada', () => {
+      foto('portada.foto').click();
+      respuesta('quitar');
+      expect(mensajes('foto')).toEqual([]);
+    });
+
+    it('con el panel ancho sigue el menú flotante y no hay hoja', () => {
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'estado-bloques', sinGuardar: [], quitables: [], estrecho: false });
+      foto('portada.foto').click();
+      expect(flot().hidden).toBeFalse();
+      expect(mensajes('hoja-menu')).toEqual([]);
+    });
   });
 });

@@ -9,7 +9,14 @@ import {
   queFoto,
   textoFotoVacia,
 } from './fotos-sueltas';
-import { type BloqueBorrador, CANAL_EDITOR_WEB, type EstadoSubidaFoto, type MensajeDelEditor, type MensajeFotos } from './puente-editor';
+import {
+  type BloqueBorrador,
+  CANAL_EDITOR_WEB,
+  type EstadoSubidaFoto,
+  type MensajeDelEditor,
+  type MensajeFotos,
+  type OpcionHojaMenu,
+} from './puente-editor';
 import { recortar } from './textos-editor';
 
 /**
@@ -29,9 +36,13 @@ import { recortar } from './textos-editor';
 export interface OpcionesFotosEditor {
   ventana: Window;
   enviar: (mensaje: MensajeDelEditor) => void;
+  /** d541: el panel es estrecho (< 768 px): el menú de la foto sale como hoja inferior del panel. */
+  estrecho?: () => boolean;
 }
 
 export interface FotosEditor {
+  /** d541: la respuesta de la hoja del panel al menú de la foto (`op` null: se cerró sin elegir). */
+  respuestaMenu(op: string | null, devolverFoco: boolean): void;
   /** Llega el borrador del panel. */
   borrador(bloques: BloqueBorrador[]): void;
   /** Fotos cambiadas, con anterior y subidas (`fotos`). */
@@ -75,6 +86,7 @@ const idDe = (clave: string) => clave.replace(/[^a-z0-9_-]/gi, '-');
 
 export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   const { ventana, enviar } = opciones;
+  const estrecho = opciones.estrecho ?? (() => false);
   const doc = ventana.document;
   /** Las URL locales de la ventana del iframe (la foto elegida mientras sube). */
   const urls = (ventana as Window & typeof globalThis).URL;
@@ -91,7 +103,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   let eligiendo: string | null = null;
   /** Tras volver a la anterior o quitar: si el foco se pierde al repintar, vuelve a esta foto. */
   let enfocarFoto: string | null = null;
-  let abierto: { clave: string; tipo: 'menu' | 'describir' } | null = null;
+  let abierto: { clave: string; tipo: 'menu' | 'describir'; enHoja?: string[] } | null = null;
   let esperaDescribir: ReturnType<typeof setTimeout> | null = null;
 
   const entrada = doc.createElement('input');
@@ -375,7 +387,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   }
 
   function cerrar(devolverFoco: boolean): void {
-    if (flot.hidden) {
+    if (flot.hidden && !abierto?.enHoja) {
       return;
     }
     const clave = abierto?.clave ?? null;
@@ -390,6 +402,15 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       }
     }
   }
+
+  const datosOpcion = (op: string, texto: string, icono: OpcionHojaMenu['icono'], pie: string, peligro = false): OpcionHojaMenu => ({
+    op,
+    texto,
+    pie,
+    icono,
+    desactivada: false,
+    peligro,
+  });
 
   function opcion(op: string, texto: string, nombreIcono: keyof typeof ICONOS, pie: string, peligro = false): HTMLButtonElement {
     const b = nodo(
@@ -408,17 +429,31 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   function abrirMenu(clave: string, b: HTMLElement): void {
     const tiene = tieneFoto(clave);
     const alt = fila(clave)?.texto ?? '';
-    const ops: HTMLElement[] = [opcion('subir', tiene ? 'Cambiar foto' : 'Añadir foto', 'foto', FORMATOS_FOTO)];
+    const datos: OpcionHojaMenu[] = [datosOpcion('subir', tiene ? 'Cambiar foto' : 'Añadir foto', 'foto', FORMATOS_FOTO)];
     if (tiene) {
-      ops.push(opcion('describir', 'Describir la foto', 'texto', alt ? `«${recortar(alt, 46)}»` : 'Falta: qué se ve, para quien no puede verla'));
+      datos.push(datosOpcion('describir', 'Describir la foto', 'texto', alt ? `«${recortar(alt, 46)}»` : 'Falta: qué se ve, para quien no puede verla'));
     }
     if (cambiadas.has(clave) && anteriores.has(clave)) {
-      ops.push(opcion('anterior', 'Volver a la anterior', 'deshacer', ''));
+      datos.push(datosOpcion('anterior', 'Volver a la anterior', 'deshacer', ''));
     }
     if (tiene && fotoOpcional(clave)) {
-      const sep = nodo('div', 'flot__sep');
-      sep.setAttribute('role', 'separator');
-      ops.push(sep, opcion('quitar', 'Quitar foto', 'papelera', '', true));
+      datos.push(datosOpcion('quitar', 'Quitar foto', 'papelera', '', true));
+    }
+    if (estrecho()) {
+      // d541: hoja inferior del panel; ella devuelve la opción elegida (`respuestaMenu`).
+      abierto = { clave, tipo: 'menu', enHoja: datos.map((d) => d.op) };
+      b.setAttribute('aria-expanded', 'true');
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-menu', menu: 'foto', titulo: `Foto ${que(clave)}`, opciones: datos });
+      return;
+    }
+    const ops: HTMLElement[] = [];
+    for (const d of datos) {
+      if (d.peligro && ops.length) {
+        const sep = nodo('div', 'flot__sep');
+        sep.setAttribute('role', 'separator');
+        ops.push(sep);
+      }
+      ops.push(opcion(d.op, d.texto, d.icono, d.pie, d.peligro));
     }
     const titulo = nodo('p', 'flot__titulo', `Foto ${que(clave)}`);
     titulo.id = 'ed-flot-t';
@@ -529,12 +564,19 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
 
   const alPulsarFlot = (evento: MouseEvent) => {
     const b = objetivo(evento)?.closest<HTMLElement>('[data-op]');
+    if (b?.dataset['op']) {
+      ejecutar(b.dataset['op']);
+    }
+  };
+
+  /** La opción elegida del menú (flotante o de la hoja del panel) o «Listo» de la descripción. */
+  function ejecutar(op: string): void {
     const actual = abierto;
-    if (!b || !actual) {
+    if (!actual) {
       return;
     }
     const { clave } = actual;
-    switch (b.dataset['op']) {
+    switch (op) {
       case 'listo':
         cerrar(true);
         break;
@@ -550,10 +592,10 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
         cerrar(true);
         // Si el tema repinta la foto (o pone el hueco), el foco vuelve a ella (boceto `pintar('f:…')`).
         enfocarFoto = clave;
-        enviar({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave, accion: b.dataset['op'] as 'anterior' | 'quitar' });
+        enviar({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave, accion: op as 'anterior' | 'quitar' });
         break;
     }
-  };
+  }
 
   const alTeclearFlot = (evento: KeyboardEvent) => {
     if (evento.key === 'Escape') {
@@ -619,6 +661,18 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   flot.addEventListener('input', alEscribirFlot);
 
   return {
+    respuestaMenu(op, devolverFoco) {
+      const actual = abierto;
+      if (!actual?.enHoja) {
+        return;
+      }
+      if (op === null) {
+        cerrar(devolverFoco);
+      } else if (actual.enHoja.includes(op)) {
+        // Como en el menú flotante, cada opción sigue su camino; la hoja ya está cerrada.
+        ejecutar(op);
+      }
+    },
     borrador(bloques) {
       filas = bloques;
       repintar();

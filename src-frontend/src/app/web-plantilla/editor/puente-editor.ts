@@ -183,7 +183,50 @@ export interface MensajeQuitarDato {
   quitar: boolean;
 }
 
+/** Los dos menús de la capa que con el panel estrecho salen como hoja inferior del panel (d541). */
+export const MENUS_HOJA = ['foto', 'anadir'] as const;
+export type MenuHoja = (typeof MENUS_HOJA)[number];
+
+/** Iconos que puede llevar una opción de esos menús (el panel los dibuja con los suyos). */
+export const ICONOS_HOJA_MENU = ['foto', 'texto', 'deshacer', 'papelera', 'alumnos'] as const;
+export type IconoHojaMenu = (typeof ICONOS_HOJA_MENU)[number];
+
+/** Una opción del menú tal como la dibuja la hoja (boceto `.flot__op`): texto, pie opcional y estado. */
+export interface OpcionHojaMenu {
+  /** Lo que la capa recibirá de vuelta al elegirla (`subir`, `quitar`, un tipo de bloque…). */
+  op: string;
+  texto: string;
+  /** Segunda línea pequeña; vacía si no la lleva. */
+  pie: string;
+  icono: IconoHojaMenu;
+  desactivada: boolean;
+  /** «Quitar»: color de peligro y, si no es la primera, un separador antes. */
+  peligro: boolean;
+}
+
+/** d541: la capa de un panel estrecho pide al panel que muestre su menú (foto, añadir bloque) como hoja inferior. */
+export interface MensajeHojaMenu {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'hoja-menu';
+  menu: MenuHoja;
+  titulo: string;
+  opciones: OpcionHojaMenu[];
+}
+
+/**
+ * d541: la respuesta del panel a `hoja-menu`: `op` es la opción elegida o null si la hoja se cerró sin elegir.
+ * `devolverFoco`: el foco vuelve al botón que abrió el menú (Escape, Tab) o no (velo, pulsar fuera, panel ancho).
+ */
+export interface MensajeRespuestaHojaMenu {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'respuesta-hoja-menu';
+  menu: MenuHoja;
+  op: string | null;
+  devolverFoco: boolean;
+}
+
 export type MensajeDelPanel =
+  | MensajeRespuestaHojaMenu
   | MensajeQuitarDato
   | MensajeEstadoBloques
   | MensajeFocoBloque
@@ -310,6 +353,7 @@ export interface MensajePedirQuitarDato {
 }
 
 export type MensajeDelEditor =
+  | MensajeHojaMenu
   | MensajePedirQuitarDato
   | MensajeBloques
   | MensajeAccionBloque
@@ -392,6 +436,24 @@ function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
 const esClaveIrA = (clave: unknown) =>
   typeof clave === 'string' && (esTextoEditable(clave) || esFotoSuelta(clave) || fotoDeDescripcion(clave) !== null);
 
+const esMenuHoja = (v: unknown): v is MenuHoja => (MENUS_HOJA as readonly unknown[]).includes(v);
+
+function esOpcionHojaMenu(v: unknown): v is OpcionHojaMenu {
+  return (
+    esObjeto(v) &&
+    typeof v['op'] === 'string' &&
+    v['op'].length > 0 &&
+    v['op'].length <= 40 &&
+    typeof v['texto'] === 'string' &&
+    v['texto'].length <= 120 &&
+    typeof v['pie'] === 'string' &&
+    v['pie'].length <= 200 &&
+    (ICONOS_HOJA_MENU as readonly unknown[]).includes(v['icono']) &&
+    typeof v['desactivada'] === 'boolean' &&
+    typeof v['peligro'] === 'boolean'
+  );
+}
+
 /** Lista de ids sin repetir, cada uno válido, como mucho `MAX_BLOQUES` + las partes fijas. */
 function esListaDeIds(valor: unknown, valido: (id: unknown) => boolean): valor is string[] {
   return Array.isArray(valor) && valor.length <= MAX_BLOQUES + 20 && valor.every(valido) && new Set(valor).size === valor.length;
@@ -432,6 +494,12 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
       return esFocoBloque(valor['foco']);
     case 'quitar-dato':
       return typeof valor['quitar'] === 'boolean';
+    case 'respuesta-hoja-menu':
+      return (
+        esMenuHoja(valor['menu']) &&
+        (valor['op'] === null || (typeof valor['op'] === 'string' && valor['op'].length <= 40)) &&
+        typeof valor['devolverFoco'] === 'boolean'
+      );
     default:
       return false;
   }
@@ -476,6 +544,16 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
     }
     case 'hoja':
       return esIdBloque(valor['bloque']);
+    case 'hoja-menu':
+      return (
+        esMenuHoja(valor['menu']) &&
+        typeof valor['titulo'] === 'string' &&
+        valor['titulo'].length <= 120 &&
+        Array.isArray(valor['opciones']) &&
+        valor['opciones'].length > 0 &&
+        valor['opciones'].length <= 12 &&
+        valor['opciones'].every(esOpcionHojaMenu)
+      );
     case 'pedir-quitar-dato': {
       const clave = valor['clave'];
       const huecos = valor['huecos'];

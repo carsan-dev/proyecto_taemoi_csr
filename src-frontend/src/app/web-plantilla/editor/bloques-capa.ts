@@ -47,6 +47,8 @@ export interface BloquesEditor {
   estrecho(): boolean;
   /** Con el panel estrecho, pide la hoja de un bloque movible (id del DOM); false si no es movible. */
   abrirHoja(idDom: string): boolean;
+  /** d541: la respuesta de la hoja del panel al menú «Añadir bloque» (`op` null: se cerró sin elegir). */
+  respuestaMenu(op: string | null, devolverFoco: boolean): void;
   decorar(pagina: PaginaEditor): void;
   quitar(): void;
 }
@@ -433,6 +435,22 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
       const ya = existeTipo(filas, t.tipo);
       return opcion(t.tipo, t.nombre, t.icono, ya ? YA_ESTA : t.desc, ya);
     });
+    if (esEstrecho) {
+      // d541: con el panel estrecho el menú sale como hoja inferior del panel (la vista previa no llega al borde de la pantalla).
+      menuAbierto = pos;
+      ancla.setAttribute('aria-expanded', 'true');
+      enviar({
+        canal: CANAL_EDITOR_WEB,
+        tipo: 'hoja-menu',
+        menu: 'anadir',
+        titulo: tituloMenuAnadir(pos),
+        opciones: MENU_TIPOS.map((t) => {
+          const ya = existeTipo(filas, t.tipo);
+          return { op: t.tipo, texto: t.nombre, pie: ya ? YA_ESTA : t.desc, icono: t.icono, desactivada: ya, peligro: false };
+        }),
+      });
+      return;
+    }
     const titulo = nodo('p', 'flot__titulo', tituloMenuAnadir(pos));
     titulo.id = 'ed-anadir-t';
     const lista = nodo('div', 'flot__lista', ...ops);
@@ -459,7 +477,7 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
   }
 
   function cerrarMenu(devolverFoco: boolean): void {
-    if (flot.hidden) {
+    if (menuAbierto === null) {
       return;
     }
     const pos = menuAbierto;
@@ -580,6 +598,22 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
       ventana.setTimeout(() => aplicarFoco(), 0);
     },
     estrecho: () => esEstrecho,
+    respuestaMenu(op, devolverFoco) {
+      const pos = menuAbierto;
+      if (pos === null || !flot.hidden) {
+        return;
+      }
+      if (op === null) {
+        cerrarMenu(devolverFoco);
+        return;
+      }
+      // Solo lo que la hoja ofreció: un tipo y que no esté ya (los únicos que ya están salen desactivados).
+      if (!esTipoBloque(op) || existeTipo(filas, op)) {
+        return;
+      }
+      cerrarMenu(false);
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'anadir-bloque', pos, bloque: op });
+    },
     abrirHoja(idDom) {
       const id = idDeDom(idDom);
       if (!id || !esMovible(id)) {
