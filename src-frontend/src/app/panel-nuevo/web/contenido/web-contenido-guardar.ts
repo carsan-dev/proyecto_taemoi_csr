@@ -8,7 +8,8 @@ import {
   recortar,
 } from '../../../web-plantilla/editor/textos-editor';
 import type { PaginaEditor } from '../../../web-plantilla/editor/candados-linea-comarcal';
-import { bloqueDeFoto, claveDescripcion, esFotoSuelta, fotoDeDescripcion } from '../../../web-plantilla/editor/fotos-sueltas';
+import { bloqueDeFoto, claveDescripcion, esFotoEditable, fotoDeDescripcion } from '../../../web-plantilla/editor/fotos-sueltas';
+import { TEXTOS_PROFESORES, esFotoProfesor, nombreProfesor } from '../../../web-plantilla/editor/fotos-profesores';
 import { TEXTOS_FOTOS, queFoto } from './web-contenido-fotos';
 import { type BloqueContenido, nombrePagina } from './web-contenido-vista';
 
@@ -19,7 +20,9 @@ import { type BloqueContenido, nombrePagina } from './web-contenido-vista';
  *
  * El guardado es un reemplazo completo (`PUT /api/escuela/web/contenido`): van todas las filas vigentes (las del GET con
  * los cambios), también las que esta pieza no edita (fotos, cabeceras, orden, oculto, profesores), salvo los textos
- * iguales al texto por defecto del tema. La constancia del permiso de los profesores no se reenvía: la API la conserva.
+ * iguales al texto por defecto del tema. La constancia del permiso de los profesores no se reenvía nunca: la API la
+ * conserva. W12f-2b: solo `permiso: true` en `profesor.<n>.nombre` de los profesores con la casilla marcada que la
+ * necesitan (`permisosParaEnviar`).
  */
 
 /** Una fila del cuerpo del `PUT` (`ContenidoWebRequest.Bloque`). */
@@ -29,8 +32,8 @@ export interface BloquePeticion {
   imagenId: number | null;
   orden: number;
   oculto: boolean;
-  /** Solo `true` en `profesor.<n>.nombre` al marcar la casilla del permiso (W12f). Aquí no se manda nunca. */
-  permiso?: boolean;
+  /** Solo `true` en `profesor.<n>.nombre` con la casilla del permiso marcada (W12f-2b); si no, no va. */
+  permiso?: true;
 }
 
 export interface PeticionContenido {
@@ -74,12 +77,14 @@ export function erroresContenido(borrador: readonly BloqueContenido[], defectos:
     errores['portada.foto'] = 'Añade la foto de portada.';
   }
   // W12f-1 (boceto `errores`): cada foto suelta puesta, descrita; un «Texto con foto» con foto, con su título.
+  // W12f-2a: y cada foto de la galería, descrita.
   for (const fila of borrador) {
-    if (!esFotoSuelta(fila.clave) || fila.imagenId === null) {
+    if (!esFotoEditable(fila.clave) || fila.imagenId === null) {
       continue;
     }
     if (!(fila.texto ?? '').trim()) {
-      errores[claveDescripcion(fila.clave)] = TEXTOS_FOTOS.describe;
+      // W12f-2b (boceto `errores`): la de un profesor, «Describe su foto.».
+      errores[claveDescripcion(fila.clave)] = esFotoProfesor(fila.clave) ? TEXTOS_PROFESORES.describeSuFoto : TEXTOS_FOTOS.describe;
     }
     const bloque = bloqueDeFoto(fila.clave);
     if (bloque && !borrador.some((f) => f.clave === `${bloque}.titulo`)) {
@@ -107,15 +112,29 @@ function conContenido(filas: readonly BloqueContenido[], bloque: string): boolea
   );
 }
 
-/** El cuerpo del `PUT`: todas las filas del borrador menos los textos iguales a los del tema. */
-export function cuerpoGuardar(version: number, borrador: readonly BloqueContenido[], defectos: Defectos): PeticionContenido {
+/**
+ * El cuerpo del `PUT`: todas las filas del borrador menos los textos iguales a los del tema. `permisos`: los números de
+ * profesor cuyo nombre lleva `permiso: true` (casilla marcada donde hace falta); en los demás no va nada.
+ */
+export function cuerpoGuardar(
+  version: number,
+  borrador: readonly BloqueContenido[],
+  defectos: Defectos,
+  permisos: ReadonlySet<number> = new Set(),
+): PeticionContenido {
   const bloques: BloquePeticion[] = [];
   for (const f of borrador) {
     const fijo = esTextoEditable(f.clave) ? defectoFijo(f.clave) : null;
     if (fijo !== null && (f.texto ?? '').trim() === fijo) {
       continue;
     }
-    bloques.push({ clave: f.clave, texto: f.texto, imagenId: f.imagenId, orden: f.orden, oculto: f.oculto });
+    // Campo a campo: el objeto `permiso` del GET (la constancia) nunca se reenvía.
+    const bloque: BloquePeticion = { clave: f.clave, texto: f.texto, imagenId: f.imagenId, orden: f.orden, oculto: f.oculto };
+    const n = /^profesor\.([1-9][0-9]?)\.nombre$/.exec(f.clave);
+    if (n && permisos.has(Number(n[1]))) {
+      bloque.permiso = true;
+    }
+    bloques.push(bloque);
   }
   // La API pide siempre el titular: sin fila, el que enseña el tema.
   const titular = defectos['portada.titular'];
@@ -129,6 +148,13 @@ export function cuerpoGuardar(version: number, borrador: readonly BloqueContenid
 export function nombreError(clave: string, borrador: readonly BloqueContenido[]): string | null {
   if (clave === 'portada.foto') {
     return 'Portada: falta la foto';
+  }
+  // W12f-2b (boceto `nombreError`): «Antonio Ruiz: nombre», «Profesor nuevo: permiso para publicar».
+  const profesor = /^profesor\.([1-9][0-9]?)\.(nombre|cargo|permiso)$/.exec(clave);
+  if (profesor) {
+    const nombre = nombreProfesor(borrador.find((f) => f.clave === `profesor.${profesor[1]}.nombre`)?.texto);
+    const que = profesor[2] === 'permiso' ? 'permiso para publicar' : profesor[2] === 'nombre' ? 'nombre' : 'cargo o grado';
+    return `${nombre}: ${que}`;
   }
   const foto = fotoDeDescripcion(clave);
   if (foto) {
@@ -158,8 +184,8 @@ export function entradaResumen(
   delServidor: boolean,
 ): { clave: string; texto: string; enlace: boolean } {
   const nombre = nombreError(clave, borrador);
-  // W12f-1: el error de la API en una foto suelta lleva a la foto.
-  if (esFotoSuelta(clave) && delServidor && mensaje) {
+  // W12f-1: el error de la API en una foto (suelta o de la galería) lleva a la foto.
+  if (esFotoEditable(clave) && delServidor && mensaje) {
     return { clave, texto: mensaje, enlace: true };
   }
   return { clave, texto: nombre ?? mensaje, enlace: nombre !== null };

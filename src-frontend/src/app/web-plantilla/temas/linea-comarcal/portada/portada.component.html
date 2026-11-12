@@ -108,11 +108,11 @@
             </div>
             <ul class="profes">
               @for (profe of seccion.profesores; track profe.n) {
-                <li class="profe">
+                <li class="profe" [attr.data-ed-profesor]="profe.marca ?? null">
                   @if (profe.foto) {
                     <figure class="foto profe-foto"><img [src]="profe.foto.url" [alt]="profe.foto.alt" loading="lazy"></figure>
                   } @else {
-                    <div class="monograma" role="img" [attr.aria-label]="'Sin foto: iniciales de ' + profe.nombre">{{ profe.monograma }}</div>
+                    <div class="monograma" role="img" [attr.aria-label]="'Sin foto: iniciales de ' + (profe.nombre || 'Profesor nuevo')">{{ profe.monograma }}</div>
                   }
                   <h3 class="profe-nombre">{{ profe.nombre }}</h3>
                   @if (profe.cargo) {<p class="profe-grado">{{ profe.cargo }}</p>}

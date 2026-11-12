@@ -367,6 +367,11 @@ describe('PortadaLineaComarcalComponent', () => {
       expect(textos(raiz, '.profe-nombre')).toEqual(['Antonio Ruiz Carmona', 'Manuel Ortega Pozo']);
       expect(textos(raiz, '.profe-grado')).toEqual(['Cinturón negro 5.º dan']);
       expect(textos(raiz, '.monograma')).toEqual(['MO']);
+      // W12f-2b: la web no lleva nada del editor (ni el número de la tarjeta) y la etiqueta del monograma es la de antes.
+      expect(raiz.querySelector('.monograma')!.getAttribute('aria-label')).toBe('Sin foto: iniciales de Manuel Ortega Pozo');
+      expect(raiz.querySelectorAll('li.profe').length).toBe(2);
+      expect(raiz.querySelector('[data-ed-profesor]')).toBeNull();
+      expect(Array.from(raiz.querySelectorAll('li.profe')).map((li) => li.getAttributeNames().join(','))).toEqual(['class', 'class']);
       expect(textos(raiz, '.galeria-n')).toEqual(['01', '02']);
       expect(raiz.querySelector('.galeria li')!.className).toBe('g-grande');
       expect(textos(raiz, '#profesores .rotulo')).toEqual(['04 · Profesores']);

@@ -29,6 +29,15 @@ import type { BloqueWeb } from '../datos/modelos';
  * guarda el panel en el borrador. Al terminar una subida, el panel pide a la capa abrir el diálogo de describir
  * (`describir`).
  *
+ * W12f-2a: las fotos de la galería (`galeria.<n>`) van por los mismos mensajes. Una foto más se sube con la clave
+ * `galeria.nueva`; al terminar, el panel le da su número y pide describirla con él. «Mover antes» y «Mover después» son
+ * acciones de `foto`.
+ *
+ * W12f-2b: profesores. Sus fotos (`profesor.<n>.foto`) van por los mismos mensajes que las demás. La capa pide añadir y
+ * quitar un profesor y marcar o desmarcar su casilla del permiso (`profesor`); el panel (que confirma, numera y guarda)
+ * le manda cada profesor con su casilla o su constancia ya en texto (`profesores`, solo para el editor: el tema nunca la
+ * recibe, d521) y a dónde va el foco (`foco-profesor`). Nunca viaja el objeto del permiso.
+ *
  * W12e: bloques de Inicio. La capa dice qué bloques hay en la página y cuáles están vacíos (`bloques`) y pide las
  * acciones de la barra (`bloque`), añadir un bloque en un puesto (`anadir-bloque`) y, con el panel estrecho, la hoja de
  * acciones del bloque (`hoja`), que vive en el panel. El panel cambia el borrador, manda a la capa qué partes tienen
@@ -49,7 +58,9 @@ import {
   esParteInicio,
   esTipoBloque,
 } from './bloques-editor';
-import { MAX_DESCRIPCION_FOTO, esFotoSuelta, fotoDeDescripcion } from './fotos-sueltas';
+import { GALERIA_NUEVA, esFotoGaleria } from './fotos-galeria';
+import { type EstadoProfesor, esNumeroProfesor, numeroPermiso } from './fotos-profesores';
+import { MAX_DESCRIPCION_FOTO, esClaveSubida, esFotoEditable, fotoDeDescripcion } from './fotos-sueltas';
 import { huecoDe } from './huecos-editor';
 import { esTextoEditable } from './textos-editor';
 
@@ -188,7 +199,7 @@ export const MENUS_HOJA = ['foto', 'anadir'] as const;
 export type MenuHoja = (typeof MENUS_HOJA)[number];
 
 /** Iconos que puede llevar una opción de esos menús (el panel los dibuja con los suyos). */
-export const ICONOS_HOJA_MENU = ['foto', 'texto', 'deshacer', 'papelera', 'alumnos'] as const;
+export const ICONOS_HOJA_MENU = ['foto', 'texto', 'deshacer', 'papelera', 'alumnos', 'antes', 'despues'] as const;
 export type IconoHojaMenu = (typeof ICONOS_HOJA_MENU)[number];
 
 /** Una opción del menú tal como la dibuja la hoja (boceto `.flot__op`): texto, pie opcional y estado. */
@@ -240,7 +251,26 @@ export interface MensajeCerrarHojaMenu {
   id: number;
 }
 
+/** W12f-2b: los profesores del borrador, en orden, con su nombre y su casilla o su constancia (solo el texto). */
+export interface MensajeProfesores {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'profesores';
+  lista: EstadoProfesor[];
+}
+
+/**
+ * W12f-2b: tras una acción, el foco: al «Quitar» de un profesor (`quitar:3`), a su casilla (`permiso:3`), a editar su
+ * nombre (`editar:3`) o al de añadir (`anadir`).
+ */
+export interface MensajeFocoProfesor {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'foco-profesor';
+  foco: string;
+}
+
 export type MensajeDelPanel =
+  | MensajeProfesores
+  | MensajeFocoProfesor
   | MensajeRespuestaHojaMenu
   | MensajeQuitarDato
   | MensajeEstadoBloques
@@ -297,7 +327,7 @@ export interface MensajeDefectos {
   textos: Record<string, string>;
 }
 
-/** W12f-1: el fichero elegido para una foto suelta; lo sube el panel. */
+/** W12f-1: el fichero elegido para una foto (W12f-2a: también `galeria.nueva`, una foto más en la galería); lo sube el panel. */
 export interface MensajeSubirFoto {
   canal: typeof CANAL_EDITOR_WEB;
   tipo: 'subir-foto';
@@ -305,8 +335,8 @@ export interface MensajeSubirFoto {
   archivo: File;
 }
 
-/** W12f-1: acciones del menú y de la subida de una foto suelta. */
-export const ACCIONES_FOTO = ['cancelar-subida', 'anterior', 'quitar'] as const;
+/** W12f-1: acciones del menú y de la subida de una foto. W12f-2a: «Mover antes» y «Mover después» (galería). */
+export const ACCIONES_FOTO = ['cancelar-subida', 'anterior', 'quitar', 'antes', 'despues'] as const;
 export type AccionFoto = (typeof ACCIONES_FOTO)[number];
 
 export interface MensajeAccionFoto {
@@ -367,7 +397,17 @@ export interface MensajePedirQuitarDato {
   despues: string;
 }
 
+/**
+ * W12f-2b: añadir un profesor, quitarlo (el panel confirma) o marcar o desmarcar su casilla del permiso.
+ */
+export type MensajeProfesor = { canal: typeof CANAL_EDITOR_WEB; tipo: 'profesor' } & (
+  | { accion: 'anadir' }
+  | { accion: 'quitar'; n: number }
+  | { accion: 'permiso'; n: number; marcada: boolean }
+);
+
 export type MensajeDelEditor =
+  | MensajeProfesor
   | MensajeHojaMenu
   | MensajeCerrarHojaMenu
   | MensajePedirQuitarDato
@@ -434,7 +474,7 @@ function esAcento(valor: unknown): valor is AcentoEditor {
   return esObjeto(valor) && [valor['acento'], valor['borde'], valor['suave']].every((c) => typeof c === 'string' && HEX.test(c));
 }
 
-const esListaDeFotos = (valor: unknown) => Array.isArray(valor) && valor.length <= 100 && valor.every(esFotoSuelta);
+const esListaDeFotos = (valor: unknown) => Array.isArray(valor) && valor.length <= 100 && valor.every(esFotoEditable);
 const esTextoDeSubida = (valor: unknown) => typeof valor === 'string' && valor.length <= 500;
 
 function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
@@ -448,9 +488,41 @@ function esEstadoSubida(valor: unknown): valor is EstadoSubidaFoto {
   return valor['estado'] === 'error' && esTextoDeSubida(valor['titulo']) && esTextoDeSubida(valor['msg']);
 }
 
-/** Las claves a las que lleva un enlace del resumen: un texto, una foto suelta o su descripción. */
+/**
+ * Las claves a las que lleva un enlace del resumen: un texto, una foto (suelta, de la galería o de un profesor), su
+ * descripción o (W12f-2b) la casilla del permiso de un profesor.
+ */
 const esClaveIrA = (clave: unknown) =>
-  typeof clave === 'string' && (esTextoEditable(clave) || esFotoSuelta(clave) || fotoDeDescripcion(clave) !== null);
+  typeof clave === 'string' &&
+  (esTextoEditable(clave) || esFotoEditable(clave) || fotoDeDescripcion(clave) !== null || numeroPermiso(clave) !== null);
+
+/** W12f-2b: el foco tras una acción de profesor. */
+export function esFocoProfesor(valor: unknown): valor is string {
+  if (valor === 'anadir') {
+    return true;
+  }
+  const m = typeof valor === 'string' ? /^(quitar|permiso|editar):([1-9][0-9]?)$/.exec(valor) : null;
+  return !!m;
+}
+
+function esPermisoProfesor(v: unknown): boolean {
+  if (!esObjeto(v)) {
+    return false;
+  }
+  if (v['tipo'] === 'casilla') {
+    return typeof v['marcada'] === 'boolean';
+  }
+  return v['tipo'] === 'constancia' && typeof v['texto'] === 'string' && v['texto'].length <= 200;
+}
+
+function esListaProfesores(valor: unknown): valor is EstadoProfesor[] {
+  return (
+    Array.isArray(valor) &&
+    valor.length <= 99 &&
+    valor.every((p) => esObjeto(p) && esNumeroProfesor(p['n']) && esTextoCorto(p['nombre']) && esPermisoProfesor(p['permiso'])) &&
+    new Set(valor.map((p) => (p as EstadoProfesor).n)).size === valor.length
+  );
+}
 
 const esIdHoja = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 const esMenuHoja = (v: unknown): v is MenuHoja => (MENUS_HOJA as readonly unknown[]).includes(v);
@@ -482,6 +554,10 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
     return false;
   }
   switch (valor['tipo']) {
+    case 'profesores':
+      return esListaProfesores(valor['lista']);
+    case 'foco-profesor':
+      return esFocoProfesor(valor['foco']);
     case 'borrador':
       return (
         Array.isArray(valor['bloques']) &&
@@ -501,10 +577,10 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
         esListaDeFotos(valor['cambiadas']) &&
         esListaDeFotos(valor['anteriores']) &&
         esObjeto(valor['subidas']) &&
-        Object.entries(valor['subidas']).every(([k, v]) => esFotoSuelta(k) && esEstadoSubida(v))
+        Object.entries(valor['subidas']).every(([k, v]) => esClaveSubida(k) && esEstadoSubida(v))
       );
     case 'describir':
-      return esFotoSuelta(valor['clave']);
+      return esFotoEditable(valor['clave']);
     case 'estado-bloques':
       return esListaDeIds(valor['sinGuardar'], esParteInicio) && esListaDeIds(valor['quitables'], esIdBloque) && typeof valor['estrecho'] === 'boolean';
     case 'foco-bloque':
@@ -531,6 +607,17 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
   switch (valor['tipo']) {
     case 'listo':
       return true;
+    case 'profesor':
+      switch (valor['accion']) {
+        case 'anadir':
+          return true;
+        case 'quitar':
+          return esNumeroProfesor(valor['n']);
+        case 'permiso':
+          return esNumeroProfesor(valor['n']) && typeof valor['marcada'] === 'boolean';
+        default:
+          return false;
+      }
     case 'alto':
       return typeof valor['alto'] === 'number' && Number.isFinite(valor['alto']) && valor['alto'] >= 0;
     case 'ir':
@@ -544,13 +631,24 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
     case 'subir-foto': {
       // El `File` llega clonado a esta ventana (`postMessage`): es un `Blob` de aquí con su nombre.
       const archivo = valor['archivo'];
-      return esFotoSuelta(valor['clave']) && archivo instanceof Blob && typeof (archivo as File).name === 'string';
+      return esClaveSubida(valor['clave']) && archivo instanceof Blob && typeof (archivo as File).name === 'string';
     }
     case 'foto':
-      return esFotoSuelta(valor['clave']) && (ACCIONES_FOTO as readonly unknown[]).includes(valor['accion']);
+    {
+      // La foto nueva de la galería solo tiene su subida (cancelarla o cerrar su fallo); solo las de la galería se mueven.
+      const accion = valor['accion'];
+      const clave = valor['clave'];
+      if (!(ACCIONES_FOTO as readonly unknown[]).includes(accion)) {
+        return false;
+      }
+      if (clave === GALERIA_NUEVA) {
+        return accion === 'cancelar-subida';
+      }
+      return accion === 'antes' || accion === 'despues' ? esFotoGaleria(clave) : esFotoEditable(clave);
+    }
     case 'descripcion': {
       const texto = valor['texto'];
-      return esFotoSuelta(valor['clave']) && typeof texto === 'string' && texto.length <= MAX_DESCRIPCION_FOTO;
+      return esFotoEditable(valor['clave']) && typeof texto === 'string' && texto.length <= MAX_DESCRIPCION_FOTO;
     }
     case 'bloques':
       return esListaDeIds(valor['orden'], esIdBloque) && esListaDeIds(valor['vacios'], esIdBloque);

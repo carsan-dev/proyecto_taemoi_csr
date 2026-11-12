@@ -259,8 +259,8 @@ describe('WebContenidoComponent (W12c)', () => {
       abrir();
       const enviar = spyOn(iframe()!.contentWindow!, 'postMessage');
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
-      // W12e: con el panel estrecho la capa nueva recibe también `estado-bloques`; aquí no cuenta.
-      const llamadas = enviar.calls.allArgs().filter(([m]) => (m as { tipo: string }).tipo !== 'estado-bloques');
+      // W12e: con el panel estrecho la capa nueva recibe también `estado-bloques`; W12f-2b, `profesores`: aquí no cuentan.
+      const llamadas = enviar.calls.allArgs().filter(([m]) => !['estado-bloques', 'profesores'].includes((m as { tipo: string }).tipo));
       expect(llamadas.length).toBe(1);
       const [mensaje, destino] = llamadas[0] as unknown as [Record<string, unknown>, string];
       expect(destino).toBe(location.origin);

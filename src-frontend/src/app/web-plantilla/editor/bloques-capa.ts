@@ -1,5 +1,6 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
 import { encajarEnVista } from './colocar-flotantes';
+import { cuentaGaleria, ordenGaleria } from './fotos-galeria';
 import {
   type AccionBloque,
   MENU_TIPOS,
@@ -246,9 +247,11 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
     const oculto = !!movible && estaOculto(filas, movible);
     const esVacio = !!movible && !oculto && vacio(movible, el);
     const nombre = movible ? nombreBloque(movible, filas) : '';
-    const firma = [cambio, oculto, esVacio, nombre].join('|');
+    // W12f-2a (boceto `estadosHtml`): la galería dice cuántas fotos tiene de las 6.
+    const cuenta = movible === 'galeria' ? cuentaGaleria(ordenGaleria(filas).length) : '';
+    const firma = [cambio, oculto, esVacio, nombre, cuenta].join('|');
     let caja = barra.querySelector<HTMLElement>(':scope > .ed-estados');
-    if (!cambio && !oculto && !esVacio) {
+    if (!cambio && !oculto && !esVacio && !cuenta) {
       caja?.remove();
       return;
     }
@@ -272,6 +275,9 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
       pastillas.push(nodo('span', 'ed-pastilla ed-pastilla--oculto', icono('oculto'), TEXTOS_BLOQUES.ocultoEnLaWeb, mostrar));
     } else if (esVacio) {
       pastillas.push(nodo('span', 'ed-pastilla', icono('info'), TEXTOS_BLOQUES.vacio));
+    }
+    if (cuenta) {
+      pastillas.push(nodo('span', 'ed-pastilla', cuenta));
     }
     caja.replaceChildren(...pastillas);
     if (enfocado && oculto) {

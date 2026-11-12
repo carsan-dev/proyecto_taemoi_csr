@@ -80,7 +80,7 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
   const tecla = (el: Element, key: string) => el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
   const esperar = (ms = 60) => new Promise((r) => setTimeout(r, ms));
 
-  it('capa sobre las tres fotos sueltas; la galería y los profesores siguen sin ser editables', () => {
+  it('capa sobre las tres fotos sueltas y las de la galería; los profesores siguen sin ser editables', () => {
     const portada = foto('portada.foto');
     expect(portada.parentElement!.classList).toContain('portada-foto');
     expect(portada.getAttribute('aria-label')).toBe('Cambiar foto de la portada');
@@ -100,8 +100,9 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
     expect(tf.parentElement!.matches('#texto-foto-3 .tf > figure.ed-hueco-foto.tf-foto')).toBeTrue();
     expect(texto(tf.querySelector('.ed-foto__pista'))).toBe('Añade una foto');
 
-    expect(doc.querySelectorAll('.ed-foto').length).toBe(3);
-    expect(q('#galeria figure').querySelector('.ed-foto')).toBeNull();
+    expect(doc.querySelectorAll('.ed-foto').length).toBe(4);
+    expect(q('#galeria figure').querySelector('.ed-foto')).toBe(foto('galeria.1'));
+    expect(foto('galeria.1').getAttribute('aria-label')).toBe('Cambiar foto n.º 1 de la galería');
     expect(q('#profesores figure').querySelector('.ed-foto')).toBeNull();
   });
 
@@ -323,9 +324,171 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
     expect(q('.portada-foto').querySelector('.ed-error--foto')).toBeNull();
   });
 
-  it('el puente de la capa no acepta estados de fotos de la galería', () => {
-    estado({ 'galeria.1': { estado: 'error', titulo: 'x', msg: 'y' } } as never);
+  it('una foto de profesor sin tarjeta del editor (`data-ed-profesor`) no tiene capa (W12f-2b)', () => {
+    estado({ 'profesor.1.foto': { estado: 'error', titulo: 'x', msg: 'y' } } as never);
     expect(doc.querySelector('.ed-fallo')).toBeNull();
+  });
+
+  describe('galería (W12f-2a)', () => {
+    const gal = (n: number, orden: number, alt = `Foto ${n}`) => ({ ...fila(`galeria.${n}`, alt, `https://x/g${n}.webp`), orden });
+    /** El tema pinta las fotos de la galería en el orden de `orden` (como `BloquesWeb.galeria`). */
+    function pintarGaleria(fotos: BloqueBorrador[]): void {
+      const ol = q('#galeria ol.galeria');
+      ol.querySelectorAll(':scope > li:not(.ed)').forEach((li) => li.remove());
+      const delTema = [...fotos].sort((a, b) => a.orden - b.orden);
+      for (const [i, f] of delTema.entries()) {
+        const li = doc.createElement('li');
+        li.innerHTML = `<figure class="foto"><img src="${f.imagenUrl}" alt="${f.texto}"></figure><span class="galeria-n" aria-hidden="true">0${i + 1}</span>`;
+        ol.insertBefore(li, ol.querySelector(':scope > li.ed'));
+      }
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'borrador', bloques: [...BORRADOR.filter((f) => !f.clave.startsWith('galeria.')), ...fotos] });
+    }
+    const items = () => Array.from(doc.querySelectorAll<HTMLElement>('#galeria ol.galeria > li'));
+    const opcion = (t: string) => opciones().find((o) => texto(o).startsWith(t))!;
+
+    it('tras las fotos, «Añadir foto» con los formatos; sin fotos, «Añade la primera foto»', () => {
+      const ultimo = items().at(-1)!;
+      expect(ultimo.classList).toContain('ed');
+      expect(texto(ultimo.querySelector('button.ed-anadir-foto'))).toBe('Añadir fotoJPG, PNG o WebP, hasta 50 MB');
+      pintarGaleria([]);
+      expect(items().length).toBe(1);
+      expect(texto(q('.ed-anadir-foto'))).toBe('Añade la primera fotoJPG, PNG o WebP, hasta 50 MB');
+    });
+
+    it('elegir un fichero sube como `galeria.nueva`; la casilla pendiente con progreso, Cancelar y su fallo', () => {
+      const entrada = q<HTMLInputElement>('input[type=file]');
+      spyOn(entrada, 'click');
+      q('.ed-anadir-foto').click();
+      const archivo = new File(['x'], 'entrenamiento-mollina.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(entrada, 'files', { value: [archivo], configurable: true });
+      entrada.dispatchEvent(new Event('change'));
+      expect(mensajes('subir-foto')).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'subir-foto', clave: 'galeria.nueva', archivo }]);
+      expect(esMensajeDelEditor(mensajes('subir-foto')[0])).toBeTrue();
+
+      estado({ 'galeria.nueva': { estado: 'subiendo', pct: 40, nombre: 'entrenamiento-mollina.jpg' } });
+      const pendiente = items().at(-2)!;
+      expect(pendiente.dataset['edGaleria']).toBe('pendiente');
+      expect(texto(pendiente.querySelector('.ed-subida'))).toBe('Subiendo «entrenamiento-mollina.jpg»…40 %Cancelar subida');
+      expect(doc.activeElement).toBe(pendiente.querySelector('[data-accion="cancelar-subida"]'));
+      (doc.activeElement as HTMLElement).click();
+      expect(mensajes('foto').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave: 'galeria.nueva', accion: 'cancelar-subida' });
+      expect(esMensajeDelEditor(mensajes('foto').at(-1))).toBeTrue();
+
+      estado({ 'galeria.nueva': { estado: 'error', titulo: 'Formato no admitido', msg: '«a.heic»: convierte la foto.' } });
+      expect(texto(q('#galeria .ed-fallo'))).toContain('Formato no admitido');
+      expect(texto(q('#galeria .ed-fallo [data-accion="foto-subir"]'))).toBe('Elegir otra foto');
+      // Al cerrarse, la casilla se va y el foco vuelve a «Añadir foto».
+      q<HTMLElement>('#galeria .ed-fallo [data-accion="cancelar-subida"]').focus();
+      estado({});
+      expect(items().some((li) => li.dataset['edGaleria'] === 'pendiente')).toBeFalse();
+      expect(doc.activeElement).toBe(q('.ed-anadir-foto'));
+    });
+
+    it('tope de 6 (contando la que sube): nota «6 de 6 fotos» en vez del botón', () => {
+      pintarGaleria([1, 2, 3, 4, 5].map((n) => gal(n, n)));
+      expect(q('.ed-anadir-foto')).not.toBeNull();
+      estado({ 'galeria.nueva': { estado: 'subiendo', pct: 0, nombre: 'a.jpg' } });
+      const nota = q('#galeria .ed-galeria-llena');
+      expect(nota.getAttribute('role')).toBe('note');
+      expect(texto(nota)).toBe('6 de 6 fotosEs el máximo. Quita una para añadir otra.');
+      expect(doc.querySelector('.ed-anadir-foto')).toBeNull();
+      estado({});
+      pintarGaleria([1, 2, 3, 4, 5, 6].map((n) => gal(n, n)));
+      expect(q('#galeria .ed-galeria-llena')).not.toBeNull();
+    });
+
+    it('menú: Cambiar, Describir, Mover antes/después (desactivados en los extremos) y Quitar de la galería', () => {
+      pintarGaleria([gal(1, 1), gal(4, 2, ''), gal(2, 3)]);
+      foto('galeria.1').click();
+      expect(texto(q('.flot__titulo'))).toBe('Foto n.º 1 de la galería');
+      expect(opciones().map(texto)).toEqual([
+        'Cambiar fotoJPG, PNG o WebP, hasta 50 MB',
+        'Describir la foto«Foto 1»',
+        'Mover antes',
+        'Mover después',
+        'Quitar de la galería',
+      ]);
+      expect(opcion('Mover antes').getAttribute('aria-disabled')).toBe('true');
+      expect(opcion('Mover después').hasAttribute('aria-disabled')).toBeFalse();
+      expect(q('.flot .flot__sep').nextElementSibling).toBe(opcion('Quitar de la galería'));
+      opcion('Mover antes').click();
+      expect(mensajes('foto')).toEqual([]);
+
+      foto('galeria.2').click();
+      expect(opcion('Mover después').getAttribute('aria-disabled')).toBe('true');
+      foto('galeria.2').click();
+      foto('galeria.4').click();
+      expect(texto(opcion('Describir la foto'))).toBe('Describir la fotoFalta: qué se ve, para quien no puede verla');
+    });
+
+    it('mover: pide al panel el cambio y el foco sigue en la foto movida', () => {
+      pintarGaleria([gal(1, 1), gal(2, 2)]);
+      foto('galeria.2').click();
+      opcion('Mover antes').click();
+      expect(mensajes('foto').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave: 'galeria.2', accion: 'antes' });
+      expect(esMensajeDelEditor(mensajes('foto').at(-1))).toBeTrue();
+      pintarGaleria([gal(1, 2), gal(2, 1)]);
+      expect(doc.activeElement).toBe(foto('galeria.2'));
+      expect(foto('galeria.2').closest<HTMLElement>('li')).toBe(items()[0]);
+      expect(foto('galeria.2').getAttribute('aria-label')).toBe('Cambiar foto n.º 1 de la galería');
+    });
+
+    it('quitar: el foco va a la que ocupa su puesto, a la de antes o a «Añadir foto»', () => {
+      pintarGaleria([gal(1, 1), gal(2, 2)]);
+      foto('galeria.1').click();
+      opcion('Quitar de la galería').click();
+      expect(mensajes('foto').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave: 'galeria.1', accion: 'quitar' });
+      pintarGaleria([gal(2, 1)]);
+      expect(doc.activeElement).toBe(foto('galeria.2'));
+      foto('galeria.2').click();
+      opcion('Quitar de la galería').click();
+      pintarGaleria([]);
+      expect(doc.activeElement).toBe(q('.ed-anadir-foto'));
+    });
+
+    it('panel estrecho: la hoja lleva Mover con su estado y no acepta el desactivado', () => {
+      pintarGaleria([gal(1, 1), gal(2, 2)]);
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'estado-bloques', sinGuardar: [], quitables: [], estrecho: true });
+      foto('galeria.1').click();
+      const m = mensajes('hoja-menu').at(-1)!;
+      expect(esMensajeDelEditor(m)).toBeTrue();
+      const ops = m['opciones'] as { op: string; icono: string; desactivada: boolean; peligro: boolean }[];
+      expect(ops.map((o) => [o.op, o.icono, o.desactivada, o.peligro])).toEqual([
+        ['subir', 'foto', false, false],
+        ['describir', 'texto', false, false],
+        ['antes', 'antes', true, false],
+        ['despues', 'despues', false, false],
+        ['quitar', 'papelera', false, true],
+      ]);
+      const id = m['id'] as number;
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'foto', id, op: 'antes', devolverFoco: false });
+      expect(mensajes('foto')).toEqual([]);
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-menu', menu: 'foto', id, op: 'despues', devolverFoco: false });
+      expect(mensajes('foto').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave: 'galeria.1', accion: 'despues' });
+    });
+
+    it('subida terminada: describe la foto nueva («Foto subida: describe la foto n.º 2 de la galería»)', async () => {
+      pintarGaleria([gal(1, 1), gal(3, 2, '')]);
+      estado({}, ['galeria.3']);
+      expect(texto(q('#galeria li:nth-child(2) .ed-nueva'))).toBe('Nueva, sin guardar');
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'describir', clave: 'galeria.3' });
+      await esperar();
+      expect(texto(q('.flot h2'))).toBe('Foto subida: describe la foto n.º 2 de la galería');
+      const area = q<HTMLTextAreaElement>('#ed-alt');
+      area.value = 'Saludo final';
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+      expect(mensajes('descripcion').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'descripcion', clave: 'galeria.3', texto: 'Saludo final' });
+    });
+
+    it('error «Describe la foto.» en su foto e ir al dato', async () => {
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'errores', errores: { 'galeria.1.alt': 'Describe la foto.' } });
+      expect(texto(q('#galeria .ed-error--foto'))).toBe('Describe la foto.');
+      expect(foto('galeria.1').classList).toContain('es-error');
+      delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'ir-texto', clave: 'galeria.1.alt' });
+      expect(doc.activeElement).toBe(foto('galeria.1'));
+      await esperar();
+      expect(texto(q('.flot h2'))).toBe('describe la foto n.º 1 de la galería');
+    });
   });
 
   describe('panel estrecho (d541): el menú de la foto sale como hoja del panel', () => {

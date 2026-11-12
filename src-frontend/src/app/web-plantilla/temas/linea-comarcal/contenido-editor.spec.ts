@@ -77,3 +77,36 @@ describe('vistaPortada en el editor (W12e)', () => {
     }
   });
 });
+
+/** W12f-2b: en el editor, también los profesores sin nombre, con su número; en la web, como antes. */
+describe('vistaPortada: profesores en el editor (W12f-2b)', () => {
+  const b = (clave: string, texto: string | null, imagenUrl: string | null = null): BloqueWeb => ({ clave, texto, imagenUrl, orden: 0 });
+  const conProfesores = (...bloques: BloqueWeb[]) => {
+    const s = sitioConSedes(2);
+    return { ...s, bloques: [...s.bloques, cab('profesores', 3), ...bloques] };
+  };
+  const profesores = (bloques: BloqueWeb[], editor: boolean) => {
+    const seccion = vistaPortada(conProfesores(...bloques), AHORA, editor).secciones.find((x) => x.id === 'profesores');
+    return seccion && seccion.tipo === 'profesores' ? seccion : null;
+  };
+
+  it('en la web: solo los que tienen nombre y sin su número (la tarjeta, igual que antes)', () => {
+    const web = profesores([b('profesor.1.nombre', 'Ana Ruiz'), b('profesor.2.nombre', ''), b('profesor.2.cargo', 'Maestro')], false)!;
+    expect(web.profesores).toEqual([{ n: 1, nombre: 'Ana Ruiz', cargo: null, foto: null, monograma: 'AR' }]);
+  });
+
+  it('en el editor: también el que no tiene nombre («?»), cada uno con su número', () => {
+    const editor = profesores([b('profesor.1.nombre', 'Ana Ruiz'), b('profesor.2.nombre', '')], true)!;
+    expect(editor.profesores.map((p) => [p.n, p.nombre, p.monograma, p.marca])).toEqual([
+      [1, 'Ana Ruiz', 'AR', 1],
+      [2, '', '?', 2],
+    ]);
+  });
+
+  it('solo uno sin nombre: en el editor sale con «—» (no sale en la web); en la web, no hay sección', () => {
+    expect(profesores([b('profesor.4.nombre', '')], false)).toBeNull();
+    const editor = profesores([b('profesor.4.nombre', '')], true)!;
+    expect(editor.numero).toBe('—');
+    expect(editor.profesores.map((p) => p.n)).toEqual([4]);
+  });
+});

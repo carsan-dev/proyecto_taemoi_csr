@@ -17,6 +17,7 @@ import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
 import { cajasVisibles, colocarEvitando, MARGEN_VERTICAL } from './colocar-flotantes';
 import { activarEdicionTextos, iconoCandado } from './edicion-textos';
 import { activarFotosEditor } from './fotos-editor';
+import { activarProfesoresEditor } from './profesores-capa';
 import {
   BloqueBorrador,
   CANAL_EDITOR_WEB,
@@ -43,7 +44,8 @@ import {
  * - W12c-ter: los formularios de la web, inertes: no se escribe, no se marca, no se firma y no se envía;
  * - W12d: los textos que se cambian en el sitio (`edicion-textos.ts`);
  * - W12f-1: las fotos sueltas (portada, presentación y «Texto con foto»: `fotos-editor.ts`);
- * - W12e: la barra de acciones de cada bloque de Inicio, sus pastillas y los huecos «Añadir bloque» (`bloques-capa.ts`).
+ * - W12e: la barra de acciones de cada bloque de Inicio, sus pastillas y los huecos «Añadir bloque» (`bloques-capa.ts`);
+ * - W12f-2b: la casilla del permiso o la constancia de cada profesor, su «Quitar» y «Añadir profesor» (`profesores-capa.ts`).
  * Los enlaces de los candados no navegan aquí: piden el destino al panel por el puente.
  */
 
@@ -118,7 +120,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   let irPendiente: { clave: string; hasta: number } | null = null;
 
   function irAlTexto(clave: string): boolean {
-    const arriba = fotos.irA(clave) ?? textos.irA(clave);
+    const arriba = fotos.irA(clave) ?? profesores.irA(clave) ?? textos.irA(clave);
     if (arriba !== null) {
       enviar({ canal: CANAL_EDITOR_WEB, tipo: 'mostrar', arriba });
     }
@@ -144,6 +146,8 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   const fotos = activarFotosEditor({ ventana, enviar: (m) => enviar(m), estrecho: () => bloques.estrecho() });
   // W12e: bloques de Inicio. El panel hace cada acción; la capa la pide y pinta el estado.
   const bloques = activarBloquesEditor({ ventana, enviar: (m) => enviar(m), editar: (clave) => textos.editar(clave) });
+  // W12f-2b: profesores. El panel confirma, numera y guarda; la capa pide cada acción y pinta la casilla o la constancia.
+  const profesores = activarProfesoresEditor({ ventana, enviar: (m) => enviar(m), editar: (clave) => textos.editar(clave) });
 
   // ------------------------------------------------------------------ anotar el DOM del tema
   function nombreDe(parte: Parte, el: HTMLElement): string {
@@ -417,6 +421,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     notaDePagina(pagina);
     textos.decorar(pagina);
     fotos.decorar(pagina);
+    profesores.decorar(pagina);
     bloques.decorar(pagina);
     enlacesOcultos();
     sinTabulador();
@@ -533,7 +538,8 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
 
   const alPulsar = (evento: MouseEvent) => {
     const t = elemento(evento);
-    if (!t) {
+    // W12f-2b: la casilla del permiso de un profesor se marca (boceto: `.ed-texto, .ed-permiso` no se tocan aquí).
+    if (!t || t.closest('.ed-permiso')) {
       return;
     }
     const accion = t.closest<HTMLElement>('[data-accion]');
@@ -720,6 +726,15 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     if (mensaje.tipo === 'errores') {
       textos.errores(mensaje.errores);
       fotos.errores(mensaje.errores);
+      profesores.errores(mensaje.errores);
+      return;
+    }
+    if (mensaje.tipo === 'profesores') {
+      profesores.estado(mensaje.lista);
+      return;
+    }
+    if (mensaje.tipo === 'foco-profesor') {
+      profesores.enfocar(mensaje.foco);
       return;
     }
     if (mensaje.tipo === 'fotos') {
@@ -790,6 +805,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     doc.removeEventListener('pointerdown', alFirmar, true);
     textos.quitar();
     fotos.quitar();
+    profesores.quitar();
     bloques.quitar();
     estilos.remove();
     candado.remove();

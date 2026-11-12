@@ -1,10 +1,13 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
 import { encajarEnVista } from './colocar-flotantes';
+import { GALERIA_NUEVA, MAX_GALERIA, TEXTOS_GALERIA, esFotoGaleria, ordenGaleria } from './fotos-galeria';
+import { TEXTOS_PROFESORES, esFotoProfesor } from './fotos-profesores';
 import {
   FORMATOS_FOTO,
   MAX_DESCRIPCION_FOTO,
   claveDescripcion,
-  esFotoSuelta,
+  esClaveSubida,
+  esFotoEditable,
   fotoDeDescripcion,
   fotoOpcional,
   queFoto,
@@ -32,7 +35,14 @@ import { recortar } from './textos-editor';
  * subida (`fotos`). Lo demás (describir, volver, quitar, cancelar) también lo guarda el panel en su borrador. Mientras
  * sube, la foto elegida se ve aquí, atenuada, desde el propio fichero (URL local, nunca enviada).
  *
- * La galería y los profesores (W12f-2) no se tocan.
+ * W12f-2a: las fotos de la galería llevan la misma capa (su menú añade «Mover antes», «Mover después» y «Quitar de la
+ * galería»). Tras ellas, la capa pone su casilla de subida (`galeria.nueva`) y «Añadir foto» o, con 6, la nota del tope
+ * (boceto `galeriaHtml`).
+ *
+ * W12f-2b: la foto de cada profesor (`profesor.<n>.foto`), en la tarjeta que el tema marca en el editor
+ * (`data-ed-profesor`). Sin foto, el tema pinta el monograma (`role="img"`): la capa va en una caja propia encima, no
+ * dentro (lo que hay dentro de una imagen no lo oye el lector), con «Añadir foto» (boceto `fotoCapa` con `mono`). Su menú
+ * dice «Sale con sus iniciales» en «Quitar foto».
  */
 export interface OpcionesFotosEditor {
   ventana: Window;
@@ -61,11 +71,13 @@ interface Sitio {
   clave: string;
   figura: HTMLElement;
   arriba: boolean;
+  /** W12f-2b: sobre el monograma de un profesor sin foto (boceto `fotoCapa` con `mono`). */
+  mono?: boolean;
 }
 
 const SVG = 'http://www.w3.org/2000/svg';
 type Figura = readonly [string, Readonly<Record<string, string>>];
-/** Iconos del boceto (`#i-foto`, `#i-mas`, `#i-texto`, `#i-deshacer`, `#i-papelera`, `#i-aviso`). */
+/** Iconos del boceto (`#i-foto`, `#i-mas`, `#i-texto`, `#i-deshacer`, `#i-antes`, `#i-despues`, `#i-papelera`, `#i-aviso`). */
 const ICONOS: Readonly<Record<string, { trazo: string; figuras: readonly Figura[] }>> = {
   foto: {
     trazo: '1.8',
@@ -78,6 +90,8 @@ const ICONOS: Readonly<Record<string, { trazo: string; figuras: readonly Figura[
   mas: { trazo: '2', figuras: [['path', { d: 'M12 5v14M5 12h14' }]] },
   texto: { trazo: '2', figuras: [['path', { d: 'M4 6h16M4 11h16M4 16h10' }]] },
   deshacer: { trazo: '2', figuras: [['path', { d: 'M9 14 4 9l5-5' }], ['path', { d: 'M4 9h10.5a5.5 5.5 0 0 1 0 11H11' }]] },
+  antes: { trazo: '2', figuras: [['path', { d: 'M19 12H5M11 6l-6 6 6 6' }]] },
+  despues: { trazo: '2', figuras: [['path', { d: 'M5 12h14M13 6l6 6-6 6' }]] },
   papelera: { trazo: '2', figuras: [['path', { d: 'M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4.5h6V7' }]] },
   aviso: { trazo: '2', figuras: [['circle', { cx: '12', cy: '12', r: '9' }], ['path', { d: 'M12 7.5v5.5M12 16.5h.01' }]] },
 };
@@ -126,8 +140,17 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   // ------------------------------------------------------------------ utilidades
   const fila = (clave: string) => filas.find((f) => f.clave === clave);
   const tieneFoto = (clave: string) => !!fila(clave)?.imagenUrl;
-  const que = (clave: string) => queFoto(clave, (bloque) => fila(`${bloque}.titulo`)?.texto ?? '');
+  const que = (clave: string) =>
+    queFoto(
+      clave,
+      (bloque) => fila(`${bloque}.titulo`)?.texto ?? '',
+      (foto) => ordenGaleria(filas).indexOf(foto) + 1,
+      (foto) => fila(foto.replace(/\.foto$/, '.nombre'))?.texto ?? '',
+    );
   const boton = (clave: string) => doc.querySelector<HTMLButtonElement>(`.ed-foto[data-foto="${CSS.escape(clave)}"]`);
+  /** A dónde vuelve el foco: el botón de una foto o, con `galeria.nueva`, «Añadir foto» de la galería. */
+  const destinoFoco = (clave: string) =>
+    clave === GALERIA_NUEVA ? doc.querySelector<HTMLButtonElement>('.ed-anadir-foto') : boton(clave);
 
   function icono(nombre: keyof typeof ICONOS): SVGSVGElement {
     const def = ICONOS[nombre];
@@ -202,13 +225,157 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       }
       lista.push({ clave: `texto_foto.${n[1]}.foto`, figura: delTema ?? hueco!, arriba: false });
     });
+    lista.push(...sitiosGaleria(), ...sitiosProfesores());
     return lista;
+  }
+
+  /**
+   * W12f-2b: la foto de cada tarjeta de profesor del editor (`li.profe[data-ed-profesor]`) o, sin foto, la caja de la capa
+   * sobre su monograma (se quita cuando el tema pinta la foto).
+   */
+  function sitiosProfesores(): Sitio[] {
+    if (pagina !== 'inicio') {
+      return [];
+    }
+    const lista: Sitio[] = [];
+    doc.querySelectorAll<HTMLElement>('section#profesores li.profe[data-ed-profesor]').forEach((li) => {
+      const n = li.dataset['edProfesor'] ?? '';
+      if (!/^[1-9][0-9]?$/.test(n)) {
+        return;
+      }
+      const clave = `profesor.${n}.foto`;
+      const figura = li.querySelector<HTMLElement>(':scope > figure.profe-foto');
+      const monograma = li.querySelector<HTMLElement>(':scope > .monograma');
+      let capa = li.querySelector<HTMLElement>(':scope > .ed-mono__capa');
+      if (figura || !monograma) {
+        capa?.remove();
+        if (figura) {
+          lista.push({ clave, figura, arriba: false });
+        }
+        return;
+      }
+      monograma.classList.add('ed-mono');
+      if (!capa) {
+        capa = nodo('div', 'ed ed-mono__capa');
+      }
+      if (monograma.nextElementSibling !== capa) {
+        monograma.after(capa);
+      }
+      lista.push({ clave, figura: capa, arriba: false, mono: true });
+    });
+    return lista;
+  }
+
+  /** La galería del tema (`section#galeria ol.galeria`), o null. */
+  const listaGaleria = () => (pagina === 'inicio' ? doc.querySelector<HTMLElement>('section#galeria ol.galeria') : null);
+
+  /**
+   * W12f-2a: cada foto de la galería que pinta el tema, con su clave. El tema las pinta en el orden de `ordenGaleria`;
+   * por si aún pinta el borrador de antes, cada figura se casa primero por su foto y si no, por su puesto.
+   */
+  function sitiosGaleria(): Sitio[] {
+    const ol = listaGaleria();
+    if (!ol) {
+      return [];
+    }
+    const libres = ordenGaleria(filas);
+    const figuras = Array.from(ol.querySelectorAll<HTMLElement>(':scope > li:not([data-ed-galeria]) > figure.foto'));
+    const porFoto = figuras.map((figura) => {
+      const src = figura.querySelector(':scope > img:not(.ed)')?.getAttribute('src');
+      const clave = src ? libres.find((c) => fila(c)?.imagenUrl === src) : undefined;
+      if (clave) {
+        libres.splice(libres.indexOf(clave), 1);
+      }
+      return clave;
+    });
+    return figuras
+      .map((figura, i) => ({ clave: porFoto[i] ?? libres.shift(), figura, arriba: false }))
+      .filter((s): s is Sitio => !!s.clave);
+  }
+
+  /**
+   * Boceto `galeriaHtml`: tras las fotos, la casilla de la foto que sube (`galeria.nueva`) y «Añadir foto» («Añade la
+   * primera foto» sin ninguna) o, con 6 (contando la que sube), la nota «6 de 6 fotos». Solo en el editor.
+   */
+  function pintarGaleria(): void {
+    const ol = listaGaleria();
+    const sub = subidas[GALERIA_NUEVA];
+    if (!sub) {
+      // La foto nueva ya entró (o se canceló): fuera su vista local.
+      const previa = previas.get(GALERIA_NUEVA);
+      if (previa?.vista) {
+        urls.revokeObjectURL(previa.url);
+        previas.delete(GALERIA_NUEVA);
+      }
+    }
+    if (!ol) {
+      return;
+    }
+    const activo = doc.activeElement;
+    let pendiente = ol.querySelector<HTMLElement>(':scope > li[data-ed-galeria="pendiente"]');
+    if (sub) {
+      if (!pendiente) {
+        pendiente = nodo('li', 'ed', nodo('figure', 'foto'));
+        pendiente.dataset['edGaleria'] = 'pendiente';
+        // En el documento antes de pintar su subida: su «Cancelar subida» recibe el foco.
+        ol.insertBefore(pendiente, ol.querySelector(':scope > li[data-ed-galeria="fin"]'));
+      }
+      pintarSubida(GALERIA_NUEVA, pendiente.firstElementChild as HTMLElement, sub, false);
+    } else if (pendiente) {
+      if (pendiente.contains(activo)) {
+        enfocarFoto = GALERIA_NUEVA;
+      }
+      pendiente.remove();
+      pendiente = null;
+    }
+
+    const fotos = ordenGaleria(filas).length;
+    const firma = fotos + (sub ? 1 : 0) >= MAX_GALERIA ? 'llena' : fotos ? 'anadir' : 'primera';
+    let fin = ol.querySelector<HTMLElement>(':scope > li[data-ed-galeria="fin"]');
+    if (fin?.dataset['firma'] !== firma) {
+      const teniaFoco = !!fin?.contains(activo);
+      let contenido: HTMLElement;
+      if (firma === 'llena') {
+        contenido = nodo('div', 'ed ed-galeria-llena', nodo('b', '', TEXTOS_GALERIA.llena), nodo('span', '', TEXTOS_GALERIA.llenaNota));
+        contenido.setAttribute('role', 'note');
+      } else {
+        const texto = firma === 'anadir' ? TEXTOS_GALERIA.anadir : TEXTOS_GALERIA.anadirPrimera;
+        contenido = botonCapa('ed ed-anadir-foto', 'foto-subir', GALERIA_NUEVA, icono('mas'), texto, nodo('small', '', FORMATOS_FOTO));
+      }
+      const nuevo = nodo('li', 'ed', contenido);
+      nuevo.dataset['edGaleria'] = 'fin';
+      nuevo.dataset['firma'] = firma;
+      fin?.remove();
+      fin = nuevo;
+      ol.appendChild(fin);
+      if (teniaFoco && contenido instanceof HTMLButtonElement) {
+        contenido.focus({ preventScroll: true });
+      }
+    }
+    // Siempre al final: las fotos del tema, la que sube y el botón (o la nota).
+    if (pendiente && (pendiente.parentElement !== ol || pendiente.nextElementSibling !== fin)) {
+      ol.insertBefore(pendiente, fin);
+    }
+    if (ol.lastElementChild !== fin) {
+      if (pendiente) {
+        ol.appendChild(pendiente);
+      }
+      ol.appendChild(fin);
+    }
   }
 
   // ------------------------------------------------------------------ pintar la capa de cada foto (boceto `fotoCapa`)
   function pintar(sitio: Sitio): void {
     const { clave, figura, arriba } = sitio;
+    const mono = !!sitio.mono;
     const tiene = tieneFoto(clave);
+    const otra = figura.querySelector<HTMLButtonElement>(':scope > .ed-foto')?.dataset['foto'];
+    if (otra && otra !== clave) {
+      // Galería: el tema reutiliza la figura con otra foto. Fuera lo de la otra.
+      figura
+        .querySelectorAll(':scope > .ed-foto, :scope > .ed-nueva, :scope > .ed-error--foto, :scope > .ed-subida, :scope > .ed-fallo')
+        .forEach((el) => el.remove());
+    }
     const sub = subidas[clave];
     const error = errores[claveDescripcion(clave)] ?? errores[clave];
     const nombre = que(clave);
@@ -220,12 +387,15 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       b.setAttribute('aria-haspopup', 'menu');
       figura.appendChild(b);
     }
-    b.classList.toggle('es-vacia', !tiene);
+    // Boceto `fotoCapa`: sobre el monograma, sin el hueco punteado y con su nombre («Añadir foto de …»).
+    b.classList.toggle('es-vacia', !tiene && !mono);
     b.classList.toggle('ed-foto--arriba', arriba);
     b.classList.toggle('es-error', !!error);
     b.setAttribute('aria-expanded', String(abierto?.tipo === 'menu' && abierto.clave === clave));
     if (tiene) {
       b.setAttribute('aria-label', `Cambiar foto ${nombre}`);
+    } else if (mono) {
+      b.setAttribute('aria-label', `${TEXTOS_PROFESORES.anadirFoto} ${nombre}`);
     } else {
       b.removeAttribute('aria-label');
     }
@@ -234,11 +404,12 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     } else {
       b.removeAttribute('aria-describedby');
     }
-    const firma = `${tiene}`;
+    const firma = `${tiene}|${mono}`;
     if (b.dataset['firma'] !== firma) {
       b.dataset['firma'] = firma;
-      const pista = nodo('span', 'ed-foto__pista', icono(tiene ? 'foto' : 'mas'), tiene ? 'Cambiar foto' : textoFotoVacia(clave));
-      b.replaceChildren(pista, ...(tiene ? [] : [nodo('span', 'ed-foto__formatos', FORMATOS_FOTO)]));
+      const vacia = mono ? TEXTOS_PROFESORES.anadirFoto : textoFotoVacia(clave);
+      const pista = nodo('span', 'ed-foto__pista', icono(tiene ? 'foto' : 'mas'), tiene ? 'Cambiar foto' : vacia);
+      b.replaceChildren(pista, ...(tiene || mono ? [] : [nodo('span', 'ed-foto__formatos', FORMATOS_FOTO)]));
     }
 
     // «Nueva, sin guardar»
@@ -359,9 +530,10 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     for (const sitio of sitios()) {
       pintar(sitio);
     }
+    pintarGaleria();
     const activo = doc.activeElement;
     if (enfocarFoto && (!activo || activo === doc.body)) {
-      const b = boton(enfocarFoto);
+      const b = destinoFoco(enfocarFoto);
       if (b) {
         enfocarFoto = null;
         b.focus({ preventScroll: true });
@@ -416,16 +588,30 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     }
   }
 
-  const datosOpcion = (op: string, texto: string, icono: OpcionHojaMenu['icono'], pie: string, peligro = false): OpcionHojaMenu => ({
+  const datosOpcion = (
+    op: string,
+    texto: string,
+    icono: OpcionHojaMenu['icono'],
+    pie: string,
+    peligro = false,
+    desactivada = false,
+  ): OpcionHojaMenu => ({
     op,
     texto,
     pie,
     icono,
-    desactivada: false,
+    desactivada,
     peligro,
   });
 
-  function opcion(op: string, texto: string, nombreIcono: keyof typeof ICONOS, pie: string, peligro = false): HTMLButtonElement {
+  function opcion(
+    op: string,
+    texto: string,
+    nombreIcono: keyof typeof ICONOS,
+    pie: string,
+    peligro = false,
+    desactivada = false,
+  ): HTMLButtonElement {
     const b = nodo(
       'button',
       `flot__op${peligro ? ' flot__op--peligro' : ''}`,
@@ -435,10 +621,16 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     b.type = 'button';
     b.setAttribute('role', 'menuitem');
     b.dataset['op'] = op;
+    if (desactivada) {
+      b.setAttribute('aria-disabled', 'true');
+    }
     return b;
   }
 
-  /** Boceto `abrirMenuFoto`, sin «Mover» (galería) ni «Sale con sus iniciales» (profesores): W12f-2. */
+  /**
+   * Boceto `abrirMenuFoto`. W12f-2a: en la galería, «Mover antes» y «Mover después» (desactivados en los extremos) y
+   * «Quitar de la galería». W12f-2b: en un profesor, «Quitar foto» dice «Sale con sus iniciales».
+   */
   function abrirMenu(clave: string, b: HTMLElement): void {
     if (abierto?.enHoja) {
       cerrar(false);
@@ -452,13 +644,23 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     if (cambiadas.has(clave) && anteriores.has(clave)) {
       datos.push(datosOpcion('anterior', 'Volver a la anterior', 'deshacer', ''));
     }
+    const galeria = esFotoGaleria(clave);
+    if (galeria) {
+      const lista = ordenGaleria(filas);
+      const i = lista.indexOf(clave);
+      datos.push(
+        datosOpcion('antes', TEXTOS_GALERIA.moverAntes, 'antes', '', false, i <= 0),
+        datosOpcion('despues', TEXTOS_GALERIA.moverDespues, 'despues', '', false, i === -1 || i === lista.length - 1),
+      );
+    }
     if (tiene && fotoOpcional(clave)) {
-      datos.push(datosOpcion('quitar', 'Quitar foto', 'papelera', '', true));
+      const pie = esFotoProfesor(clave) ? TEXTOS_PROFESORES.quitarFotoPie : '';
+      datos.push(datosOpcion('quitar', galeria ? TEXTOS_GALERIA.quitar : 'Quitar foto', 'papelera', pie, true));
     }
     if (estrecho()) {
-      // d541: hoja inferior del panel; ella devuelve la opción elegida (`respuestaMenu`).
+      // d541: hoja inferior del panel; ella devuelve la opción elegida (`respuestaMenu`). Las desactivadas no valen.
       const id = ++ultimaHoja;
-      abierto = { clave, tipo: 'menu', enHoja: { id, ops: datos.map((d) => d.op), avisar: true } };
+      abierto = { clave, tipo: 'menu', enHoja: { id, ops: datos.filter((d) => !d.desactivada).map((d) => d.op), avisar: true } };
       b.setAttribute('aria-expanded', 'true');
       enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-menu', menu: 'foto', id, titulo: `Foto ${que(clave)}`, opciones: datos });
       return;
@@ -470,7 +672,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
         sep.setAttribute('role', 'separator');
         ops.push(sep);
       }
-      ops.push(opcion(d.op, d.texto, d.icono, d.pie, d.peligro));
+      ops.push(opcion(d.op, d.texto, d.icono, d.pie, d.peligro, d.desactivada));
     }
     const titulo = nodo('p', 'flot__titulo', `Foto ${que(clave)}`);
     titulo.id = 'ed-flot-t';
@@ -542,11 +744,14 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     const t = objetivo(evento);
     const accion = t?.closest<HTMLElement>('.ed [data-accion][data-foto], .ed-foto[data-accion]');
     const clave = accion?.dataset['foto'];
-    if (!accion || !esFotoSuelta(clave)) {
+    if (!accion || !esClaveSubida(clave)) {
       return;
     }
     switch (accion.dataset['accion']) {
       case 'foto':
+        if (!esFotoEditable(clave)) {
+          break;
+        }
         if (abierto?.tipo === 'menu' && abierto.clave === clave) {
           cerrar(true);
         } else {
@@ -581,7 +786,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
 
   const alPulsarFlot = (evento: MouseEvent) => {
     const b = objetivo(evento)?.closest<HTMLElement>('[data-op]');
-    if (b?.dataset['op']) {
+    if (b?.dataset['op'] && b.getAttribute('aria-disabled') !== 'true') {
       ejecutar(b.dataset['op']);
     }
   };
@@ -606,11 +811,19 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
         break;
       case 'anterior':
       case 'quitar':
+      case 'antes':
+      case 'despues': {
+        // La foto movida conserva el foco; al quitar una de la galería, va a la que ocupa su puesto, a la de antes o a
+        // «Añadir foto» (boceto `pintar(sig ? … : 'a-foto')`).
+        const lista = esFotoGaleria(clave) ? ordenGaleria(filas) : [];
+        const i = lista.indexOf(clave);
+        const destino = op === 'quitar' && i >= 0 ? (lista[i + 1] ?? lista[i - 1] ?? GALERIA_NUEVA) : clave;
         cerrar(true);
         // Si el tema repinta la foto (o pone el hueco), el foco vuelve a ella (boceto `pintar('f:…')`).
-        enfocarFoto = clave;
-        enviar({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave, accion: op as 'anterior' | 'quitar' });
+        enfocarFoto = destino;
+        enviar({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave, accion: op as 'anterior' | 'quitar' | 'antes' | 'despues' });
         break;
+      }
     }
   }
 
@@ -657,7 +870,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
 
   const alEnfocar = (evento: FocusEvent) => {
     const t = objetivo(evento);
-    if (enfocarFoto && t && t !== boton(enfocarFoto)) {
+    if (enfocarFoto && t && t !== destinoFoco(enfocarFoto)) {
       enfocarFoto = null;
     }
   };
@@ -734,7 +947,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       }, 50);
     },
     irA(clave) {
-      const foto = esFotoSuelta(clave) ? clave : fotoDeDescripcion(clave);
+      const foto = esFotoEditable(clave) ? clave : fotoDeDescripcion(clave);
       const b = foto ? boton(foto) : null;
       if (!foto || !b) {
         return null;

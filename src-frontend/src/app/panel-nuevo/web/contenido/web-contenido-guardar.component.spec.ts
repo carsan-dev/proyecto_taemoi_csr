@@ -254,11 +254,12 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
     fixture.detectChanges();
     fixture.detectChanges();
     expect(texto('.resumen h2')).toBe('Faltan 2 datos para guardar');
+    // W12f-2b: el permiso que pide la API lleva a la casilla del profesor.
     expect(Array.from(el().querySelectorAll('.resumen li')).map((li) => li.textContent!.trim())).toEqual([
       'Cabecera: enlace del menú «Horarios»',
-      'Marca la casilla si tienes su permiso.',
+      'Ana Ruiz: permiso para publicar',
     ]);
-    expect(q('.resumen a[data-ir="profesor.1.permiso"]')).toBeNull();
+    expect(q('.resumen a[data-ir="profesor.1.permiso"]')).not.toBeNull();
     expect(error).not.toHaveBeenCalled();
     expect(q('.barra')).not.toBeNull();
   });
@@ -445,7 +446,7 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
 
   it('mensajes de texto con una clave que no es editable o de otro origen se ignoran', () => {
     abrir();
-    cambiar('profesor.1.nombre', 'Otra');
+    cambiar('profesor.1.sedes', 'Otra');
     window.dispatchEvent(
       new MessageEvent('message', { data: { canal: CANAL_EDITOR_WEB, tipo: 'texto', clave: 'menu.horarios', texto: 'x' }, origin: 'https://otro.example', source: iframe()!.contentWindow }),
     );

@@ -124,7 +124,7 @@ describe('WebContenidoComponent: selector «Paso» y casos de Preinscripción (W
     abrir();
     const enviar = spyOn(iframe()!.contentWindow!, 'postMessage');
     llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
-    expect(enviar.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo).filter((t) => t !== 'estado-bloques')).toEqual(['borrador']);
+    expect(enviar.calls.allArgs().map(([m]) => (m as { tipo: string }).tipo).filter((t) => t !== 'estado-bloques' && t !== 'profesores')).toEqual(['borrador']);
     elegir(pagina(), 'preinscripcion');
     elegir(sub()!, '2');
     abrirMenu();
@@ -132,7 +132,7 @@ describe('WebContenidoComponent: selector «Paso» y casos de Preinscripción (W
     fixture.detectChanges();
     enviar.calls.reset();
     llegar({ canal: CANAL_EDITOR_WEB, tipo: 'listo' });
-    const tipos = enviar.calls.allArgs().map(([m]) => m as { tipo: string; paso?: number; caso?: string }).filter((m) => m.tipo !== 'estado-bloques');
+    const tipos = enviar.calls.allArgs().map(([m]) => m as { tipo: string; paso?: number; caso?: string }).filter((m) => m.tipo !== 'estado-bloques' && m.tipo !== 'profesores');
     expect(tipos.map((m) => m.tipo)).toEqual(['borrador', 'paso', 'caso']);
     expect(tipos[1].paso).toBe(2);
     expect(tipos[2].caso).toBe('sin-grupo');
