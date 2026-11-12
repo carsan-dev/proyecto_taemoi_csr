@@ -6,6 +6,8 @@ import {
   esTextoEditable,
   recortar,
 } from '../../../web-plantilla/editor/textos-editor';
+import { bloqueDeFoto, claveDescripcion, esFotoSuelta, fotoDeDescripcion } from '../../../web-plantilla/editor/fotos-sueltas';
+import { TEXTOS_FOTOS, queFoto } from './web-contenido-fotos';
 import type { BloqueContenido } from './web-contenido-vista';
 
 /**
@@ -69,6 +71,19 @@ export function erroresContenido(borrador: readonly BloqueContenido[], defectos:
   if (!borrador.some((f) => f.clave === 'portada.foto' && f.imagenId !== null)) {
     errores['portada.foto'] = 'Añade la foto de portada.';
   }
+  // W12f-1 (boceto `errores`): cada foto suelta puesta, descrita; un «Texto con foto» con foto, con su título.
+  for (const fila of borrador) {
+    if (!esFotoSuelta(fila.clave) || fila.imagenId === null) {
+      continue;
+    }
+    if (!(fila.texto ?? '').trim()) {
+      errores[claveDescripcion(fila.clave)] = TEXTOS_FOTOS.describe;
+    }
+    const bloque = bloqueDeFoto(fila.clave);
+    if (bloque && !borrador.some((f) => f.clave === `${bloque}.titulo`)) {
+      errores[`${bloque}.titulo`] = defTexto(`${bloque}.titulo`)!.falta;
+    }
+  }
   for (const fila of borrador) {
     const def = defTexto(fila.clave);
     if (!def || !def.obligatorio || (fila.texto ?? '').trim() || errores[fila.clave]) {
@@ -113,6 +128,10 @@ export function nombreError(clave: string, borrador: readonly BloqueContenido[])
   if (clave === 'portada.foto') {
     return 'Portada: falta la foto';
   }
+  const foto = fotoDeDescripcion(clave);
+  if (foto) {
+    return `Foto ${queFoto(foto, borrador)}: falta describirla`;
+  }
   const def = defTexto(clave);
   if (!def) {
     return null;
@@ -134,7 +153,8 @@ export function entradaResumen(
   delServidor: boolean,
 ): { clave: string; texto: string; enlace: boolean } {
   const nombre = nombreError(clave, borrador);
-  if (clave === 'portada.foto' && delServidor && mensaje) {
+  // W12f-1: el error de la API en una foto suelta lleva a la foto.
+  if (esFotoSuelta(clave) && delServidor && mensaje) {
     return { clave, texto: mensaje, enlace: true };
   }
   return { clave, texto: nombre ?? mensaje, enlace: nombre !== null };

@@ -323,6 +323,10 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
 .barra__texto { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 70ch; color: var(--pn-tinta-2); font: var(--pn-cuerpo); }
 .barra__texto strong { color: var(--pn-tinta); font-weight: 600; }
 .barra__peligro { flex: none; width: 16px; height: 16px; color: var(--pn-peligro); }
+// W12f-1: «Se está subiendo una foto…» (boceto `.girando`).
+.barra__girando { flex: none; width: 16px; height: 16px; color: var(--pn-acento); animation: girar 0.8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .barra__girando { animation: none; } }
 .punto { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--pn-acento); }
 .barra__acciones { display: flex; flex: none; gap: 8px; }
 .barra__acciones .secundario { margin-top: 0; }

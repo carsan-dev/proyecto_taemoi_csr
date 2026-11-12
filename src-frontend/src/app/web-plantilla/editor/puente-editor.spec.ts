@@ -133,3 +133,30 @@ describe('puente del editor de la web (W12c)', () => {
     expect(enviarPorPuente(window, null, mensaje)).toBeFalse();
   });
 });
+
+describe('puente del editor de la web: fotos sueltas (W12f-1)', () => {
+  const c = CANAL_EDITOR_WEB;
+  const archivo = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
+
+  it('del panel: estado de las fotos y «describir», solo con fotos sueltas', () => {
+    const subidas = { 'portada.foto': { estado: 'subiendo', pct: 40, nombre: 'a.jpg' }, 'texto_foto.2.foto': { estado: 'error', titulo: 'T', msg: 'M' } };
+    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['presentacion.foto'], anteriores: [], subidas })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: ['galeria.1'], anteriores: [], subidas: {} })).toBeFalse();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: [], anteriores: [], subidas: { 'profesor.1.foto': subidas['portada.foto'] } })).toBeFalse();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'fotos', cambiadas: [], anteriores: [], subidas: { 'portada.foto': { estado: 'subiendo', pct: 140, nombre: 'a' } } })).toBeFalse();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'describir', clave: 'portada.foto' })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'describir', clave: 'galeria.1' })).toBeFalse();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'texto_foto.3.foto.alt' })).toBeTrue();
+    expect(esMensajeDelPanel({ canal: c, tipo: 'ir-texto', clave: 'galeria.1.alt' })).toBeFalse();
+  });
+
+  it('de la capa: el fichero, las acciones y la descripción (máximo 150)', () => {
+    expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'portada.foto', archivo })).toBeTrue();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'portada.foto', archivo: 'a.jpg' })).toBeFalse();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'subir-foto', clave: 'galeria.nueva', archivo })).toBeFalse();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'foto', clave: 'presentacion.foto', accion: 'quitar' })).toBeTrue();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'foto', clave: 'presentacion.foto', accion: 'antes' })).toBeFalse();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'descripcion', clave: 'portada.foto', texto: 'x'.repeat(150) })).toBeTrue();
+    expect(esMensajeDelEditor({ canal: c, tipo: 'descripcion', clave: 'portada.foto', texto: 'x'.repeat(151) })).toBeFalse();
+  });
+});
