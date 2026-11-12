@@ -154,6 +154,56 @@ describe('WebContenidoComponent: guardar (W12d)', () => {
     expect(http.expectOne((r) => r.method === 'PUT').request.body.version).toBe(6);
   });
 
+  it('Guardar no lleva la página arriba: el foco va al título sin desplazar la vista', () => {
+    abrir();
+    const relleno = document.createElement('div');
+    relleno.style.height = '6000px';
+    document.body.appendChild(relleno);
+    try {
+      cambiar('menu.horarios', 'Horas');
+      const titulo = q('h1')!;
+      window.scrollTo({ top: titulo.getBoundingClientRect().top + window.scrollY + 2000, behavior: 'auto' });
+      const antes = window.scrollY;
+      expect(antes).toBeGreaterThan(1000);
+      // Como al tocarlo: el foco está en «Guardar» (si ya estuviera en el título, enfocarlo no desplazaría nada).
+      boton('Guardar').focus({ preventScroll: true });
+      boton('Guardar').click();
+      http.expectOne((r) => r.method === 'PUT').flush({ version: 6, bloques: [...BLOQUES, fila('menu.horarios', 'Horas')] });
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(titulo);
+      // Al quitarse la barra la página encoge (su hueco inferior) y el navegador puede ajustar algo el scroll, pero el
+      // título sigue lejos por encima de la vista: no se ha subido arriba del todo.
+      expect(titulo.getBoundingClientRect().bottom).toBeLessThan(-1000);
+      expect(Math.abs(window.scrollY - antes)).toBeLessThan(400);
+    } finally {
+      relleno.remove();
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  });
+
+  it('Descartar no lleva la página arriba: el foco va al título sin desplazar la vista', () => {
+    abrir();
+    const relleno = document.createElement('div');
+    relleno.style.height = '6000px';
+    document.body.appendChild(relleno);
+    try {
+      cambiar('menu.horarios', 'Horas');
+      const titulo = q('h1')!;
+      window.scrollTo({ top: titulo.getBoundingClientRect().top + window.scrollY + 2000, behavior: 'auto' });
+      const antes = window.scrollY;
+      expect(antes).toBeGreaterThan(1000);
+      boton('Descartar').focus({ preventScroll: true });
+      boton('Descartar').click();
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(titulo);
+      expect(titulo.getBoundingClientRect().bottom).toBeLessThan(-1000);
+      expect(Math.abs(window.scrollY - antes)).toBeLessThan(400);
+    } finally {
+      relleno.remove();
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  });
+
   it('web nueva: «Saldrán en tu web cuando la publiques.»', () => {
     abrir(NUEVA);
     cambiar('menu.horarios', 'Horas');

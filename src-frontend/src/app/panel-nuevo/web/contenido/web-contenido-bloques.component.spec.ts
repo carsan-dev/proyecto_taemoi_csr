@@ -50,9 +50,11 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
   let http: HttpTestingController;
   let confirmar: jasmine.Spy;
   let estrecho = false;
+  let alCambiarAncho: ((e: { matches: boolean }) => void) | null = null;
 
   beforeEach(() => {
     estrecho = false;
+    alCambiarAncho = null;
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -71,7 +73,7 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     spyOn(avisos, 'info').and.returnValue(3);
     const original = window.matchMedia.bind(window);
     spyOn(window, 'matchMedia').and.callFake((q: string) =>
-      q === '(max-width: 767.98px)' ? ({ matches: estrecho, addEventListener: () => undefined, removeEventListener: () => undefined } as unknown as MediaQueryList) : original(q),
+      q === '(max-width: 767.98px)' ? ({ matches: estrecho, addEventListener: (_: string, f: (e: { matches: boolean }) => void) => (alCambiarAncho = f), removeEventListener: () => undefined } as unknown as MediaQueryList) : original(q),
     );
   });
 
@@ -383,5 +385,251 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
     abrir();
     llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja', bloque: 'galeria' });
     expect(q('.hoja')).toBeNull();
+  });
+
+  /** d541: los menús de la vista previa (foto, «Añadir bloque») como hoja inferior con el panel estrecho. */
+  describe('menús de la capa como hoja (d541)', () => {
+    const opcion = (op: string, texto: string, extra: Record<string, unknown> = {}) => ({
+      op,
+      texto,
+      pie: '',
+      icono: 'foto',
+      desactivada: false,
+      peligro: false,
+      ...extra,
+    });
+    const MENU_FOTO = {
+      canal: CANAL_EDITOR_WEB,
+      tipo: 'hoja-menu',
+      id: 7,
+      menu: 'foto',
+      titulo: 'Foto de «Nuestra sala»',
+      opciones: [
+        opcion('subir', 'Cambiar foto', { pie: 'JPG, PNG o WebP, hasta 50 MB' }),
+        opcion('describir', 'Describir la foto', { icono: 'texto' }),
+        opcion('quitar', 'Quitar foto', { icono: 'papelera', peligro: true }),
+      ],
+    };
+    const MENU_ANADIR = {
+      canal: CANAL_EDITOR_WEB,
+      tipo: 'hoja-menu',
+      id: 8,
+      menu: 'anadir',
+      titulo: 'Añadir bloque en el puesto 3',
+      opciones: [
+        opcion('presentacion', 'Presentación', { icono: 'texto', pie: 'Ya está en tu web. Si no lo quieres, ocúltalo.', desactivada: true }),
+        opcion('sedes', 'Fotos de las sedes'),
+        opcion('texto_foto', 'Texto con foto', { icono: 'texto' }),
+      ],
+    };
+    const items = () => Array.from(el().querySelectorAll<HTMLButtonElement>('.flot--capa [role="menuitem"]'));
+    const respuestas = (enviados: jasmine.Spy) => mensajes(enviados, 'respuesta-hoja-menu');
+    const respuesta = (menu: string, op: string | null, devolverFoco: boolean, id = menu === 'foto' ? 7 : 8) => ({
+      canal: CANAL_EDITOR_WEB,
+      tipo: 'respuesta-hoja-menu',
+      menu,
+      id,
+      op,
+      devolverFoco,
+    });
+
+    describe('panel estrecho', () => {
+      beforeEach(() => (estrecho = true));
+
+      it('el menú de foto sale como hoja: título, opciones del boceto, quitar en peligro tras un separador y foco al primero', async () => {
+        abrir();
+        llegar(MENU_FOTO);
+        await fixture.whenStable();
+        const hoja = q('.flot--capa')!;
+        expect(texto('#hoja-menu-t')).toBe('Foto de «Nuestra sala»');
+        expect(hoja.querySelector('.flot__lista')!.getAttribute('role')).toBe('menu');
+        expect(hoja.querySelector('.flot__lista')!.getAttribute('aria-labelledby')).toBe('hoja-menu-t');
+        expect(items().map((b) => b.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
+          'Cambiar fotoJPG, PNG o WebP, hasta 50 MB',
+          'Describir la foto',
+          'Quitar foto',
+        ]);
+        expect(items()[2].classList).toContain('flot__op--peligro');
+        expect(hoja.querySelectorAll('.flot__sep[role="separator"]').length).toBe(1);
+        expect(items()[2].previousElementSibling!.classList).toContain('flot__sep');
+        expect(hoja.querySelectorAll('svg').length).toBe(3);
+        expect(document.activeElement).toBe(items()[0]);
+        expect(q('.hoja')).toBeNull();
+      });
+
+      it('el menú «Añadir bloque» sale como hoja; las opciones que ya están, desactivadas y sin foco', async () => {
+        abrir();
+        llegar(MENU_ANADIR);
+        await fixture.whenStable();
+        expect(texto('#hoja-menu-t')).toBe('Añadir bloque en el puesto 3');
+        expect(items().map((b) => b.getAttribute('aria-disabled'))).toEqual(['true', null, null]);
+        expect(items()[0].textContent).toContain('Ya está en tu web. Si no lo quieres, ocúltalo.');
+        expect(document.activeElement).toBe(items()[1]);
+        expect(q('.flot--capa .flot__sep')).toBeNull();
+      });
+
+      it('elegir una opción la devuelve a la capa (sin pedir foco) y cierra la hoja', async () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        await fixture.whenStable();
+        items()[2].click();
+        fixture.detectChanges();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', 'quitar', false)]);
+        expect(q('.flot--capa')).toBeNull();
+        expect(document.activeElement).toBe(iframe());
+      });
+
+      it('una opción desactivada no hace nada', async () => {
+        const enviados = abrir();
+        llegar(MENU_ANADIR);
+        await fixture.whenStable();
+        items()[0].click();
+        fixture.detectChanges();
+        expect(respuestas(enviados)).toEqual([]);
+        expect(q('.flot--capa')).not.toBeNull();
+        items()[2].click();
+        expect(respuestas(enviados)).toEqual([respuesta('anadir', 'texto_foto', false)]);
+      });
+
+      it('flechas, Inicio y Fin se mueven entre opciones', async () => {
+        abrir();
+        llegar(MENU_FOTO);
+        await fixture.whenStable();
+        const tecla = (key: string) =>
+          (document.activeElement as HTMLElement).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+        tecla('ArrowUp');
+        expect(document.activeElement).toBe(items()[2]);
+        tecla('ArrowDown');
+        expect(document.activeElement).toBe(items()[0]);
+        tecla('End');
+        expect(document.activeElement).toBe(items()[2]);
+        tecla('Home');
+        expect(document.activeElement).toBe(items()[0]);
+      });
+
+      it('Escape en una opción la cierra y pide que el foco vuelva a la foto, en la vista previa', async () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        await fixture.whenStable();
+        items()[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, true)]);
+        expect(document.activeElement).toBe(iframe());
+      });
+
+      it('Escape con el foco fuera de la hoja también la cierra; con un diálogo abierto encima, no', async () => {
+        const enviados = abrir();
+        llegar(MENU_ANADIR);
+        await fixture.whenStable();
+        const dialogo = document.createElement('dialog');
+        document.body.appendChild(dialogo);
+        dialogo.setAttribute('open', '');
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        expect(q('.flot--capa')).not.toBeNull();
+        dialogo.remove();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('anadir', null, true)]);
+      });
+
+      it('pulsar fuera de la hoja la cierra sin mover el foco; pulsar dentro, no', async () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        await fixture.whenStable();
+        items()[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        expect(q('.flot--capa')).not.toBeNull();
+        document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, false)]);
+        expect(document.activeElement).not.toBe(iframe());
+      });
+
+      it('pasar el foco a la vista previa (pulsar en ella) la cierra sin devolver el foco', async () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        await fixture.whenStable();
+        iframe()!.focus();
+        window.dispatchEvent(new Event('blur'));
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, false)]);
+      });
+
+      it('abrir el menú cierra la hoja de acciones del bloque', () => {
+        abrir();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja', bloque: 'galeria' });
+        expect(q('.hoja')).not.toBeNull();
+        llegar(MENU_ANADIR);
+        expect(q('.hoja')).toBeNull();
+        expect(q('.flot--capa')).not.toBeNull();
+      });
+
+      it('la respuesta lleva el id de la hoja que pinta; si llega otra hoja, la anterior se responde con su id', async () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        llegar({ ...MENU_FOTO, id: 9 });
+        fixture.detectChanges();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, false, 7)]);
+        items()[0].click();
+        expect(respuestas(enviados).at(-1)).toEqual(respuesta('foto', 'subir', false, 9));
+      });
+
+      it('cerrar-hoja-menu de la capa quita la hoja si es la misma (menú e id), sin responder ni mover el foco', () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        fixture.detectChanges();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'foto', id: 6 });
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'anadir', id: 7 });
+        fixture.detectChanges();
+        expect(q('.flot--capa')).not.toBeNull();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'foto', id: 7 });
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([]);
+        expect(document.activeElement).not.toBe(iframe());
+      });
+
+      it('abrir la hoja de acciones de un bloque cierra antes la del menú y se lo dice a la capa', () => {
+        const enviados = abrir();
+        llegar(MENU_ANADIR);
+        fixture.detectChanges();
+        llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja', bloque: 'galeria' });
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(q('.hoja')).not.toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('anadir', null, false, 8)]);
+      });
+
+      it('si el panel se ensancha con la hoja abierta, se cierra y la capa recibe la respuesta null', () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        fixture.detectChanges();
+        expect(alCambiarAncho).not.toBeNull();
+        alCambiarAncho!({ matches: false });
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, false, 7)]);
+      });
+
+      it('mensajes mal formados o de otro origen no abren nada', () => {
+        abrir();
+        llegar({ ...MENU_FOTO, menu: 'otro' });
+        llegar({ ...MENU_FOTO, opciones: [] });
+        llegar(MENU_FOTO, 'https://otro.example');
+        expect(q('.flot--capa')).toBeNull();
+      });
+    });
+
+    describe('panel de 768 px o más', () => {
+      it('no abre la hoja y le dice a la capa que siga con su menú flotante', () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, false)]);
+      });
+    });
   });
 });

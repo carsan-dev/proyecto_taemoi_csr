@@ -14,6 +14,7 @@ import {
 import { NOTA_DEL_CASO, PARTE_DEL_CASO, SimuladorCaso, simuladorDeLaVista } from './casos-vista';
 import { activarBloquesEditor } from './bloques-capa';
 import { ESTILOS_CAPA_EDITOR } from './capa-editor-estilos';
+import { cajasVisibles, colocarEvitando, MARGEN_VERTICAL } from './colocar-flotantes';
 import { activarEdicionTextos, iconoCandado } from './edicion-textos';
 import { activarFotosEditor } from './fotos-editor';
 import {
@@ -140,7 +141,7 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   // W12d: textos en el sitio. El tema recibe el borrador por aquí (con los vacíos marcados para el editor).
   const textos = activarEdicionTextos({ ventana, enviar: (m) => enviar(m), alTema: alBorrador, seleccionar: (id) => seleccionar(id) });
   // W12f-1: fotos sueltas. El panel sube el fichero; la capa solo lo elige y pinta el estado.
-  const fotos = activarFotosEditor({ ventana, enviar: (m) => enviar(m) });
+  const fotos = activarFotosEditor({ ventana, enviar: (m) => enviar(m), estrecho: () => bloques.estrecho() });
   // W12e: bloques de Inicio. El panel hace cada acción; la capa la pide y pinta el estado.
   const bloques = activarBloquesEditor({ ventana, enviar: (m) => enviar(m), editar: (clave) => textos.editar(clave) });
 
@@ -459,11 +460,14 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     const verbo =
       dato.dataset['candado'] ?? (donde === 'equipo' ? 'Lo cambia' : donde === 'web' ? 'Lo pone la web' : 'Se cambia en');
     texto.textContent = `${dato.dataset['que']} · ${verbo}`;
-    candado.append(icono, texto);
+    // El texto y lo que le sigue van juntos (en estrecho se parten como un párrafo); el candado, aparte y sin encogerse.
+    const linea = doc.createElement('span');
+    linea.className = 'ed-candado__t';
+    linea.appendChild(texto);
     if (donde === 'equipo') {
       const quien = doc.createElement('span');
       quien.textContent = NOMBRE_EQUIPO;
-      candado.appendChild(quien);
+      linea.append(doc.createElement('wbr'), quien);
     } else if (esDestinoPanel(donde)) {
       const ir = doc.createElement('a');
       ir.href = '#';
@@ -471,18 +475,32 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       ir.dataset['accion'] = 'ir';
       ir.dataset['destino'] = donde;
       ir.textContent = NOMBRE_DESTINO[donde];
-      candado.appendChild(ir);
+      linea.append(doc.createElement('wbr'), ir);
     }
+    // Se monta entero antes de ponerlo: un cambio dentro de un nodo que ya no está no lo reconocería el observador.
+    candado.append(icono, linea);
     candado.hidden = false;
+    // Se mide desde el borde izquierdo: puesto donde estaba el anterior, su ancho saldría recortado por la derecha.
+    candado.style.left = '0px';
     const r = dato.getBoundingClientRect();
     const alto = candado.offsetHeight;
     const ancho = candado.offsetWidth;
-    let arriba = r.top + ventana.scrollY - alto - 8;
-    if (r.top - alto - 8 < 4) {
-      arriba = r.bottom + ventana.scrollY + 8;
-    }
-    candado.style.top = `${arriba}px`;
-    candado.style.left = `${Math.max(8, Math.min(r.left + ventana.scrollX, doc.documentElement.clientWidth - ancho - 8))}px`;
+    // Sobre el dato, o bajo él si arriba no cabe; y sin pisar la etiqueta del campo ni la barra del bloque.
+    const sitio = colocarEvitando({
+      ancho,
+      alto,
+      ancla: r,
+      separacion: 8,
+      izquierda: r.left,
+      arriba: r.top - alto - 8 >= MARGEN_VERTICAL,
+      vista: { ancho: doc.documentElement.clientWidth, alto: ventana.innerHeight },
+      evitar: [
+        ...cajasVisibles(doc, [doc.body], ':scope > .ed-chip'),
+        ...cajasVisibles(doc, [dato.closest('.ed-bloque')], ':scope > .ed-barra .ed-nombre, :scope > .ed-barra .ed-acciones, .ed-error'),
+      ],
+    });
+    candado.style.top = `${sitio.top + ventana.scrollY}px`;
+    candado.style.left = `${sitio.left + ventana.scrollX}px`;
   }
 
   function ocultarCandado(ya = false): void {
@@ -688,6 +706,11 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
   const dejarDeEscuchar = escucharPuente(ventana, () => padre, esMensajeDelPanel, (mensaje) => {
     if (mensaje.tipo === 'estado-bloques') {
       bloques.estado(mensaje);
+      return;
+    }
+    if (mensaje.tipo === 'respuesta-hoja-menu') {
+      // d541: la hoja del panel (panel estrecho) devuelve la opción del menú de la foto o de «Añadir bloque».
+      (mensaje.menu === 'foto' ? fotos : bloques).respuestaMenu(mensaje.id, mensaje.op, mensaje.devolverFoco);
       return;
     }
     if (mensaje.tipo === 'foco-bloque') {

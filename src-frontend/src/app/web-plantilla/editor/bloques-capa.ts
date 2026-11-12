@@ -1,4 +1,5 @@
 import type { PaginaEditor } from './candados-linea-comarcal';
+import { encajarEnVista } from './colocar-flotantes';
 import {
   type AccionBloque,
   MENU_TIPOS,
@@ -16,7 +17,13 @@ import {
   nombreBloque,
   tituloMenuAnadir,
 } from './bloques-editor';
-import { type BloqueBorrador, CANAL_EDITOR_WEB, type MensajeDelEditor, type MensajeEstadoBloques } from './puente-editor';
+import {
+  type BloqueBorrador,
+  CANAL_EDITOR_WEB,
+  type MensajeDelEditor,
+  type MensajeEstadoBloques,
+  type OpcionHojaMenu,
+} from './puente-editor';
 
 /**
  * Bloques de Inicio en el sitio (W12e; boceto `boceto-panel-contenido-web-comarcal.html`: `barraHtml`, `estadosHtml`,
@@ -47,6 +54,8 @@ export interface BloquesEditor {
   estrecho(): boolean;
   /** Con el panel estrecho, pide la hoja de un bloque movible (id del DOM); false si no es movible. */
   abrirHoja(idDom: string): boolean;
+  /** d541: la respuesta de la hoja del panel al menú «Añadir bloque» (`op` null: se cerró sin elegir). */
+  respuestaMenu(id: number, op: string | null, devolverFoco: boolean): void;
   decorar(pagina: PaginaEditor): void;
   quitar(): void;
 }
@@ -112,6 +121,9 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
   let ultimoInforme = '';
   let focoPendiente: { foco: string; hasta: number; mostrado: boolean } | null = null;
   let menuAbierto: number | null = null;
+  /** d541: id de la apertura del menú cuando está en la hoja del panel (null: flotante o cerrado). */
+  let idHoja: number | null = null;
+  let ultimaHoja = 0;
 
   const flot = doc.createElement('div');
   flot.className = 'ed flot flot--anadir';
@@ -391,7 +403,10 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
         .querySelector<HTMLElement>(`.ed-bloque[data-bloque="${CSS.escape(idEnDom(id))}"]`)
         ?.querySelector<HTMLElement>('.ed-texto.es-vacio[data-campo]');
       if (texto && editar(texto.dataset['campo']!)) {
-        mostrar(texto);
+        // Al editar, el original se esconde (`display:none`, mediría 0: la página subiría arriba del todo): se enseña la
+        // copia que se edita, que está en su sitio.
+        const copia = (doc.activeElement as HTMLElement | null)?.closest?.<HTMLElement>('.ed-campo');
+        mostrar(copia ?? el.closest<HTMLElement>('.ed-bloque') ?? el);
         return;
       }
       el.focus({ preventScroll: true });
@@ -429,10 +444,19 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
 
   function abrirMenu(pos: number, ancla: HTMLElement): void {
     cerrarMenu(false);
-    const ops = MENU_TIPOS.map((t) => {
+    const datos: OpcionHojaMenu[] = MENU_TIPOS.map((t) => {
       const ya = existeTipo(filas, t.tipo);
-      return opcion(t.tipo, t.nombre, t.icono, ya ? YA_ESTA : t.desc, ya);
+      return { op: t.tipo, texto: t.nombre, pie: ya ? YA_ESTA : t.desc, icono: t.icono, desactivada: ya, peligro: false };
     });
+    if (esEstrecho) {
+      // d541: con el panel estrecho el menú sale como hoja inferior del panel (la vista previa no llega al borde de la pantalla).
+      menuAbierto = pos;
+      idHoja = ++ultimaHoja;
+      ancla.setAttribute('aria-expanded', 'true');
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-menu', menu: 'anadir', id: idHoja, titulo: tituloMenuAnadir(pos), opciones: datos });
+      return;
+    }
+    const ops = datos.map((d) => opcion(d.op, d.texto, d.icono, d.pie, d.desactivada));
     const titulo = nodo('p', 'flot__titulo', tituloMenuAnadir(pos));
     titulo.id = 'ed-anadir-t';
     const lista = nodo('div', 'flot__lista', ...ops);
@@ -453,17 +477,25 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
     if (arriba + alto > ventana.scrollY + ventana.innerHeight - 8 && r.top + ventana.scrollY - alto - 8 > ventana.scrollY) {
       arriba = r.top + ventana.scrollY - alto - 8;
     }
+    // Ni abajo ni arriba cabe entero: se desplaza lo justo para que se vea dentro de la vista.
+    arriba = encajarEnVista(arriba - ventana.scrollY, alto, ventana.innerHeight) + ventana.scrollY;
     flot.style.left = `${Math.max(8, izquierda)}px`;
     flot.style.top = `${arriba}px`;
     flot.querySelector<HTMLElement>('[role=menuitem]:not([aria-disabled=true])')?.focus({ preventScroll: true });
   }
 
-  function cerrarMenu(devolverFoco: boolean): void {
-    if (flot.hidden) {
+  function cerrarMenu(devolverFoco: boolean, avisar = true): void {
+    if (menuAbierto === null) {
       return;
     }
     const pos = menuAbierto;
+    const enHoja = idHoja;
     menuAbierto = null;
+    idHoja = null;
+    if (enHoja !== null && avisar) {
+      // d541: la capa cierra sola el menú que el panel tiene en su hoja: que la quite.
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'anadir', id: enHoja });
+    }
     flot.hidden = true;
     flot.replaceChildren();
     if (pos !== null) {
@@ -580,6 +612,22 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
       ventana.setTimeout(() => aplicarFoco(), 0);
     },
     estrecho: () => esEstrecho,
+    respuestaMenu(id, op, devolverFoco) {
+      const pos = menuAbierto;
+      if (pos === null || idHoja === null || id !== idHoja) {
+        return;
+      }
+      if (op === null) {
+        cerrarMenu(devolverFoco, false);
+        return;
+      }
+      // Solo lo que la hoja ofreció: un tipo y que no esté ya (los únicos que ya están salen desactivados).
+      if (!esTipoBloque(op) || existeTipo(filas, op)) {
+        return;
+      }
+      cerrarMenu(false, false);
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'anadir-bloque', pos, bloque: op });
+    },
     abrirHoja(idDom) {
       const id = idDeDom(idDom);
       if (!id || !esMovible(id)) {
@@ -593,6 +641,9 @@ export function activarBloquesEditor(opciones: OpcionesBloquesEditor): BloquesEd
       doc.removeEventListener('click', alPulsar);
       doc.removeEventListener('mousedown', alBajar);
       doc.removeEventListener('focusin', alEnfocar);
+      if (idHoja !== null) {
+        cerrarMenu(false);
+      }
       doc.querySelectorAll('.ed-hueco').forEach((h) => h.remove());
       doc.documentElement.classList.remove('estrecho');
       flot.remove();

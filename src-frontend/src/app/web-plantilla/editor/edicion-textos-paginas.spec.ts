@@ -268,6 +268,185 @@ describe('textos de las otras seis páginas (W12d-bis, capa de edición)', () =>
     });
   });
 
+  describe('fichas con el dedo (el cursor junto a una ficha del final o del principio)', () => {
+    beforeEach(() => {
+      montar(SEDE);
+      iframe.style.cssText = 'width:360px;height:640px;border:0';
+      const tema = doc.createElement('style');
+      tema.textContent = 'body{margin:0;font:16px/1.4 sans-serif}.envoltura{padding:0 16px}';
+      doc.head.appendChild(tema);
+      // «Horarios · curso [ficha]»: la ficha es lo último del texto.
+      tecla(q('#horarios .rotulo'), 'Enter');
+    });
+
+    // Como el navegador: el `pointerdown` (con el tipo de puntero) va antes que su `mousedown`.
+    const bajar = (el: Element, x: number, y: number, tipo: 'touch' | 'pen' | 'mouse' = 'touch') => {
+      el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: tipo, clientX: x, clientY: y }));
+      const e = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: y });
+      el.dispatchEvent(e);
+      return e;
+    };
+    const sitio = () => {
+      const r = ventana.getSelection()!.getRangeAt(0);
+      return [r.startContainer, r.startOffset, r.collapsed];
+    };
+    const indice = (n: Node) => Array.from(campo().childNodes).indexOf(n as ChildNode);
+
+    it('tocar la mitad derecha de la ficha final: cursor detrás de ella, sin perder el foco ni cambiar el texto', () => {
+      const f = ficha();
+      const r = f.getBoundingClientRect();
+      const e = bajar(f.lastElementChild!, r.right - 2, r.top + r.height / 2);
+      expect(e.defaultPrevented).toBeTrue();
+      expect(doc.activeElement).toBe(campo());
+      expect(sitio()).toEqual([campo(), indice(f) + 1, true]);
+      expect(leido()).toBe('Horarios · curso {x}');
+      expect(mensajes('texto')).toEqual([]);
+      // Retroceso desde ahí pide confirmación, una sola vez.
+      expect(antesDeEscribir('deleteContentBackward').defaultPrevented).toBeTrue();
+      expect(mensajes('pedir-quitar-dato').length).toBe(1);
+    });
+
+    it('tocar la mitad izquierda de la ficha: cursor delante de ella', () => {
+      const f = ficha();
+      const r = f.getBoundingClientRect();
+      expect(bajar(f, r.left + 2, r.top + r.height / 2).defaultPrevented).toBeTrue();
+      expect(doc.activeElement).toBe(campo());
+      expect(sitio()).toEqual([campo(), indice(f), true]);
+    });
+
+    it('tocar a la derecha del final del texto (o debajo): cursor al final, tras la ficha; escribir va detrás', () => {
+      const copia = campo().closest('.ed-campo')!;
+      const r = ficha().getBoundingClientRect();
+      expect(copia.getBoundingClientRect().right).toBeGreaterThan(r.right + 20);
+      expect(bajar(copia, r.right + 15, r.top + r.height / 2).defaultPrevented).toBeTrue();
+      expect(doc.activeElement).toBe(campo());
+      expect(sitio()).toEqual([campo(), campo().childNodes.length, true]);
+      expect(leido()).toBe('Horarios · curso {x}');
+      doc.execCommand('insertText', false, ' bis');
+      expect(mensajes('texto').pop()).toEqual(jasmine.objectContaining({ clave: 'sede.rotulo_horarios', texto: 'Horarios · curso {x} bis' }));
+      expect(mensajes('pedir-quitar-dato')).toEqual([]);
+    });
+
+    it('con el ratón no se toca nada (la selección arrastrando sigue siendo del navegador), sobre la ficha o tras el final', () => {
+      const f = ficha();
+      const r = f.getBoundingClientRect();
+      const copia = campo().closest('.ed-campo')!;
+      cursor(campo(), 0);
+      const antes = sitio();
+      expect(bajar(f.lastElementChild!, r.right - 2, r.top + r.height / 2, 'mouse').defaultPrevented).toBeFalse();
+      expect(bajar(f, r.left + 2, r.top + r.height / 2, 'mouse').defaultPrevented).toBeFalse();
+      expect(bajar(copia, r.right + 15, r.top + r.height / 2, 'mouse').defaultPrevented).toBeFalse();
+      expect(sitio()).toEqual(antes);
+    });
+
+    it('un lápiz cuenta como el dedo', () => {
+      const f = ficha();
+      const r = f.getBoundingClientRect();
+      expect(bajar(f, r.left + 2, r.top + r.height / 2, 'pen').defaultPrevented).toBeTrue();
+      expect(sitio()).toEqual([campo(), indice(f), true]);
+    });
+
+    it('tocar el texto normal no se toca: lo hace el navegador', () => {
+      const texto = campo().firstChild!;
+      const rango = doc.createRange();
+      rango.setStart(texto, 2);
+      rango.setEnd(texto, 3);
+      const r = rango.getBoundingClientRect();
+      expect(bajar(campo(), r.left + 1, r.top + r.height / 2).defaultPrevented).toBeFalse();
+    });
+
+    it('ficha al principio del texto: tocar su mitad izquierda deja el cursor delante', () => {
+      tecla(campo(), 'Escape');
+      tecla(q('.leyenda > li:nth-child(2)'), 'Enter');
+      const f = ficha();
+      expect(indice(f)).toBe(0);
+      const r = f.getBoundingClientRect();
+      expect(bajar(f, r.left + 1, r.top + r.height / 2).defaultPrevented).toBeTrue();
+      expect(doc.activeElement).toBe(campo());
+      expect(sitio()).toEqual([campo(), 0, true]);
+      expect(leido()).toBe('{x}: puedes apuntarte a la lista de espera');
+    });
+  });
+
+  describe('tocar tras el final con el dedo: la última línea', () => {
+    const bajar = (el: Element, x: number, y: number) => {
+      el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'touch', clientX: x, clientY: y }));
+      const e = new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: y });
+      el.dispatchEvent(e);
+      return e;
+    };
+    const alFinal = () => {
+      const r = ventana.getSelection()!.rangeCount ? ventana.getSelection()!.getRangeAt(0) : null;
+      return !!r && r.collapsed && r.startContainer === campo() && r.startOffset === campo().childNodes.length;
+    };
+    const lineas = (nodo: Node) => {
+      const r = doc.createRange();
+      r.selectNodeContents(nodo);
+      // Una caja por línea: sin las de espacios o saltos finales (ancho 0) y con la más ancha de cada fila.
+      const porFila = new Map<number, DOMRect>();
+      Array.from(r.getClientRects())
+        .filter((c) => c.width > 0 && c.height > 0)
+        .forEach((c) => {
+          const antes = porFila.get(Math.round(c.top));
+          if (!antes || c.right > antes.right) {
+            porFila.set(Math.round(c.top), c);
+          }
+        });
+      return Array.from(porFila.values());
+    };
+
+    it('un texto de un span en dos líneas: el blanco a la derecha de la primera (parte baja) no lleva al final; el de la última, sí', () => {
+      montar(SEDE);
+      iframe.style.cssText = 'width:360px;height:640px;border:0';
+      const tema = doc.createElement('style');
+      tema.textContent = 'body{margin:0;font:16px/1 sans-serif}.envoltura{padding:0 16px}';
+      doc.head.appendChild(tema);
+      tecla(q('#horarios .rotulo'), 'Enter');
+      campo().textContent = 'palabra palabra palabra palabra palabra palabra z';
+      const cajas = lineas(campo().firstChild!);
+      const primera = cajas[0];
+      const ultima = cajas[cajas.length - 1];
+      expect(cajas.length).withContext('el texto ocupa dos líneas').toBe(2);
+      expect(ultima.right + 20).withContext('la primera línea es la más larga').toBeLessThan(primera.right);
+      const copia = campo().closest('.ed-campo')!;
+      expect(copia.getBoundingClientRect().right).toBeGreaterThan(primera.right + 10);
+      cursor(campo().firstChild!, 0);
+      // Parte baja de la primera línea, a la derecha de su final: el punto también cae sobre la caja de la última línea.
+      const y1 = primera.bottom - 1;
+      expect(y1).toBeGreaterThanOrEqual(ultima.top);
+      expect(y1).toBeLessThan(ultima.top + ultima.height / 2);
+      expect(bajar(copia, primera.right + 8, y1).defaultPrevented).toBeFalse();
+      expect(alFinal()).toBeFalse();
+      // A la derecha de la última línea: al final del texto.
+      expect(bajar(copia, ultima.right + 8, ultima.top + ultima.height / 2).defaultPrevented).toBeTrue();
+      expect(alFinal()).toBeTrue();
+    });
+
+    it('un campo de varias líneas (display:block): a la derecha de la última línea y debajo de ella, cursor al final', () => {
+      montar(LEGALES);
+      iframe.style.cssText = 'width:360px;height:640px;border:0';
+      const tema = doc.createElement('style');
+      tema.textContent = 'body{margin:0;font:16px/1.4 sans-serif}.envoltura{padding:0 16px}.ed-campo{padding-bottom:24px}';
+      doc.head.appendChild(tema);
+      tecla(q('#aviso-legal > p'), 'Enter');
+      expect(campo().classList).toContain('ed-multi');
+      campo().textContent = 'Uno.\n\nDos.';
+      const cajas = lineas(campo().firstChild!);
+      const ultima = cajas[cajas.length - 1];
+      expect(campo().getClientRects().length).withContext('un block da una sola caja').toBe(1);
+      expect(campo().getBoundingClientRect().right).toBeGreaterThan(ultima.right + 40);
+      const copia = campo().closest('.ed-campo')!;
+      cursor(campo().firstChild!, 0);
+      // En la primera línea, a la derecha: es del navegador.
+      expect(bajar(campo(), cajas[0].right + 8, cajas[0].top + cajas[0].height / 2).defaultPrevented).toBeFalse();
+      expect(bajar(campo(), ultima.right + 8, ultima.top + ultima.height / 2).defaultPrevented).toBeTrue();
+      expect(alFinal()).toBeTrue();
+      cursor(campo().firstChild!, 0);
+      expect(bajar(copia, ultima.left + 2, ultima.bottom + 6).defaultPrevented).toBeTrue();
+      expect(alFinal()).toBeTrue();
+    });
+  });
+
   describe('fichas: flechas y borrar', () => {
     beforeEach(() => {
       montar(TARIFAS);

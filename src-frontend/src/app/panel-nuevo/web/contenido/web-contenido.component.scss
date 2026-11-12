@@ -370,3 +370,29 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
 .hoja__acc .hoja__quitar:hover { background: #fbf4f3; }
 .hoja .hoja__listo { width: 100%; margin-top: 8px; }
 .con-hoja .barra { visibility: hidden; }
+
+// d541: los menús de la vista previa (foto, «Añadir bloque») como hoja inferior con el panel estrecho. Mismo aspecto que el
+// menú «Ver el caso» en móvil (boceto `.flot` en < 768): borde a borde, asa, opciones de 48 px, relleno con safe-area.
+.flot--capa {
+  position: fixed;
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1020;
+  width: auto;
+  max-width: none;
+  max-height: 82vh;
+  overflow: auto;
+  padding: 8px 12px calc(16px + env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: var(--pn-radio-carnet) var(--pn-radio-carnet) 0 0;
+  box-shadow: var(--pn-sombra-hoja);
+}
+.flot--capa .flot__asa { display: block; }
+.flot--capa .flot__op { min-height: 48px; }
+.flot--capa .flot__op svg { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--pn-acento); }
+.flot--capa .flot__op[aria-disabled='true'] { background: none; color: var(--pn-tinta-2); cursor: default; }
+.flot--capa .flot__op[aria-disabled='true'] svg { color: var(--pn-tinta-3); }
+.flot--capa .flot__op--peligro,
+.flot--capa .flot__op--peligro svg { color: var(--pn-peligro); }
