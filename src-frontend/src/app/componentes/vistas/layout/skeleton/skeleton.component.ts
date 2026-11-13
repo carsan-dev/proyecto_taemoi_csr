@@ -16,7 +16,7 @@ import { CabeceraPanelComponent } from '../../../../panel-nuevo/navegacion/cabec
 import { hayMetaWebPlantilla } from '../../../../guards/web-plantilla.guard';
 
 /** Rutas del panel sin `portalContext: 'admin'` que una sesión de gestión abre desde su menú (Mi caja, Mis grupos, plataforma). */
-const RUTAS_PANEL = ['/mi-caja', '/mis-grupos', '/plataformaErrores', '/plataformaLogos', '/plataformaNuevaEscuela'];
+const RUTAS_PANEL = ['/mi-caja', '/mis-grupos', '/plataformaErrores', '/plataformaLogos', '/plataformaNuevaEscuela', '/plataformaImportarAlumnos'];
 
 /** Ruta de gestión: la cabecera nueva solo va en ellas (8b-N); las públicas y las de familia siguen con las de hoy. */
 export function esRutaDelPanel(url: string): boolean {

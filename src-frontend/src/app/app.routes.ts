@@ -606,6 +606,14 @@ export const routes: Routes = [
     canActivate: [plataformaGuard],
   },
   {
+    // Importar alumnos de una escuela (F4-I3): misma sesión de plataforma y mismos guards que «Nueva escuela».
+    path: 'plataformaImportarAlumnos',
+    canMatch: [estilosPanelGuard],
+    data: { seo: SEO_ROUTES.noIndex },
+    loadComponent: () => import('./componentes/endpoints/plataforma-importar-alumnos/plataforma-importar-alumnos.component').then(m => m.PlataformaImportarAlumnosComponent),
+    canActivate: [plataformaGuard],
+  },
+  {
     // Mi caja del panel nuevo (8b-3p): carga diferida y el mismo permiso, sin catálogo.
     path: 'mi-caja',
     canMatch: [estilosPanelGuard],

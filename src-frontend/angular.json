@@ -438,6 +438,8 @@
               "src/app/componentes/endpoints/plataforma-logos/regla-contraste.spec.ts",
               "src/app/componentes/endpoints/plataforma-nueva-escuela/plataforma-nueva-escuela.component.spec.ts",
               "src/app/servicios/plataforma/alta-escuela.service.spec.ts",
+              "src/app/servicios/plataforma/importacion-alumnos.service.spec.ts",
+              "src/app/componentes/endpoints/plataforma-importar-alumnos/plataforma-importar-alumnos.component.spec.ts",
               "src/app/servicios/plataforma/logo-escuela.service.spec.ts",
               "src/app/servicios/plataforma/plataforma.service.spec.ts",
               "src/app/guards/plataforma.guard.spec.ts",

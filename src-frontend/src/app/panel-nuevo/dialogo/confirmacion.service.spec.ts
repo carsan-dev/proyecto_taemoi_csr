@@ -444,4 +444,19 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     boton('Cancelar').click();
     expect((await promesa).confirmado).toBeFalse();
   });
+
+  itSinReloj('F4-I3: `alerta` pone role alertdialog y el foco inicial en «Cancelar» sin tono de peligro', async () => {
+    const promesa = abrir({
+      titulo: '¿Cargar 3 alumnos en Escuela Prueba?',
+      mensaje: 'Se crearán 3 alumnos.',
+      accion: 'Cargar 3 alumnos',
+      cancelar: 'Cancelar',
+      alerta: true,
+    });
+    expect(dialogo()!.getAttribute('role')).toBe('alertdialog');
+    expect(dialogo()!.classList).not.toContain('pn-dialogo--peligro');
+    expect(document.activeElement).toBe(boton('Cancelar'));
+    boton('Cancelar').click();
+    expect((await promesa).confirmado).toBeFalse();
+  });
 });

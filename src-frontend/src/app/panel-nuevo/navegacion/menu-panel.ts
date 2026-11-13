@@ -169,6 +169,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       },
       { etiqueta: 'Logo y color', ruta: '/plataformaLogos', icono: 'bi-palette', condicion: 'plataforma' },
       { etiqueta: 'Nueva escuela', ruta: '/plataformaNuevaEscuela', icono: 'bi-building-add', condicion: 'plataforma' },
+      { etiqueta: 'Importar alumnos', ruta: '/plataformaImportarAlumnos', icono: 'bi-file-earmark-arrow-up', condicion: 'plataforma' },
     ],
     prefijos: [
       '/eventosListar',
@@ -185,6 +186,7 @@ export const MENU_PANEL: readonly SeccionMenu[] = [
       '/plataformaErrores',
       '/plataformaLogos',
       '/plataformaNuevaEscuela',
+      '/plataformaImportarAlumnos',
     ],
   },
 ];

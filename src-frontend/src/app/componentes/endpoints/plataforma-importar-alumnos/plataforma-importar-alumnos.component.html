@@ -1,0 +1,236 @@
+<div class="pn ia" pnAcento>
+<div class="ia__pagina">
+<section class="plataforma-page">
+  <header class="page-header">
+    <p class="miga">Plataforma</p>
+    <h1>Importar alumnos</h1>
+    <p class="lead sec">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  </header>
+
+  <input
+    #entrada
+    id="ia-fichero"
+    type="file"
+    hidden
+    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    aria-label="Hoja de alumnos (.xlsx)"
+    (change)="alElegirFichero($event)"
+    (cancel)="alCancelarSelector()" />
+
+  @switch (fase) {
+    @case ('hecha') {
+      <section class="bloque" aria-labelledby="ia-hecha">
+        <div class="hecho">
+          <svg class="ic ic--grande ic--bien" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>
+          <div class="hecho-texto">
+            <h2 id="ia-hecha" tabindex="-1" data-foco="hecha">{{ tituloResultado }}</h2>
+            <p class="sec">{{ detalleResultado }}</p>
+            <button type="button" class="btn-secundario btn-acento" (click)="importarOtra()">Importar otra hoja</button>
+          </div>
+        </div>
+      </section>
+    }
+
+    @case ('fallo') {
+      <section class="bloque bloque--error" role="alert" aria-labelledby="ia-fallo">
+        <div class="hecho">
+          <svg class="ic ic--grande ic--peligro" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+          <div class="hecho-texto">
+            <h2 id="ia-fallo" tabindex="-1" data-foco="fallo">{{ tituloFallo }}</h2>
+            <p class="sec">{{ textoFallo }}</p>
+            <button type="button" class="btn-secundario btn-acento" (click)="ensayarOtraVez()">Ensayar otra vez</button>
+          </div>
+        </div>
+      </section>
+    }
+
+    @default {
+      @if (fase === 'inicio') {
+        <section class="bloque" aria-labelledby="ia-escuela-titulo">
+          <h2 class="bloque-titulo" id="ia-escuela-titulo">Escuela</h2>
+          @if (errorEscuelas) {
+            <div class="aviso aviso--error" role="alert">
+              <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16h.01"></path></svg>
+              <span>No se pudo cargar la lista de escuelas.</span>
+              <button type="button" class="btn-secundario" (click)="cargarEscuelas()">Reintentar</button>
+            </div>
+          } @else {
+            <div class="campo">
+              <label class="etiqueta" for="ia-escuela">Escuela <span class="marca">obligatorio</span></label>
+              <div class="selector">
+                <select
+                  id="ia-escuela"
+                  name="escuela"
+                  class="control"
+                  [disabled]="cargandoEscuelas"
+                  [ngModel]="escuelaId"
+                  (ngModelChange)="alElegirEscuela($event)"
+                  [attr.aria-invalid]="errorEscuela ? 'true' : null"
+                  [attr.aria-describedby]="errorEscuela ? 'ia-escuela-error' : null">
+                  <option [ngValue]="null">{{ cargandoEscuelas ? 'Cargando…' : 'Elige una escuela' }}</option>
+                  @for (escuela of escuelas; track escuela.id) {
+                    <option [ngValue]="escuela.id">{{ escuela.nombre }}</option>
+                  }
+                </select>
+                <svg class="ic selector-flecha" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+              </div>
+              <p class="error" id="ia-escuela-error" [hidden]="!errorEscuela">{{ errorEscuela }}</p>
+            </div>
+          }
+        </section>
+      }
+
+      <section class="bloque" aria-labelledby="ia-hoja-titulo" [attr.aria-busy]="ocupado ? 'true' : null">
+        <h2 class="bloque-titulo" id="ia-hoja-titulo">Hoja de alumnos</h2>
+        @if (archivo) {
+          <div class="fichero">
+            <svg class="ic ic--fichero" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8M8 17h8M12 11v8"></path></svg>
+            <div class="datos">
+              <strong>{{ archivo.name }}</strong>
+              <span class="sec">{{ detalleFichero }}</span>
+            </div>
+            @if (fase === 'inicio' || fase === 'informe') {
+              <button type="button" class="btn-texto" (click)="sustituir(entrada)">Sustituir</button>
+            }
+          </div>
+        } @else {
+          <div class="zona">
+            <svg class="ic ic--zona" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8M8 17h8M12 11v8"></path></svg>
+            <p>Un Excel con una fila por alumno.</p>
+            <button type="button" id="ia-elegir" class="btn-secundario" (click)="elegirExcel(entrada)" [attr.aria-describedby]="errorArchivo ? 'ia-fichero-error' : 'ia-fichero-ayuda'">
+              <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5"></path><path d="M12 3v12"></path></svg>
+              Elegir Excel
+            </button>
+          </div>
+          @if (errorArchivo) {
+            <p class="error-campo" id="ia-fichero-error" role="alert">
+              <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+              <span>{{ errorArchivo }}</span>
+            </p>
+          }
+          <p class="ayuda" id="ia-fichero-ayuda">{{ ayudaArchivo }}</p>
+        }
+      </section>
+
+      @if (fase === 'informe' && informe) {
+        <section class="bloque" aria-labelledby="ia-resultado">
+          <h2 class="bloque-titulo" id="ia-resultado" tabindex="-1" data-foco="resultado">Resultado del ensayo</h2>
+          @if (hayRecuentos) {
+          <ul class="recuentos">
+            @if (informe.listas > 0) {
+              <li class="bien">
+                <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>
+                <span><b>{{ informe.listas }}</b> {{ informe.listas === 1 ? 'lista' : 'listas' }} para cargar</span>
+              </li>
+            }
+            @if (filasConErrores > 0) {
+              <li class="peligro">
+                <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+                <span><b>{{ filasConErrores }}</b> con errores</span>
+              </li>
+            }
+            @if (filasConAvisos > 0) {
+              <li class="gris">
+                <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+                <span><b>{{ filasConAvisos }}</b> con avisos</span>
+              </li>
+            }
+            @if (informe.yaCargados > 0) {
+              <li class="gris">
+                <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+                <span><b>{{ informe.yaCargados }}</b> {{ textoYaCargadas }}</span>
+              </li>
+            }
+          </ul>
+          }
+          @if (errores.length > 0) {
+            <p class="ayuda">No se ha guardado nada. Mientras haya errores no se puede cargar.</p>
+            <button type="button" class="btn-secundario btn-acento" [attr.aria-disabled]="descargando ? 'true' : null" (click)="descargarHoja()">
+              <svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+              Descargar hoja con errores
+            </button>
+            <p class="ayuda">Tu misma hoja, con el motivo de cada fila en la columna revisar.</p>
+            @if (errorDescarga) {
+              <p class="error-campo" role="alert">
+                <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+                <span>{{ errorDescarga }}</span>
+              </p>
+            }
+          } @else if (nadaQueCargar) {
+            <p class="ayuda">No se ha guardado nada.</p>
+          } @else {
+            <p class="ayuda">No se ha guardado nada todavía.</p>
+          }
+        </section>
+
+        @if (errores.length > 0) {
+          <section class="lista" aria-labelledby="ia-errores" data-lista="errores">
+            <header><h2 id="ia-errores">Errores</h2><span>{{ filasConErrores }} {{ filasConErrores === 1 ? 'fila' : 'filas' }}</span></header>
+            <ul>
+              @for (i of filasVisibles('errores'); track trackIncidencia($index, i)) {
+                <li tabindex="-1" [class.sin-columna]="!i.columna">
+                  <span class="ref">{{ referencia(i) }}</span>
+                  @if (i.columna) {
+                    <span class="pastilla">{{ i.columna }}</span>
+                  }
+                  <span class="motivo">{{ i.motivo }}</span>
+                </li>
+              }
+            </ul>
+            @if (puedeDesplegar('errores')) {
+              <button type="button" class="pie-lista" (click)="desplegar('errores')">Ver los {{ totalIncidencias('errores') }}</button>
+            }
+          </section>
+        }
+
+        @if (avisos.length > 0) {
+          <section class="lista" aria-labelledby="ia-avisos" data-lista="avisos">
+            <header><h2 id="ia-avisos">Avisos</h2><span>{{ filasConAvisos }} {{ filasConAvisos === 1 ? 'fila' : 'filas' }}</span></header>
+            <ul>
+              @for (i of filasVisibles('avisos'); track trackIncidencia($index, i)) {
+                <li tabindex="-1" [class.sin-columna]="!i.columna">
+                  <span class="ref">{{ referencia(i) }}</span>
+                  @if (i.columna) {
+                    <span class="pastilla">{{ i.columna }}</span>
+                  }
+                  <span class="motivo">{{ i.motivo }}</span>
+                </li>
+              }
+            </ul>
+            @if (puedeDesplegar('avisos')) {
+              <button type="button" class="pie-lista" (click)="desplegar('avisos')">Ver los {{ totalIncidencias('avisos') }}</button>
+            }
+          </section>
+        }
+      }
+
+      <div class="barra">
+        <p class="barra-resumen" [attr.role]="ocupado ? 'status' : null">
+          @if (fase === 'informe' && errores.length > 0) {
+            <strong class="peligro">{{ textoFilasConErrores }}</strong> Corrige la hoja y vuelve a ensayar.
+          } @else {
+            {{ resumen }}
+          }
+        </p>
+        <div class="barra-acciones">
+          <button type="button" class="btn-secundario" [disabled]="ocupado" (click)="cancelar()">Cancelar</button>
+          @if (fase === 'ensayando') {
+            <button type="button" class="btn-principal" aria-busy="true" aria-disabled="true"><span class="girando" aria-hidden="true"></span>Ensayando…</button>
+          } @else if (fase === 'cargando') {
+            <button type="button" class="btn-principal" aria-busy="true" aria-disabled="true"><span class="girando" aria-hidden="true"></span>Cargando…</button>
+          } @else if (fase === 'informe') {
+            @if (puedeCargar) {
+              <button type="button" class="btn-principal" (click)="cargar()">{{ textoCargar }}</button>
+            } @else {
+              <button type="button" class="btn-principal" (click)="ensayarOtraVez()">Ensayar otra vez</button>
+            }
+          } @else {
+            <button type="button" class="btn-principal" (click)="ensayar()">Ensayar</button>
+          }
+        </div>
+      </div>
+    }
+  }
+</section>
+</div>
+</div>

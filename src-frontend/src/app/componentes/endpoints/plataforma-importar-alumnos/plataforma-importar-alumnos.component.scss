@@ -1,0 +1,649 @@
+// Plataforma → Importar alumnos, con el estilo del panel (boceto `fase4-importacion/boceto-importar-alumnos.html`).
+// Mismos patrones que «Nueva escuela» (cabecera, bloques, campos de 42 px, barra fija) y «Registro de acciones»
+// (listas con cabecera y pie «Ver los N»). Solo tokens de panel-nuevo.scss bajo .pn (DESIGN.md).
+@use '../../../panel-nuevo/capas/capas' as c;
+
+:host {
+  display: block;
+}
+
+.ia {
+  min-height: calc(100vh - 64px);
+  background: var(--pn-fondo);
+}
+
+.ia__pagina {
+  max-width: 1280px;
+  margin: 0 auto;
+  // Hueco para que la barra fija no tape el final de las listas.
+  padding: var(--pn-espacio-l) var(--pn-espacio-l) 112px;
+}
+
+.plataforma-page {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+  max-width: 760px;
+  min-width: 0;
+}
+
+.ic {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sec {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.bien {
+  color: var(--pn-bien);
+}
+
+.peligro {
+  color: var(--pn-peligro);
+}
+
+.gris {
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ cabecera
+
+.page-header {
+  display: grid;
+  gap: 6px;
+
+  h1 {
+    margin: 0;
+    font: var(--pn-titulo-pantalla);
+    letter-spacing: var(--pn-titulo-pantalla-espaciado);
+    color: var(--pn-tinta);
+    text-wrap: balance;
+  }
+
+  .lead {
+    max-width: 65ch;
+  }
+}
+
+.miga {
+  margin: 0 0 4px;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+// ------------------------------------------------------------------ bloques
+
+.bloque {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 18px 20px 16px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  align-content: start;
+}
+
+.bloque-titulo {
+  margin: 0;
+  font: var(--pn-titulo-bloque);
+  color: var(--pn-tinta);
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+.bloque > .btn-secundario {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+// ------------------------------------------------------------------ campo de escuela
+
+.campo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.etiqueta {
+  font: var(--pn-etiqueta);
+  color: var(--pn-tinta);
+}
+
+.marca {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--pn-tinta-2);
+}
+
+.selector {
+  position: relative;
+}
+
+.control {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 40px 0 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: var(--pn-cuerpo);
+  appearance: none;
+  cursor: pointer;
+
+  &[aria-invalid='true'] {
+    border-color: var(--pn-peligro);
+  }
+
+  &:disabled {
+    color: var(--pn-tinta-2);
+    background: var(--pn-superficie-2);
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: 2px;
+  }
+}
+
+.selector-flecha {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  color: var(--pn-tinta-2);
+  pointer-events: none;
+}
+
+.ayuda,
+.error {
+  margin: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+}
+
+.ayuda {
+  margin-top: -2px;
+}
+
+.error {
+  font-weight: 500;
+  color: var(--pn-peligro);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// ------------------------------------------------------------------ zona de subida
+
+.zona {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  background: var(--pn-superficie-2);
+  border: 1.5px dashed var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+
+  p {
+    margin: 0;
+  }
+}
+
+.ic--zona {
+  width: 32px;
+  height: 32px;
+  color: var(--pn-tinta-2);
+}
+
+.error-campo {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-weight: 500;
+  color: var(--pn-peligro);
+
+  .ic {
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+  }
+}
+
+// ------------------------------------------------------------------ fichero elegido
+
+.fichero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .ic--fichero {
+    width: 28px;
+    height: 28px;
+    color: var(--pn-tinta-2);
+  }
+
+  .datos {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+
+    strong {
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
+// ------------------------------------------------------------------ recuentos
+
+.recuentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ic {
+    width: 20px;
+    height: 20px;
+  }
+
+  b {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// ------------------------------------------------------------------ listas
+
+.lista {
+  margin: 0;
+  overflow: hidden;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px 12px;
+    background: var(--pn-superficie-2);
+    border-bottom: 1px solid var(--pn-linea);
+  }
+
+  h2 {
+    margin: 0;
+    font: var(--pn-titulo-bloque);
+    color: var(--pn-tinta);
+  }
+
+  header span {
+    font: var(--pn-etiqueta);
+    color: var(--pn-tinta-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: 172px 96px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 16px;
+    min-height: 52px;
+    padding: 8px 20px;
+    border-bottom: 1px solid var(--pn-linea);
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: -3px;
+    }
+
+    // Sin columna, el motivo ocupa el sitio de la pastilla.
+    &.sin-columna .motivo {
+      grid-column: 2 / -1;
+    }
+  }
+
+  li:last-child {
+    border-bottom: 0;
+  }
+}
+
+.ref {
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.pastilla {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--pn-linea-fuerte);
+  border-radius: var(--pn-radio-pastilla);
+  font-size: 0.8125rem;
+  color: var(--pn-tinta-2);
+  overflow-wrap: anywhere;
+}
+
+.motivo {
+  min-width: 0;
+  font: var(--pn-cuerpo);
+  overflow-wrap: anywhere;
+}
+
+// Pie «Ver los N»: separado de la última fila por su filete.
+.pie-lista {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 20px;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--pn-linea);
+  text-align: left;
+  font: var(--pn-etiqueta);
+  font-size: 0.875rem;
+  color: var(--pn-acento);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  &:hover {
+    background: var(--pn-acento-suave);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--pn-acento-borde);
+    outline-offset: -3px;
+  }
+}
+
+// ------------------------------------------------------------------ aviso de error de carga de escuelas
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  background: var(--pn-superficie-2);
+  border: 1px solid var(--pn-peligro);
+  border-radius: var(--pn-radio-m);
+  font: var(--pn-secundario);
+  color: var(--pn-tinta);
+
+  .ic {
+    color: var(--pn-peligro);
+  }
+
+  span {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// ------------------------------------------------------------------ botones
+
+.btn-principal {
+  @include c.boton-primario;
+  min-height: 44px;
+}
+
+.btn-secundario {
+  @include c.boton-secundario;
+  min-height: 44px;
+}
+
+.btn-texto {
+  @include c.boton-texto;
+  min-height: 44px;
+}
+
+.btn-acento {
+  min-height: 40px;
+}
+
+.btn-principal:focus-visible,
+.btn-secundario:focus-visible,
+.btn-texto:focus-visible {
+  outline: 3px solid var(--pn-acento-borde);
+  outline-offset: 2px;
+}
+
+// ------------------------------------------------------------------ resultado y error
+
+.hecho {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.ic--grande {
+  width: 28px;
+  height: 28px;
+}
+
+.ic--bien {
+  color: var(--pn-bien);
+}
+
+.ic--peligro {
+  color: var(--pn-peligro);
+}
+
+.hecho-texto {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  justify-items: start;
+
+  h2 {
+    margin: 0;
+    font: var(--pn-titulo-bloque);
+    color: var(--pn-tinta);
+
+    &:focus-visible {
+      outline: 3px solid var(--pn-acento-borde);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+  }
+
+  .btn-secundario {
+    margin-top: 12px;
+  }
+}
+
+.bloque--error {
+  border-color: var(--pn-peligro);
+}
+
+// ------------------------------------------------------------------ barra fija
+
+.barra {
+  @include c.barra-cambios;
+  margin: 0;
+}
+
+.barra-resumen {
+  margin: 0 auto 0 0;
+  min-width: 0;
+  font: var(--pn-secundario);
+  color: var(--pn-tinta-2);
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+.barra-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// «Cancelar» es de texto en escritorio y secundario en móvil: el mismo botón, sin duplicarlo.
+.barra-acciones .btn-secundario {
+  padding: 0 12px;
+  border-color: transparent;
+  background: transparent;
+
+  &:hover:not(:disabled) {
+    background: var(--pn-acento-suave);
+  }
+}
+
+.girando {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid color-mix(in srgb, var(--pn-marca-sobre-primario-2) 40%, transparent);
+  border-top-color: var(--pn-marca-sobre-primario-2);
+  border-radius: 50%;
+  animation: giro 0.8s linear infinite;
+}
+
+@keyframes giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ------------------------------------------------------------------ tableta y móvil
+
+@media (max-width: 1023.98px) {
+  // Por encima de la barra inferior del panel.
+  .barra {
+    @include c.barra-cambios-sobre-navegacion;
+  }
+
+  .ia__pagina {
+    padding-bottom: 176px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .ia__pagina {
+    padding: var(--pn-espacio-m) var(--pn-espacio-m) 176px;
+  }
+
+  .plataforma-page {
+    gap: 14px;
+  }
+
+  .page-header h1 {
+    font-size: 1.375rem;
+  }
+
+  .bloque {
+    padding: 16px;
+  }
+
+  // Recuentos en columna.
+  .recuentos {
+    flex-direction: column;
+  }
+
+  // Listas apiladas: referencia y pastilla en una línea, el motivo debajo.
+  .lista {
+    header {
+      padding: 14px 16px 12px;
+    }
+
+    li {
+      grid-template-columns: auto 1fr;
+      row-gap: 4px;
+      column-gap: 8px;
+      padding: 10px 16px;
+    }
+
+    li .motivo,
+    li.sin-columna .motivo {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .pie-lista {
+    padding: 12px 16px;
+  }
+
+  .bloque > .btn-secundario {
+    min-height: 44px;
+  }
+
+  // Pie: el resumen en su línea y los dos botones a partes iguales.
+  .barra {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 16px;
+  }
+
+  .barra-resumen {
+    flex-basis: 100%;
+    padding: 2px 0;
+    font-size: 0.8125rem;
+  }
+
+  .barra-acciones {
+    flex: 1 1 100%;
+  }
+
+  .barra-acciones .btn-secundario {
+    border-color: var(--pn-acento-borde);
+    background: var(--pn-superficie);
+  }
+
+  .barra-acciones button {
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pie-lista {
+    transition: none;
+  }
+
+  .girando {
+    animation-duration: 2.4s;
+  }
+}
