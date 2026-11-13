@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -10,15 +10,21 @@ import { AsaHojaDirective } from './asa-hoja.directive';
   template: `
     @if (visible) {
     <div #hoja class="hoja" [style.height.px]="alto" style="position: fixed; right: 0; bottom: 0; left: 0">
-      <div class="asa" [pnAsaHoja]="hoja" (deslizada)="cerradas = cerradas + 1" style="width: 36px; height: 4px"></div>
+      <div class="asa" [pnAsaHoja]="hoja" (deslizada)="cerrada()" style="width: 36px; height: 4px"></div>
     </div>
     }
   `,
 })
 class Anfitrion {
   visible = true;
+  dentroDeLaZona: boolean | null = null;
   alto = 400;
   cerradas = 0;
+
+  cerrada(): void {
+    this.dentroDeLaZona = NgZone.isInAngularZone();
+    this.cerradas++;
+  }
 }
 
 /**
@@ -190,5 +196,85 @@ describe('AsaHojaDirective (d546, cerrar la hoja deslizando el asa)', () => {
     fixture.detectChanges();
     expect(hoja.style.transform).toBe('');
     expect(hoja.style.willChange).toBe('');
+  });
+
+  it('un pointerdown durante la animación de salida no inicia otro gesto y solo se avisa una vez', fakeAsync(() => {
+    pulsar('pointerdown', 100);
+    mover(300, 1000);
+    soltar(300, 2000);
+    expect(hoja.style.transform).toBe('translateY(100%)');
+    const bajada = pulsar('pointerdown', 100);
+    expect(bajada.defaultPrevented).toBeFalse();
+    mover(150, 2100);
+    soltar(150, 2200);
+    expect(hoja.style.transform).toBe('translateY(100%)');
+    expect(hoja.style.transition).toContain('160ms');
+    tick(160);
+    expect(anfitrion.cerradas).toBe(1);
+    tick(1000);
+    expect(anfitrion.cerradas).toBe(1);
+  }));
+
+  it('volver a coger la hoja mientras regresa continúa desde donde está, sin salto a 0', fakeAsync(() => {
+    pulsar('pointerdown', 100);
+    mover(150, 1000);
+    soltar(150, 2000);
+    expect(hoja.style.transition).toContain('180ms');
+    spyOn(window, 'getComputedStyle').and.returnValue({ transform: 'matrix(1, 0, 0, 1, 0, 30)' } as CSSStyleDeclaration);
+    pulsar('pointerdown', 200);
+    expect(hoja.style.transition).toBe('none');
+    expect(hoja.style.transform).toBe('translateY(30px)');
+    mover(220, 2100);
+    expect(hoja.style.transform).toBe('translateY(50px)');
+    tick(1000);
+    expect(hoja.style.transform).toBe('translateY(50px)');
+    expect(anfitrion.cerradas).toBe(0);
+  }));
+
+  it('un pointerup sin pointerdown no hace nada', fakeAsync(() => {
+    soltar(300, 1000);
+    expect(hoja.style.transform).toBe('');
+    expect(hoja.style.transition).toBe('');
+    tick(1000);
+    expect(anfitrion.cerradas).toBe(0);
+  }));
+
+  it('un lostpointercapture después del pointerup no deshace el cierre', fakeAsync(() => {
+    pulsar('pointerdown', 100);
+    mover(300, 1000);
+    soltar(300, 2000);
+    pulsar('lostpointercapture', 300);
+    expect(hoja.style.transform).toBe('translateY(100%)');
+    tick(160);
+    expect(anfitrion.cerradas).toBe(1);
+  }));
+
+  describe('zona de Angular', () => {
+    it('avisa dentro de la zona de Angular', fakeAsync(() => {
+      pulsar('pointerdown', 100);
+      mover(300, 1000);
+      soltar(300, 2000);
+      tick(160);
+      expect(anfitrion.cerradas).toBe(1);
+      expect(anfitrion.dentroDeLaZona).toBeTrue();
+    }));
+
+    it('el gesto (bajar, mover, soltar, temporizadores) no dispara detección de cambios; solo el aviso', fakeAsync(() => {
+      let vueltas = 0;
+      const suscripcion = TestBed.inject(NgZone).onMicrotaskEmpty.subscribe(() => vueltas++);
+      pulsar('pointerdown', 100);
+      mover(110, 1000);
+      mover(130, 2000);
+      soltar(130, 3000);
+      tick(180);
+      expect(vueltas).toBe(0);
+      pulsar('pointerdown', 100);
+      mover(300, 4000);
+      soltar(300, 5000);
+      tick(160);
+      expect(anfitrion.cerradas).toBe(1);
+      expect(vueltas).toBeGreaterThan(0);
+      suscripcion.unsubscribe();
+    }));
   });
 });

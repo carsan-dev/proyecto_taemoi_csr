@@ -22,7 +22,7 @@
   <div class="pn-selector__velo" (click)="cerrar(true)"></div>
   <div #menuHoja class="pn-selector__menu" id="pn-menu-escuela" role="menu" aria-labelledby="pn-escuela-titulo"
     (keydown)="teclaMenu($event)">
-    <div class="pn-selector__asa" aria-hidden="true" [pnAsaHoja]="menuHoja" (deslizada)="cerrar(false)"></div>
+    <div class="pn-selector__asa" aria-hidden="true" [pnAsaHoja]="menuHoja" (deslizada)="cerrar(true)"></div>
     <div class="pn-selector__cabecera">
       <p class="pn-selector__titulo" id="pn-escuela-titulo">Cambiar de escuela</p>
       <button type="button" class="pn-selector__cerrar" aria-label="Cerrar" [attr.tabindex]="hoja() ? 0 : -1"

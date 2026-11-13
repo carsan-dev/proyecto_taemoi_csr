@@ -217,7 +217,7 @@
 }
 
 // d546: asa de una hoja inferior que se arrastra hacia abajo para cerrarla (directiva `pnAsaHoja`). No cambia su aspecto
-// de 36 × 4 ni el layout: gana una zona táctil de 96 × 44 px centrada (pseudo-elemento) y `touch-action: none`, que es
+// de 36 × 4 ni el layout: gana una zona táctil de 96 × 44 px centrada, 8 px por encima del asa (pseudo-elemento) y `touch-action: none`, que es
 // lo que evita que el arrastre mueva la página de detrás.
 @mixin asa-deslizable {
   position: relative;
@@ -227,11 +227,13 @@
   &::before {
     content: '';
     position: absolute;
-    top: 50%;
+    // 8 px sobre el asa (el relleno superior de cada hoja) y el resto hacia abajo: lo que sobresale más arriba lo
+    // recortan los contenedores con `overflow`.
+    top: -8px;
     left: 50%;
     width: 96px;
     height: 44px;
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
   }
 
   &:active {

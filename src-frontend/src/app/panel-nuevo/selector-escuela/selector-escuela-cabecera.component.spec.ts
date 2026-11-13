@@ -395,6 +395,7 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
       fixture.detectChanges();
       expect(hoja()).toBeNull();
       expect(TestBed.inject(PilaCapas).arriba()).toBeNull();
+      expect(document.activeElement).toBe(boton());
     });
   });
 });

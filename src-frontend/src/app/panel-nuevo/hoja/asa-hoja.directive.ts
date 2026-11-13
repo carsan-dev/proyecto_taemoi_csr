@@ -1,4 +1,4 @@
-import { Directive, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, inject } from '@angular/core';
+import { Directive, ElementRef, EventEmitter, Input, NgZone, OnDestroy, Output, inject } from '@angular/core';
 
 import { menosMovimiento } from '../capas/capa-modal';
 
@@ -26,6 +26,9 @@ interface Muestra {
  * (180 ms). Con `prefers-reduced-motion: reduce`, sin animaciones. Al acabar quita sus estilos en línea: la hoja se
  * puede volver a abrir. Lo que evita que se mueva la página de detrás es el `touch-action: none` del asa (mixin
  * `asa-deslizable` de `capas/_capas.scss`).
+ *
+ * Los eventos del puntero y los temporizadores van fuera de la zona de Angular (un `pointermove` no dispara detección de
+ * cambios); solo `deslizada` se emite dentro de ella.
  */
 @Directive({
   selector: '[pnAsaHoja]',
@@ -33,6 +36,7 @@ interface Muestra {
 })
 export class AsaHojaDirective implements OnDestroy {
   private readonly asa: HTMLElement = inject(ElementRef<HTMLElement>).nativeElement;
+  private readonly zona = inject(NgZone);
 
   /** La hoja que se desplaza con el dedo. */
   @Input({ alias: 'pnAsaHoja', required: true }) hoja: HTMLElement | null | undefined = null;
@@ -48,8 +52,17 @@ export class AsaHojaDirective implements OnDestroy {
   private temporizador: ReturnType<typeof setTimeout> | null = null;
   private saliendo = false;
 
-  @HostListener('pointerdown', ['$event'])
-  alBajar(evento: PointerEvent): void {
+  constructor() {
+    this.zona.runOutsideAngular(() => {
+      this.asa.addEventListener('pointerdown', this.alBajar);
+      this.asa.addEventListener('pointermove', this.alMover);
+      this.asa.addEventListener('pointerup', this.alSoltar);
+      this.asa.addEventListener('pointercancel', this.alCancelar);
+      this.asa.addEventListener('lostpointercapture', this.alCancelar);
+    });
+  };
+
+  private readonly alBajar = (evento: PointerEvent): void => {
     const hoja = this.hoja;
     if (!evento.isPrimary || evento.button !== 0 || this.puntero !== null || this.saliendo || !hoja) {
       return;
@@ -73,19 +86,17 @@ export class AsaHojaDirective implements OnDestroy {
     if (desde > 0) {
       this.mover(hoja, desde);
     }
-  }
+  };
 
-  @HostListener('pointermove', ['$event'])
-  alMover(evento: PointerEvent): void {
+  private readonly alMover = (evento: PointerEvent): void => {
     if (evento.pointerId !== this.puntero || !this.arrastrada) {
       return;
     }
     this.anotar(evento.clientY);
     this.mover(this.arrastrada, this.dy);
-  }
+  };
 
-  @HostListener('pointerup', ['$event'])
-  alSoltar(evento: PointerEvent): void {
+  private readonly alSoltar = (evento: PointerEvent): void => {
     const hoja = this.arrastrada;
     if (evento.pointerId !== this.puntero || !hoja) {
       return;
@@ -97,19 +108,22 @@ export class AsaHojaDirective implements OnDestroy {
     } else {
       this.volver(hoja);
     }
-  }
+  };
 
-  @HostListener('pointercancel', ['$event'])
-  @HostListener('lostpointercapture', ['$event'])
-  alCancelar(evento: PointerEvent): void {
+  private readonly alCancelar = (evento: PointerEvent): void => {
     if (evento.pointerId !== this.puntero || !this.arrastrada) {
       return;
     }
     this.puntero = null;
     this.volver(this.arrastrada);
-  }
+  };
 
   ngOnDestroy(): void {
+    this.asa.removeEventListener('pointerdown', this.alBajar);
+    this.asa.removeEventListener('pointermove', this.alMover);
+    this.asa.removeEventListener('pointerup', this.alSoltar);
+    this.asa.removeEventListener('pointercancel', this.alCancelar);
+    this.asa.removeEventListener('lostpointercapture', this.alCancelar);
     this.pararTemporizador();
     if (this.puntero !== null) {
       try {
@@ -179,7 +193,7 @@ export class AsaHojaDirective implements OnDestroy {
    */
   private terminarCierre(hoja: HTMLElement): void {
     this.arrastrada = null;
-    this.deslizada.emit();
+    this.zona.run(() => this.deslizada.emit());
     this.limpiar(hoja);
   }
 
