@@ -474,6 +474,62 @@ describe('WebContenidoComponent: «Describir la foto» como hoja', () => {
     expect(hoja()!.classList).not.toContain('flot--tras-subir');
   });
 
+  describe('barra de URL sin contar tras subir', () => {
+    let innerAlto: number;
+    let svh: number;
+    let falso: VisorFalso;
+
+    beforeEach(() => {
+      innerAlto = 800;
+      svh = 744;
+      falso = new VisorFalso();
+      visor = falso as unknown as VisualViewport;
+      spyOnProperty(window, 'innerHeight').and.callFake(() => innerAlto);
+      spyOn(WebContenidoComponent.prototype as unknown as { altoSvh(): number }, 'altoSvh').and.callFake(() => svh);
+    });
+
+    function conTeclado(h: unknown): void {
+      abrir();
+      llegar(h);
+      falso.offsetTop = 0;
+      falso.height = 400;
+      falso.dispatchEvent(new Event('resize'));
+      fixture.detectChanges();
+    }
+    const variable = () => hoja()!.style.getPropertyValue('--barra-sin-contar');
+
+    it('innerHeight mayor que 100svh: la diferencia', () => {
+      conTeclado({ ...HOJA, trasSubir: true });
+      expect(variable()).toBe('56px');
+    });
+
+    it('innerHeight igual a 100svh: 0px', () => {
+      svh = 800;
+      conTeclado({ ...HOJA, trasSubir: true });
+      expect(variable()).toBe('0px');
+    });
+
+    it('sonda sin soporte (0): 0px', () => {
+      svh = 0;
+      conTeclado({ ...HOJA, trasSubir: true });
+      expect(variable()).toBe('0px');
+    });
+
+    it('sin trasSubir: sin variable', () => {
+      conTeclado(HOJA);
+      expect(variable()).toBe('');
+    });
+
+    it('al cambiar innerHeight con la hoja abierta, se actualiza', () => {
+      conTeclado({ ...HOJA, trasSubir: true });
+      expect(variable()).toBe('56px');
+      innerAlto = 780;
+      window.dispatchEvent(new Event('resize'));
+      fixture.detectChanges();
+      expect(variable()).toBe('36px');
+    });
+  });
+
   it('d551: sin teclado, la hoja sigue anclada abajo (sin top en línea ni clase de teclado)', () => {
     const falso = new VisorFalso();
     visor = falso as unknown as VisualViewport;

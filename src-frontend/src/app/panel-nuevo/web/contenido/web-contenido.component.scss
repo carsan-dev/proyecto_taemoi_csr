@@ -489,9 +489,9 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
 }
 // Justo tras subir una foto, Chrome de Android enseña la barra de URL al volver del selector de archivos pero da a la página
 // medidas como si estuviera oculta, y los últimos píxeles de la hoja quedan bajo el teclado. No se puede detectar desde JS:
-// se suma al relleno el alto de la barra que el navegador sí conoce (`lvh − svh`; en escritorio es 0). Solo en esa apertura.
+// se suma al relleno lo que `innerHeight` pasa del alto pequeño `100svh` (`--barra-sin-contar`, medido en el componente): la
+// barra de URL que Chrome enseña sin contar; 0 si ya está contada. Solo en esa apertura.
 // El tope (`max-height`, con `box-sizing: border-box`) incluye el relleno y lo que sobre se desplaza por dentro.
 .flot--describir.flot--teclado.flot--tras-subir {
-  padding-bottom: 72px;
-  padding-bottom: calc(16px + 100lvh - 100svh);
+  padding-bottom: calc(16px + var(--barra-sin-contar, 0px));
 }

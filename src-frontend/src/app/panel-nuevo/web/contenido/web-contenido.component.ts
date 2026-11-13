@@ -355,6 +355,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   readonly bordeVisible = signal(0);
   /** El alto de lo que se ve (`visor.height`); 0 sin visor o con zoom. Tope de la hoja de describir con el teclado. */
   readonly altoVisible = signal(0);
+  /** px que `innerHeight` pasa de `100svh` con la hoja de describir abierta tras subir (la barra de URL sin contar); 0 si no. */
+  readonly barraSinContar = signal(0);
   /** d551: teclado del móvil abierto: panel estrecho y el alto del teclado por encima del umbral. */
   readonly teclado = computed(() => this.estrecho() && this.altoTeclado() > UMBRAL_TECLADO);
   /** El bloque de la hoja inferior abierta (panel estrecho), o null. */
@@ -1876,6 +1878,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.cerrarMenuCasos(false);
     this.textoDescribir.set(m.texto);
     this.hojaDescribir.set(m);
+    this.medirBarraSinContar();
     // Boceto `primero.focus`: el foco, al texto.
     this.enfocarDespues('.flot--describir textarea');
   }
@@ -2130,6 +2133,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
    * edición con la zona; nunca por mover el visor o desplazar la ventana. La zona sin más se manda al momento.
    */
   private medirVisor(): void {
+    this.medirBarraSinContar();
     const ventana = this.ventana;
     if (!ventana || !this.visor) {
       return;
@@ -2153,6 +2157,37 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       }, ESPERA_TECLADO_MS);
     }
     this.pedirZona();
+  }
+
+  /**
+   * Lo que `innerHeight` pasa del alto pequeño (`100svh`): la barra de URL que Chrome de Android enseña al volver del selector
+   * de archivos sin que la página lo sepa (0 si ya está contada, como siempre en escritorio). Solo se mide con la hoja de
+   * describir abierta tras subir una foto; en el resto de casos queda en 0 y no se crea la sonda.
+   */
+  private medirBarraSinContar(): void {
+    let valor = 0;
+    if (this.ventana && this.hojaDescribir()?.trasSubir === true) {
+      const svh = this.altoSvh();
+      valor = svh > 0 ? Math.min(120, Math.max(0, Math.round(this.ventana.innerHeight - svh))) : 0;
+    }
+    if (valor !== this.barraSinContar()) {
+      this.barraSinContar.set(valor);
+    }
+  }
+
+  /** El alto de `100svh` en px, medido con una sonda fija e invisible que se retira al momento; 0 si no se entiende `svh`. */
+  private altoSvh(): number {
+    const doc = this.ventana?.document;
+    if (!doc?.body) {
+      return 0;
+    }
+    const sonda = doc.createElement('div');
+    sonda.setAttribute('aria-hidden', 'true');
+    sonda.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none;';
+    doc.body.appendChild(sonda);
+    const alto = sonda.getBoundingClientRect().height;
+    sonda.remove();
+    return alto;
   }
 
   /**

@@ -303,6 +303,7 @@
          el teclado del móvil abierto, pegada a él (anclada por arriba al borde de lo que se ve) y sin pasar de lo que se ve. -->
     <div #hojaDescribirCapa class="flot flot--capa flot--describir" [class.flot--teclado]="teclado()" [class.flot--tras-subir]="teclado() && hojaDescribir()?.trasSubir === true"
       [style.--borde-visible]="teclado() ? bordeVisible() + 'px' : null" [style.--alto-visible]="teclado() ? altoVisible() + 'px' : null"
+      [style.--barra-sin-contar]="teclado() && hojaDescribir()?.trasSubir === true ? barraSinContar() + 'px' : null"
       role="dialog" aria-labelledby="hoja-describir-t">
       <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m" [pnAsaHoja]="hojaDescribirCapa" (deslizada)="cerrarHojaDescribir(true)"></div></div>
       <h2 class="flot__titulo" id="hoja-describir-t">{{ d.titulo }}</h2>
