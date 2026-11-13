@@ -536,11 +536,11 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
       expect(mensajes('foto').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'foto', clave: 'texto_foto.3.foto', accion: 'quitar' });
     });
 
-    it('Describir la foto abre su descripción', () => {
+    it('Describir la foto pide su descripción como hoja del panel (sin flotante)', () => {
       foto('texto_foto.3.foto').click();
       respuesta('describir');
-      expect(flot().hidden).toBeFalse();
-      expect(texto(q('.flot__titulo'))).toBe('describe la foto de «Nuestra sala»');
+      expect(flot().hidden).toBeTrue();
+      expect(mensajes('hoja-describir').at(-1)!['titulo']).toBe('describe la foto de «Nuestra sala»');
     });
 
     it('cerrada sin elegir: el foco vuelve a la foto solo si el panel lo pide', () => {
@@ -570,9 +570,9 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
       respuesta('describir', false, viejo);
       expect(foto('portada.foto').getAttribute('aria-expanded')).toBe('true');
       expect(flot().hidden).toBeTrue();
+      expect(mensajes('hoja-describir')).toEqual([]);
       respuesta('describir', false, nuevo);
-      expect(flot().hidden).toBeFalse();
-      expect(texto(q('.flot__titulo'))).toBe('describe la foto de la portada');
+      expect(mensajes('hoja-describir').map((m) => m['titulo'])).toEqual(['describe la foto de la portada']);
     });
 
     it('B2: el segundo toque en la misma foto cierra el menú y avisa con menu e id', () => {
@@ -607,6 +607,107 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
       foto('portada.foto').click();
       expect(flot().hidden).toBeFalse();
       expect(mensajes('hoja-menu')).toEqual([]);
+    });
+
+    describe('«Describir la foto» como hoja del panel', () => {
+      const ultima = () => mensajes('hoja-describir').at(-1)!;
+      const escribir = (texto: string, id = ultima()['id'] as number) =>
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'texto-hoja-describir', id, texto });
+      const cerrarDesdeElPanel = (devolverFoco: boolean, id = ultima()['id'] as number) =>
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-describir', id, devolverFoco });
+
+      it('desde el menú: se cierra la hoja del menú sin eco y se pide la de describir con un id nuevo', () => {
+        foto('portada.foto').click();
+        const idMenu = idActual();
+        respuesta('describir');
+        expect(mensajes('cerrar-hoja-menu')).toEqual([]);
+        const m = ultima();
+        expect(esMensajeDelEditor(m)).toBeTrue();
+        expect(m).toEqual({
+          canal: CANAL_EDITOR_WEB,
+          tipo: 'hoja-describir',
+          id: jasmine.any(Number),
+          clave: 'portada.foto',
+          titulo: 'describe la foto de la portada',
+          texto: 'Niños en fila',
+        } as never);
+        expect(m['id']).toBeGreaterThan(idMenu);
+        expect(flot().hidden).toBeTrue();
+        expect(foto('portada.foto').getAttribute('aria-expanded')).toBe('false');
+      });
+
+      it('tras subir: «Foto subida: describe la foto…» como hoja', async () => {
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'describir', clave: 'texto_foto.3.foto' });
+        await esperar();
+        expect(flot().hidden).toBeTrue();
+        expect(ultima()['titulo']).toBe('Foto subida: describe la foto de «Nuestra sala»');
+        expect(ultima()['texto']).toBe('');
+      });
+
+      it('ir a «falta describirla» desde el resumen: también como hoja', async () => {
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'ir-texto', clave: 'portada.foto.alt' });
+        await esperar();
+        expect(flot().hidden).toBeTrue();
+        expect(ultima()['titulo']).toBe('describe la foto de la portada');
+      });
+
+      it('cada cambio de la hoja va como el del diálogo: `descripcion` y el pie del menú al día', () => {
+        foto('portada.foto').click();
+        respuesta('describir');
+        escribir('Niños saludando');
+        expect(mensajes('descripcion').at(-1)).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'descripcion', clave: 'portada.foto', texto: 'Niños saludando' });
+        cerrarDesdeElPanel(false);
+        foto('portada.foto').click();
+        const ops = mensajes('hoja-menu').at(-1)!['opciones'] as { op: string; pie: string }[];
+        expect(ops.find((o) => o.op === 'describir')!.pie).toBe('«Niños saludando»');
+      });
+
+      it('lo que llega con otro id (o tras cerrar) se descarta', () => {
+        foto('portada.foto').click();
+        respuesta('describir');
+        const id = ultima()['id'] as number;
+        escribir('viejo', id - 1);
+        cerrarDesdeElPanel(true, id - 1);
+        expect(mensajes('descripcion')).toEqual([]);
+        expect(doc.activeElement).not.toBe(foto('portada.foto'));
+        cerrarDesdeElPanel(false, id);
+        escribir('tarde', id);
+        expect(mensajes('descripcion')).toEqual([]);
+      });
+
+      it('cerrada desde el panel: el foco vuelve a la foto si lo pide, sin eco', () => {
+        foto('portada.foto').click();
+        respuesta('describir');
+        cerrarDesdeElPanel(true);
+        expect(doc.activeElement).toBe(foto('portada.foto'));
+        expect(mensajes('cerrar-hoja-describir')).toEqual([]);
+      });
+
+      it('la foto deja de estar (descartar, quitar): la capa pide cerrar la hoja con su id', async () => {
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'describir', clave: 'texto_foto.3.foto' });
+        await esperar();
+        const id = ultima()['id'];
+        estado({}, [], []);
+        expect(mensajes('cerrar-hoja-describir')).toEqual([{ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-describir', id }] as never);
+        expect(esMensajeDelEditor(mensajes('cerrar-hoja-describir')[0])).toBeTrue();
+      });
+
+      it('abrir el menú de otra foto con la hoja abierta la cierra avisando', () => {
+        foto('portada.foto').click();
+        respuesta('describir');
+        const id = ultima()['id'];
+        foto('texto_foto.3.foto').click();
+        expect(mensajes('cerrar-hoja-describir').map((m) => m['id'])).toEqual([id]);
+      });
+
+      it('con el panel ancho sigue el flotante y no hay hoja', () => {
+        delPanel({ canal: CANAL_EDITOR_WEB, tipo: 'estado-bloques', sinGuardar: [], quitables: [], estrecho: false });
+        foto('portada.foto').click();
+        opciones()[1].click();
+        expect(flot().hidden).toBeFalse();
+        expect(texto(q('.flot h2'))).toBe('describe la foto de la portada');
+        expect(mensajes('hoja-describir')).toEqual([]);
+      });
     });
   });
 });
