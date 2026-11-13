@@ -84,6 +84,14 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	@Query("SELECT ad FROM AlumnoDeporte ad WHERE ad.disciplina.codigo = :deporte")
 	List<AlumnoDeporte> findByDeporte(@Param("deporte") String deporte);
 
+	/**
+	 * Fase 4, importador de alumnos: los números de licencia de una disciplina en la escuela activa (filtrada por
+	 * {@code @TenantId}), activas o no. Una fila de la hoja con uno de ellos ya está cargada.
+	 */
+	@Query("SELECT DISTINCT ad.numeroLicencia FROM AlumnoDeporte ad "
+			+ "WHERE ad.disciplina.codigo = :disciplina AND ad.numeroLicencia IS NOT NULL")
+	List<Integer> numerosLicenciaDeDisciplina(@Param("disciplina") String disciplina);
+
 	@Query("SELECT COUNT(ad) > 0 FROM AlumnoDeporte ad " +
 	       "WHERE ad.alumno.id = :alumnoId AND ad.disciplina.codigo = :deporte AND ad.activo = true")
 	boolean existsByAlumnoIdAndDeporteAndActivoTrue(@Param("alumnoId") Long alumnoId, @Param("deporte") String deporte);

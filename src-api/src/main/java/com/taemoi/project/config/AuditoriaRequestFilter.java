@@ -123,6 +123,16 @@ public class AuditoriaRequestFilter extends OncePerRequestFilter {
 		 */
 		ESCUELA_CREAR("POST", "/api/plataforma/escuelas"),
 		/**
+		 * Fase 4, pieza I1: importador de alumnos de una escuela (superadmin). ImportacionAlumnosService registra todo 2xx
+		 * en la escuela DESTINO, solo con recuentos (nunca nombres, DNI, teléfonos ni correos): la carga como CREATE
+		 * (PLATAFORMA IMPORTACION_ALUMNOS) y el ensayo y la hoja con errores, que no escriben, como READ
+		 * (PLATAFORMA IMPORTACION_ALUMNOS_ENSAYO e IMPORTACION_ALUMNOS_HOJA_REVISAR). Caso en
+		 * ImportacionAlumnosIntegrationTest.
+		 */
+		IMPORTACION_ALUMNOS_ENSAYO("POST", "/api/plataforma/escuelas/[^/]+/importacion/alumnos/ensayo"),
+		IMPORTACION_ALUMNOS_CARGA("POST", "/api/plataforma/escuelas/[^/]+/importacion/alumnos/carga"),
+		IMPORTACION_ALUMNOS_HOJA("POST", "/api/plataforma/escuelas/[^/]+/importacion/alumnos/hoja-con-errores"),
+		/**
 		 * Pieza W3 de la web por plantilla: publicar la web con un tema, el propietario (su escuela) y el superadmin (la
 		 * escuela por id). PublicacionWebService#publicar registra todo 2xx en la escuela de la web (WEB TEMA_PUBLICADO
 		 * con organizacion, tema, primera y, si no cambia nada, sinCambios). Caso en WebPublicacionIntegrationTest.

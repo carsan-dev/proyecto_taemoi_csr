@@ -138,6 +138,12 @@
 			<artifactId>webp-imageio</artifactId>
 			<version>0.1.6</version>
 		</dependency>
+		<!-- Fase 4, importador de alumnos: lectura y escritura de la hoja .xlsx -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.5.1</version>
+		</dependency>
 
 	</dependencies>
 

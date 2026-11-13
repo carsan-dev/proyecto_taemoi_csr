@@ -82,6 +82,12 @@ public interface AlumnoService {
 
 	Alumno crearAlumnoDesdeDTO(@Valid @NonNull AlumnoDTO nuevoAlumnoDTO);
 
+	/**
+	 * El mismo alta con opciones. {@link #crearAlumnoDesdeDTO(AlumnoDTO)} equivale a
+	 * {@link OpcionesAltaAlumno#POR_DEFECTO}; el importador de alumnos (fase 4) usa {@link OpcionesAltaAlumno#IMPORTACION}.
+	 */
+	Alumno crearAlumnoDesdeDTO(@Valid @NonNull AlumnoDTO nuevoAlumnoDTO, @NonNull OpcionesAltaAlumno opciones);
+
 	Alumno actualizarAlumno(@Valid @NonNull Long id, AlumnoDTO alumnoActualizado, Date nuevaFechaNacimiento,
 			MultipartFile nuevaImagen);
 

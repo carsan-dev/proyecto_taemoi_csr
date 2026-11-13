@@ -337,6 +337,10 @@ public interface AlumnoRepository
 	@Query("SELECT a FROM Alumno a WHERE a.nif IS NOT NULL AND a.nif <> '' ORDER BY a.id")
 	List<Alumno> buscarConNifEnOrganizacionActiva();
 
+	/** Fase 4, importador de alumnos: los NIF guardados en la escuela activa, sin cargar las fichas. */
+	@Query("SELECT a.nif FROM Alumno a WHERE a.nif IS NOT NULL AND a.nif <> ''")
+	List<String> nifsEnOrganizacionActiva();
+
 	/**
 	 * Bloquea (SELECT ... FOR UPDATE) los alumnos indicados de la escuela activa, en orden de id
 	 * ascendente para que dos bloqueos concurrentes no se crucen.
