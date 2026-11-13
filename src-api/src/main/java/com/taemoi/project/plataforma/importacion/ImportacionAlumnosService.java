@@ -30,6 +30,11 @@ import com.taemoi.project.entities.OrigenDato;
 import com.taemoi.project.entities.RelacionFirmante;
 import com.taemoi.project.entities.Tarifa;
 import com.taemoi.project.entities.TipoConsentimiento;
+import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
+import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
+import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
+import com.taemoi.project.exceptions.alumno.FechaNacimientoInvalidaException;
+import com.taemoi.project.exceptions.grupo.GrupoNoEncontradoException;
 import com.taemoi.project.organizacion.TransaccionEnEscuela;
 import com.taemoi.project.repositories.AlumnoDeporteRepository;
 import com.taemoi.project.repositories.AlumnoRepository;
@@ -73,8 +78,12 @@ import jakarta.validation.constraints.Email;
  * ordenan: la segunda espera, y como su instantánea de lectura se toma después del bloqueo, ve los alumnos de la primera
  * y los cuenta como ya cargados. Sin migración (no hay índice único sobre la licencia).
  *
+ * <p>Fallos al escribir una fila: un error de negocio de los servicios del alta ({@link #esDeNegocio}) es un error de
+ * esa fila (422 en la carga, error en el informe del ensayo); cualquier otro deshace todo y sale como
+ * {@link ImportacionFallidaException} (500), con la traza en el log.
+ *
  * <p>Datos personales: ni el informe, ni el log, ni la auditoría llevan nombres, apellidos, DNI, teléfonos ni correos.
- * Un fallo al escribir una fila se informa sin su mensaje (podría citar un DNI).
+ * Un fallo al escribir una fila se informa y se registra sin sus mensajes (podrían citar un DNI).
  */
 @Service
 public class ImportacionAlumnosService {
@@ -352,12 +361,32 @@ public class ImportacionAlumnosService {
 			// 403 y 409 de siempre (bloqueo agotado, interbloqueo): no son un problema de la fila.
 			throw e;
 		} catch (RuntimeException e) {
-			// Sin el mensaje: el de un alta duplicada, por ejemplo, cita el NIF.
+			if (!esDeNegocio(e)) {
+				// Un fallo que nadie espera (caída de la base de datos, error de programa): se deshace TODO y sale un
+				// 500. El log da la traza para encontrarlo, pero sin mensajes (pueden citar un NIF o un nombre).
+				log.error("Importación de alumnos: fallo inesperado en la fila {} (número de federación {}); se deshace "
+						+ "todo", fila.fila(), fila.numeroFederacion(), TrazaSinMensajes.de(e));
+				throw new ImportacionFallidaException();
+			}
+			// Un error de negocio de los servicios del alta: error de esa fila. Sin el mensaje: el de un alta
+			// duplicada, por ejemplo, cita el NIF.
 			log.warn("Importación de alumnos: no se pudo escribir la fila {} ({})", fila.fila(),
 					e.getClass().getSimpleName());
 			throw new Deshecha(informe.conError(new Incidencia(fila.fila(), fila.numeroFederacion(), null,
 					FILA_NO_ESCRITA)));
 		}
+	}
+
+	/**
+	 * Las excepciones con las que los servicios del alta rechazan un dato (las que el panel enseña como 400, 404 o 409
+	 * del alumno o del grupo). {@code NumberFormatException} es un {@code IllegalArgumentException}, pero es un error de
+	 * programa.
+	 */
+	static boolean esDeNegocio(RuntimeException e) {
+		return (e instanceof IllegalArgumentException && !(e instanceof NumberFormatException))
+				|| e instanceof DatosAlumnoInvalidosException || e instanceof AlumnoDuplicadoException
+				|| e instanceof FechaNacimientoInvalidaException || e instanceof AlumnoNoEncontradoException
+				|| e instanceof GrupoNoEncontradoException;
 	}
 
 	// ------------------------------------------------------------------ apoyo

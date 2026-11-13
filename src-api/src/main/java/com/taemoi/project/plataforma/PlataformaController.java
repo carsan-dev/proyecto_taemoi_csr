@@ -31,6 +31,7 @@ import com.taemoi.project.marca.MarcaPanelService;
 import com.taemoi.project.marca.ReglaContraste;
 import com.taemoi.project.plataforma.importacion.HojaRevisada;
 import com.taemoi.project.plataforma.importacion.ImportacionAlumnosService;
+import com.taemoi.project.plataforma.importacion.ImportacionFallidaException;
 import com.taemoi.project.plataforma.importacion.InformeImportacion;
 import com.taemoi.project.web.EstadoWebDTO;
 import com.taemoi.project.web.PublicacionWebService;
@@ -240,5 +241,15 @@ public class PlataformaController {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ResponseEntity<Map<String, String>> cuerpoNoLegible() {
 		return ResponseEntity.badRequest().body(Map.of("mensaje", CUERPO_NO_VALIDO));
+	}
+
+	/**
+	 * Pieza I1: fallo inesperado al escribir una fila del importador (ensayo, carga u hoja con errores). La transacción
+	 * ya se deshizo; la causa la registra el servicio. 500 con un mensaje fijo.
+	 */
+	@ExceptionHandler(ImportacionFallidaException.class)
+	public ResponseEntity<Map<String, String>> importacionFallida() {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(Map.of("mensaje", ImportacionFallidaException.MENSAJE));
 	}
 }
