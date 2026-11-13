@@ -38,10 +38,11 @@ final class CeldaExcel {
 		CellType tipo = celda.getCellType();
 		if (tipo == CellType.FORMULA) {
 			// Sin valor guardado (nadie calculó la fórmula: la generó un programa) POI daría 0 o una fecha de 1899.
-			if (celda instanceof XSSFCell xssf && !xssf.getCTCell().isSetV()) {
+			CellType cacheado = celda.getCachedFormulaResultType();
+			if (celda instanceof XSSFCell xssf && sinValorGuardado(xssf, cacheado)) {
 				return Valor.FORMULA_SIN_VALOR;
 			}
-			tipo = celda.getCachedFormulaResultType();
+			tipo = cacheado;
 		}
 		return switch (tipo) {
 		case STRING -> Valor.deTexto(limpiar(celda.getStringCellValue()));
@@ -50,6 +51,18 @@ final class CeldaExcel {
 		case ERROR -> Valor.ERROR;
 		default -> Valor.VACIO;
 		};
+	}
+
+	/**
+	 * Sin {@code <v>}, o con un {@code <v></v>} vacío (openpyxl y pandas lo escriben así) y un tipo que no es texto. Una
+	 * fórmula de texto con {@code <v></v>} es una cadena vacía legítima.
+	 */
+	private static boolean sinValorGuardado(XSSFCell celda, CellType cacheado) {
+		if (!celda.getCTCell().isSetV()) {
+			return true;
+		}
+		String v = celda.getCTCell().getV();
+		return (v == null || v.isEmpty()) && cacheado != CellType.STRING;
 	}
 
 	private static Valor numerica(Cell celda) {

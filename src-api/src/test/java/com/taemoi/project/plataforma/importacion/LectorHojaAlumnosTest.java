@@ -29,6 +29,7 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbookType;
 import org.junit.jupiter.api.Test;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.STCellType;
 import org.springframework.web.multipart.MultipartFile;
 
 /** Importador de alumnos (fase 4): lectura de la hoja maestra y rechazo de ficheros que no lo son. */
@@ -156,6 +157,64 @@ class LectorHojaAlumnosTest {
 				assertNull(CeldaExcel.fecha(valor), columna);
 			}
 		}
+	}
+
+	@Test
+	void formulaConValorVacio_numericaTextoOBooleana_esUnErrorDeLaCelda_noUnCero() throws IOException {
+		// openpyxl y pandas escriben <f>..</f><v></v>: el <v> existe pero esta vacio.
+		for (String formula : List.of("1+1", "UPPER(\"x\")", "TRUE()")) {
+			Valor valor = formulaConV(formula, null, "");
+			assertTrue(valor.error(), formula + " con <v></v> no puede leerse como dato");
+			assertEquals("", valor.texto(), formula);
+		}
+		Valor booleana = formulaConV("TRUE()", STCellType.B, "");
+		assertTrue(booleana.error());
+	}
+
+	@Test
+	void formulaDeTextoConValorVacio_esUnaCeldaVacia_noUnError() throws IOException {
+		Valor valor = formulaConV("UPPER(\"\")", STCellType.STR, "");
+		assertFalse(valor.error());
+		assertEquals("", valor.texto());
+		assertNull(valor.fecha());
+	}
+
+	@Test
+	void formulaConValorGuardadoReal_seLeeSuValor() throws IOException {
+		assertEquals("2", formulaConV("1+1", null, "2").texto());
+		Valor texto = formulaConV("UPPER(\"ana\")", STCellType.STR, "ANA");
+		assertFalse(texto.error());
+		assertEquals("ANA", texto.texto());
+	}
+
+	/** Lee la celda "nombre" de una fila cuyo XML tiene la formula, el tipo en cache y el valor indicados. */
+	private static Valor formulaConV(String formula, STCellType.Enum tipo, String v) throws IOException {
+		return leer(xlsxConFormula(formula, tipo, v)).filas().get(0).valor("nombre");
+	}
+
+	/** Un xlsx cuya celda "nombre" tiene {@code <f>formula</f><v>v</v>}, comprobado tras guardar y reabrir. */
+	static byte[] xlsxConFormula(String formula, STCellType.Enum tipo, String v) throws IOException {
+		byte[] bytes;
+		try (XSSFWorkbook libro = new XSSFWorkbook()) {
+			Sheet hoja = cabeceras(libro);
+			Row fila = hoja.createRow(1);
+			// Otra celda con dato para que la fila no se descarte como vacia.
+			fila.createCell(HojaDePrueba.CABECERAS.indexOf("telefono")).setCellValue("600000001");
+			XSSFCell celda = (XSSFCell) fila.createCell(HojaDePrueba.CABECERAS.indexOf("nombre"));
+			celda.setCellFormula(formula);
+			if (tipo != null) {
+				celda.getCTCell().setT(tipo);
+			}
+			celda.getCTCell().setV(v);
+			bytes = bytes(libro);
+		}
+		try (XSSFWorkbook releido = new XSSFWorkbook(new java.io.ByteArrayInputStream(bytes))) {
+			XSSFCell celda = releido.getSheetAt(0).getRow(1).getCell(HojaDePrueba.CABECERAS.indexOf("nombre"));
+			assertTrue(celda.getCTCell().isSetF());
+			assertTrue(celda.getCTCell().isSetV(), "el <v> debe persistir tras reabrir");
+			assertEquals(v, celda.getCTCell().getV());
+		}
+		return bytes;
 	}
 
 	@Test

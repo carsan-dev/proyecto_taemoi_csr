@@ -271,6 +271,17 @@ class ValidacionFilasTest {
 	}
 
 	@Test
+	void nombreDeUnaFormulaConValorVacio_dalErrorEnNombre_yNoSeValidaComoCero() throws java.io.IOException {
+		byte[] xlsx = LectorHojaAlumnosTest.xlsxConFormula("UPPER(\"x\")", null, "");
+		HojaAlumnos hoja = LectorHojaAlumnos.leer(xlsx, "hoja.xlsx",
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+		FilaValidada f = new ValidacionFilas(ESCUELA, HOY).validar(hoja.filas()).get(0);
+		assertTrue(motivos(f.errores()).contains("nombre: La celda tiene una fórmula sin valor: escribe el dato."),
+				motivos(f.errores()).toString());
+		assertNull(f.datos());
+	}
+
+	@Test
 	void largos_errores() {
 		String largo = "x".repeat(256);
 		assertEquals(List.of("nombre: El nombre es demasiado largo: máximo 255 caracteres.",
