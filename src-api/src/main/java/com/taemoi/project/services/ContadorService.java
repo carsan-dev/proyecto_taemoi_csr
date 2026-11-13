@@ -59,6 +59,22 @@ public class ContadorService {
 		return siguiente;
 	}
 
+	/**
+	 * Fase 4, importador de alumnos: bloquea el contador de expediente de la organización activa SIN consumir ningún
+	 * número, para serializar las cargas de una escuela (y con ellas, las altas). Si no existe, se crea antes en una
+	 * transacción propia (valor 0), como en la primera alta.
+	 *
+	 * <p>Llamarlo como PRIMERA sentencia de la transacción: la existencia se mira dentro de esa transacción propia y aquí
+	 * solo se hace el {@code FOR UPDATE}, así que la instantánea de lectura (REPEATABLE READ) se toma después de tener el
+	 * bloqueo y ve lo que confirmó la carga anterior.
+	 */
+	@Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+	public void bloquearNumeroExpediente() {
+		asegurarCreado(Contador.NUMERO_EXPEDIENTE);
+		contadores.findByClaveParaActualizar(Contador.NUMERO_EXPEDIENTE)
+				.orElseThrow(() -> new IllegalStateException("No se pudo crear el contador " + Contador.NUMERO_EXPEDIENTE));
+	}
+
 	private Contador bloquear(String clave) {
 		// exists no carga la entidad ni deja bloqueos de hueco (lectura consistente sin bloqueo).
 		// El FOR UPDATE se hace una sola vez y al final: si se hiciera sobre una fila inexistente

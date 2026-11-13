@@ -7,6 +7,8 @@ import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.taemoi.project.marca.MarcaPanelService;
 import com.taemoi.project.marca.ReglaContraste;
+import com.taemoi.project.plataforma.importacion.HojaRevisada;
+import com.taemoi.project.plataforma.importacion.ImportacionAlumnosService;
+import com.taemoi.project.plataforma.importacion.InformeImportacion;
 import com.taemoi.project.web.EstadoWebDTO;
 import com.taemoi.project.web.PublicacionWebService;
 import com.taemoi.project.web.TemasWeb;
@@ -45,14 +50,16 @@ public class PlataformaController {
 	private final MarcaPanelService marcas;
 	private final AltaEscuelaService altas;
 	private final PublicacionWebService webs;
+	private final ImportacionAlumnosService importacion;
 
 	public PlataformaController(ErroresPlataformaService errores, LogoEscuelaService logos, MarcaPanelService marcas,
-			AltaEscuelaService altas, PublicacionWebService webs) {
+			AltaEscuelaService altas, PublicacionWebService webs, ImportacionAlumnosService importacion) {
 		this.errores = errores;
 		this.logos = logos;
 		this.marcas = marcas;
 		this.altas = altas;
 		this.webs = webs;
+		this.importacion = importacion;
 	}
 
 	/** Mensaje del 400 de {@code PUT …/marca} sin la clave {@code colorPrimario}. */
@@ -158,6 +165,51 @@ public class PlataformaController {
 			@RequestBody(required = false) JsonNode cuerpo) {
 		return ResponseEntity.ok(webs.publicar(organizacionId, TemasWeb.temaDe(cuerpo),
 				"/api/plataforma/escuelas/" + organizacionId + "/web/publicacion"));
+	}
+
+	/**
+	 * Fase 4, pieza I1 (d556, d558): ensayo de la carga inicial de alumnos de una escuela a partir de la hoja maestra
+	 * (multipart {@code file}, {@code .xlsx}). 200 con el informe; no deja nada escrito. {@code disciplina}: código; sin
+	 * él, la única de la escuela. 400 fichero que no es la hoja o disciplina que no vale; 404 escuela que no existe.
+	 */
+	@PostMapping(value = "/escuelas/{organizacionId}/importacion/alumnos/ensayo",
+			consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<InformeImportacion> ensayarImportacionAlumnos(@PathVariable Long organizacionId,
+			@RequestParam(value = "file", required = false) MultipartFile file,
+			@RequestParam(value = "disciplina", required = false) String disciplina) {
+		return ResponseEntity.ok(importacion.ensayar(organizacionId, file, disciplina));
+	}
+
+	/**
+	 * Pieza I1: carga, todo o nada. 200 con el informe si carga; 422 con el informe y NADA escrito si alguna fila tiene
+	 * errores. Mismos 400 y 404 que el ensayo.
+	 */
+	@PostMapping(value = "/escuelas/{organizacionId}/importacion/alumnos/carga",
+			consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<InformeImportacion> cargarAlumnos(@PathVariable Long organizacionId,
+			@RequestParam(value = "file", required = false) MultipartFile file,
+			@RequestParam(value = "disciplina", required = false) String disciplina) {
+		ImportacionAlumnosService.ResultadoCarga resultado = importacion.cargar(organizacionId, file, disciplina);
+		return ResponseEntity.status(resultado.rechazada() ? HttpStatus.UNPROCESSABLE_ENTITY : HttpStatus.OK)
+				.body(resultado.informe());
+	}
+
+	/**
+	 * Pieza I1 (d558.6): la misma hoja subida con la columna {@code revisar} rellena y las celdas con error en rojo, como
+	 * descarga ({@code <original>-revisar.xlsx}). No guarda nada. Mismos 400 y 404 que el ensayo (en JSON: sin
+	 * {@code produces}).
+	 */
+	@PostMapping(value = "/escuelas/{organizacionId}/importacion/alumnos/hoja-con-errores",
+			consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<byte[]> hojaConErroresDeAlumnos(@PathVariable Long organizacionId,
+			@RequestParam(value = "file", required = false) MultipartFile file,
+			@RequestParam(value = "disciplina", required = false) String disciplina) {
+		HojaRevisada hoja = importacion.hojaConErrores(organizacionId, file, disciplina);
+		return ResponseEntity.ok().contentType(MediaType.parseMediaType(HojaRevisada.TIPO))
+				.header(HttpHeaders.CONTENT_DISPOSITION,
+						ContentDisposition.attachment().filename(hoja.nombre(), java.nio.charset.StandardCharsets.UTF_8)
+								.build().toString())
+				.cacheControl(CacheControl.noStore()).body(hoja.contenido());
 	}
 
 	/**

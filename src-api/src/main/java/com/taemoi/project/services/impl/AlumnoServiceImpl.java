@@ -484,6 +484,18 @@ public class AlumnoServiceImpl implements AlumnoService {
 	@Override
 	@Transactional
 	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO) {
+		return crearAlumnoDesdeDTO(nuevoAlumnoDTO, com.taemoi.project.services.OpcionesAltaAlumno.POR_DEFECTO);
+	}
+
+	/**
+	 * El alta con opciones (fase 4, importador de alumnos): con {@link com.taemoi.project.services.OpcionesAltaAlumno#POR_DEFECTO}
+	 * es exactamente el alta de siempre; las opciones solo pueden QUITAR el consentimiento automático de la imagen y la
+	 * mensualidad del mes, nunca añadir nada.
+	 */
+	@Override
+	@Transactional
+	public Alumno crearAlumnoDesdeDTO(@NonNull AlumnoDTO nuevoAlumnoDTO,
+			@NonNull com.taemoi.project.services.OpcionesAltaAlumno opciones) {
 		// D6-2: sede principal del alta. Responsable: obligatoria y suya (403 si no; automática si tiene una).
 		// Gestión: la pedida o, si no, la única sede activa (con varias, 400; decisiones 368 y 377).
 		Long sedePrincipal;
@@ -559,8 +571,11 @@ public class AlumnoServiceImpl implements AlumnoService {
 		tutorService.aplicarResponsableLegal(alumnoGuardado, TutorService.CambioResponsableLegal.fijar(
 				nuevoAlumnoDTO.getResponsableLegalNombre(), nuevoAlumnoDTO.getResponsableLegalNif()));
 		// La autorización de imagen de la ficha queda como consentimiento (origen APP, firmado por quien da el alta).
-		consentimientoService.registrarCambioAutorizacionWeb(alumnoGuardado,
-				Boolean.TRUE.equals(alumnoGuardado.getAutorizacionWeb()));
+		// El importador no lo apunta: registra el de la ficha de papel, si consta (fase 4).
+		if (opciones.consentimientoImagenAutomatico()) {
+			consentimientoService.registrarCambioAutorizacionWeb(alumnoGuardado,
+					Boolean.TRUE.equals(alumnoGuardado.getAutorizacionWeb()));
+		}
 
 		logger.info("Creando alumno con {} deporte(s){}", deportesIniciales.size(),
 				desdeCamposDeporteUnico ? " (campos de deporte único)" : "");
@@ -624,7 +639,10 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// La licencia federativa se gestiona aparte: el alta del alumno nunca la cobra.
 
-		asignarMensualidadGeneralSiCorresponde(alumnoGuardado);
+		// El importador no crea ningún cargo (fase 4).
+		if (opciones.mensualidadDelMes()) {
+			asignarMensualidadGeneralSiCorresponde(alumnoGuardado);
+		}
 
 		// Finalmente, retornar el Alumno guardado
 		return alumnoGuardado;

@@ -87,6 +87,8 @@ class RegistroUnicoProfesorIntegrationTest extends MySqlIntegrationTest {
 	private static final Set<EscrituraConRegistroPropio> CON_CASO_EN_OTRO_TEST = EnumSet.of(
 			EscrituraConRegistroPropio.LOGO_ESCUELA_CAMBIAR, EscrituraConRegistroPropio.LOGO_ESCUELA_QUITAR,
 			EscrituraConRegistroPropio.MARCA_ESCUELA_COLOR, EscrituraConRegistroPropio.ESCUELA_CREAR,
+			EscrituraConRegistroPropio.IMPORTACION_ALUMNOS_ENSAYO, EscrituraConRegistroPropio.IMPORTACION_ALUMNOS_CARGA,
+			EscrituraConRegistroPropio.IMPORTACION_ALUMNOS_HOJA,
 			EscrituraConRegistroPropio.WEB_PUBLICAR, EscrituraConRegistroPropio.WEB_PUBLICAR_PLATAFORMA,
 			EscrituraConRegistroPropio.WEB_CONTENIDO_GUARDAR,
 			EscrituraConRegistroPropio.MATERIAL_VIDEO_SUBIR,
