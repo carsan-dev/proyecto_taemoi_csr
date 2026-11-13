@@ -251,6 +251,20 @@ describe('PlataformaImportarAlumnosComponent', () => {
       expect(filas[3].querySelector('.pastilla')).toBeNull();
     });
 
+    it('«Ver los N» también despliega la lista de avisos', async () => {
+      preparar();
+      const avisos = [1, 2, 3, 4, 5, 6].map((n) => inc(n + 10, null, 'direccion', 'Sin dirección.'));
+      await ensayar(informe({ listas: 3, avisos }));
+      const lista = el().querySelector('[data-lista="avisos"]')!;
+      expect(lista.querySelectorAll('li').length).toBe(3);
+      const pie = lista.querySelector<HTMLButtonElement>('.pie-lista')!;
+      expect(pie.textContent!.trim()).toBe('Ver los 6');
+      pie.click();
+      fixture.detectChanges();
+      expect(lista.querySelectorAll('li').length).toBe(6);
+      expect(lista.querySelector('.pie-lista')).toBeNull();
+    });
+
     it('«Sustituir» descarta el informe y elegir otro fichero invalida el ensayo', () => {
       boton('Sustituir')!.click();
       fixture.detectChanges();
@@ -281,6 +295,7 @@ describe('PlataformaImportarAlumnosComponent', () => {
       servicio.hojaConErrores.and.returnValue(of({ blob, nombre: 'hoja-sierra-revisar.xlsx' }));
       const crear = spyOn(URL, 'createObjectURL').and.returnValue('blob:prueba');
       const revocar = spyOn(URL, 'revokeObjectURL');
+      jasmine.clock().install();
       let descargado = '';
       spyOn(HTMLAnchorElement.prototype, 'click').and.callFake(function (this: HTMLAnchorElement) {
         descargado = this.download;
@@ -291,8 +306,27 @@ describe('PlataformaImportarAlumnosComponent', () => {
       expect(servicio.hojaConErrores).toHaveBeenCalledWith(1, comp.archivo!);
       expect(crear).toHaveBeenCalledWith(blob);
       expect(descargado).toBe('hoja-sierra-revisar.xlsx');
+      // La URL se revoca diferida, no al instante.
+      expect(revocar).not.toHaveBeenCalled();
+      jasmine.clock().tick(60_000);
+      jasmine.clock().uninstall();
       expect(revocar).toHaveBeenCalledWith('blob:prueba');
       expect(setItem).not.toHaveBeenCalled();
+    });
+
+    it('con la descarga en curso, aria-disabled bloquea un segundo clic', async () => {
+      preparar();
+      await ensayar(informe({ listas: 1, errores: [inc(2, 5, 'sede', 'x')] }));
+      const pendiente = new Subject<{ blob: Blob; nombre: string }>();
+      servicio.hojaConErrores.and.returnValue(pendiente);
+      const b = boton('Descargar hoja con errores')!;
+      b.click();
+      fixture.detectChanges();
+      expect(b.getAttribute('aria-disabled')).toBe('true');
+      b.click();
+      comp.descargarHoja();
+      expect(servicio.hojaConErrores).toHaveBeenCalledTimes(1);
+      pendiente.complete();
     });
 
     it('si falla, error de campo y se puede reintentar', async () => {
@@ -382,14 +416,44 @@ describe('PlataformaImportarAlumnosComponent', () => {
   });
 
   describe('4b. nada que cargar (todo ya cargado)', () => {
-    it('no ofrece «Cargar»', async () => {
+    const recuentos = (): string => el().querySelector('.recuentos')!.textContent!.replace(/\s+/g, ' ');
+
+    it('no ofrece «Cargar»: línea de ya cargadas, ayuda y barra propias', async () => {
       preparar();
       await ensayar(informe({ listas: 0, yaCargados: 5 }));
       expect(comp.nadaQueCargar).toBeTrue();
       expect(comp.puedeCargar).toBeFalse();
       expect(boton('Cargar')).toBeUndefined();
-      expect(resumen()).toBe('0 alumnos listos para Taekwondo Sierra Sur.');
+      expect(recuentos()).toContain('5 ya cargadas');
+      expect(el().querySelector('.recuentos li.gris')).not.toBeNull();
+      expect(texto()).toContain('No se ha guardado nada.');
+      expect(texto()).not.toContain('No se ha guardado nada todavía.');
+      expect(resumen()).toBe('No hay alumnos nuevos que cargar.');
       expect(boton('Ensayar otra vez')).toBeDefined();
+    });
+
+    it('singular, y sin lista vacía cuando no hay ninguna cifra', async () => {
+      preparar();
+      await ensayar(informe({ listas: 0, yaCargados: 1 }));
+      expect(recuentos()).toContain('1 ya cargada');
+      expect(recuentos()).not.toContain('ya cargadas');
+      preparar();
+      await ensayar(informe({ listas: 0, yaCargados: 0 }));
+      expect(el().querySelector('.recuentos')).toBeNull();
+    });
+
+    it('con listas para cargar, la línea de ya cargadas también sale (estado 4)', async () => {
+      preparar();
+      await ensayar(informe({ listas: 10, yaCargados: 250 }));
+      expect(recuentos()).toContain('10 listas para cargar');
+      expect(recuentos()).toContain('250 ya cargadas');
+      expect(boton('Cargar 10 alumnos')).toBeDefined();
+    });
+
+    it('con errores (estado 3) también sale', async () => {
+      preparar();
+      await ensayar(informe({ listas: 0, yaCargados: 2, errores: [inc(2, null, 'sede', 'x')] }));
+      expect(recuentos()).toContain('2 ya cargadas');
     });
   });
 
@@ -509,7 +573,7 @@ describe('PlataformaImportarAlumnosComponent', () => {
       await ensayar(informe({ listas: 5 }));
     }
 
-    it('500: bloque «No se ha cargado ningún alumno» y «Ensayar otra vez» vuelve a ensayar', async () => {
+    it('500: bloque «No se ha cargado ningún alumno» y «Ensayar otra vez» abre el selector', async () => {
       await llegarACargar();
       servicio.cargar.and.returnValue(throwError(() => http(500, { mensaje: 'La importación ha fallado. No se ha cargado nada.' })));
       await comp.cargar();
@@ -519,19 +583,29 @@ describe('PlataformaImportarAlumnosComponent', () => {
       expect(bloque.textContent).toContain('No se ha cargado ningún alumno');
       expect(bloque.textContent).toContain('La carga se ha deshecho entera. Vuelve a ensayar la hoja antes de intentarlo otra vez.');
       expect(boton('Cargar')).toBeUndefined();
-      servicio.ensayar.and.returnValue(of(informe({ listas: 5 })));
+      const abrir = spyOn(HTMLInputElement.prototype, 'click');
       boton('Ensayar otra vez')!.click();
       await asentar();
-      expect(servicio.ensayar).toHaveBeenCalledTimes(2);
-      expect(comp.fase).toBe('informe');
+      expect(abrir).toHaveBeenCalledTimes(1);
+      expect(servicio.ensayar).toHaveBeenCalledTimes(1);
+      expect(comp.fase).toBe('inicio');
     });
 
-    it('error de red (0): el mismo bloque', async () => {
-      await llegarACargar();
-      servicio.cargar.and.returnValue(throwError(() => http(0)));
-      await comp.cargar();
-      await asentar();
-      expect(el().querySelector('.bloque--error')).not.toBeNull();
+    [0, 502, 503, 504].forEach((status) => {
+      it(`${status}: resultado desconocido, no afirma que se deshiciera`, async () => {
+        await llegarACargar();
+        servicio.cargar.and.returnValue(throwError(() => http(status)));
+        await comp.cargar();
+        await asentar();
+        const bloque = el().querySelector('.bloque--error')!;
+        expect(bloque.textContent).toContain('No sabemos si la carga ha terminado');
+        expect(bloque.textContent).toContain(
+          'Se cortó la conexión antes de recibir la respuesta. Vuelve a ensayar la hoja: los alumnos ya cargados se reconocen y no se duplican.'
+        );
+        expect(bloque.textContent).not.toContain('No se ha cargado ningún alumno');
+        expect(bloque.textContent).not.toContain('deshecho');
+        expect(boton('Ensayar otra vez')).toBeDefined();
+      });
     });
 
     it('422: informe con errores como en el estado 3 y «Cargar» invalidado', async () => {
@@ -555,6 +629,134 @@ describe('PlataformaImportarAlumnosComponent', () => {
       await asentar();
       expect(comp.fase).toBe('inicio');
       expect(el().querySelector('[role="alert"]')!.textContent).toContain('Este fichero no es la hoja de alumnos.');
+    });
+  });
+
+  describe('«Ensayar otra vez» (no reenvía el fichero guardado)', () => {
+    const conErrores = (): InformeImportacion => informe({ listas: 1, errores: [inc(2, 5, 'sede', 'x')] });
+
+    it('descarta informe y ensayo, conserva la escuela y abre el selector', async () => {
+      preparar(fichero(), 2);
+      await ensayar(conErrores());
+      const abrir = spyOn(HTMLInputElement.prototype, 'click');
+      boton('Ensayar otra vez')!.click();
+      fixture.detectChanges();
+      expect(abrir).toHaveBeenCalledTimes(1);
+      expect(servicio.ensayar).toHaveBeenCalledTimes(1);
+      expect(comp.informe).toBeNull();
+      expect(comp.archivo).toBeNull();
+      expect(comp.escuelaId).toBe(2);
+      expect(comp.fase).toBe('inicio');
+      expect(el().querySelector('.zona')).not.toBeNull();
+    });
+
+    it('si se elige un fichero válido, ensaya directamente', async () => {
+      preparar();
+      await ensayar(conErrores());
+      spyOn(HTMLInputElement.prototype, 'click');
+      boton('Ensayar otra vez')!.click();
+      servicio.ensayar.and.returnValue(of(informe({ listas: 3 })));
+      const nuevo = fichero('corregida.xlsx');
+      elegirFichero(nuevo);
+      await asentar();
+      expect(servicio.ensayar).toHaveBeenCalledTimes(2);
+      expect(servicio.ensayar.calls.mostRecent().args).toEqual([1, nuevo]);
+      expect(comp.fase).toBe('informe');
+    });
+
+    it('si se cancela el selector, queda el estado inicial con la escuela y sin ensayar', async () => {
+      preparar();
+      await ensayar(conErrores());
+      spyOn(HTMLInputElement.prototype, 'click');
+      boton('Ensayar otra vez')!.click();
+      el().querySelector('#ia-fichero')!.dispatchEvent(new Event('cancel'));
+      fixture.detectChanges();
+      expect(comp.fase).toBe('inicio');
+      expect(comp.escuelaId).toBe(1);
+      expect(el().querySelector('.zona')).not.toBeNull();
+      // Un fichero elegido más tarde a mano no se ensaya solo.
+      elegirFichero(fichero('otra.xlsx'));
+      expect(servicio.ensayar).toHaveBeenCalledTimes(1);
+      expect(comp.fase).toBe('inicio');
+    });
+
+    it('con un fichero no válido en este flujo no ensaya y avisa', async () => {
+      preparar();
+      await ensayar(conErrores());
+      spyOn(HTMLInputElement.prototype, 'click');
+      boton('Ensayar otra vez')!.click();
+      elegirFichero(fichero('hoja.xls'));
+      expect(servicio.ensayar).toHaveBeenCalledTimes(1);
+      expect(el().querySelector('[role="alert"]')!.textContent).toContain('Elige un fichero .xlsx.');
+    });
+
+    it('con 0 listas, «Ensayar otra vez» también abre el selector', async () => {
+      preparar();
+      await ensayar(informe({ listas: 0, yaCargados: 5 }));
+      const abrir = spyOn(HTMLInputElement.prototype, 'click');
+      boton('Ensayar otra vez')!.click();
+      expect(abrir).toHaveBeenCalledTimes(1);
+      expect(comp.fase).toBe('inicio');
+    });
+  });
+
+  describe('foco', () => {
+    const activo = (): Element | null => document.activeElement;
+
+    it('informe: el título «Resultado del ensayo»', async () => {
+      preparar();
+      await ensayar(informe({ listas: 1 }));
+      expect(activo()).toBe(el().querySelector('[data-foco="resultado"]'));
+    });
+
+    it('hecha: el título del resultado', async () => {
+      preparar();
+      await ensayar(informe({ listas: 1 }));
+      servicio.cargar.and.returnValue(of(informe({ creados: 1 })));
+      await comp.cargar();
+      await asentar();
+      expect(activo()).toBe(el().querySelector('[data-foco="hecha"]'));
+    });
+
+    it('fallo de la carga: el título del bloque de error', async () => {
+      preparar();
+      await ensayar(informe({ listas: 1 }));
+      servicio.cargar.and.returnValue(throwError(() => http(500)));
+      await comp.cargar();
+      await asentar();
+      expect(activo()).toBe(el().querySelector('[data-foco="fallo"]'));
+    });
+
+    [400, 404, 500, 0].forEach((status) => {
+      it(`ensayo fallido (${status}): «Elegir Excel»`, async () => {
+        preparar();
+        servicio.ensayar.and.returnValue(throwError(() => http(status)));
+        boton('Ensayar')!.click();
+        await asentar();
+        expect(activo()).toBe(el().querySelector('#ia-elegir'));
+      });
+    });
+  });
+
+  describe('destrucción del componente', () => {
+    it('cancela el ensayo en vuelo y no toca nada si la respuesta llega tarde', () => {
+      const pendiente = new Subject<InformeImportacion>();
+      servicio.ensayar.and.returnValue(pendiente);
+      preparar();
+      boton('Ensayar')!.click();
+      fixture.destroy();
+      expect(pendiente.observed).toBeFalse();
+      expect(() => pendiente.next(informe())).not.toThrow();
+    });
+
+    it('cancela la carga en vuelo', async () => {
+      preparar();
+      await ensayar(informe({ listas: 1 }));
+      const pendiente = new Subject<InformeImportacion>();
+      servicio.cargar.and.returnValue(pendiente);
+      await comp.cargar();
+      fixture.destroy();
+      expect(pendiente.observed).toBeFalse();
     });
   });
 

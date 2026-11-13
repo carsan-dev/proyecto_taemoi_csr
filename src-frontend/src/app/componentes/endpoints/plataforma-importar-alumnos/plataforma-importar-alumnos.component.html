@@ -14,7 +14,8 @@
     hidden
     accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     aria-label="Hoja de alumnos (.xlsx)"
-    (change)="alElegirFichero($event)" />
+    (change)="alElegirFichero($event)"
+    (cancel)="alCancelarSelector()" />
 
   @switch (fase) {
     @case ('hecha') {
@@ -35,8 +36,8 @@
         <div class="hecho">
           <svg class="ic ic--grande ic--peligro" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
           <div class="hecho-texto">
-            <h2 id="ia-fallo" tabindex="-1" data-foco="fallo">No se ha cargado ningún alumno</h2>
-            <p class="sec">La carga se ha deshecho entera. Vuelve a ensayar la hoja antes de intentarlo otra vez.</p>
+            <h2 id="ia-fallo" tabindex="-1" data-foco="fallo">{{ tituloFallo }}</h2>
+            <p class="sec">{{ textoFallo }}</p>
             <button type="button" class="btn-secundario btn-acento" (click)="ensayarOtraVez()">Ensayar otra vez</button>
           </div>
         </div>
@@ -114,6 +115,7 @@
       @if (fase === 'informe' && informe) {
         <section class="bloque" aria-labelledby="ia-resultado">
           <h2 class="bloque-titulo" id="ia-resultado" tabindex="-1" data-foco="resultado">Resultado del ensayo</h2>
+          @if (hayRecuentos) {
           <ul class="recuentos">
             @if (informe.listas > 0) {
               <li class="bien">
@@ -133,7 +135,14 @@
                 <span><b>{{ filasConAvisos }}</b> con avisos</span>
               </li>
             }
+            @if (informe.yaCargados > 0) {
+              <li class="gris">
+                <svg class="ic" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg>
+                <span><b>{{ informe.yaCargados }}</b> {{ textoYaCargadas }}</span>
+              </li>
+            }
           </ul>
+          }
           @if (errores.length > 0) {
             <p class="ayuda">No se ha guardado nada. Mientras haya errores no se puede cargar.</p>
             <button type="button" class="btn-secundario btn-acento" [attr.aria-disabled]="descargando ? 'true' : null" (click)="descargarHoja()">
@@ -147,6 +156,8 @@
                 <span>{{ errorDescarga }}</span>
               </p>
             }
+          } @else if (nadaQueCargar) {
+            <p class="ayuda">No se ha guardado nada.</p>
           } @else {
             <p class="ayuda">No se ha guardado nada todavía.</p>
           }

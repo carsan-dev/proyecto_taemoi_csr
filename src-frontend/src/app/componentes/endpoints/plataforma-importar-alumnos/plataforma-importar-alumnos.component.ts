@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Location } from '@angular/common';
-import { Component, ElementRef, Injector, OnInit, afterNextRender, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Injector, OnInit, afterNextRender, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
@@ -52,6 +53,8 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
+  private destruido = false;
 
   readonly visibles = FILAS_VISIBLES;
 
@@ -79,15 +82,20 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
   descargando = false;
   errorDescarga: string | null = null;
   private confirmando = false;
+  /** El resultado de la carga se perdió (red, 502, 504…): el servidor puede haber guardado. */
+  resultadoDesconocido = false;
+  /** Tras «Ensayar otra vez», el fichero que se elija se ensaya directamente. */
+  private ensayarAlElegir = false;
 
   ngOnInit(): void {
+    this.destroyRef.onDestroy(() => (this.destruido = true));
     this.cargarEscuelas();
   }
 
   cargarEscuelas(): void {
     this.cargandoEscuelas = true;
     this.errorEscuelas = false;
-    this.escuelasApi.escuelas().subscribe({
+    this.escuelasApi.escuelas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lista) => {
         this.escuelas = lista ?? [];
         this.cargandoEscuelas = false;
@@ -168,7 +176,9 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     }
     if (this.fase === 'informe' && this.informe) {
       return this.informe.errores.length === 0
-        ? `${plural(this.informe.listas, 'alumno listo', 'alumnos listos')} para ${this.nombreEscuelaEnVuelo}.`
+        ? this.informe.listas === 0
+          ? 'No hay alumnos nuevos que cargar.'
+          : `${plural(this.informe.listas, 'alumno listo', 'alumnos listos')} para ${this.nombreEscuelaEnVuelo}.`
         : '';
     }
     return !this.escuelaId || !this.archivo ? 'Elige la escuela y la hoja.' : '';
@@ -185,6 +195,25 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
       return `${base} Ninguno estaba ya cargado.`;
     }
     return `${base} ${ya === 1 ? '1 ya estaba cargado y no se ha tocado.' : `${ya} ya estaban cargados y no se han tocado.`}`;
+  }
+
+  /** Hay alguna cifra que enseñar en la lista de recuentos. */
+  get hayRecuentos(): boolean {
+    return (this.informe?.listas ?? 0) > 0 || this.filasConErrores > 0 || this.filasConAvisos > 0 || (this.informe?.yaCargados ?? 0) > 0;
+  }
+
+  get textoYaCargadas(): string {
+    return (this.informe?.yaCargados ?? 0) === 1 ? 'ya cargada' : 'ya cargadas';
+  }
+
+  get tituloFallo(): string {
+    return this.resultadoDesconocido ? 'No sabemos si la carga ha terminado' : 'No se ha cargado ningún alumno';
+  }
+
+  get textoFallo(): string {
+    return this.resultadoDesconocido
+      ? 'Se cortó la conexión antes de recibir la respuesta. Vuelve a ensayar la hoja: los alumnos ya cargados se reconocen y no se duplican.'
+      : 'La carga se ha deshecho entera. Vuelve a ensayar la hoja antes de intentarlo otra vez.';
   }
 
   get textoCargar(): string {
@@ -235,6 +264,8 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     const fichero = entrada.files?.[0] ?? null;
     // Se puede volver a elegir el mismo fichero.
     entrada.value = '';
+    const ensayarYa = this.ensayarAlElegir;
+    this.ensayarAlElegir = false;
     if (!fichero || this.ocupado) {
       return;
     }
@@ -249,6 +280,14 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     }
     this.archivo = fichero;
     this.errorArchivo = null;
+    if (ensayarYa && this.escuelaId) {
+      this.ensayar();
+    }
+  }
+
+  /** El selector se cerró sin elegir nada. */
+  alCancelarSelector(): void {
+    this.ensayarAlElegir = false;
   }
 
   private validarFichero(fichero: File): string | null {
@@ -270,6 +309,7 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
 
   elegirExcel(entrada: HTMLInputElement): void {
     if (!this.ocupado) {
+      this.ensayarAlElegir = false;
       entrada.click();
     }
   }
@@ -292,7 +332,7 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     this.nombreEscuelaEnVuelo = this.nombreEscuela;
     this.descartarEnsayo();
     this.fase = 'ensayando';
-    this.importacion.ensayar(escuelaId, archivo).subscribe({
+    this.importacion.ensayar(escuelaId, archivo).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (informe) => {
         this.informe = informe;
         this.ensayado = { archivo, escuelaId };
@@ -303,9 +343,23 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     });
   }
 
-  /** «Ensayar otra vez» (tras corregir la hoja o tras el 500): el mismo fichero y la misma escuela. */
+  /**
+   * «Ensayar otra vez»: descarta el informe y el ensayo, conserva la escuela y abre el selector.
+   * No se reenvía el File guardado: el navegador falla al releer un fichero editado en disco.
+   */
   ensayarOtraVez(): void {
-    this.ensayar();
+    if (this.ocupado) {
+      return;
+    }
+    this.descartarEnsayo();
+    this.archivo = null;
+    this.errorArchivo = null;
+    this.errorEscuela = null;
+    this.ayudaArchivo = AYUDA_FICHERO;
+    this.resultadoDesconocido = false;
+    this.fase = 'inicio';
+    this.ensayarAlElegir = true;
+    this.host.nativeElement.querySelector<HTMLInputElement>('#ia-fichero')?.click();
   }
 
   private falloDelEnsayo(error: HttpErrorResponse): void {
@@ -322,6 +376,7 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     } else {
       this.errorArchivo = 'No se ha podido ensayar la hoja. Inténtalo de nuevo.';
     }
+    this.enfocar(() => this.host.nativeElement.querySelector<HTMLElement>('#ia-elegir'));
   }
 
   // ------------------------------------------------------------------ cargar
@@ -357,7 +412,8 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     const archivo = this.archivo!;
     const escuelaId = this.escuelaId!;
     this.fase = 'cargando';
-    this.importacion.cargar(escuelaId, archivo).subscribe({
+    this.resultadoDesconocido = false;
+    this.importacion.cargar(escuelaId, archivo).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (informe) => {
         this.resultado = informe;
         this.fase = 'hecha';
@@ -393,6 +449,8 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
       this.falloDelEnsayo(error);
       return;
     }
+    // Con un 500 el servidor deshizo la carga; con cualquier otro fallo no se sabe si llegó a guardar.
+    this.resultadoDesconocido = error?.status !== 500;
     this.fase = 'fallo';
     this.enfocar(() => this.titulo('fallo'));
   }
@@ -405,6 +463,7 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
       return;
     }
     this.descartarEnsayo();
+    this.ensayarAlElegir = false;
     this.fase = 'inicio';
     entrada.click();
   }
@@ -428,7 +487,7 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     }
     this.descargando = true;
     this.errorDescarga = null;
-    this.importacion.hojaConErrores(this.escuelaId, this.archivo).subscribe({
+    this.importacion.hojaConErrores(this.escuelaId, this.archivo).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: ({ blob, nombre }) => {
         this.descargando = false;
         this.guardar(blob, nombre);
@@ -450,7 +509,8 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
     document.body.appendChild(enlace);
     enlace.click();
     enlace.remove();
-    URL.revokeObjectURL(url);
+    // Diferida, como en el resto del repo: el navegador puede tardar en leer el blob.
+    setTimeout(() => globalThis.URL.revokeObjectURL(url), 60_000);
   }
 
   cancelar(): void {
@@ -477,6 +537,9 @@ export class PlataformaImportarAlumnosComponent implements OnInit {
   }
 
   private enfocar(buscar: () => HTMLElement | null): void {
+    if (this.destruido) {
+      return;
+    }
     afterNextRender(() => buscar()?.focus(), { injector: this.injector });
   }
 
