@@ -1,4 +1,4 @@
-<dialog #dialogo class="pn-dialogo" [class.pn-dialogo--hoja]="hoja" [class.pn-dialogo--peligro]="opciones.destructivo"
+<dialog #dialogo class="pn-dialogo" [attr.role]="opciones.alerta ? 'alertdialog' : null" [class.pn-dialogo--hoja]="hoja" [class.pn-dialogo--peligro]="opciones.destructivo"
   [class.pn-dialogo--tres]="!!opciones.accionSecundaria"
   [attr.aria-labelledby]="id + '-titulo'" [attr.aria-describedby]="descritoPor"
   [attr.data-dialogo]="opciones.nombre ?? null" [attr.data-generico]="opciones.generico ? 'true' : null"

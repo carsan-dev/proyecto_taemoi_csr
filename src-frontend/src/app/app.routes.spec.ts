@@ -110,7 +110,7 @@ describe('app routes', () => {
   });
 
   // F4-3 (decisión 445): Logo y color y Nueva escuela llevan el estilo del panel, así que cargan también panel-nuevo.css.
-  for (const camino of ['plataformaLogos', 'plataformaNuevaEscuela']) {
+  for (const camino of ['plataformaLogos', 'plataformaNuevaEscuela', 'plataformaImportarAlumnos']) {
     it(`${camino}: carga las hojas del panel y conserva el guard de plataforma`, () => {
       const ruta = routes.find((entrada) => entrada.path === camino)!;
       expect(ruta.canMatch).toEqual([estilosPanelGuard]);

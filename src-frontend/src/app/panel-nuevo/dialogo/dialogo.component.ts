@@ -87,6 +87,11 @@ export interface OpcionesConfirmacion<R = unknown> {
    * en cualquier destructivo.
    */
   focoEnCancelar?: boolean;
+  /**
+   * Diálogo de alerta (`role="alertdialog"`) sin tono de peligro: el foco inicial va a «Cancelar» y la acción conserva
+   * el estilo principal (la carga de alumnos de plataforma, que no se puede deshacer pero no borra nada).
+   */
+  alerta?: boolean;
   /** Si se da, el diálogo sigue abierto con el botón ocupado hasta que termine. */
   ejecutar?: (valor: string | null) => Observable<R>;
   /** Párrafos y listas tras la frase (8b-D2b). */
@@ -229,7 +234,7 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
       primerCampo.focus();
       return;
     }
-    const inicial = this.conPeligro || this.accionDeshabilitada ? this.botonCancelar : this.botonAccion;
+    const inicial = this.conPeligro || this.opciones.alerta || this.accionDeshabilitada ? this.botonCancelar : this.botonAccion;
     inicial?.nativeElement.focus();
   }
 
