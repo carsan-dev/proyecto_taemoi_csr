@@ -9,13 +9,15 @@ import java.time.format.ResolverStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 
 /**
  * Lectura normalizada de una celda de la hoja maestra. Una celda puede venir como texto, número o fecha de Excel:
  * <ul>
  * <li>Un número sale en notación normal y sin decimales sobrantes ({@code 606000000}, no {@code 6.06E8}); con un formato
  * de ceros ({@code 00000}) conserva los ceros de la izquierda.</li>
- * <li>Una fórmula NO se evalúa: se usa el valor que Excel dejó guardado; un error guardado es un {@link Valor#ERROR}.</li>
+ * <li>Una fórmula NO se evalúa: se usa el valor que Excel dejó guardado; un error guardado es un {@link Valor#ERROR} y
+ * una fórmula sin valor guardado, un {@link Valor#FORMULA_SIN_VALOR}.</li>
  * <li>Las fechas admiten celda de fecha o texto {@code DD/MM/AAAA}.</li>
  * </ul>
  */
@@ -23,6 +25,8 @@ final class CeldaExcel {
 
 	private static final DateTimeFormatter DD_MM_AAAA = DateTimeFormatter.ofPattern("d/M/uuuu")
 			.withResolverStyle(ResolverStyle.STRICT);
+	/** La primera fecha que se acepta (la primera del calendario de Excel). */
+	static final LocalDate PRIMERA_FECHA = LocalDate.of(1900, 1, 1);
 
 	private CeldaExcel() {
 	}
@@ -33,6 +37,10 @@ final class CeldaExcel {
 		}
 		CellType tipo = celda.getCellType();
 		if (tipo == CellType.FORMULA) {
+			// Sin valor guardado (nadie calculó la fórmula: la generó un programa) POI daría 0 o una fecha de 1899.
+			if (celda instanceof XSSFCell xssf && !xssf.getCTCell().isSetV()) {
+				return Valor.FORMULA_SIN_VALOR;
+			}
 			tipo = celda.getCachedFormulaResultType();
 		}
 		return switch (tipo) {
@@ -56,20 +64,22 @@ final class CeldaExcel {
 
 	/**
 	 * La fecha de un valor: la de la celda de fecha o la del texto {@code DD/MM/AAAA} (día y mes con una o dos cifras,
-	 * año con cuatro). {@code null} si está vacío o no es una fecha válida.
+	 * año con cuatro). {@code null} si está vacío, no es una fecha válida o es anterior al {@link #PRIMERA_FECHA} (una
+	 * celda de fecha con un 0 sale como 31/12/1899).
 	 */
 	static LocalDate fecha(Valor valor) {
-		if (valor.fecha() != null) {
-			return valor.fecha();
+		LocalDate fecha = valor.fecha();
+		if (fecha == null) {
+			if (valor.error() || valor.texto().isEmpty()) {
+				return null;
+			}
+			try {
+				fecha = LocalDate.parse(valor.texto(), DD_MM_AAAA);
+			} catch (DateTimeParseException e) {
+				return null;
+			}
 		}
-		if (valor.error() || valor.texto().isEmpty()) {
-			return null;
-		}
-		try {
-			return LocalDate.parse(valor.texto(), DD_MM_AAAA);
-		} catch (DateTimeParseException e) {
-			return null;
-		}
+		return fecha.isBefore(PRIMERA_FECHA) ? null : fecha;
 	}
 
 	/** Número en notación normal; con un formato solo de ceros, completado con ceros a la izquierda hasta su longitud. */

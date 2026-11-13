@@ -59,6 +59,7 @@ final class ValidacionFilas {
 
 	static final String FALTA_TELEFONO = "Falta el teléfono.";
 	static final String ERROR_DE_FORMULA = "La celda tiene un error de fórmula: escribe el valor.";
+	static final String FORMULA_SIN_VALOR = "La celda tiene una fórmula sin valor: escribe el dato.";
 
 	/** Las columnas que se leen; las de la federación ({@code nombre_federacion}, {@code menor}…) solo son de consulta. */
 	private static final List<String> USADAS = List.of(NUMERO_FEDERACION, FECHA_NACIMIENTO, FECHA_LICENCIA, NOMBRE,
@@ -101,7 +102,7 @@ final class ValidacionFilas {
 		}
 		for (String columna : USADAS) {
 			if (r.conError(columna)) {
-				r.error(columna, ERROR_DE_FORMULA);
+				r.error(columna, r.valor(columna).formulaSinValor() ? FORMULA_SIN_VALOR : ERROR_DE_FORMULA);
 			}
 		}
 		String nombre = obligatorio(r, NOMBRE, "Falta el nombre.");

@@ -118,6 +118,20 @@ class ValidacionFilasTest {
 	}
 
 	@Test
+	void fechasAnterioresA1900_errorDeFormato() {
+		assertEquals(List.of("fecha_nacimiento: La fecha de nacimiento no es válida: escríbela como DD/MM/AAAA."),
+				motivos(una(fila("fecha_nacimiento", LocalDate.of(1899, 12, 31))).errores()));
+		assertEquals(List.of("fecha_nacimiento: La fecha de nacimiento no es válida: escríbela como DD/MM/AAAA."),
+				motivos(una(fila("fecha_nacimiento", "31/12/1899")).errores()));
+		assertEquals(List.of("fecha_licencia: La fecha de licencia no es válida: escríbela como DD/MM/AAAA."),
+				motivos(una(fila("fecha_licencia", LocalDate.of(1899, 12, 31))).errores()));
+		assertEquals(List.of("fecha_licencia: La fecha de licencia no es válida: escríbela como DD/MM/AAAA."),
+				motivos(una(fila("fecha_licencia", "01/01/1800")).errores()));
+		assertEquals(List.of(), motivos(una(fila("fecha_nacimiento", "01/01/1900", "dni_nie", "12345679S",
+				"fecha_licencia", LocalDate.of(1900, 1, 1))).errores()));
+	}
+
+	@Test
 	void catalogo_sedeGrupoTarifa_sinAproximaciones() {
 		assertEquals(List.of("sede: «Estepa centro» no es una sede de esta escuela."),
 				motivos(una(fila("sede", "Estepa centro")).errores()));
@@ -224,6 +238,16 @@ class ValidacionFilasTest {
 		FilaValidada f = una(fila("telefono", Valor.ERROR, "grado", Valor.ERROR));
 		assertEquals(List.of("grado: La celda tiene un error de fórmula: escribe el valor.",
 				"telefono: La celda tiene un error de fórmula: escribe el valor."), motivos(f.errores()));
+	}
+
+	@Test
+	void formulaSinValor_unErrorPorCelda_queNoSeLeeComoCero() {
+		FilaValidada f = una(fila("nombre", Valor.FORMULA_SIN_VALOR, "fecha_nacimiento", Valor.FORMULA_SIN_VALOR,
+				"telefono", Valor.ERROR));
+		assertEquals(List.of("fecha_nacimiento: La celda tiene una fórmula sin valor: escribe el dato.",
+				"nombre: La celda tiene una fórmula sin valor: escribe el dato.",
+				"telefono: La celda tiene un error de fórmula: escribe el valor."), motivos(f.errores()));
+		assertNull(f.datos());
 	}
 
 	@Test

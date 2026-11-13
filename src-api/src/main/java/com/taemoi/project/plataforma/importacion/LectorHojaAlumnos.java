@@ -24,7 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * Lee la hoja maestra subida ({@code .xlsx}) sin tocar la base de datos. Defensas contra ficheros hostiles, además de los
  * límites de POI por defecto (que siguen activos): hasta 5 MB, extensión {@code .xlsx}, tipo declarado de Excel o
- * genérico, contenido OOXML (zip), descomprimido total acotado (bomba zip) y fórmulas sin evaluar.
+ * genérico, contenido OOXML (zip), descomprimido total acotado (bomba zip), sin macros y fórmulas sin evaluar. El límite
+ * de 5 MB se mira antes de leer el fichero.
  *
  * <p>Los errores son {@link IllegalArgumentException} (400) con un mensaje para quien sube el fichero; nunca citan su
  * contenido. Nada se guarda en disco.
@@ -33,8 +34,11 @@ import org.springframework.web.multipart.MultipartFile;
 class LectorHojaAlumnos {
 
 	static final long TAMANO_MAXIMO = 5L * 1024 * 1024;
-	/** Lo que puede ocupar el zip descomprimido entero: una hoja de miles de filas no llega a unos pocos MB. */
-	static final long DESCOMPRIMIDO_MAXIMO = 100L * 1024 * 1024;
+	/**
+	 * Lo que puede ocupar el zip descomprimido entero: una hoja de miles de filas no llega a unos pocos MB, y POI lo
+	 * carga en memoria (su árbol XML ocupa varias veces más).
+	 */
+	static final long DESCOMPRIMIDO_MAXIMO = 25L * 1024 * 1024;
 	static final int ENTRADAS_MAXIMAS = 1000;
 	static final int FILAS_MAXIMAS = 5000;
 
@@ -43,6 +47,7 @@ class LectorHojaAlumnos {
 	static final String NO_ES_XLSX = "Este fichero no es un Excel .xlsx.";
 	static final String SIN_HOJA = "Este fichero no tiene la hoja " + ColumnasHoja.HOJA + ".";
 	static final String DEMASIADAS_FILAS = "La hoja " + ColumnasHoja.HOJA + " tiene más de 5.000 filas.";
+	static final String CON_MACROS = "El fichero tiene macros: guarda la hoja como libro de Excel (.xlsx).";
 	private static final String NO_ES_LA_HOJA = "Este fichero no es la hoja de alumnos: ";
 
 	/** Tipos declarados que se aceptan: el de Excel y los genéricos que mandan algunos navegadores. */
@@ -84,6 +89,10 @@ class LectorHojaAlumnos {
 		}
 		comprobarDescomprimido(contenido);
 		try (XSSFWorkbook libro = new XSSFWorkbook(new ByteArrayInputStream(contenido))) {
+			// Un .xlsm renombrado: su tipo de contenido es el de un libro con macros. Nunca se devuelve con ellas.
+			if (libro.isMacroEnabled()) {
+				throw new IllegalArgumentException(CON_MACROS);
+			}
 			return leer(libro, contenido, nombre);
 		} catch (IllegalArgumentException e) {
 			throw e;
@@ -131,7 +140,11 @@ class LectorHojaAlumnos {
 		return new HojaAlumnos(contenido, nombre, columnas, filas);
 	}
 
-	/** Columnas conocidas de la fila de cabecera (sin distinguir mayúsculas ni espacios); la primera, si se repite. */
+	/**
+	 * Columnas conocidas de la fila de cabecera (sin distinguir mayúsculas ni espacios).
+	 *
+	 * @throws IllegalArgumentException (400) una columna conocida aparece dos veces: no se sabría cuál leer
+	 */
 	private static Map<String, Integer> cabeceras(Row cabecera) {
 		Map<String, Integer> columnas = new LinkedHashMap<>();
 		if (cabecera == null) {
@@ -139,8 +152,9 @@ class LectorHojaAlumnos {
 		}
 		for (Cell celda : cabecera) {
 			String nombre = CeldaExcel.leer(celda).texto().toLowerCase(Locale.ROOT);
-			if (ColumnasHoja.CONOCIDAS.contains(nombre)) {
-				columnas.putIfAbsent(nombre, celda.getColumnIndex());
+			if (ColumnasHoja.CONOCIDAS.contains(nombre)
+					&& columnas.putIfAbsent(nombre, celda.getColumnIndex()) != null) {
+				throw new IllegalArgumentException(NO_ES_LA_HOJA + "la columna " + nombre + " está repetida.");
 			}
 		}
 		return columnas;
@@ -156,9 +170,10 @@ class LectorHojaAlumnos {
 
 	/**
 	 * Descomprime el zip contando lo que sale (no lo que dicen sus cabeceras, que pueden mentir) y lo rechaza si pasa de
-	 * {@link #DESCOMPRIMIDO_MAXIMO} o de {@link #ENTRADAS_MAXIMAS}. POI vuelve a leerlo después con sus propios límites.
+	 * {@link #DESCOMPRIMIDO_MAXIMO} o de {@link #ENTRADAS_MAXIMAS}, o si lleva macros (proyecto de VBA u hojas de macros
+	 * de Excel 4). POI vuelve a leerlo después con sus propios límites.
 	 */
-	private static void comprobarDescomprimido(byte[] contenido) {
+	static void comprobarDescomprimido(byte[] contenido) {
 		long total = 0;
 		int entradas = 0;
 		byte[] bloque = new byte[64 * 1024];
@@ -166,6 +181,9 @@ class LectorHojaAlumnos {
 			for (ZipEntry entrada = zip.getNextEntry(); entrada != null; entrada = zip.getNextEntry()) {
 				if (++entradas > ENTRADAS_MAXIMAS) {
 					throw new IllegalArgumentException(NO_ES_XLSX);
+				}
+				if (esDeMacros(entrada.getName())) {
+					throw new IllegalArgumentException(CON_MACROS);
 				}
 				for (int leidos = zip.read(bloque); leidos != -1; leidos = zip.read(bloque)) {
 					total += leidos;
@@ -180,5 +198,12 @@ class LectorHojaAlumnos {
 		if (entradas == 0) {
 			throw new IllegalArgumentException(NO_ES_XLSX);
 		}
+	}
+
+	/** {@code vbaProject.bin} (en cualquier carpeta) o las hojas de macros de Excel 4 ({@code xl/macrosheets/}). */
+	private static boolean esDeMacros(String entrada) {
+		String nombre = entrada == null ? "" : entrada.replace('\\', '/').toLowerCase(Locale.ROOT);
+		return nombre.endsWith("vbaproject.bin") || nombre.startsWith("xl/macrosheets/")
+				|| nombre.startsWith("/xl/macrosheets/");
 	}
 }

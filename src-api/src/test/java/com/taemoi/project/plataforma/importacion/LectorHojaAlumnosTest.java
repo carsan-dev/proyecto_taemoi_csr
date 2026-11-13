@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,6 +17,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -20,8 +25,11 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbookType;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Importador de alumnos (fase 4): lectura de la hoja maestra y rechazo de ficheros que no lo son. */
 class LectorHojaAlumnosTest {
@@ -123,6 +131,92 @@ class LectorHojaAlumnosTest {
 	}
 
 	@Test
+	void formulaSinValorGuardado_esUnErrorDeLaCelda_noUnCero() throws IOException {
+		try (XSSFWorkbook libro = new XSSFWorkbook()) {
+			Sheet hoja = cabeceras(libro);
+			CellStyle fecha = libro.createCellStyle();
+			fecha.setDataFormat(libro.createDataFormat().getFormat("dd/mm/yyyy"));
+			Row fila = hoja.createRow(1);
+			XSSFCell nombre = (XSSFCell) fila.createCell(HojaDePrueba.CABECERAS.indexOf("nombre"));
+			nombre.setCellFormula("UPPER(\"evaluada\")");
+			XSSFCell nacimiento = (XSSFCell) fila.createCell(HojaDePrueba.CABECERAS.indexOf("fecha_nacimiento"));
+			nacimiento.setCellFormula("DATE(2014,5,6)");
+			nacimiento.setCellStyle(fecha);
+			for (XSSFCell celda : List.of(nombre, nacimiento)) {
+				if (celda.getCTCell().isSetV()) {
+					celda.getCTCell().unsetV();
+				}
+			}
+			FilaHoja leida = leer(bytes(libro)).filas().get(0);
+			for (String columna : List.of("nombre", "fecha_nacimiento")) {
+				Valor valor = leida.valor(columna);
+				assertTrue(valor.error(), columna + " sin valor guardado no puede leerse como dato");
+				assertEquals("", valor.texto(), columna);
+				assertNull(valor.fecha(), columna);
+				assertNull(CeldaExcel.fecha(valor), columna);
+			}
+		}
+	}
+
+	@Test
+	void fechasAnterioresA1900_noSonFechas() {
+		assertNull(CeldaExcel.fecha(new Valor("31/12/1899", null, false)));
+		assertNull(CeldaExcel.fecha(Valor.deFecha(LocalDate.of(1899, 12, 31))));
+		assertNull(CeldaExcel.fecha(new Valor("01/01/0001", null, false)));
+		assertEquals(LocalDate.of(1900, 1, 1), CeldaExcel.fecha(new Valor("01/01/1900", null, false)));
+		assertEquals(LocalDate.of(1900, 1, 1), CeldaExcel.fecha(Valor.deFecha(LocalDate.of(1900, 1, 1))));
+	}
+
+	@Test
+	void cabeceraRepetida_400() {
+		List<String> repetida = new ArrayList<>(HojaDePrueba.CABECERAS);
+		repetida.add(" Nombre ");
+		assertEquals("Este fichero no es la hoja de alumnos: la columna nombre está repetida.",
+				mensaje(new HojaDePrueba(repetida).xlsx(), "h.xlsx", XLSX));
+		List<String> revisarDosVeces = new ArrayList<>(HojaDePrueba.CABECERAS);
+		revisarDosVeces.add(2, "revisar");
+		assertEquals("Este fichero no es la hoja de alumnos: la columna revisar está repetida.",
+				mensaje(new HojaDePrueba(revisarDosVeces).xlsx(), "h.xlsx", XLSX));
+	}
+
+	@Test
+	void libroConMacros_400_aunqueSeLlameXlsx() throws IOException {
+		String conMacros = "El fichero tiene macros: guarda la hoja como libro de Excel (.xlsx).";
+		// Un .xlsx con el proyecto de VBA dentro.
+		byte[] conVba = conEntrada(new HojaDePrueba().xlsx(), "xl/vbaProject.bin", new byte[] { 1, 2, 3 });
+		assertEquals(conMacros, mensaje(conVba, "h.xlsx", XLSX));
+		// Un .xlsm (tipo de contenido de libro con macros) renombrado a .xlsx.
+		try (XSSFWorkbook xlsm = new XSSFWorkbook(XSSFWorkbookType.XLSM)) {
+			Sheet hoja = cabeceras(xlsm);
+			hoja.createRow(1).createCell(HojaDePrueba.CABECERAS.indexOf("nombre")).setCellValue("Ana");
+			assertEquals(conMacros, mensaje(bytes(xlsm), "h.xlsx", XLSX));
+		}
+	}
+
+	@Test
+	void ficheroDeMasDe5Mb_seRechazaAntesDeLeerlo() throws IOException {
+		MultipartFile grande = mock(MultipartFile.class);
+		when(grande.isEmpty()).thenReturn(false);
+		when(grande.getSize()).thenReturn(LectorHojaAlumnos.TAMANO_MAXIMO + 1);
+		when(grande.getOriginalFilename()).thenReturn("h.xlsx");
+		when(grande.getContentType()).thenReturn(XLSX);
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+				() -> new LectorHojaAlumnos().leer(grande));
+		assertEquals("El fichero no puede pasar de 5 MB.", e.getMessage());
+		verify(grande, never()).getBytes();
+		verify(grande, never()).getInputStream();
+	}
+
+	@Test
+	void descomprimidoDeMasDe25Mb_400() throws IOException {
+		int mb = 1024 * 1024;
+		LectorHojaAlumnos.comprobarDescomprimido(zip("xl/media/relleno.bin", 24 * mb));
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+				() -> LectorHojaAlumnos.comprobarDescomprimido(zip("xl/media/relleno.bin", 26 * mb)));
+		assertEquals("Este fichero no es un Excel .xlsx.", e.getMessage());
+	}
+
+	@Test
 	void columnasObligatoriasQueFaltan_400ConLaLista() {
 		List<String> sin = new ArrayList<>(HojaDePrueba.CABECERAS);
 		sin.removeAll(List.of("telefono", "grupo", "revisar"));
@@ -191,6 +285,23 @@ class LectorHojaAlumnosTest {
 			libro.write(salida);
 			return salida.toByteArray();
 		}
+	}
+
+	/** El mismo zip con una entrada más. */
+	private static byte[] conEntrada(byte[] zip, String nombre, byte[] contenido) throws IOException {
+		ByteArrayOutputStream salida = new ByteArrayOutputStream();
+		try (ZipInputStream entrada = new ZipInputStream(new java.io.ByteArrayInputStream(zip));
+				ZipOutputStream nuevo = new ZipOutputStream(salida)) {
+			for (ZipEntry e = entrada.getNextEntry(); e != null; e = entrada.getNextEntry()) {
+				nuevo.putNextEntry(new ZipEntry(e.getName()));
+				entrada.transferTo(nuevo);
+				nuevo.closeEntry();
+			}
+			nuevo.putNextEntry(new ZipEntry(nombre));
+			nuevo.write(contenido);
+			nuevo.closeEntry();
+		}
+		return salida.toByteArray();
 	}
 
 	/** Un zip con una entrada de {@code tamano} ceros. */
