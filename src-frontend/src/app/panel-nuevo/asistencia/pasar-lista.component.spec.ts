@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
@@ -9,6 +9,8 @@ import { AlumnoDeLista, ClaseAsistencia } from '../../interfaces/asistencia';
 import { PermisosSesion, PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { EndpointsService } from '../../servicios/endpoints/endpoints.service';
 import { AvisosService } from '../avisos/avisos.service';
+import { CONSULTA_HOJA } from '../capas/capa-modal';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../hoja/asa-hoja-prueba';
 import { ConfirmacionService } from '../dialogo/confirmacion.service';
 import { PasarListaComponent } from './pasar-lista.component';
 
@@ -711,6 +713,23 @@ describe('PasarListaComponent', () => {
       fixture.detectChanges();
       expect(dialogo()).toBeNull();
     });
+
+    it('d546: en la hoja, deslizar el asa hacia abajo cierra sin crear, como «Cancelar»', fakeAsync(() => {
+      arrancarGestion(clase());
+      spyOn(window, 'matchMedia').and.callFake(
+        (consulta: string) =>
+          ({ matches: consulta === CONSULTA_HOJA, media: consulta, addEventListener: () => undefined, removeEventListener: () => undefined }) as unknown as MediaQueryList
+      );
+      boton('Marcar festivo')!.click();
+      http.expectOne(`${api}/festivos/impacto`).flush({ clases: 1, conLista: 0, conListaDetalle: [] });
+      fixture.detectChanges();
+      expect(dialogo()!.classList).toContain('festivo-dialogo--hoja');
+      deslizarAsa(dialogo()!.querySelector('.festivo-dialogo__asa')!);
+      tick(SALIDA_HOJA_MS);
+      fixture.detectChanges();
+      expect(dialogo()).toBeNull();
+      http.expectNone(`${api}/festivos`);
+    }));
 
     it('diálogo: más de 20 clases, las del detalle y «y N más»', () => {
       arrancarGestion(clase());

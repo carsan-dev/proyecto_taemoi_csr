@@ -14,6 +14,7 @@ import { Observable, Subscription } from 'rxjs';
 
 import { seguirAcento } from '../acento-escuela.directive';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
+import { AsaHojaDirective } from '../hoja/asa-hoja.directive';
 import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco, esClicEnElVelo } from '../capas/capa-modal';
 
 /** Una pastilla del grupo `role=radiogroup` (método de pago, deporte que se da de alta…). */
@@ -130,7 +131,7 @@ let siguienteId = 0;
 @Component({
   selector: 'pn-dialogo',
   standalone: true,
-  imports: [BotonOcupadoComponent],
+  imports: [AsaHojaDirective, BotonOcupadoComponent],
   templateUrl: './dialogo.component.html',
   styleUrls: ['./dialogo.component.scss'],
   host: { class: 'pn pn-capa' },

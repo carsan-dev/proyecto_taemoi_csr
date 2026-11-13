@@ -1,7 +1,8 @@
 import { Component, ViewChild } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 
 import { CONSULTA_HOJA } from '../capas/capa-modal';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../hoja/asa-hoja-prueba';
 import { ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { PanelLateralComponent } from './panel-lateral.component';
 import { itSinReloj } from '../../testing/reloj-prueba';
@@ -109,6 +110,26 @@ describe('PanelLateralComponent (8b-D1, panel lateral de 480 px y hoja en el mó
     expect(dialogo().classList).toContain('pn-panel--hoja');
     expect(dialogo().querySelector('.pn-panel__asa')).not.toBeNull();
   });
+
+  it('d546: deslizar el asa hacia abajo cierra la hoja como la X; bloqueada, no', fakeAsync(() => {
+    ancho(true);
+    abrir();
+    fixture.componentInstance.bloqueado = true;
+    fixture.detectChanges();
+    deslizarAsa(dialogo().querySelector('.pn-panel__asa')!);
+    tick(SALIDA_HOJA_MS);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.cerrados).toBe(0);
+    expect(dialogo().style.transform).toBe('');
+
+    fixture.componentInstance.bloqueado = false;
+    fixture.detectChanges();
+    deslizarAsa(dialogo().querySelector('.pn-panel__asa')!);
+    tick(SALIDA_HOJA_MS);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.cerrados).toBe(1);
+    expect(el().querySelector('dialog.pn-panel')).toBeNull();
+  }));
 
   it('Esc, la X y el clic en el velo cierran; el foco vuelve al disparador', () => {
     ancho(false);

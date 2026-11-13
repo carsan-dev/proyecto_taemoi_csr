@@ -7,6 +7,7 @@ import { environment } from '../../../../environments/environment';
 import { CANAL_EDITOR_WEB } from '../../../web-plantilla/editor/puente-editor';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
 import { ContenidoWeb, ORIGEN_EDITOR, VISOR_VISUAL } from './web-contenido-vista';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../../hoja/asa-hoja-prueba';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
@@ -372,6 +373,20 @@ describe('WebContenidoComponent: selector de página y «Ver el caso» (W12c-bis
       fixture.detectChanges();
       expect(q('.flot--casos')).toBeNull();
       expect(boton().getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('d546: deslizar el asa de la hoja hacia abajo cierra el menú sin elegir ni mover el foco, como pulsar fuera', async () => {
+      abrir();
+      const enviar = spyOn(iframe()!.contentWindow!, 'postMessage');
+      abrirMenu();
+      deslizarAsa(q('.flot--casos .flot__asa-m')!);
+      expect(q<HTMLElement>('.flot--casos')!.style.transform).toBe('translateY(100%)');
+      await new Promise((resuelve) => setTimeout(resuelve, SALIDA_HOJA_MS));
+      fixture.detectChanges();
+      expect(q('.flot--casos')).toBeNull();
+      expect(boton().getAttribute('aria-expanded')).toBe('false');
+      expect(enviar.calls.allArgs().filter(([m]) => (m as { tipo: string }).tipo === 'caso')).toEqual([]);
+      expect(q('.caso-activo')).toBeNull();
     });
 
     it('en < 768 px el menú es una hoja inferior, como los demás menús', () => {

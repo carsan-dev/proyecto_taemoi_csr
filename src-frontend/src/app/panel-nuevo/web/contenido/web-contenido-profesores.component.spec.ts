@@ -10,6 +10,7 @@ import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { CLIENTE_SUBIDAS } from '../../material-examen/material-examen-api.service';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
 import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR, VISOR_VISUAL } from './web-contenido-vista';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../../hoja/asa-hoja-prueba';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
@@ -825,6 +826,18 @@ describe('WebContenidoComponent: profesores (W12f-2b)', () => {
         expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 4, devolverFoco: true });
         expect(document.activeElement).toBe(iframe());
         expect(anuncio()).toBe('Sedes: Casariche, Estepa.');
+      });
+
+      it('d546: deslizar el asa hacia abajo cierra sin foco ni voz, como pulsar fuera', async () => {
+        await abrirEstrecho();
+        fixture.componentInstance.anuncio.set('');
+        deslizarAsa(q('.flot--sedes .flot__asa-m')!);
+        await new Promise((resuelve) => setTimeout(resuelve, SALIDA_HOJA_MS));
+        fixture.detectChanges();
+        expect(q('.flot--sedes')).toBeNull();
+        expect(ultimo('respuesta-hoja-sedes')).toEqual({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-sedes', id: 4, devolverFoco: false });
+        expect(document.activeElement).not.toBe(iframe());
+        expect(anuncio()).toBe('');
       });
 
       it('Escape cierra devolviendo el foco, sin voz (boceto); pulsar fuera cierra sin foco ni voz', async () => {

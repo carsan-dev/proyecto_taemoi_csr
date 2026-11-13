@@ -11,6 +11,7 @@ import { CambioEscuelaPestanasService } from '../../core/cambio-escuela-pestanas
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { AvisosService } from '../avisos/avisos.service';
 import { CONSULTA_HOJA, PilaCapas, enfocables } from '../capas/capa-modal';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../hoja/asa-hoja-prueba';
 import { escuela } from './escuelas-prueba';
 import { SelectorEscuelaCabeceraComponent } from './selector-escuela-cabecera.component';
 import {
@@ -380,6 +381,20 @@ describe('SelectorEscuelaCabeceraComponent (en el panel)', () => {
       fixture.detectChanges();
       expect(cancelar.defaultPrevented).toBeTrue();
       expect(hoja()).toBeNull();
+      expect(document.activeElement).toBe(boton());
+    });
+
+    it('d546: deslizar el asa hacia abajo la cierra (sale de la pila de capas); lo que se desplaza es el menú', async () => {
+      await montar();
+      abrir();
+      const menu = hoja()!.querySelector<HTMLElement>('.pn-selector__menu')!;
+      deslizarAsa(hoja()!.querySelector('.pn-selector__asa')!);
+      expect(menu.style.transform).toBe('translateY(100%)');
+      expect(hoja()!.style.transform).toBe('');
+      await new Promise((resuelve) => setTimeout(resuelve, SALIDA_HOJA_MS));
+      fixture.detectChanges();
+      expect(hoja()).toBeNull();
+      expect(TestBed.inject(PilaCapas).arriba()).toBeNull();
       expect(document.activeElement).toBe(boton());
     });
   });

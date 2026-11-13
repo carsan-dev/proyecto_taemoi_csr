@@ -15,6 +15,7 @@ import {
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco, devolverFoco, disparadorActual, esClicEnElVelo } from '../capas/capa-modal';
 import { ClaseDeImpacto, ImpactoFestivo, NOMBRE_MAXIMO } from '../festivos/festivos-vista';
+import { AsaHojaDirective } from '../hoja/asa-hoja.directive';
 
 let siguienteId = 0;
 
@@ -34,7 +35,7 @@ const clases = (n: number) => `${n} ${n === 1 ? 'clase' : 'clases'}`;
 @Component({
   selector: 'pn-dialogo-festivo',
   standalone: true,
-  imports: [BotonOcupadoComponent],
+  imports: [AsaHojaDirective, BotonOcupadoComponent],
   templateUrl: './dialogo-festivo.component.html',
   styleUrls: ['./dialogo-festivo.component.scss'],
 })

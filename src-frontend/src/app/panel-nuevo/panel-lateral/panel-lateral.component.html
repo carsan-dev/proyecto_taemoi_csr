@@ -3,7 +3,7 @@
   (keydown)="alTeclear($event)">
   <div class="pn-panel__caja">
     @if (hoja) {
-    <div class="pn-panel__asa" aria-hidden="true"></div>
+    <div class="pn-panel__asa" aria-hidden="true" [pnAsaHoja]="panel" (deslizada)="pedirCierre()"></div>
     }
     <div class="pn-panel__cabecera">
       <div class="pn-panel__titulos">

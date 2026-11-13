@@ -16,6 +16,7 @@ import { catchError, map } from 'rxjs/operators';
 import { seguirAcento } from '../acento-escuela.directive';
 import { BotonOcupadoComponent } from '../carga/boton-ocupado.component';
 import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco, devolverFoco, esClicEnElVelo } from '../capas/capa-modal';
+import { AsaHojaDirective } from '../hoja/asa-hoja.directive';
 import {
   FilaBaja,
   ResumenCargos,
@@ -61,7 +62,7 @@ let siguienteId = 0;
 @Component({
   selector: 'pn-lote-alumnos',
   standalone: true,
-  imports: [BotonOcupadoComponent],
+  imports: [AsaHojaDirective, BotonOcupadoComponent],
   templateUrl: './lote-alumnos.component.html',
   styleUrls: ['../dialogo/dialogo.component.scss', './lote-alumnos.component.scss'],
   host: { class: 'pn pn-capa' },

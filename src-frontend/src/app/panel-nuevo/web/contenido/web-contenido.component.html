@@ -112,7 +112,7 @@
         </button>
         @if (menuCasos()) {
         <div class="flot flot--casos" #menu (keydown)="alTeclearMenu($event)">
-          <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m"></div></div>
+          <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m" [pnAsaHoja]="menu" (deslizada)="cerrarMenuCasos(false)"></div></div>
           <p class="flot__titulo" id="casos-t">{{ tituloMenu() }}</p>
           <p class="flot__ayuda flot__ayuda--casos" id="casos-a">{{ casos().length ? textos.ayudaCasos : textos.ayudaSinCasos }}</p>
           <div class="flot__lista" role="menu" aria-labelledby="casos-t" aria-describedby="casos-a">
@@ -219,8 +219,8 @@
     }
     @if (vistaHoja(); as h) {
     <!-- W12e: hoja inferior de acciones del bloque (panel < 768 px; boceto `abrirHoja`, `pintarHoja`) -->
-    <div class="hoja" role="dialog" aria-labelledby="hoja-t">
-      <div class="hoja__asa" aria-hidden="true"></div>
+    <div #hojaBloque class="hoja" role="dialog" aria-labelledby="hoja-t">
+      <div class="hoja__asa" aria-hidden="true" [pnAsaHoja]="hojaBloque" (deslizada)="cerrarHoja(false)"></div>
       <div class="hoja__cab"><div><h2 id="hoja-t">{{ h.nombre }}</h2><p>{{ h.linea }}</p></div></div>
       <div class="hoja__acc">
         <button type="button" class="secundario" data-h="h-subir" [attr.aria-disabled]="h.primero ? 'true' : null"
@@ -259,8 +259,8 @@
     }
     @if (hojaMenu(); as m) {
     <!-- d541: menú de la vista previa (foto, «Añadir bloque») como hoja inferior (panel < 768 px; boceto `.flot` en estrecho) -->
-    <div class="flot flot--capa" (keydown)="alTeclearHojaMenu($event)">
-      <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m"></div></div>
+    <div #hojaMenuCapa class="flot flot--capa" (keydown)="alTeclearHojaMenu($event)">
+      <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m" [pnAsaHoja]="hojaMenuCapa" (deslizada)="cerrarHojaMenu(null, false)"></div></div>
       <p class="flot__titulo" id="hoja-menu-t">{{ m.titulo }}</p>
       <div class="flot__lista" role="menu" aria-labelledby="hoja-menu-t">
         @for (o of m.opciones; track o.op) {
@@ -300,8 +300,8 @@
     }
     @if (vistaHojaSedes(); as s) {
     <!-- W12f-3: sedes de un profesor como hoja inferior (panel < 768 px; boceto `abrirSedesProfe` y `.flot` en estrecho) -->
-    <div class="flot flot--capa flot--sedes" role="dialog" aria-labelledby="hoja-sedes-t">
-      <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m"></div></div>
+    <div #hojaSedesCapa class="flot flot--capa flot--sedes" role="dialog" aria-labelledby="hoja-sedes-t">
+      <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m" [pnAsaHoja]="hojaSedesCapa" (deslizada)="cerrarHojaSedes(false)"></div></div>
       <h2 class="flot__titulo" id="hoja-sedes-t">{{ s.titulo }}</h2>
       <p class="flot__ayuda" id="hoja-sedes-a">{{ textosProfesores.sedesAyuda }}</p>
       <fieldset class="casillas" aria-describedby="hoja-sedes-a">
