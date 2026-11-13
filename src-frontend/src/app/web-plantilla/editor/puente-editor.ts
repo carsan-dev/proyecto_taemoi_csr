@@ -268,6 +268,51 @@ export interface MensajeCerrarHojaMenu {
 }
 
 /**
+ * La capa de un panel estrecho pide al panel «Describir la foto» como hoja inferior (boceto `abrirDescribir` en
+ * estrecho). `titulo`: «describe la foto …» o «Foto subida: describe la foto …»; `texto`: la descripción que lleva.
+ * `id` numera la apertura con el mismo contador que `hoja-menu`: lo que llegue con otro número se descarta.
+ */
+export interface MensajeHojaDescribir {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'hoja-describir';
+  id: number;
+  clave: string;
+  titulo: string;
+  texto: string;
+  /** La apertura viene justo de subir una foto (no del menú): el panel la sube sobre la barra de URL que Chrome pudiera enseñar. */
+  trasSubir: boolean;
+}
+
+/** La capa cerró sola la hoja de describir (la foto ya no está, otro menú…): que el panel la quite si es esa. */
+export interface MensajeCerrarHojaDescribir {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'cerrar-hoja-describir';
+  id: number;
+}
+
+/**
+ * Cada cambio de la descripción en la hoja del panel: la capa lo aplica como el `input` de su diálogo (sus filas y el
+ * mensaje `descripcion` de vuelta, que es el que cambia el borrador del panel).
+ */
+export interface MensajeTextoHojaDescribir {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'texto-hoja-describir';
+  id: number;
+  texto: string;
+}
+
+/**
+ * El panel cerró la hoja de describir («Listo», Escape, pulsar fuera, el asa, panel ancho). `devolverFoco`: el foco
+ * vuelve al botón de la foto («Listo», Escape) o no.
+ */
+export interface MensajeRespuestaHojaDescribir {
+  canal: typeof CANAL_EDITOR_WEB;
+  tipo: 'respuesta-hoja-describir';
+  id: number;
+  devolverFoco: boolean;
+}
+
+/**
  * W12f-2b: los profesores del borrador, en orden, con su nombre y su casilla o su constancia (solo el texto). W12f-3: y
  * sus sedes marcadas (`EstadoProfesor.sedes`). Se reenvía cada vez que algo de esto cambia.
  */
@@ -330,6 +375,8 @@ export type MensajeDelPanel =
   | MensajeRespuestaHojaSedes
   | MensajeFocoProfesor
   | MensajeRespuestaHojaMenu
+  | MensajeRespuestaHojaDescribir
+  | MensajeTextoHojaDescribir
   | MensajeQuitarDato
   | MensajeEstadoBloques
   | MensajeFocoBloque
@@ -499,6 +546,8 @@ export type MensajeDelEditor =
   | MensajeCerrarHojaSedes
   | MensajeHojaMenu
   | MensajeCerrarHojaMenu
+  | MensajeHojaDescribir
+  | MensajeCerrarHojaDescribir
   | MensajePedirQuitarDato
   | MensajeBloques
   | MensajeAccionBloque
@@ -729,6 +778,12 @@ export function esMensajeDelPanel(valor: unknown): valor is MensajeDelPanel {
         (valor['op'] === null || (typeof valor['op'] === 'string' && valor['op'].length <= 40)) &&
         typeof valor['devolverFoco'] === 'boolean'
       );
+    case 'respuesta-hoja-describir':
+      return esIdHoja(valor['id']) && typeof valor['devolverFoco'] === 'boolean';
+    case 'texto-hoja-describir': {
+      const texto = valor['texto'];
+      return esIdHoja(valor['id']) && typeof texto === 'string' && texto.length <= MAX_DESCRIPCION_FOTO;
+    }
     default:
       return false;
   }
@@ -821,6 +876,20 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
         valor['opciones'].length <= 12 &&
         valor['opciones'].every(esOpcionHojaMenu)
       );
+    case 'hoja-describir': {
+      const texto = valor['texto'];
+      return (
+        esIdHoja(valor['id']) &&
+        esFotoEditable(valor['clave']) &&
+        typeof valor['titulo'] === 'string' &&
+        valor['titulo'].length <= 200 &&
+        typeof texto === 'string' &&
+        texto.length <= MAX_DESCRIPCION_FOTO &&
+        typeof valor['trasSubir'] === 'boolean'
+      );
+    }
+    case 'cerrar-hoja-describir':
+      return esIdHoja(valor['id']);
     case 'pedir-quitar-dato': {
       const clave = valor['clave'];
       const huecos = valor['huecos'];

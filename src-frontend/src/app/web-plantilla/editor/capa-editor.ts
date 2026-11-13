@@ -774,6 +774,15 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
       (mensaje.menu === 'foto' ? fotos : bloques).respuestaMenu(mensaje.id, mensaje.op, mensaje.devolverFoco);
       return;
     }
+    if (mensaje.tipo === 'respuesta-hoja-describir') {
+      // La hoja de «Describir la foto» del panel (panel estrecho) se cerró.
+      fotos.respuestaDescribir(mensaje.id, mensaje.devolverFoco);
+      return;
+    }
+    if (mensaje.tipo === 'texto-hoja-describir') {
+      fotos.textoDescribir(mensaje.id, mensaje.texto);
+      return;
+    }
     if (mensaje.tipo === 'foco-bloque') {
       bloques.enfocar(mensaje.foco);
       return;

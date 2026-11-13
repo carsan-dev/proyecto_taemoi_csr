@@ -41,7 +41,17 @@ export const TEXTOS_FOTOS = {
   vozCancelada: 'Subida cancelada.',
   vozAnterior: 'Vuelve la foto anterior.',
   vozQuitada: 'Foto quitada. Se quita de la web al guardar.',
+  /** «Describir la foto» como hoja del panel (boceto `abrirDescribir`). */
+  describirEtiqueta: 'Descripción',
+  describirObligatorio: 'obligatorio',
+  describirAyuda: 'Qué se ve, para quien no puede verla. Sin nombres de alumnos.',
+  describirListo: 'Listo',
 } as const;
+
+/** Boceto `abrirDescribir`: «N / 150» y, al llegar, « · máximo». */
+export function contadorDescripcion(n: number): string {
+  return `${n} / ${MAX_DESCRIPCION_FOTO}${n >= MAX_DESCRIPCION_FOTO ? ' · máximo' : ''}`;
+}
 
 const pesa = (nombre: string, bytes: number) => `«${nombre}» pesa ${Math.ceil(bytes / MB)} MB. Usa una foto de menos de 50 MB.`;
 const conNombre = (nombre: string, mensaje: string) => `«${nombre}»: ${mensaje.charAt(0).toLowerCase()}${mensaje.slice(1)}`;

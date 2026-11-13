@@ -90,6 +90,7 @@
     "src/app/panel-nuevo/web/contenido/web-contenido-textos-paginas.component.spec.ts",
     "src/app/panel-nuevo/web/contenido/web-contenido-fotos.spec.ts",
     "src/app/panel-nuevo/web/contenido/web-contenido-fotos.component.spec.ts",
+    "src/app/panel-nuevo/web/contenido/web-contenido-describir.component.spec.ts",
     "src/app/panel-nuevo/web/contenido/web-contenido-galeria.spec.ts",
     "src/app/panel-nuevo/web/contenido/web-contenido-profesores.spec.ts",
     "src/app/panel-nuevo/web/contenido/web-contenido-profesores.component.spec.ts",

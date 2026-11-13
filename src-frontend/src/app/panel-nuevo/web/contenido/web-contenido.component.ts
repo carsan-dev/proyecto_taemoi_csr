@@ -26,13 +26,14 @@ import {
   CasoVista,
   EstadoSubidaFoto,
   MensajeDelEditor,
+  type MensajeHojaDescribir,
   type MensajeHojaMenu,
   PasoPreinscripcion,
   enviarPorPuente,
   esMensajeDelEditor,
   escucharPuente,
 } from '../../../web-plantilla/editor/puente-editor';
-import { claveDescripcion, fotoOpcional } from '../../../web-plantilla/editor/fotos-sueltas';
+import { MAX_DESCRIPCION_FOTO, claveDescripcion, fotoOpcional } from '../../../web-plantilla/editor/fotos-sueltas';
 import { GALERIA_NUEVA, MAX_GALERIA, esFotoGaleria, ordenGaleria, vozMoverFoto } from '../../../web-plantilla/editor/fotos-galeria';
 import {
   TEXTOS_PROFESORES,
@@ -121,6 +122,7 @@ import {
 import {
   TEXTOS_FOTOS,
   comprobarArchivo,
+  contadorDescripcion,
   conFotosCambiadasDesde,
   describirFoto,
   estadoFotos,
@@ -345,12 +347,34 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
    * de dónde esté el visor: Chrome lo desplaza para enseñar el campo enfocado y lo tapado puede quedar en 0.
    */
   readonly altoTeclado = signal(0);
+  /**
+   * El borde de abajo de lo que se ve (`visor.offsetTop + visor.height`), en px desde arriba del visor de maquetación; 0
+   * sin visor o con zoom. La hoja de describir se ancla por arriba a él con el teclado abierto: no depende de
+   * `innerHeight`, que con la barra de URL de Chrome visible puede no medir lo mismo que el bloque de los `fixed`.
+   */
+  readonly bordeVisible = signal(0);
+  /** El alto de lo que se ve (`visor.height`); 0 sin visor o con zoom. Tope de la hoja de describir con el teclado. */
+  readonly altoVisible = signal(0);
+  /** px que `innerHeight` pasa de `100svh` con la hoja de describir abierta tras subir (la barra de URL sin contar); 0 si no. */
+  readonly barraSinContar = signal(0);
   /** d551: teclado del móvil abierto: panel estrecho y el alto del teclado por encima del umbral. */
   readonly teclado = computed(() => this.estrecho() && this.altoTeclado() > UMBRAL_TECLADO);
   /** El bloque de la hoja inferior abierta (panel estrecho), o null. */
   readonly hoja = signal<string | null>(null);
   /** d541: el menú de la vista previa (foto, «Añadir bloque») abierto como hoja inferior, o null. */
   readonly hojaMenu = signal<MensajeHojaMenu | null>(null);
+  /** «Describir la foto» de la vista previa como hoja inferior (panel estrecho), como lo pidió la capa, o null. */
+  readonly hojaDescribir = signal<MensajeHojaDescribir | null>(null);
+  /** Lo que lleva escrito la hoja de describir (para su contador). */
+  readonly textoDescribir = signal('');
+  readonly maxDescripcion = MAX_DESCRIPCION_FOTO;
+  /** La hoja de describir, si su foto sigue en el borrador (con imagen); null si no. */
+  readonly vistaHojaDescribir = computed(() => {
+    const h = this.hojaDescribir();
+    return h && this.borrador().some((f) => f.clave === h.clave && f.imagenId !== null) ? h : null;
+  });
+  readonly contadorDescribir = computed(() => contadorDescripcion(this.textoDescribir().length));
+  readonly topeDescribir = computed(() => this.textoDescribir().length >= MAX_DESCRIPCION_FOTO);
   /** W12f-3: la hoja de sedes de un profesor (panel estrecho) que pidió la capa, con su número de apertura, o null. */
   readonly hojaSedes = signal<{ n: number; id: number } | null>(null);
   readonly textosProfesores = TEXTOS_PROFESORES;
@@ -562,6 +586,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private zonaEnviada = '';
   /** El fotograma en que se medirá la zona (como mucho un envío por fotograma). */
   private zonaPedida: number | null = null;
+  /** El fotograma en que se volverá a medir el visor tras un resize/scroll (como mucho una vez por fotograma). */
+  private remedidaPedida: number | null = null;
   /** d551: el teclado se abrió o cambió de alto y ya se asentó: la próxima zona pide a la capa el texto en edición. */
   private campoPedido = false;
   /** d551: la espera a que el teclado deje de cambiar de alto antes de pedir el campo. */
@@ -592,6 +618,12 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         this.cerrarHojaMenu(null, false);
       }
     });
+    // Ni la de describir: tampoco si su foto ya no está en el borrador (quitada, descartada, recargada).
+    effect(() => {
+      if (this.hojaDescribir() !== null && (!this.estrecho() || this.vistaHojaDescribir() === null)) {
+        this.cerrarHojaDescribir(false);
+      }
+    });
     // W12f-3: ni la de sedes, si el panel se ensancha, el profesor se va o ya no hay sedes que elegir.
     effect(() => {
       if (this.hojaSedes() !== null && (!this.estrecho() || this.vistaHojaSedes() === null)) {
@@ -613,9 +645,18 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     });
     const alMoverVentana = () => this.pedirZona();
     this.ventana?.addEventListener('scroll', alMoverVentana, { passive: true });
-    this.ventana?.addEventListener('resize', alMoverVentana);
+    // Al cambiar de alto la ventana (p. ej. sale o se va la barra de URL de Chrome) cambia `innerHeight` sin que el visor
+    // avise siempre: se vuelve a medir también, y otra vez en el siguiente fotograma, cuando el navegador ya se asentó.
+    const alCambiarVentana = () => {
+      this.medirVisor();
+      this.remedirVisor();
+    };
+    this.ventana?.addEventListener('resize', alCambiarVentana);
     // d551: el visor encoge con el teclado del móvil (sin `interactive-widget`, la ventana no cambia de alto).
-    const alMoverVisor = () => this.medirVisor();
+    const alMoverVisor = () => {
+      this.medirVisor();
+      this.remedirVisor();
+    };
     this.visor?.addEventListener('resize', alMoverVisor);
     this.visor?.addEventListener('scroll', alMoverVisor, { passive: true });
     this.medirVisor();
@@ -630,12 +671,16 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     inject(DestroyRef).onDestroy(() => {
       dejarDeEscuchar();
       this.ventana?.removeEventListener('scroll', alMoverVentana);
-      this.ventana?.removeEventListener('resize', alMoverVentana);
+      this.ventana?.removeEventListener('resize', alCambiarVentana);
       this.visor?.removeEventListener('resize', alMoverVisor);
       this.visor?.removeEventListener('scroll', alMoverVisor);
       if (this.zonaPedida !== null) {
         this.ventana?.cancelAnimationFrame?.(this.zonaPedida);
         this.zonaPedida = null;
+      }
+      if (this.remedidaPedida !== null) {
+        this.ventana?.cancelAnimationFrame?.(this.remedidaPedida);
+        this.remedidaPedida = null;
       }
       consulta?.removeEventListener?.('change', alCambiarAncho);
       this.cancelarSubidas();
@@ -783,6 +828,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     this.presentes.set(null);
     this.hoja.set(null);
     this.hojaMenu.set(null);
+    this.hojaDescribir.set(null);
     this.hojaSedes.set(null);
     if (this.estado() === 'listo') {
       this.iniciarCarga();
@@ -874,6 +920,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.hojaSedes() !== null && !t?.closest?.('.flot--capa')) {
       this.cerrarHojaSedes(false);
     }
+    if (this.hojaDescribir() !== null && !t?.closest?.('.flot--capa')) {
+      this.cerrarHojaDescribir(false);
+    }
   }
 
   // ------------------------------------------------------------------ puente
@@ -947,6 +996,15 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
         // La capa cerró sola su diálogo: solo se quita la hoja si es esa; sin responder ni mover el foco.
         if (this.hojaSedes()?.id === mensaje.id) {
           this.hojaSedes.set(null);
+        }
+        break;
+      case 'hoja-describir':
+        this.abrirHojaDescribir(mensaje);
+        break;
+      case 'cerrar-hoja-describir':
+        // La capa cerró sola la descripción (la foto ya no está, otro menú): solo si es esa; sin responder ni foco.
+        if (this.hojaDescribir()?.id === mensaje.id) {
+          this.hojaDescribir.set(null);
         }
         break;
       case 'cerrar-hoja-menu': {
@@ -1655,6 +1713,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     }
     // Una sola hoja a la vez: la del menú de la vista previa se cierra y la capa lo sabe.
     this.cerrarHojaMenu(null, false);
+    this.cerrarHojaDescribir(false);
     this.cerrarHojaSedes(false);
     this.hoja.set(id);
     if (this.vistaHoja() === null) {
@@ -1691,7 +1750,9 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.host.nativeElement.ownerDocument.querySelector('dialog[open]')) {
       return;
     }
-    if (this.hojaSedes() !== null) {
+    if (this.hojaDescribir() !== null) {
+      this.cerrarHojaDescribir(true);
+    } else if (this.hojaSedes() !== null) {
       this.cerrarHojaSedes(true);
     } else if (this.hojaMenu() !== null) {
       this.cerrarHojaMenu(null, true);
@@ -1717,6 +1778,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       this.responderHojaMenu(abierta.menu, abierta.id, null, false);
     }
     this.hoja.set(null);
+    this.cerrarHojaDescribir(false);
     this.cerrarHojaSedes(false);
     this.cerrarMenuCasos(false);
     this.hojaMenu.set(menu);
@@ -1787,6 +1849,76 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     if (this.hojaSedes() !== null && doc.activeElement === this.iframe()?.nativeElement) {
       this.cerrarHojaSedes(false);
     }
+    if (this.hojaDescribir() !== null && doc.activeElement === this.iframe()?.nativeElement) {
+      this.cerrarHojaDescribir(false);
+    }
+  }
+
+  // ------------------------------------------------------------------ «Describir la foto» como hoja
+
+  /**
+   * La capa (panel estrecho) pide «Describir la foto» como hoja inferior (boceto `abrirDescribir`; en estrecho, todo
+   * flotante es hoja). Cada pulsación va a la capa (`texto-hoja-describir`), que la aplica como su diálogo y devuelve
+   * `descripcion`: el borrador cambia por un solo camino. Si no se puede abrir (panel ancho, foto que no está), se
+   * contesta ya.
+   */
+  private abrirHojaDescribir(m: MensajeHojaDescribir): void {
+    const abierta = this.hojaDescribir();
+    if (abierta) {
+      this.hojaDescribir.set(null);
+      this.responderHojaDescribir(abierta.id, false);
+    }
+    if (!this.estrecho() || !this.borrador().some((f) => f.clave === m.clave && f.imagenId !== null)) {
+      this.responderHojaDescribir(m.id, false);
+      return;
+    }
+    this.hoja.set(null);
+    this.cerrarHojaMenu(null, false);
+    this.cerrarHojaSedes(false);
+    this.cerrarMenuCasos(false);
+    this.textoDescribir.set(m.texto);
+    this.hojaDescribir.set(m);
+    this.medirBarraSinContar();
+    // Boceto `primero.focus`: el foco, al texto.
+    this.enfocarDespues('.flot--describir textarea');
+  }
+
+  /** Una pulsación en la hoja: a la capa, con el número de la apertura. */
+  escribirDescribir(evento: Event): void {
+    const abierta = this.hojaDescribir();
+    const area = evento.target as HTMLTextAreaElement | null;
+    const iframe = this.iframe()?.nativeElement;
+    if (!abierta || !area || !this.ventana || !iframe) {
+      return;
+    }
+    const texto = area.value.slice(0, MAX_DESCRIPCION_FOTO);
+    this.textoDescribir.set(texto);
+    enviarPorPuente(this.ventana, iframe.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'texto-hoja-describir', id: abierta.id, texto });
+  }
+
+  /**
+   * Cierra la hoja de describir y se lo dice a la capa. Con «Listo», Escape o el asa, el foco vuelve a la foto; al
+   * pulsar fuera, en la vista previa o al ensancharse el panel, no se mueve (como la hoja del menú).
+   */
+  cerrarHojaDescribir(devolverFoco: boolean): void {
+    const abierta = this.hojaDescribir();
+    if (abierta === null) {
+      return;
+    }
+    this.hojaDescribir.set(null);
+    this.responderHojaDescribir(abierta.id, devolverFoco);
+  }
+
+  private responderHojaDescribir(id: number, devolverFoco: boolean): void {
+    const iframe = this.iframe()?.nativeElement;
+    if (!this.ventana || !iframe) {
+      return;
+    }
+    if (devolverFoco) {
+      // El foco pasa a la vista previa (el panel lo tenía en la hoja que se cierra); la capa lo pone en la foto.
+      iframe.focus({ preventScroll: true });
+    }
+    enviarPorPuente(this.ventana, iframe.contentWindow ?? null, { canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-describir', id, devolverFoco });
   }
 
   // ------------------------------------------------------------------ sedes de un profesor como hoja (W12f-3)
@@ -1807,6 +1939,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     }
     this.hoja.set(null);
     this.cerrarHojaMenu(null, false);
+    this.cerrarHojaDescribir(false);
     this.cerrarMenuCasos(false);
     this.hojaSedes.set({ n, id });
     this.enfocarDespues('.flot--sedes input[type="checkbox"]');
@@ -2000,6 +2133,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
    * edición con la zona; nunca por mover el visor o desplazar la ventana. La zona sin más se manda al momento.
    */
   private medirVisor(): void {
+    this.medirBarraSinContar();
     const ventana = this.ventana;
     if (!ventana || !this.visor) {
       return;
@@ -2007,6 +2141,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     const visor = this.visorSinZoom();
     const tapado = visor ? Math.max(0, Math.round(ventana.innerHeight - (visor.offsetTop + visor.height))) : 0;
     this.tapadoAbajo.set(tapado);
+    this.bordeVisible.set(visor ? Math.round(visor.offsetTop + visor.height) : 0);
+    this.altoVisible.set(visor ? Math.round(visor.height) : 0);
     const altoAntes = this.altoTeclado();
     this.altoTeclado.set(visor ? Math.max(0, Math.round(ventana.innerHeight - visor.height)) : 0);
     if (!this.teclado()) {
@@ -2021,6 +2157,52 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       }, ESPERA_TECLADO_MS);
     }
     this.pedirZona();
+  }
+
+  /**
+   * Lo que `innerHeight` pasa del alto pequeño (`100svh`): la barra de URL que Chrome de Android enseña al volver del selector
+   * de archivos sin que la página lo sepa (0 si ya está contada, como siempre en escritorio). Solo se mide con la hoja de
+   * describir abierta tras subir una foto; en el resto de casos queda en 0 y no se crea la sonda.
+   */
+  private medirBarraSinContar(): void {
+    let valor = 0;
+    if (this.ventana && this.hojaDescribir()?.trasSubir === true) {
+      const svh = this.altoSvh();
+      valor = svh > 0 ? Math.min(120, Math.max(0, Math.round(this.ventana.innerHeight - svh))) : 0;
+    }
+    if (valor !== this.barraSinContar()) {
+      this.barraSinContar.set(valor);
+    }
+  }
+
+  /** El alto de `100svh` en px, medido con una sonda fija e invisible que se retira al momento; 0 si no se entiende `svh`. */
+  private altoSvh(): number {
+    const doc = this.ventana?.document;
+    if (!doc?.body) {
+      return 0;
+    }
+    const sonda = doc.createElement('div');
+    sonda.setAttribute('aria-hidden', 'true');
+    sonda.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none;';
+    doc.body.appendChild(sonda);
+    const alto = sonda.getBoundingClientRect().height;
+    sonda.remove();
+    return alto;
+  }
+
+  /**
+   * Vuelve a medir el visor en el siguiente fotograma (varios avisos en el mismo fotograma, una sola medida): Chrome puede
+   * avisar antes de dar las medidas finales. Si el alto del teclado no cambia, no reinicia la espera de d551.
+   */
+  private remedirVisor(): void {
+    const ventana = this.ventana;
+    if (!ventana || this.remedidaPedida !== null || typeof ventana.requestAnimationFrame !== 'function') {
+      return;
+    }
+    this.remedidaPedida = ventana.requestAnimationFrame(() => {
+      this.remedidaPedida = null;
+      this.medirVisor();
+    });
   }
 
   private pararEsperaTeclado(): void {

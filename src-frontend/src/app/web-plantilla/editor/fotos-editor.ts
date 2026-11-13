@@ -47,13 +47,20 @@ import { recortar } from './textos-editor';
 export interface OpcionesFotosEditor {
   ventana: Window;
   enviar: (mensaje: MensajeDelEditor) => void;
-  /** d541: el panel es estrecho (< 768 px): el menú de la foto sale como hoja inferior del panel. */
+  /**
+   * d541: el panel es estrecho (< 768 px): el menú de la foto sale como hoja inferior del panel. «Describir la foto»,
+   * también (boceto: en estrecho todo flotante es hoja).
+   */
   estrecho?: () => boolean;
 }
 
 export interface FotosEditor {
   /** d541: la respuesta de la hoja del panel al menú de la foto (`op` null: se cerró sin elegir). */
   respuestaMenu(id: number, op: string | null, devolverFoco: boolean): void;
+  /** El panel cerró su hoja de «Describir la foto» (`id` de la apertura). */
+  respuestaDescribir(id: number, devolverFoco: boolean): void;
+  /** Un cambio de la descripción escrito en la hoja del panel: como el `input` del diálogo. */
+  textoDescribir(id: number, texto: string): void;
   /** Llega el borrador del panel. */
   borrador(bloques: BloqueBorrador[]): void;
   /** Fotos cambiadas, con anterior y subidas (`fotos`). */
@@ -118,7 +125,10 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   let eligiendo: string | null = null;
   /** Tras volver a la anterior o quitar: si el foco se pierde al repintar, vuelve a esta foto. */
   let enfocarFoto: string | null = null;
-  /** `enHoja`: el menú está en la hoja del panel (con su `id`, las opciones ofrecidas y si hay que avisar al cerrarlo). */
+  /**
+   * `enHoja`: el menú (o «Describir la foto») está en la hoja del panel, con su `id`, las opciones ofrecidas (solo el
+   * menú) y si hay que avisar al cerrarlo.
+   */
   let abierto: { clave: string; tipo: 'menu' | 'describir'; enHoja?: { id: number; ops: string[]; avisar: boolean } } | null = null;
   /** d541: numera cada apertura de la hoja; el panel lo devuelve y lo que llega con otro número se descarta. */
   let ultimaHoja = 0;
@@ -558,10 +568,15 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     }
     const clave = abierto?.clave ?? null;
     const hoja = abierto?.enHoja;
+    const tipo = abierto?.tipo;
     abierto = null;
     if (hoja?.avisar) {
-      // d541: la capa cierra sola el menú que el panel tiene en su hoja: que la quite.
-      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'foto', id: hoja.id });
+      // d541: la capa cierra sola el menú (o la descripción) que el panel tiene en su hoja: que la quite.
+      enviar(
+        tipo === 'describir'
+          ? { canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-describir', id: hoja.id }
+          : { canal: CANAL_EDITOR_WEB, tipo: 'cerrar-hoja-menu', menu: 'foto', id: hoja.id },
+      );
     }
     flot.hidden = true;
     flot.replaceChildren();
@@ -679,7 +694,15 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     }
     cerrar(false);
     const alt = fila(clave)?.texto ?? '';
-    const titulo = nodo('h2', 'flot__titulo', `${trasSubir ? 'Foto subida: ' : ''}describe la foto ${que(clave)}`);
+    const textoTitulo = `${trasSubir ? 'Foto subida: ' : ''}describe la foto ${que(clave)}`;
+    if (estrecho()) {
+      // Hoja inferior del panel: la pinta él, manda cada cambio (`textoDescribir`) y avisa al cerrarla (`respuestaDescribir`).
+      const id = ++ultimaHoja;
+      abierto = { clave, tipo: 'describir', enHoja: { id, ops: [], avisar: true } };
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-describir', id, clave, titulo: textoTitulo, texto: alt, trasSubir });
+      return;
+    }
+    const titulo = nodo('h2', 'flot__titulo', textoTitulo);
     titulo.id = 'ed-flot-t';
     const etiqueta = nodo('label', 'campo-et', 'Descripción', nodo('span', 'marca', 'obligatorio'));
     etiqueta.htmlFor = 'ed-alt';
@@ -847,12 +870,19 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
     if (!area || area.id !== 'ed-alt' || !abierto) {
       return;
     }
-    const clave = abierto.clave;
     const texto = (area as HTMLTextAreaElement).value.slice(0, MAX_DESCRIPCION_FOTO);
-    filas = filas.map((f) => (f.clave === clave ? { ...f, texto } : f));
+    describirEnFilas(abierto.clave, texto);
     contar(flot.querySelector<HTMLElement>('#ed-alt-c')!, texto.length);
-    enviar({ canal: CANAL_EDITOR_WEB, tipo: 'descripcion', clave, texto });
   };
+
+  /** Un cambio de la descripción (diálogo o hoja del panel): en las filas de aquí y al panel, que lo guarda. */
+  function describirEnFilas(clave: string, texto: string): void {
+    filas = filas.map((f) => (f.clave === clave ? { ...f, texto } : f));
+    enviar({ canal: CANAL_EDITOR_WEB, tipo: 'descripcion', clave, texto });
+  }
+
+  /** La hoja de «Describir la foto» del panel abierta con ese `id`, o null. */
+  const hojaDescribir = (id: number) => (abierto?.tipo === 'describir' && abierto.enHoja?.id === id ? abierto : null);
 
   const alEnfocar = (evento: FocusEvent) => {
     const t = objetivo(evento);
@@ -879,7 +909,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
   return {
     respuestaMenu(id, op, devolverFoco) {
       const actual = abierto;
-      if (!actual?.enHoja || actual.enHoja.id !== id || (op !== null && !actual.enHoja.ops.includes(op))) {
+      if (actual?.tipo !== 'menu' || !actual.enHoja || actual.enHoja.id !== id || (op !== null && !actual.enHoja.ops.includes(op))) {
         return;
       }
       // La respuesta es del panel: cerrar ahora no se le avisa (eco). Cada opción sigue su camino, como en el menú flotante.
@@ -894,8 +924,27 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
         }
       }
     },
+    respuestaDescribir(id, devolverFoco) {
+      const actual = hojaDescribir(id);
+      if (!actual?.enHoja) {
+        return;
+      }
+      // La respuesta es del panel: cerrar ahora no se le avisa (eco).
+      actual.enHoja.avisar = false;
+      cerrar(devolverFoco);
+    },
+    textoDescribir(id, texto) {
+      const actual = hojaDescribir(id);
+      if (actual && tieneFoto(actual.clave)) {
+        describirEnFilas(actual.clave, texto.slice(0, MAX_DESCRIPCION_FOTO));
+      }
+    },
     borrador(bloques) {
       filas = bloques;
+      // La foto de la hoja del panel ya no está (quitada, descartada, recargada): que el panel la cierre.
+      if (abierto?.tipo === 'describir' && abierto.enHoja && !tieneFoto(abierto.clave)) {
+        cerrar(false);
+      }
       repintar();
     },
     estado(estado) {

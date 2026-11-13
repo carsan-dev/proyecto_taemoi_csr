@@ -290,6 +290,16 @@ describe('puente del editor de la web: sedes de cada profesor (W12f-3)', () => {
     }
   });
 
+  it('interfaz: `hoja-describir` exige `trasSubir` booleano', () => {
+    const c = CANAL_EDITOR_WEB;
+    const base = { canal: c, tipo: 'hoja-describir', id: 1, clave: 'portada.foto', titulo: 't', texto: '' };
+    expect(esMensajeDelEditor({ ...base, trasSubir: true })).toBeTrue();
+    expect(esMensajeDelEditor({ ...base, trasSubir: false })).toBeTrue();
+    expect(esMensajeDelEditor(base)).toBeFalse();
+    expect(esMensajeDelEditor({ ...base, trasSubir: 'si' })).toBeFalse();
+    expect(esMensajeDelEditor({ ...base, trasSubir: 1 })).toBeFalse();
+  });
+
   it('interfaz: `anunciar-sedes`, la hoja (`hoja-sedes`, `cerrar-hoja-sedes`, `respuesta-hoja-sedes`) y el enlace a las sedes', () => {
     expect(esMensajeDelEditor({ canal: c, tipo: 'profesor', accion: 'anunciar-sedes', n: 3 })).toBeTrue();
     expect(esMensajeDelEditor({ canal: c, tipo: 'hoja-sedes', n: 3, id: 0 })).toBeTrue();
