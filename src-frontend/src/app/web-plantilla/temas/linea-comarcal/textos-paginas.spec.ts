@@ -307,19 +307,24 @@ describe('Textos de las páginas del tema «La línea comarcal» (W12d-bis)', ()
         expect(textos(raiz, '.ruta-aqui')).toEqual(['Aquí']);
       });
 
-      it('sin `sede.preinscribirme_en`, el aria-label de siempre: «<horarios.boton> en <sede>»', async () => {
+      it('con los valores por defecto, el aria-label es «Preinscribirme en <sede>»', async () => {
+        const raiz = await abrir('/sedes/estepa', sitio({ bloques: [] }));
+        expect(raiz.querySelector('.sede-texto .acciones a.boton')!.getAttribute('aria-label')).toBe('Preinscribirme en Estepa');
+      });
+
+      it('con `horarios.boton` cambiado, el aria-label es «<horarios.boton> en <sede>»', async () => {
         const raiz = await abrir('/sedes/estepa', sitio({ bloques: [bloque('horarios.boton', 'Apúntate')] }));
         expect(raiz.querySelector('.sede-texto .acciones a.boton')!.getAttribute('aria-label')).toBe('Apúntate en Estepa');
       });
 
-      it('`sede.preinscribirme_en` da el aria-label; el texto visible sigue siendo `horarios.boton`', async () => {
+      it('una fila guardada de `sede.preinscribirme_en` se ignora; el aria-label sigue a `horarios.boton`', async () => {
         const raiz = await abrir(
           '/sedes/estepa',
           sitio({ bloques: [bloque('horarios.boton', 'Apúntate'), bloque('sede.preinscribirme_en', 'Quiero entrenar en {x}')] }),
         );
         const boton = raiz.querySelector('.sede-texto .acciones a.boton')!;
         expect(limpio(boton)).toBe('Apúntate');
-        expect(boton.getAttribute('aria-label')).toBe('Quiero entrenar en Estepa');
+        expect(boton.getAttribute('aria-label')).toBe('Apúntate en Estepa');
       });
 
       const lleno = bloque('horarios.lleno', 'Completo');

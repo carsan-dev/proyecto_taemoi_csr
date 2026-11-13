@@ -113,10 +113,8 @@ export function vistaPaginaSede(sitio: SitioWeb, sede: SedeWeb, ahora: Date): Vi
     direccion,
     consulta: { sede: sede.slug ?? String(sede.id) },
     preinscribirme,
-    // `sede.preinscribirme_en` da solo el `aria-label` (decisión del propietario, 12/11); el texto visible es `horarios.boton`.
-    preinscribirmeEtiqueta: textos.bloques.tiene('sede.preinscribirme_en')
-      ? rellenarHuecos(textos.t('sede.preinscribirme_en'), { x: sede.nombre })
-      : `${preinscribirme} en ${sede.nombre}`,
+    // aria-label automático: «<horarios.boton> en <sede>» (decisión del propietario d544.3, 13/11); `sede.preinscribirme_en` ya no se lee.
+    preinscribirmeEtiqueta: `${preinscribirme} en ${sede.nombre}`,
     foto: sede.fotoUrl ? { url: sede.fotoUrl, alt: altFotoSede(sede, 1) } : null,
     tramo: tramo(sedes, sede),
     horarios: {

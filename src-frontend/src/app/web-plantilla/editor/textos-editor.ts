@@ -65,7 +65,7 @@ const TX: Readonly<Record<string, Fila>> = {
 /**
  * W12d-bis: los textos de las otras seis páginas y el botón del menú en el móvil (`TX` del boceto, partes `sp-`, `tp-`,
  * `ep-`, `ev-`, `lg-` y `pr-`), con el máximo y la obligatoriedad de `ClavesWeb`. El texto de ejemplo es el del tema.
- * Fuera, por decisión del propietario (12/11): `sede.preinscribirme_en` (solo da el `aria-label` del botón) y los textos
+ * Fuera, por decisión del propietario (12/11): `sede.preinscribirme_en` (ya no se usa: `aria-label` automático, d544.3) y los textos
  * legales que el tema no lee (`legal.priv.h1`, `legal.priv.p1`, `legal.aviso.p3`, `legal.priv.p2`, `legal.cookies.p0`,
  * `legal.normas.p0`): ese texto sigue fijo. Los de los grupos de una sede (`horarios.lleno`…, `sedes.proxima_rotulo`)
  * solo se cambian en «Una sede» (en Inicio van dentro del horario plegado): su parte es la de esa página.
