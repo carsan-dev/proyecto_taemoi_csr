@@ -145,6 +145,33 @@ describe('capa de edición de la vista previa (W12c)', () => {
     expect(q('.logo').classList).toContain('es-activo');
   });
 
+  describe('forma del aviso: cápsula o tarjeta', () => {
+    const pasar = (selector: string) => q(selector).dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+
+    it('si el texto cabe en una línea es una cápsula, sin la clase de tarjeta', () => {
+      marco.style.width = '900px';
+      pasar('.logo');
+      expect(q('#ed-candado').hidden).toBeFalse();
+      expect(q('#ed-candado').classList).not.toContain('ed-candado--partido');
+    });
+
+    it('si el texto se parte en varias líneas pasa a tarjeta', () => {
+      marco.style.width = '220px';
+      pasar('.logo');
+      expect(q('#ed-candado').classList).toContain('ed-candado--partido');
+      expect(ventana.getComputedStyle(q('#ed-candado')).borderTopLeftRadius).toBe('12px');
+    });
+
+    it('al mostrar un aviso corto después de uno largo, la clase se quita', () => {
+      marco.style.width = '220px';
+      pasar('.logo');
+      expect(q('#ed-candado').classList).toContain('ed-candado--partido');
+      marco.style.width = '900px';
+      pasar('.tarifa-importe');
+      expect(q('#ed-candado').classList).not.toContain('ed-candado--partido');
+    });
+  });
+
   it('los enlaces y botones de la web, fuera del tabulador y sin navegar', () => {
     expect(q('.salto').tabIndex).toBe(-1);
     // W12d: el botón de la cabecera es un texto que se cambia en el sitio («Editar botón»): sí va en el tabulador.

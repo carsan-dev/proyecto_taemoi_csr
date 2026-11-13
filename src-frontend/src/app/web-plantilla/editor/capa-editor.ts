@@ -497,6 +497,14 @@ export function activarCapaEditor(opciones: OpcionesCapaEditor): () => void {
     candado.hidden = false;
     // Se mide desde el borde izquierdo: puesto donde estaba el anterior, su ancho saldría recortado por la derecha.
     candado.style.left = '0px';
+    // Cápsula si el texto cabe en una línea; tarjeta si se parte. Se decide antes de medir: la tarjeta es más alta.
+    candado.classList.remove('ed-candado--partido');
+    const lineaTexto = candado.querySelector<HTMLElement>('.ed-candado__t')!;
+    const altoLinea = Number.parseFloat(ventana.getComputedStyle(lineaTexto).lineHeight);
+    const altoTexto = lineaTexto.getBoundingClientRect().height;
+    // `line-height: normal` no es un número: se toma el alto del texto en una línea como ~1,2 × la fuente.
+    const unaLinea = Number.isNaN(altoLinea) ? Number.parseFloat(ventana.getComputedStyle(lineaTexto).fontSize) * 1.2 : altoLinea;
+    candado.classList.toggle('ed-candado--partido', altoTexto > unaLinea * 1.5);
     const r = dato.getBoundingClientRect();
     const alto = candado.offsetHeight;
     const ancho = candado.offsetWidth;

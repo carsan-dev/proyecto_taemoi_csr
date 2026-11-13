@@ -48,8 +48,11 @@ app-lc-linea-sedes.ed-bloque{display:block}
 .ed-dato:is(:hover,.es-activo){outline-color:var(--pn-borde-control)}
 .ed-dato:focus-within{outline:2px solid var(--pn-acento-borde)}
 .presentacion-velo .ed-dato:is(:hover,.es-activo),.tarifas .ed-dato:is(:hover,.es-activo){outline-color:rgb(255 255 255/75%)}
-/* En estrecho el aviso se parte en varias líneas (como mucho, el ancho visible menos 8 px por lado); en ancho cabe en una */
+/* Dos formas: si el texto cabe en una línea, cápsula; si se parte en varias (como mucho, el ancho visible menos 8 px por
+   lado), tarjeta redondeada con el candado arriba, a la altura de la primera línea (clase ed-candado--partido, la pone la capa). */
 .ed-candado{position:absolute;z-index:30;display:flex;align-items:center;gap:6px;max-width:calc(100vw - 16px);box-sizing:border-box;margin:0;padding:6px 12px 6px 10px;border-radius:999px;background:var(--pn-superficie);box-shadow:var(--pn-sombra-menu);white-space:normal;text-align:left}
+.ed-candado--partido{align-items:flex-start;padding:8px 12px 8px 10px;border-radius:12px}
+.ed-candado--partido svg{margin-top:1px}
 .ed-candado[hidden]{display:none}
 .ed-candado svg{flex:none;color:var(--pn-tinta-2)}
 .ed-candado__t{min-width:0}
