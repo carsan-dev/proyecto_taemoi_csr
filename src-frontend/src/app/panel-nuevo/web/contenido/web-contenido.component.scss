@@ -436,3 +436,49 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
 .flot--sedes .flot__acciones { display: flex; margin-top: 14px; }
 .flot--sedes .flot__acciones .secundario { flex: 1; min-height: 48px; margin-top: 0; }
 @media (prefers-reduced-motion: reduce) { .flot--sedes .casilla { transition: none; } }
+
+// «Describir la foto» como hoja (boceto `.flot--describir`, `.campo-et`, `.area`, `.campo-pie`, `.contador` y `.flot` en
+// < 768): los mismos valores que el diálogo de la capa (`capa-editor-estilos.ts`); «Listo» con toque de 48 px como en sedes.
+.flot--describir { padding-right: 16px; padding-left: 16px; }
+.flot--describir .flot__titulo { margin: 0 0 12px; color: var(--pn-tinta); font: var(--pn-titulo-bloque); }
+.flot--describir .campo-et { display: block; margin-bottom: 6px; font: var(--pn-etiqueta); }
+.flot--describir .campo-et .marca { margin-left: 6px; font-weight: 400; color: var(--pn-tinta-2); }
+.flot--describir .area {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 88px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--pn-borde-control);
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-superficie);
+  color: var(--pn-tinta);
+  font: 400 0.9375rem/1.5 var(--pn-fuente);
+  resize: vertical;
+  caret-color: var(--pn-acento);
+}
+.flot--describir .area:hover { border-color: var(--pn-tinta-2); }
+// El anillo de foco del panel (como las casillas de la hoja de sedes), no el del navegador.
+.flot--describir .area:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+.flot--describir .campo-pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  color: var(--pn-tinta-2);
+  font: var(--pn-secundario);
+  font-size: 0.8125rem;
+}
+.flot--describir .campo-pie p { margin: 0; }
+.flot--describir .contador { flex: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.flot--describir .contador.es-tope { color: var(--pn-atencion); font-weight: 600; }
+.flot--describir .flot__acciones { display: flex; margin-top: 14px; }
+.flot--describir .flot__acciones .secundario { flex: 1; min-height: 48px; margin-top: 0; }
+// d551: con el teclado abierto, pegada a su borde (`--alto-teclado`, lo que el visor deja tapado, como la barra) y sin
+// pasar de la parte que se ve (`--alto-teclado-total`: el alto del teclado), para que el texto y «Listo» queden a la vista.
+.flot--describir.flot--teclado {
+  bottom: var(--alto-teclado, 0px);
+  max-height: calc(100vh - var(--alto-teclado-total, 0px));
+  padding-bottom: 16px;
+}
