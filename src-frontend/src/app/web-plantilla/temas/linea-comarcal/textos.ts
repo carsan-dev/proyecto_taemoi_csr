@@ -68,7 +68,7 @@ export const TEXTOS_LINEA_COMARCAL = {
   // Una sede
   'sede.anterior': 'Anterior',
   'sede.siguiente': 'Siguiente',
-  /** Solo en el `aria-label` del botón; sin fila, el tema pone «<horarios.boton> en <sede>». */
+  /** Ya no se usa en el tema: el `aria-label` del botón es automático, «<horarios.boton> en <sede>» (d544.3). Se conserva porque la API aún la declara. */
   'sede.preinscribirme_en': 'Preinscribirme en {x}',
   'sede.ver_grupos': 'Ver grupos y horas',
   /** Con temporada; sin ella, `TEXTOS_PAGINAS_LINEA_COMARCAL.rotuloHorarios` (variante, misma clave). */
