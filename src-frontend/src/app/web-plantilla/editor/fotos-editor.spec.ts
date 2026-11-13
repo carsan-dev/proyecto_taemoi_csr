@@ -541,6 +541,7 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
       respuesta('describir');
       expect(flot().hidden).toBeTrue();
       expect(mensajes('hoja-describir').at(-1)!['titulo']).toBe('describe la foto de «Nuestra sala»');
+      expect(mensajes('hoja-describir').at(-1)!['trasSubir']).toBeFalse();
     });
 
     it('cerrada sin elegir: el foco vuelve a la foto solo si el panel lo pide', () => {
@@ -630,6 +631,7 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
           clave: 'portada.foto',
           titulo: 'describe la foto de la portada',
           texto: 'Niños en fila',
+          trasSubir: false,
         } as never);
         expect(m['id']).toBeGreaterThan(idMenu);
         expect(flot().hidden).toBeTrue();
@@ -642,6 +644,7 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
         expect(flot().hidden).toBeTrue();
         expect(ultima()['titulo']).toBe('Foto subida: describe la foto de «Nuestra sala»');
         expect(ultima()['texto']).toBe('');
+        expect(ultima()['trasSubir']).toBeTrue();
       });
 
       it('ir a «falta describirla» desde el resumen: también como hoja', async () => {
@@ -649,6 +652,7 @@ describe('fotos sueltas en el sitio (W12f-1, capa de edición)', () => {
         await esperar();
         expect(flot().hidden).toBeTrue();
         expect(ultima()['titulo']).toBe('describe la foto de la portada');
+        expect(ultima()['trasSubir']).toBeFalse();
       });
 
       it('cada cambio de la hoja va como el del diálogo: `descripcion` y el pie del menú al día', () => {

@@ -699,7 +699,7 @@ export function activarFotosEditor(opciones: OpcionesFotosEditor): FotosEditor {
       // Hoja inferior del panel: la pinta él, manda cada cambio (`textoDescribir`) y avisa al cerrarla (`respuestaDescribir`).
       const id = ++ultimaHoja;
       abierto = { clave, tipo: 'describir', enHoja: { id, ops: [], avisar: true } };
-      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-describir', id, clave, titulo: textoTitulo, texto: alt });
+      enviar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-describir', id, clave, titulo: textoTitulo, texto: alt, trasSubir });
       return;
     }
     const titulo = nodo('h2', 'flot__titulo', textoTitulo);

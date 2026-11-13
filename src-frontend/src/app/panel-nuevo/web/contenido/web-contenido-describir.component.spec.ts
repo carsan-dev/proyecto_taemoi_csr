@@ -123,6 +123,7 @@ describe('WebContenidoComponent: «Describir la foto» como hoja', () => {
     clave: 'portada.foto',
     titulo: 'describe la foto de la portada',
     texto: 'Niños en fila',
+    trasSubir: false,
   };
   const respuesta = (devolverFoco: boolean, id = 4) => ({ canal: CANAL_EDITOR_WEB, tipo: 'respuesta-hoja-describir', id, devolverFoco });
   const respuestas = (enviados: jasmine.Spy) => mensajes(enviados, 'respuesta-hoja-describir');
@@ -454,6 +455,23 @@ describe('WebContenidoComponent: «Describir la foto» como hoja', () => {
     fixture.detectChanges();
     expect(hoja()).toBeNull();
     expect(respuestas(enviados)).toEqual([respuesta(true)]);
+  });
+
+  it('tras subir con el teclado abierto: la hoja lleva flot--tras-subir; sin trasSubir o sin teclado, no', () => {
+    const falso = new VisorFalso();
+    visor = falso as unknown as VisualViewport;
+    abrir();
+    llegar({ ...HOJA, trasSubir: true });
+    expect(hoja()!.classList).not.toContain('flot--tras-subir');
+    falso.offsetTop = 0;
+    falso.height = window.innerHeight - 200;
+    falso.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+    expect(hoja()!.classList).toContain('flot--teclado');
+    expect(hoja()!.classList).toContain('flot--tras-subir');
+    llegar({ ...HOJA, id: 5, trasSubir: false });
+    expect(hoja()!.classList).toContain('flot--teclado');
+    expect(hoja()!.classList).not.toContain('flot--tras-subir');
   });
 
   it('d551: sin teclado, la hoja sigue anclada abajo (sin top en línea ni clase de teclado)', () => {

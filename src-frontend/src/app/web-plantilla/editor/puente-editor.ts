@@ -279,6 +279,8 @@ export interface MensajeHojaDescribir {
   clave: string;
   titulo: string;
   texto: string;
+  /** La apertura viene justo de subir una foto (no del menú): el panel la sube sobre la barra de URL que Chrome pudiera enseñar. */
+  trasSubir: boolean;
 }
 
 /** La capa cerró sola la hoja de describir (la foto ya no está, otro menú…): que el panel la quite si es esa. */
@@ -882,7 +884,8 @@ export function esMensajeDelEditor(valor: unknown): valor is MensajeDelEditor {
         typeof valor['titulo'] === 'string' &&
         valor['titulo'].length <= 200 &&
         typeof texto === 'string' &&
-        texto.length <= MAX_DESCRIPCION_FOTO
+        texto.length <= MAX_DESCRIPCION_FOTO &&
+        typeof valor['trasSubir'] === 'boolean'
       );
     }
     case 'cerrar-hoja-describir':
