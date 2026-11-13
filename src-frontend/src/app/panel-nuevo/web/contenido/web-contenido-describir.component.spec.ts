@@ -273,6 +273,69 @@ describe('WebContenidoComponent: «Describir la foto» como hoja', () => {
     expect(respuestas(enviados)).toEqual([respuesta(false)]);
   });
 
+  it('recargar la vista (cambio de página) quita la hoja de describir', () => {
+    abrir();
+    llegar(HOJA);
+    expect(hoja()).not.toBeNull();
+    fixture.componentInstance.cambiarPagina({ target: { value: 'sede' } } as unknown as Event);
+    fixture.detectChanges();
+    expect(hoja()).toBeNull();
+  });
+
+  describe('otra hoja la sustituye: se cierra sin devolver el foco y se lo dice a la capa', () => {
+    it('la hoja genérica (abrirHoja)', () => {
+      const enviados = abrir();
+      llegar(HOJA);
+      fixture.componentInstance.abrirHoja('presentacion');
+      fixture.detectChanges();
+      expect(hoja()).toBeNull();
+      expect(respuestas(enviados)).toEqual([respuesta(false)]);
+    });
+
+    it('la hoja de sedes (hoja-sedes)', () => {
+      const enviados = abrir();
+      fixture.componentInstance.listas.set({ sedes: [{ id: 4, nombre: 'Herrera', slug: 'herrera' }], eventos: [] });
+      fixture.componentInstance.borrador.update((filas) => [...filas, fila('profesor.1.nombre', 'Antonio Ruiz')]);
+      fixture.detectChanges();
+      llegar(HOJA);
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja-sedes', n: 1, id: 8 });
+      expect(hoja()).toBeNull();
+      expect(q('.flot--sedes')).not.toBeNull();
+      expect(respuestas(enviados)).toEqual([respuesta(false)]);
+    });
+
+    it('la hoja del menú (hoja-menu)', () => {
+      const enviados = abrir();
+      llegar(HOJA);
+      llegar({
+        canal: CANAL_EDITOR_WEB,
+        tipo: 'hoja-menu',
+        id: 5,
+        menu: 'foto',
+        titulo: 'Foto de la portada',
+        opciones: [{ op: 'subir', texto: 'Cambiar foto', pie: '', icono: 'foto', desactivada: false, peligro: false }],
+      });
+      expect(hoja()).toBeNull();
+      expect(respuestas(enviados)).toEqual([respuesta(false)]);
+    });
+  });
+
+  it('Escape con un diálogo abierto en el documento no la cierra', () => {
+    const enviados = abrir();
+    llegar(HOJA);
+    const dialogo = document.createElement('dialog');
+    dialogo.setAttribute('open', '');
+    document.body.appendChild(dialogo);
+    try {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(hoja()).not.toBeNull();
+      expect(respuestas(enviados)).toEqual([]);
+    } finally {
+      dialogo.remove();
+    }
+  });
+
   it('la foto deja de estar en el borrador: la hoja se cierra y se lo dice a la capa', () => {
     const enviados = abrir();
     llegar(HOJA);
