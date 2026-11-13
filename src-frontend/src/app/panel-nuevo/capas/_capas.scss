@@ -215,3 +215,26 @@
     white-space: nowrap;
   }
 }
+
+// d546: asa de una hoja inferior que se arrastra hacia abajo para cerrarla (directiva `pnAsaHoja`). No cambia su aspecto
+// de 36 × 4 ni el layout: gana una zona táctil de 96 × 44 px centrada (pseudo-elemento) y `touch-action: none`, que es
+// lo que evita que el arrastre mueva la página de detrás.
+@mixin asa-deslizable {
+  position: relative;
+  touch-action: none;
+  cursor: grab;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 96px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}

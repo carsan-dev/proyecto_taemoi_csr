@@ -17,6 +17,7 @@ import { filter } from 'rxjs';
 
 import { AvisosService } from '../avisos/avisos.service';
 import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco } from '../capas/capa-modal';
+import { AsaHojaDirective } from '../hoja/asa-hoja.directive';
 import { LogoEscuelaComponent } from './logo-escuela.component';
 import { EscuelaUsuario, SelectorEscuelaService, metaEscuela } from './selector-escuela.service';
 
@@ -41,7 +42,7 @@ const TEXTO_FALLO = 'No se ha podido cambiar de escuela. Inténtalo otra vez.';
 @Component({
   selector: 'pn-selector-escuela',
   standalone: true,
-  imports: [NgTemplateOutlet, LogoEscuelaComponent],
+  imports: [AsaHojaDirective, NgTemplateOutlet, LogoEscuelaComponent],
   templateUrl: './selector-escuela-cabecera.component.html',
   styleUrl: './selector-escuela-cabecera.component.scss',
   host: {

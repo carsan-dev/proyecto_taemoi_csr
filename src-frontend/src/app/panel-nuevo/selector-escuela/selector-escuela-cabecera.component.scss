@@ -1,3 +1,5 @@
+@use '../capas/capas' as c;
+
 // «En el panel» del boceto del selector de escuela. Solo tokens de panel-nuevo.scss bajo .pn; el botón vive en la
 // cabecera (color de la escuela) y el menú en la superficie blanca de los desplegables de la cabecera.
 
@@ -234,6 +236,7 @@
   }
 
   .pn-selector__asa {
+    @include c.asa-deslizable;
     display: block;
     width: 36px;
     height: 4px;

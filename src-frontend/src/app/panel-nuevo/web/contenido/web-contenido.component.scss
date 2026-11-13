@@ -121,7 +121,7 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
   box-shadow: var(--pn-sombra-menu);
 }
 .flot__asa { display: none; }
-.flot__asa-m { width: 36px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: var(--pn-linea-fuerte); }
+.flot__asa-m { @include c.asa-deslizable; width: 36px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: var(--pn-linea-fuerte); }
 .flot__titulo { margin: 6px 10px 8px; color: var(--pn-tinta-2); font: var(--pn-etiqueta); }
 .flot__ayuda--casos { margin: -2px 10px 8px; color: var(--pn-tinta-2); font: var(--pn-secundario); font-size: 0.8125rem; }
 .flot__lista { display: grid; gap: 2px; }
@@ -373,7 +373,7 @@ h1:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2p
   background: var(--pn-superficie);
   box-shadow: var(--pn-sombra-hoja);
 }
-.hoja__asa { width: 36px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: var(--pn-linea-fuerte); }
+.hoja__asa { @include c.asa-deslizable; width: 36px; height: 4px; margin: 0 auto 10px; border-radius: 2px; background: var(--pn-linea-fuerte); }
 .hoja__cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .hoja__cab h2 { margin: 0; font: var(--pn-titulo-bloque); }
 .hoja__cab p { margin: 4px 0 0; color: var(--pn-tinta-2); font: var(--pn-secundario); }

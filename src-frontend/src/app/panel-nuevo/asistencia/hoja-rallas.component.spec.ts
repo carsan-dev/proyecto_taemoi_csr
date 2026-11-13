@@ -1,5 +1,7 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 
+import { CONSULTA_HOJA } from '../capas/capa-modal';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../hoja/asa-hoja-prueba';
 import { HojaRallasComponent } from './hoja-rallas.component';
 
 describe('HojaRallasComponent (hoja de rallas, decisiones 510-513)', () => {
@@ -142,4 +144,17 @@ describe('HojaRallasComponent (hoja de rallas, decisiones 510-513)', () => {
     dialogo().querySelector<HTMLButtonElement>('[aria-label="Cerrar"]')!.click();
     expect(cierres).toBe(2);
   });
+
+  it('d546: en la hoja, deslizar el asa hacia abajo cierra, como Esc', fakeAsync(() => {
+    spyOn(window, 'matchMedia').and.callFake(
+      (consulta: string) =>
+        ({ matches: consulta === CONSULTA_HOJA, media: consulta, addEventListener: () => undefined, removeEventListener: () => undefined }) as unknown as MediaQueryList
+    );
+    crear(3);
+    expect(dialogo().classList).toContain('rallas-hoja--hoja');
+    deslizarAsa(dialogo().querySelector('.rallas-hoja__asa')!);
+    tick(SALIDA_HOJA_MS);
+    expect(cierres).toBe(1);
+    expect(dialogo().style.transform).toBe('');
+  }));
 });

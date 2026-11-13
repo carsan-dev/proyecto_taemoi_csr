@@ -9,6 +9,7 @@ import { PermisosSesionService } from '../../servicios/authentication/permisos-s
 import { CLASE_ERROR_HTTP, CONSULTA_HOJA } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
 import { estilosPanelGuard } from '../estilos-panel.guard';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../hoja/asa-hoja-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { AcentoEscuelaActual } from '../acento-escuela.directive';
 import { SIERRA_PRUEBA } from '../tema-prueba';
@@ -312,6 +313,15 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     expect(getComputedStyle(pie[0]).minHeight).toBe('44px');
     expect(getComputedStyle(d).borderTopLeftRadius).toBe('14px');
     expect(getComputedStyle(d).borderBottomLeftRadius).toBe('0px');
+  });
+
+  itSinReloj('d546: deslizar el asa hacia abajo cancela la hoja, como «Cancelar»', async () => {
+    anchoDeMovil(true);
+    const promesa = abrir(COBRAR);
+    deslizarAsa(dialogo()!.querySelector('.pn-dialogo__asa')!);
+    await new Promise((resuelve) => setTimeout(resuelve, SALIDA_HOJA_MS));
+    expect(await promesa).toEqual({ confirmado: false, valor: null });
+    expect(dialogo()).toBeNull();
   });
 
   itSinReloj('con `ejecutar`: botón ocupado («Cobrando…», aria-disabled, aria-busy) y Esc no cierra hasta que termina', async () => {

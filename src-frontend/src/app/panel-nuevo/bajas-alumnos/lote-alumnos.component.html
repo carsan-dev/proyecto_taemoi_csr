@@ -4,7 +4,7 @@
   (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
   <div class="pn-dialogo__caja">
     @if (hoja) {
-    <div class="pn-dialogo__asa" aria-hidden="true"></div>
+    <div class="pn-dialogo__asa" aria-hidden="true" [pnAsaHoja]="dialogo" (deslizada)="cancelar()"></div>
     }
     <div class="pn-dialogo__cabecera">
       <h2 class="pn-dialogo__titulo" [id]="id + '-titulo'">{{ titulo }}</h2>

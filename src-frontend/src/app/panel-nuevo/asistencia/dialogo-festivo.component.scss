@@ -260,6 +260,7 @@
   }
 
   .festivo-dialogo__asa {
+    @include c.asa-deslizable;
     flex: none;
     width: 36px;
     height: 4px;

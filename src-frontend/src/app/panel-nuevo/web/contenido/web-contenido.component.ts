@@ -64,6 +64,7 @@ import { BloqueErrorComponent } from '../../carga/bloque-error.component';
 import { BotonOcupadoComponent } from '../../carga/boton-ocupado.component';
 import { EsqueletoComponent } from '../../carga/esqueleto.component';
 import { ConfirmacionService } from '../../dialogo/confirmacion.service';
+import { AsaHojaDirective } from '../../hoja/asa-hoja.directive';
 import { ConCambiosSinGuardar } from '../../productos-alumno/salir-sin-guardar.guard';
 import { LIMITE_CARGA_PREVIA, RETRASO_ESQUELETO_PREVIA, TEXTOS_WEB_TEMA } from '../tema/web-tema-vista';
 import {
@@ -247,7 +248,7 @@ const VISTAS: readonly AnchoVista[] = ['movil', 'escritorio'];
 @Component({
   selector: 'pn-web-contenido',
   standalone: true,
-  imports: [AcentoEscuelaDirective, BloqueErrorComponent, BotonOcupadoComponent, EsqueletoComponent, RouterLink],
+  imports: [AcentoEscuelaDirective, AsaHojaDirective, BloqueErrorComponent, BotonOcupadoComponent, EsqueletoComponent, RouterLink],
   providers: [WebContenidoService],
   templateUrl: './web-contenido.component.html',
   styleUrl: './web-contenido.component.scss',
@@ -1730,7 +1731,7 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   }
 
   /** Cierra la hoja y se lo dice a la capa; `op` null: sin elegir. El foco va a la vista previa si se elige o se pide. */
-  private cerrarHojaMenu(op: string | null, devolverFoco: boolean): void {
+  cerrarHojaMenu(op: string | null, devolverFoco: boolean): void {
     const abierta = this.hojaMenu();
     if (abierta === null) {
       return;

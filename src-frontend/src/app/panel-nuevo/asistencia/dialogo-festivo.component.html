@@ -3,7 +3,7 @@
   (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
   <form class="festivo-dialogo__caja" novalidate (submit)="$event.preventDefault(); aceptar()">
     @if (hoja) {
-    <div class="festivo-dialogo__asa" aria-hidden="true"></div>
+    <div class="festivo-dialogo__asa" aria-hidden="true" [pnAsaHoja]="dialogo" (deslizada)="cancelar()"></div>
     }
     <div class="festivo-dialogo__cabecera">
       <h2 class="festivo-dialogo__titulo" [id]="id + '-titulo'">{{ titulo }}</h2>

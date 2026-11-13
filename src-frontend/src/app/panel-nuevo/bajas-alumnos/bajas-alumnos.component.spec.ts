@@ -12,7 +12,9 @@ import { proveerCatalogoTesting } from '../../features/catalogo/testing/catalogo
 import { AuthenticationService } from '../../servicios/authentication/authentication.service';
 import { PermisosSesionService } from '../../servicios/authentication/permisos-sesion.service';
 import { AvisosService } from '../avisos/avisos.service';
+import { CONSULTA_HOJA } from '../capas/capa-modal';
 import { pintarCapas, ponerTokensDePrueba } from '../capas/tokens-prueba';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../hoja/asa-hoja-prueba';
 import { EstilosPanelService } from '../estilos-panel.service';
 import { BajasAlumnosComponent } from './bajas-alumnos.component';
 import { CLAVE_ESTADO } from './bajas-alumnos-vista';
@@ -243,6 +245,28 @@ describe('BajasAlumnosComponent (8b-3l, «Bajas y eliminaciones» del panel nuev
     await esperar();
     expect(document.querySelector('pn-lote-alumnos')).toBeNull();
     listado().flush(pagina());
+  });
+
+  it('d546: en la hoja del lote, deslizar el asa hacia abajo cierra sin eliminar, como «Cancelar»', async () => {
+    crear(true);
+    elegir(1);
+    spyOn(window, 'matchMedia').and.callFake(
+      (consulta: string) =>
+        ({ matches: consulta === CONSULTA_HOJA, media: consulta, addEventListener: () => undefined, removeEventListener: () => undefined }) as unknown as MediaQueryList
+    );
+    boton(el().querySelector('.bajas__seleccion')!, 'Eliminar').click();
+    await esperar();
+    const d = dialogo()!;
+    expect(d.classList).toContain('pn-dialogo--hoja');
+    http.expectOne((r) => r.url === `${API}/alumnos/cargos-resumen`).flush([
+      { alumnoId: 1, cargos: 0, pagados: 0, pendientes: 0, importePagado: 0, importePendiente: 0 },
+    ]);
+    await esperar();
+    deslizarAsa(d.querySelector('.pn-dialogo__asa')!);
+    await new Promise((r) => setTimeoutReal(r, SALIDA_HOJA_MS));
+    await esperar();
+    expect(document.querySelector('pn-lote-alumnos')).toBeNull();
+    http.expectNone((r) => r.method === 'DELETE');
   });
 
   it('eliminar uno desde «⋯»: «¿Eliminar a …?» y, si todo va bien, aviso de hoy y recarga', async () => {

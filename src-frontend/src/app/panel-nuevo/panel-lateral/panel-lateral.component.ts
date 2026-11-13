@@ -23,6 +23,7 @@ import {
   enfocables,
   esClicEnElVelo,
 } from '../capas/capa-modal';
+import { AsaHojaDirective } from '../hoja/asa-hoja.directive';
 
 let siguienteId = 0;
 
@@ -36,6 +37,7 @@ let siguienteId = 0;
 @Component({
   selector: 'pn-panel-lateral',
   standalone: true,
+  imports: [AsaHojaDirective],
   templateUrl: './panel-lateral.component.html',
   styleUrls: ['./panel-lateral.component.scss'],
 })

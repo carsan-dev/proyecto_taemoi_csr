@@ -10,6 +10,7 @@ import { ConfirmacionService } from '../../dialogo/confirmacion.service';
 import { CLIENTE_SUBIDAS } from '../../material-examen/material-examen-api.service';
 import { EstadoWebEscuela } from '../tema/web-tema-vista';
 import { BloqueContenido, ContenidoWeb, ORIGEN_EDITOR, VISOR_VISUAL } from './web-contenido-vista';
+import { SALIDA_HOJA_MS, deslizarAsa } from '../../hoja/asa-hoja-prueba';
 import { WebContenidoComponent } from './web-contenido.component';
 
 const URL = `${environment.apiUrl}/escuela/web`;
@@ -373,6 +374,17 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
       expect(ultimo(enviados, 'foco-bloque')!['foco']).toBe('a:3');
     });
 
+    it('d546: deslizar el asa hacia abajo la cierra sin llevar el foco al bloque', async () => {
+      const enviados = abrir();
+      llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja', bloque: 'galeria' });
+      deslizarAsa(q('.hoja__asa')!);
+      expect(q<HTMLElement>('.hoja')!.style.transform).toBe('translateY(100%)');
+      await new Promise((resuelve) => setTimeout(resuelve, SALIDA_HOJA_MS));
+      fixture.detectChanges();
+      expect(q('.hoja')).toBeNull();
+      expect(mensajes(enviados, 'foco-bloque')).toEqual([]);
+    });
+
     it('Escape la cierra', () => {
       abrir();
       llegar({ canal: CANAL_EDITOR_WEB, tipo: 'hoja', bloque: 'galeria' });
@@ -542,6 +554,18 @@ describe('WebContenidoComponent: bloques (W12e)', () => {
         items()[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
         expect(q('.flot--capa')).not.toBeNull();
         document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        fixture.detectChanges();
+        expect(q('.flot--capa')).toBeNull();
+        expect(respuestas(enviados)).toEqual([respuesta('foto', null, false)]);
+        expect(document.activeElement).not.toBe(iframe());
+      });
+
+      it('d546: deslizar el asa hacia abajo la cierra sin elegir y sin pedir foco, como pulsar fuera', async () => {
+        const enviados = abrir();
+        llegar(MENU_FOTO);
+        await fixture.whenStable();
+        deslizarAsa(q('.flot--capa .flot__asa-m')!);
+        await new Promise((resuelve) => setTimeout(resuelve, SALIDA_HOJA_MS));
         fixture.detectChanges();
         expect(q('.flot--capa')).toBeNull();
         expect(respuestas(enviados)).toEqual([respuesta('foto', null, false)]);

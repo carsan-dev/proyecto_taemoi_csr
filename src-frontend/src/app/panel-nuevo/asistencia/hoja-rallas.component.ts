@@ -19,6 +19,7 @@ import {
   MEDIAS_COMPLETAS, PASOS_RALLAS, notaPasos, pasoBloqueado, textoApto, textoCuentaRallas, textoFaltaRallas,
 } from '../cinturon/rallas-textos';
 import { CONSULTA_HOJA, PilaCapas, anchoDeHoja, contenerFoco, devolverFoco, disparadorActual, esClicEnElVelo } from '../capas/capa-modal';
+import { AsaHojaDirective } from '../hoja/asa-hoja.directive';
 import { PasoRallas } from '../../interfaces/asistencia';
 
 let siguienteId = 0;
@@ -33,7 +34,7 @@ let siguienteId = 0;
 @Component({
   selector: 'pn-hoja-rallas',
   standalone: true,
-  imports: [CinturonComponent],
+  imports: [AsaHojaDirective, CinturonComponent],
   templateUrl: './hoja-rallas.component.html',
   styleUrls: ['./hoja-rallas.component.scss'],
 })

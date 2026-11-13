@@ -2,7 +2,7 @@
   (cancel)="alCancelarNativo($event)" (close)="alCerrarNativo()" (click)="alClic($event)" (keydown)="alTeclear($event)">
   <div class="rallas-hoja__caja">
     @if (hoja) {
-    <div class="rallas-hoja__asa" aria-hidden="true"></div>
+    <div class="rallas-hoja__asa" aria-hidden="true" [pnAsaHoja]="dialogo" (deslizada)="cancelar()"></div>
     }
     <div class="rallas-hoja__cabecera">
       <div class="rallas-hoja__titulos">
