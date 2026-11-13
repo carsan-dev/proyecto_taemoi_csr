@@ -300,9 +300,9 @@
     }
     @if (vistaHojaDescribir(); as d) {
     <!-- «Describir la foto» como hoja inferior (panel < 768 px; boceto `abrirDescribir` y `.flot` en estrecho). d551: con
-         el teclado del móvil abierto, pegada a él y sin pasar de lo que se ve. -->
+         el teclado del móvil abierto, pegada a él (anclada por arriba al borde de lo que se ve) y sin pasar de lo que se ve. -->
     <div #hojaDescribirCapa class="flot flot--capa flot--describir" [class.flot--teclado]="teclado()"
-      [style.--alto-teclado]="teclado() ? tapadoAbajo() + 'px' : null" [style.--alto-teclado-total]="teclado() ? altoTeclado() + 'px' : null"
+      [style.--borde-visible]="teclado() ? bordeVisible() + 'px' : null" [style.--alto-visible]="teclado() ? altoVisible() + 'px' : null"
       role="dialog" aria-labelledby="hoja-describir-t">
       <div class="flot__asa" aria-hidden="true"><div class="flot__asa-m" [pnAsaHoja]="hojaDescribirCapa" (deslizada)="cerrarHojaDescribir(true)"></div></div>
       <h2 class="flot__titulo" id="hoja-describir-t">{{ d.titulo }}</h2>

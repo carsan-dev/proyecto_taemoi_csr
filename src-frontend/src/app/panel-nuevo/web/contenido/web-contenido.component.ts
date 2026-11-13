@@ -347,6 +347,14 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
    * de dónde esté el visor: Chrome lo desplaza para enseñar el campo enfocado y lo tapado puede quedar en 0.
    */
   readonly altoTeclado = signal(0);
+  /**
+   * El borde de abajo de lo que se ve (`visor.offsetTop + visor.height`), en px desde arriba del visor de maquetación; 0
+   * sin visor o con zoom. La hoja de describir se ancla por arriba a él con el teclado abierto: no depende de
+   * `innerHeight`, que con la barra de URL de Chrome visible puede no medir lo mismo que el bloque de los `fixed`.
+   */
+  readonly bordeVisible = signal(0);
+  /** El alto de lo que se ve (`visor.height`); 0 sin visor o con zoom. Tope de la hoja de describir con el teclado. */
+  readonly altoVisible = signal(0);
   /** d551: teclado del móvil abierto: panel estrecho y el alto del teclado por encima del umbral. */
   readonly teclado = computed(() => this.estrecho() && this.altoTeclado() > UMBRAL_TECLADO);
   /** El bloque de la hoja inferior abierta (panel estrecho), o null. */
@@ -576,6 +584,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
   private zonaEnviada = '';
   /** El fotograma en que se medirá la zona (como mucho un envío por fotograma). */
   private zonaPedida: number | null = null;
+  /** El fotograma en que se volverá a medir el visor tras un resize/scroll (como mucho una vez por fotograma). */
+  private remedidaPedida: number | null = null;
   /** d551: el teclado se abrió o cambió de alto y ya se asentó: la próxima zona pide a la capa el texto en edición. */
   private campoPedido = false;
   /** d551: la espera a que el teclado deje de cambiar de alto antes de pedir el campo. */
@@ -633,9 +643,18 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     });
     const alMoverVentana = () => this.pedirZona();
     this.ventana?.addEventListener('scroll', alMoverVentana, { passive: true });
-    this.ventana?.addEventListener('resize', alMoverVentana);
+    // Al cambiar de alto la ventana (p. ej. sale o se va la barra de URL de Chrome) cambia `innerHeight` sin que el visor
+    // avise siempre: se vuelve a medir también, y otra vez en el siguiente fotograma, cuando el navegador ya se asentó.
+    const alCambiarVentana = () => {
+      this.medirVisor();
+      this.remedirVisor();
+    };
+    this.ventana?.addEventListener('resize', alCambiarVentana);
     // d551: el visor encoge con el teclado del móvil (sin `interactive-widget`, la ventana no cambia de alto).
-    const alMoverVisor = () => this.medirVisor();
+    const alMoverVisor = () => {
+      this.medirVisor();
+      this.remedirVisor();
+    };
     this.visor?.addEventListener('resize', alMoverVisor);
     this.visor?.addEventListener('scroll', alMoverVisor, { passive: true });
     this.medirVisor();
@@ -650,12 +669,16 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     inject(DestroyRef).onDestroy(() => {
       dejarDeEscuchar();
       this.ventana?.removeEventListener('scroll', alMoverVentana);
-      this.ventana?.removeEventListener('resize', alMoverVentana);
+      this.ventana?.removeEventListener('resize', alCambiarVentana);
       this.visor?.removeEventListener('resize', alMoverVisor);
       this.visor?.removeEventListener('scroll', alMoverVisor);
       if (this.zonaPedida !== null) {
         this.ventana?.cancelAnimationFrame?.(this.zonaPedida);
         this.zonaPedida = null;
+      }
+      if (this.remedidaPedida !== null) {
+        this.ventana?.cancelAnimationFrame?.(this.remedidaPedida);
+        this.remedidaPedida = null;
       }
       consulta?.removeEventListener?.('change', alCambiarAncho);
       this.cancelarSubidas();
@@ -2114,6 +2137,8 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
     const visor = this.visorSinZoom();
     const tapado = visor ? Math.max(0, Math.round(ventana.innerHeight - (visor.offsetTop + visor.height))) : 0;
     this.tapadoAbajo.set(tapado);
+    this.bordeVisible.set(visor ? Math.round(visor.offsetTop + visor.height) : 0);
+    this.altoVisible.set(visor ? Math.round(visor.height) : 0);
     const altoAntes = this.altoTeclado();
     this.altoTeclado.set(visor ? Math.max(0, Math.round(ventana.innerHeight - visor.height)) : 0);
     if (!this.teclado()) {
@@ -2128,6 +2153,21 @@ export class WebContenidoComponent implements OnInit, ConCambiosSinGuardar {
       }, ESPERA_TECLADO_MS);
     }
     this.pedirZona();
+  }
+
+  /**
+   * Vuelve a medir el visor en el siguiente fotograma (varios avisos en el mismo fotograma, una sola medida): Chrome puede
+   * avisar antes de dar las medidas finales. Si el alto del teclado no cambia, no reinicia la espera de d551.
+   */
+  private remedirVisor(): void {
+    const ventana = this.ventana;
+    if (!ventana || this.remedidaPedida !== null || typeof ventana.requestAnimationFrame !== 'function') {
+      return;
+    }
+    this.remedidaPedida = ventana.requestAnimationFrame(() => {
+      this.remedidaPedida = null;
+      this.medirVisor();
+    });
   }
 
   private pararEsperaTeclado(): void {

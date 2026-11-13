@@ -372,8 +372,101 @@ describe('WebContenidoComponent: «Describir la foto» como hoja', () => {
     fixture.detectChanges();
     const h = hoja()!;
     expect(h.classList).toContain('flot--teclado');
-    expect(getComputedStyle(h).bottom).toBe('200px');
+    expect(Math.abs(h.getBoundingClientRect().bottom - (window.innerHeight - 200))).toBeLessThanOrEqual(1);
     expect(parseFloat(getComputedStyle(h).maxHeight)).toBeLessThanOrEqual(window.innerHeight - 240 + 1);
+  });
+
+  it('d551: con la barra de URL (innerHeight 56 px menor que el bloque de los fixed), la hoja se ancla por arriba al borde del visor', () => {
+    const real = window.innerHeight;
+    spyOnProperty(window, 'innerHeight', 'get').and.returnValue(real - 56);
+    const falso = new VisorFalso();
+    visor = falso as unknown as VisualViewport;
+    abrir();
+    llegar(HOJA);
+    falso.offsetTop = 0;
+    falso.height = real - 56 - 200;
+    falso.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+    const h = hoja()!;
+    expect(h.classList).toContain('flot--teclado');
+    expect(getComputedStyle(h).top).toBe(`${real - 256}px`);
+    expect(h.style.getPropertyValue('--alto-teclado')).toBe('');
+    // El borde de abajo de la hoja, en el borde de abajo de lo que se ve (no 56 px más abajo).
+    expect(Math.abs(h.getBoundingClientRect().bottom - (real - 256))).toBeLessThanOrEqual(1);
+  });
+
+  it('d551: un resize de la ventana sin evento del visor vuelve a medir', () => {
+    const falso = new VisorFalso();
+    visor = falso as unknown as VisualViewport;
+    abrir();
+    llegar(HOJA);
+    falso.offsetTop = 0;
+    falso.height = window.innerHeight - 300;
+    falso.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+    // El visor cambia sin avisar (solo llega el resize de la ventana, p. ej. al salir la barra de URL).
+    falso.offsetTop = 20;
+    falso.height = window.innerHeight - 20 - 250;
+    window.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.altoTeclado()).toBe(270);
+    expect(fixture.componentInstance.bordeVisible()).toBe(window.innerHeight - 250);
+    expect(getComputedStyle(hoja()!).top).toBe(`${window.innerHeight - 250}px`);
+  });
+
+  it('d551: con el teclado, el max-height de la hoja es el alto del visor', () => {
+    const falso = new VisorFalso();
+    visor = falso as unknown as VisualViewport;
+    abrir();
+    llegar(HOJA);
+    falso.offsetTop = 30;
+    falso.height = window.innerHeight - 30 - 200;
+    falso.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+    expect(getComputedStyle(hoja()!).maxHeight).toBe(`${window.innerHeight - 230}px`);
+  });
+
+  it('d551: con el teclado, el asa la arrastra (su transform se suma al translate), al soltar vuelve y deslizarla la cierra', async () => {
+    const falso = new VisorFalso();
+    visor = falso as unknown as VisualViewport;
+    const enviados = abrir();
+    llegar(HOJA);
+    falso.offsetTop = 0;
+    falso.height = window.innerHeight - 200;
+    falso.dispatchEvent(new Event('resize'));
+    fixture.detectChanges();
+    const h = hoja()!;
+    const asa = q('.flot--describir .flot__asa-m')!;
+    const abajo = () => h.getBoundingClientRect().bottom;
+    expect(Math.abs(abajo() - (window.innerHeight - 200))).toBeLessThanOrEqual(1);
+    const base = { pointerId: 32, isPrimary: true, button: 0, bubbles: true, cancelable: true };
+    asa.dispatchEvent(new PointerEvent('pointerdown', { ...base, clientY: 10 }));
+    asa.dispatchEvent(new PointerEvent('pointermove', { ...base, clientY: 20 }));
+    h.style.transition = 'none';
+    expect(Math.abs(abajo() - (window.innerHeight - 200 + 10))).toBeLessThanOrEqual(1);
+    asa.dispatchEvent(new PointerEvent('pointerup', { ...base, clientY: 20 }));
+    await new Promise((resuelve) => setTimeout(resuelve, SALIDA_HOJA_MS * 2));
+    expect(h.style.transform).toBe('');
+    expect(getComputedStyle(h).translate).toBe('0px -100%');
+    expect(Math.abs(abajo() - (window.innerHeight - 200))).toBeLessThanOrEqual(1);
+    deslizarAsa(asa);
+    await new Promise((resuelve) => setTimeout(resuelve, SALIDA_HOJA_MS));
+    fixture.detectChanges();
+    expect(hoja()).toBeNull();
+    expect(respuestas(enviados)).toEqual([respuesta(true)]);
+  });
+
+  it('d551: sin teclado, la hoja sigue anclada abajo (sin top en línea ni clase de teclado)', () => {
+    const falso = new VisorFalso();
+    visor = falso as unknown as VisualViewport;
+    abrir();
+    llegar(HOJA);
+    const h = hoja()!;
+    expect(h.classList).not.toContain('flot--teclado');
+    expect(h.style.top).toBe('');
+    expect(h.style.getPropertyValue('--borde-visible')).toBe('');
+    expect(h.style.getPropertyValue('--alto-visible')).toBe('');
+    expect(getComputedStyle(h).bottom).toBe('0px');
   });
 
   it('mensajes mal formados o de otro origen no abren nada', () => {
