@@ -29,11 +29,12 @@ Plan de la carga inicial de una escuela nueva a partir de una hoja Excel. Primer
 | N.º | Decisión |
 |---|---|
 | d556 | Los alumnos de Sierra Sur entran con un importador a partir de la hoja maestra, no a mano ni solo por preinscripción. Las cuentas de familia siguen siendo por correo: con el correo en la ficha, la familia se registra sola (correo + fecha de nacimiento). Cuentas por teléfono, descartadas antes del alta. |
-| d558.1 | Formato: se sube el `.xlsx` tal cual y lo lee el sistema. Se añade una librería de lectura de Excel a la API. |
+| d558.1 | Formato: se sube el `.xlsx` tal cual y lo lee el sistema. Se añade a la API una librería que lea y escriba Excel. |
 | d558.2 | Teléfono obligatorio. Sin dirección, la fila entra con «Pendiente» y se lista en el informe. |
 | d558.3 | Grados: conversión automática. Menor con «n DAN» entra como PUM del mismo número; «Sin grado» entra como BLANCO. |
 | d558.4 | Los grupos y sus turnos deben existir antes. El importador solo asigna; un nombre de grupo que no exista en esa sede es un error. |
-| d558.5 | Se lanza desde una pantalla nueva de Plataforma (solo superadmin). Necesita boceto aprobado antes de construirse. |
+| d558.5 | Se lanza desde una pantalla nueva de Plataforma (solo superadmin). Boceto aprobado el 13/11: `fase4-importacion/boceto-importar-alumnos.html`. |
+| d558.6 | Con errores no se corrige en pantalla: se descarga la misma hoja con el motivo de cada fila en la columna `revisar` y las celdas marcadas, se corrige en Excel y se vuelve a ensayar. |
 
 ## 4. Diseño
 
@@ -43,6 +44,7 @@ Plan de la carga inicial de una escuela nueva a partir de una hoja Excel. Primer
 - Todo se ejecuta dentro de `TransaccionEnEscuela.escribir(orgId, …)`, abierta antes de tocar ningún repositorio.
 - **Ensayo**: mismo código que la carga; al final deshace la transacción. Devuelve el informe y no deja nada escrito.
 - **Carga**: todo o nada. Un error en cualquier fila impide toda la carga.
+- **Hoja con errores**: a partir de un ensayo, devuelve el mismo `.xlsx` con la columna `revisar` rellena por el importador y las celdas con error marcadas. Se genera al momento y no se guarda en el servidor.
 
 ### 4.2 Fases
 
@@ -69,8 +71,8 @@ Escuela creada; las seis sedes; grupos con sus turnos; tarifas activadas y tarif
 
 | Pieza | Qué | Nivel |
 |---|---|---|
-| I1 | API: lectura del Excel, validación, ensayo y carga, consulta por licencia, auditoría y tests de integración | careful + revisión Opus |
-| I2 | Boceto de la pantalla de Plataforma y aprobación del propietario | orquestador |
+| I1 | API: lectura y escritura del Excel, validación, ensayo y carga, hoja con errores, consulta por licencia, auditoría y tests de integración | careful + revisión Opus |
+| I2 | Boceto de la pantalla de Plataforma: aprobado el 13/11 | orquestador |
 | I3 | Pantalla de Plataforma según el boceto | medium + revisión |
 | I4 | Ensayo en la copia local con la hoja real | propietario + orquestador |
 | I5 | Carga real, con copia de seguridad antes | propietario |

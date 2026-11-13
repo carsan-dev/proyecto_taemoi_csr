@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plataforma · Importar alumnos (boceto aprobado el 13/11/2026)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pn-fondo: #F5F5F2;
+  --pn-superficie: #FFFFFF;
+  --pn-superficie-2: #FAFAF8;
+  --pn-tinta: #1A2230;
+  --pn-tinta-2: #5D6573;
+  --pn-tinta-3: #7A8290;
+  --pn-linea: #E4E4DF;
+  --pn-linea-fuerte: #CFCFC8;
+  --pn-borde-control: #868D97;
+  --pn-peligro: #B42318;
+  --pn-bien: #2F6B3A;
+  --pn-acento: #466396;
+  --pn-acento-borde: #6F8ABB;
+  --pn-acento-suave: #E6EFFF;
+  --pn-marca-primario-tinta: #1A2230;
+  --pn-sobre-primario: #FFFFFF;
+  --pn-sombra-barra: 0 -6px 20px -8px rgb(26 34 48 / 22%), 0 -2px 4px rgb(26 34 48 / 6%);
+  --pn-sombra-dialogo: 0 24px 48px -12px rgb(26 34 48 / 28%), 0 4px 10px rgb(26 34 48 / 8%);
+  --pn-titulo: "Montserrat", system-ui, sans-serif;
+  --pn-texto: "Public Sans", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #E9E9E4; color: var(--pn-tinta); font: 400 0.9375rem/1.45 var(--pn-texto); }
+.icono { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Página de bocetos */
+.pagina { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
+.pagina > h1 { font: 700 1.5rem/1.15 var(--pn-titulo); letter-spacing: -0.01em; margin: 0 0 32px; }
+.estado { margin: 0 0 40px; }
+.rotulo { font: 600 0.8125rem/1.2 var(--pn-texto); color: var(--pn-tinta-2); margin: 0 0 8px; }
+.marco { background: var(--pn-fondo); border: 1px solid var(--pn-linea-fuerte); border-radius: 8px; overflow: hidden; position: relative; }
+.marco--escritorio { max-width: 808px; }
+.marco--movil { width: 375px; max-width: 100%; }
+.contenido { padding: 24px 24px 28px; }
+.marco--movil .contenido { padding: 16px 16px 20px; }
+
+/* Pantalla */
+.miga { font-size: 0.875rem; line-height: 1.35; color: var(--pn-tinta-2); margin: 0 0 4px; }
+.pantalla h1 { font: 700 1.5rem/1.15 var(--pn-titulo); letter-spacing: -0.01em; margin: 0 0 8px; }
+.entradilla { font-size: 0.9375rem; line-height: 1.45; color: var(--pn-tinta-2); margin: 0 0 20px; max-width: 65ch; }
+.bloque { background: var(--pn-superficie); border: 1px solid var(--pn-linea); border-radius: 8px; padding: 18px 20px 16px; margin: 0 0 20px; }
+.bloque:last-child { margin-bottom: 0; }
+.bloque > h2 { font: 700 1.0625rem/1.25 var(--pn-titulo); margin: 0 0 12px; }
+.secundario { font-size: 0.875rem; line-height: 1.35; color: var(--pn-tinta-2); }
+.ayuda { font-size: 0.875rem; line-height: 1.35; color: var(--pn-tinta-2); margin: 8px 0 0; }
+.etiqueta { display: block; font: 600 0.8125rem/1.2 var(--pn-texto); margin: 0 0 6px; }
+.etiqueta span { font-weight: 400; color: var(--pn-tinta-2); }
+.bien { color: var(--pn-bien); } .peligro { color: var(--pn-peligro); } .gris { color: var(--pn-tinta-2); }
+
+/* Controles */
+.campo { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 42px; padding: 0 12px; background: var(--pn-superficie); border: 1px solid var(--pn-borde-control); border-radius: 8px; font: 400 0.9375rem/1.45 var(--pn-texto); color: var(--pn-tinta-2); text-align: left; }
+.campo .icono { width: 20px; height: 20px; color: var(--pn-tinta-2); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid transparent; font: 600 0.875rem/1.2 var(--pn-texto); cursor: pointer; background: none; white-space: nowrap; }
+.btn .icono { width: 18px; height: 18px; }
+.btn--principal { background: var(--pn-marca-primario-tinta); color: var(--pn-sobre-primario); }
+.btn--secundario { background: var(--pn-superficie); border-color: var(--pn-acento-borde); color: var(--pn-acento); }
+.btn--texto { color: var(--pn-acento); padding: 0 12px; }
+.btn--grande { min-height: 44px; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.btn--foco { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+.btn:focus-visible, .campo:focus-visible { outline: 3px solid var(--pn-acento-borde); outline-offset: 2px; }
+.giro { width: 0.9rem; height: 0.9rem; border: 2px solid rgb(255 255 255 / 35%); border-top-color: var(--pn-sobre-primario); border-radius: 999px; animation: giro 0.8s linear infinite; }
+@keyframes giro { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .giro { animation-duration: 2.4s; } }
+
+/* Zona de subida */
+.zona { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 24px 16px; background: var(--pn-superficie-2); border: 1.5px dashed var(--pn-borde-control); border-radius: 8px; }
+.zona > .icono { width: 32px; height: 32px; color: var(--pn-tinta-2); }
+.zona p { margin: 0; }
+.error-campo { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; font-weight: 500; color: var(--pn-peligro); }
+.error-campo .icono { width: 20px; height: 20px; margin-top: 1px; }
+
+/* Fichero */
+.fichero { display: flex; align-items: center; gap: 12px; }
+.fichero > .icono { width: 28px; height: 28px; color: var(--pn-tinta-2); }
+.fichero .datos { flex: 1; min-width: 0; }
+.fichero .datos strong { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.fichero .datos span { display: block; }
+
+/* Recuentos */
+.recuentos { display: flex; flex-wrap: wrap; gap: 8px 24px; list-style: none; margin: 0; padding: 0; }
+.recuentos li { display: inline-flex; align-items: center; gap: 8px; }
+.recuentos .icono { width: 20px; height: 20px; }
+.recuentos b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.bloque .btn:not(.btn--texto) { margin-top: 16px; }
+
+/* Listas */
+.lista { background: var(--pn-superficie); border: 1px solid var(--pn-linea); border-radius: 8px; margin: 0 0 20px; overflow: hidden; }
+.lista:last-child { margin-bottom: 0; }
+.lista header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; background: var(--pn-superficie-2); border-bottom: 1px solid var(--pn-linea); padding: 14px 20px 12px; }
+.lista h2 { font: 700 17px/1.25 var(--pn-titulo); margin: 0; }
+.lista header span { font: 500 0.8125rem/1.2 var(--pn-texto); color: var(--pn-tinta-2); font-variant-numeric: tabular-nums; }
+.lista ul { list-style: none; margin: 0; padding: 0; }
+.lista li { display: grid; grid-template-columns: 172px 96px 1fr; align-items: center; column-gap: 16px; min-height: 52px; padding: 8px 20px; border-bottom: 1px solid var(--pn-linea); }
+.ref { color: var(--pn-tinta-2); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.pastilla { display: inline-flex; align-items: center; justify-self: start; min-height: 24px; padding: 0 10px; border: 1px solid var(--pn-linea-fuerte); border-radius: 999px; font-size: 13px; color: var(--pn-tinta-2); }
+.motivo { font-size: 0.9375rem; line-height: 1.45; }
+.pie-lista { display: block; width: 100%; padding: 12px 20px; background: none; border: 0; text-align: left; font: 600 0.875rem/1.2 var(--pn-texto); color: var(--pn-acento); cursor: pointer; }
+
+/* Barra inferior */
+.barra { display: flex; align-items: center; gap: 12px; background: var(--pn-superficie); border-top: 1px solid var(--pn-linea); box-shadow: var(--pn-sombra-barra); padding: 16px 24px; position: relative; }
+.barra .resumen { margin: 0 auto 0 0; font-size: 0.875rem; line-height: 1.35; color: var(--pn-tinta-2); }
+.barra .resumen strong { font-weight: 600; }
+.barra .btn { min-height: 44px; }
+
+/* Móvil */
+.marco--movil .barra { flex-wrap: wrap; padding: 12px 16px 16px; gap: 10px 12px; }
+.marco--movil .barra .resumen { flex: 0 0 100%; margin: 0; font-size: 13px; }
+.marco--movil .barra .btn { flex: 1 1 0; }
+.marco--movil .lista li { grid-template-columns: auto 1fr; row-gap: 4px; column-gap: 8px; padding: 10px 16px; }
+.marco--movil .lista li .motivo { grid-column: 1 / -1; }
+.marco--movil .lista header { padding: 14px 16px 12px; }
+.marco--movil .pie-lista { padding: 12px 16px; }
+.marco--movil .bloque { padding: 16px; }
+.marco--movil .recuentos { flex-direction: column; }
+
+/* Diálogo */
+.velo { background: rgb(26 34 48 / 45%); padding: 48px 24px; display: flex; justify-content: center; }
+.dialogo { width: 100%; max-width: 440px; background: var(--pn-superficie); border-radius: 8px; padding: 24px; box-shadow: var(--pn-sombra-dialogo); }
+.dialogo h2 { font: 700 1.0625rem/1.25 var(--pn-titulo); margin: 0 0 8px; }
+.dialogo p { margin: 0 0 20px; color: var(--pn-tinta-2); }
+.dialogo .acciones { display: flex; justify-content: flex-end; gap: 12px; }
+.dialogo .btn { margin: 0; }
+
+/* Resultado */
+.hecho { display: flex; align-items: flex-start; gap: 14px; }
+.hecho > .icono { width: 28px; height: 28px; color: var(--pn-bien); }
+.hecho h2 { font: 700 1.0625rem/1.25 var(--pn-titulo); margin: 0 0 4px; }
+.hecho p { margin: 0; }
+.bloque--error { border-color: var(--pn-peligro); }
+.bloque--error .hecho > .icono { color: var(--pn-peligro); }
+
+/* Notas */
+.notas { background: var(--pn-superficie); border: 1px solid var(--pn-linea); border-radius: 8px; padding: 18px 20px 16px; }
+.notas h2 { font: 700 1.0625rem/1.25 var(--pn-titulo); margin: 0 0 12px; }
+.notas ul { margin: 0; padding-left: 20px; }
+.notas li { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-hoja" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M12 11v8"/></symbol>
+    <symbol id="i-subir" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></symbol>
+    <symbol id="i-bajar" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></symbol>
+    <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  </defs>
+</svg>
+
+<main class="pagina">
+<h1>Plataforma · Importar alumnos (boceto aprobado el 13/11/2026)</h1>
+
+<!-- 1. Inicio -->
+<section class="estado" aria-labelledby="e1">
+<p class="rotulo" id="e1">1. Inicio</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e1-esc">
+    <h2 id="e1-esc">Escuela</h2>
+    <label class="etiqueta" for="e1-sel">Escuela <span>obligatorio</span></label>
+    <button type="button" class="campo" id="e1-sel" aria-haspopup="listbox"><span>Elige una escuela</span><svg class="icono" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+  </section>
+  <section class="bloque" aria-labelledby="e1-hoja">
+    <h2 id="e1-hoja">Hoja de alumnos</h2>
+    <div class="zona">
+      <svg class="icono" aria-hidden="true"><use href="#i-hoja"/></svg>
+      <p>Un Excel con una fila por alumno.</p>
+      <button type="button" class="btn btn--secundario"><svg class="icono" aria-hidden="true"><use href="#i-subir"/></svg>Elegir Excel</button>
+    </div>
+    <p class="ayuda">Un fichero .xlsx, hasta 5 MB.</p>
+  </section>
+</div>
+<div class="barra">
+  <p class="resumen">Elige la escuela y la hoja.</p>
+  <button type="button" class="btn btn--texto">Cancelar</button>
+  <button type="button" class="btn btn--principal">Ensayar</button>
+</div>
+</div>
+</section>
+
+<!-- 2. Ensayando -->
+<section class="estado" aria-labelledby="e2">
+<p class="rotulo" id="e2">2. Ensayando (espera)</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e2-hoja">
+    <h2 id="e2-hoja">Hoja de alumnos</h2>
+    <div class="fichero">
+      <svg class="icono" aria-hidden="true"><use href="#i-hoja"/></svg>
+      <div class="datos"><strong>hoja-maestra-sierra-sur.xlsx</strong><span class="secundario">35 KB · Taekwondo Sierra Sur</span></div>
+    </div>
+  </section>
+</div>
+<div class="barra">
+  <p class="resumen" role="status">Ensayando la hoja…</p>
+  <button type="button" class="btn btn--texto" disabled>Cancelar</button>
+  <button type="button" class="btn btn--principal" aria-busy="true"><span class="giro" aria-hidden="true"></span>Ensayando…</button>
+</div>
+</div>
+</section>
+
+<!-- 3. Ensayo con errores -->
+<section class="estado" aria-labelledby="e3">
+<p class="rotulo" id="e3">3. Ensayo con errores</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e3-hoja">
+    <h2 id="e3-hoja">Hoja de alumnos</h2>
+    <div class="fichero">
+      <svg class="icono" aria-hidden="true"><use href="#i-hoja"/></svg>
+      <div class="datos"><strong>hoja-maestra-sierra-sur.xlsx</strong><span class="secundario">35 KB · 260 filas · Taekwondo Sierra Sur</span></div>
+      <button type="button" class="btn btn--texto">Sustituir</button>
+    </div>
+  </section>
+  <section class="bloque" aria-labelledby="e3-res">
+    <h2 id="e3-res">Resultado del ensayo</h2>
+    <ul class="recuentos">
+      <li class="bien"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg><span><b>248</b> listas para cargar</span></li>
+      <li class="peligro"><svg class="icono" aria-hidden="true"><use href="#i-alerta"/></svg><span><b>12</b> con errores</span></li>
+      <li class="gris"><svg class="icono" aria-hidden="true"><use href="#i-info"/></svg><span><b>31</b> con avisos</span></li>
+    </ul>
+    <p class="ayuda">No se ha guardado nada. Mientras haya errores no se puede cargar.</p>
+    <button type="button" class="btn btn--secundario"><svg class="icono" aria-hidden="true"><use href="#i-bajar"/></svg>Descargar hoja con errores</button>
+    <p class="ayuda">Tu misma hoja, con el motivo de cada fila en la columna revisar.</p>
+  </section>
+  <section class="lista" aria-labelledby="e3-err">
+    <header><h2 id="e3-err">Errores</h2><span>12 filas</span></header>
+    <ul>
+      <li><span class="ref">Fila 14 · n.º 20341</span><span class="pastilla">sede</span><span class="motivo">«Estepa centro» no es una sede de esta escuela.</span></li>
+      <li><span class="ref">Fila 87 · n.º 1932</span><span class="pastilla">telefono</span><span class="motivo">Falta el teléfono.</span></li>
+      <li><span class="ref">Fila 120 · n.º 20877</span><span class="pastilla">grupo</span><span class="motivo">No hay ningún grupo «Infantil L-X 17:00» en Mollina.</span></li>
+    </ul>
+    <button type="button" class="pie-lista">Ver los 12</button>
+  </section>
+  <section class="lista" aria-labelledby="e3-avi">
+    <header><h2 id="e3-avi">Avisos</h2><span>31 filas</span></header>
+    <ul>
+      <li><span class="ref">Fila 9 · n.º 20112</span><span class="pastilla">direccion</span><span class="motivo">Sin dirección: entrará como «Pendiente».</span></li>
+      <li><span class="ref">Fila 33 · n.º 18764</span><span class="pastilla">grado</span><span class="motivo">Menor con 1 DAN: entrará como 1 PUM.</span></li>
+      <li><span class="ref">Fila 51 · n.º 20455</span><span class="pastilla">tarifa</span><span class="motivo">Sin tarifa: no tendrá importe de mensualidad.</span></li>
+    </ul>
+    <button type="button" class="pie-lista">Ver los 31</button>
+  </section>
+</div>
+<div class="barra">
+  <p class="resumen"><strong class="peligro">12 filas con errores.</strong> Corrige la hoja y vuelve a ensayar.</p>
+  <button type="button" class="btn btn--texto">Cancelar</button>
+  <button type="button" class="btn btn--principal">Ensayar otra vez</button>
+</div>
+</div>
+</section>
+
+<!-- 4. Ensayo limpio -->
+<section class="estado" aria-labelledby="e4">
+<p class="rotulo" id="e4">4. Ensayo limpio</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e4-hoja">
+    <h2 id="e4-hoja">Hoja de alumnos</h2>
+    <div class="fichero">
+      <svg class="icono" aria-hidden="true"><use href="#i-hoja"/></svg>
+      <div class="datos"><strong>hoja-maestra-sierra-sur.xlsx</strong><span class="secundario">35 KB · 260 filas · Taekwondo Sierra Sur</span></div>
+      <button type="button" class="btn btn--texto">Sustituir</button>
+    </div>
+  </section>
+  <section class="bloque" aria-labelledby="e4-res">
+    <h2 id="e4-res">Resultado del ensayo</h2>
+    <ul class="recuentos">
+      <li class="bien"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg><span><b>260</b> listas para cargar</span></li>
+      <li class="gris"><svg class="icono" aria-hidden="true"><use href="#i-info"/></svg><span><b>31</b> con avisos</span></li>
+    </ul>
+    <p class="ayuda">No se ha guardado nada todavía.</p>
+  </section>
+  <section class="lista" aria-labelledby="e4-avi">
+    <header><h2 id="e4-avi">Avisos</h2><span>31 filas</span></header>
+    <ul>
+      <li><span class="ref">Fila 9 · n.º 20112</span><span class="pastilla">direccion</span><span class="motivo">Sin dirección: entrará como «Pendiente».</span></li>
+      <li><span class="ref">Fila 33 · n.º 18764</span><span class="pastilla">grado</span><span class="motivo">Menor con 1 DAN: entrará como 1 PUM.</span></li>
+      <li><span class="ref">Fila 51 · n.º 20455</span><span class="pastilla">tarifa</span><span class="motivo">Sin tarifa: no tendrá importe de mensualidad.</span></li>
+    </ul>
+    <button type="button" class="pie-lista">Ver los 31</button>
+  </section>
+</div>
+<div class="barra">
+  <p class="resumen">260 alumnos listos para Taekwondo Sierra Sur.</p>
+  <button type="button" class="btn btn--texto">Cancelar</button>
+  <button type="button" class="btn btn--principal">Cargar 260 alumnos</button>
+</div>
+</div>
+</section>
+
+<!-- 5. Confirmación -->
+<section class="estado" aria-labelledby="e5">
+<p class="rotulo" id="e5">5. Confirmación antes de cargar</p>
+<div class="marco marco--escritorio">
+<div class="velo">
+  <div class="dialogo" role="alertdialog" aria-modal="true" aria-labelledby="e5-t" aria-describedby="e5-d">
+    <h2 id="e5-t">¿Cargar 260 alumnos en Taekwondo Sierra Sur?</h2>
+    <p id="e5-d">Se crearán 260 alumnos con su grado, su sede y su grupo. No se puede deshacer desde aquí.</p>
+    <div class="acciones">
+      <button type="button" class="btn btn--secundario btn--foco">Cancelar</button>
+      <button type="button" class="btn btn--principal">Cargar 260 alumnos</button>
+    </div>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- 6. Cargando -->
+<section class="estado" aria-labelledby="e6">
+<p class="rotulo" id="e6">6. Cargando (espera)</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e6-hoja">
+    <h2 id="e6-hoja">Hoja de alumnos</h2>
+    <div class="fichero">
+      <svg class="icono" aria-hidden="true"><use href="#i-hoja"/></svg>
+      <div class="datos"><strong>hoja-maestra-sierra-sur.xlsx</strong><span class="secundario">35 KB · 260 filas · Taekwondo Sierra Sur</span></div>
+    </div>
+  </section>
+</div>
+<div class="barra">
+  <p class="resumen" role="status">Cargando 260 alumnos…</p>
+  <button type="button" class="btn btn--texto" disabled>Cancelar</button>
+  <button type="button" class="btn btn--principal" aria-busy="true"><span class="giro" aria-hidden="true"></span>Cargando…</button>
+</div>
+</div>
+</section>
+
+<!-- 7. Carga hecha -->
+<section class="estado" aria-labelledby="e7">
+<p class="rotulo" id="e7">7. Carga hecha</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e7-t">
+    <div class="hecho">
+      <svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg>
+      <div>
+        <h2 id="e7-t">260 alumnos cargados</h2>
+        <p class="secundario">En Taekwondo Sierra Sur. Ninguno estaba ya cargado.</p>
+        <button type="button" class="btn btn--secundario">Importar otra hoja</button>
+      </div>
+    </div>
+  </section>
+</div>
+</div>
+</section>
+
+<!-- 8. Carga repetida -->
+<section class="estado" aria-labelledby="e8">
+<p class="rotulo" id="e8">8. Carga repetida (variante de la carga hecha)</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e8-t">
+    <div class="hecho">
+      <svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg>
+      <div>
+        <h2 id="e8-t">12 alumnos cargados</h2>
+        <p class="secundario">En Taekwondo Sierra Sur. 248 ya estaban cargados y no se han tocado.</p>
+        <button type="button" class="btn btn--secundario">Importar otra hoja</button>
+      </div>
+    </div>
+  </section>
+</div>
+</div>
+</section>
+
+<!-- 9. Fichero no válido -->
+<section class="estado" aria-labelledby="e9">
+<p class="rotulo" id="e9">9. Fichero no válido</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e9-hoja">
+    <h2 id="e9-hoja">Hoja de alumnos</h2>
+    <div class="zona">
+      <svg class="icono" aria-hidden="true"><use href="#i-hoja"/></svg>
+      <p>Un Excel con una fila por alumno.</p>
+      <button type="button" class="btn btn--secundario"><svg class="icono" aria-hidden="true"><use href="#i-subir"/></svg>Elegir Excel</button>
+    </div>
+    <p class="error-campo" role="alert"><svg class="icono" aria-hidden="true"><use href="#i-alerta"/></svg><span>Este fichero no es la hoja de alumnos: faltan las columnas sede, telefono y grupo.</span></p>
+    <p class="ayuda">Usa la hoja maestra de la escuela, sin cambiar los títulos de las columnas.</p>
+  </section>
+</div>
+<div class="barra">
+  <p class="resumen">Elige la escuela y la hoja.</p>
+  <button type="button" class="btn btn--texto">Cancelar</button>
+  <button type="button" class="btn btn--principal">Ensayar</button>
+</div>
+</div>
+</section>
+
+<!-- 10. Error del servidor -->
+<section class="estado" aria-labelledby="e10">
+<p class="rotulo" id="e10">10. Error del servidor al cargar</p>
+<div class="marco marco--escritorio">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque bloque--error" role="alert" aria-labelledby="e10-t">
+    <div class="hecho">
+      <svg class="icono" aria-hidden="true"><use href="#i-alerta"/></svg>
+      <div>
+        <h2 id="e10-t">No se ha cargado ningún alumno</h2>
+        <p class="secundario">La carga se ha deshecho entera. Vuelve a ensayar la hoja antes de intentarlo otra vez.</p>
+        <button type="button" class="btn btn--secundario">Ensayar otra vez</button>
+      </div>
+    </div>
+  </section>
+</div>
+</div>
+</section>
+
+<!-- 11. Móvil -->
+<section class="estado" aria-labelledby="e11">
+<p class="rotulo" id="e11">11. Móvil (375 px) del estado 3: ensayo con errores</p>
+<div class="marco marco--movil">
+<div class="contenido pantalla">
+  <p class="miga">Plataforma</p>
+  <h1>Importar alumnos</h1>
+  <p class="entradilla">Carga los alumnos de una escuela desde su hoja de Excel. Primero se ensaya; no se guarda nada hasta que pulses «Cargar».</p>
+  <section class="bloque" aria-labelledby="e11-hoja">
+    <h2 id="e11-hoja">Hoja de alumnos</h2>
+    <div class="fichero">
+      <svg class="icono" aria-hidden="true"><use href="#i-hoja"/></svg>
+      <div class="datos"><strong>hoja-maestra-sierra-sur.xlsx</strong><span class="secundario">35 KB · 260 filas · Taekwondo Sierra Sur</span></div>
+      <button type="button" class="btn btn--texto">Sustituir</button>
+    </div>
+  </section>
+  <section class="bloque" aria-labelledby="e11-res">
+    <h2 id="e11-res">Resultado del ensayo</h2>
+    <ul class="recuentos">
+      <li class="bien"><svg class="icono" aria-hidden="true"><use href="#i-ok"/></svg><span><b>248</b> listas para cargar</span></li>
+      <li class="peligro"><svg class="icono" aria-hidden="true"><use href="#i-alerta"/></svg><span><b>12</b> con errores</span></li>
+      <li class="gris"><svg class="icono" aria-hidden="true"><use href="#i-info"/></svg><span><b>31</b> con avisos</span></li>
+    </ul>
+    <p class="ayuda">No se ha guardado nada. Mientras haya errores no se puede cargar.</p>
+    <button type="button" class="btn btn--secundario btn--grande"><svg class="icono" aria-hidden="true"><use href="#i-bajar"/></svg>Descargar hoja con errores</button>
+    <p class="ayuda">Tu misma hoja, con el motivo de cada fila en la columna revisar.</p>
+  </section>
+  <section class="lista" aria-labelledby="e11-err">
+    <header><h2 id="e11-err">Errores</h2><span>12 filas</span></header>
+    <ul>
+      <li><span class="ref">Fila 14 · n.º 20341</span><span class="pastilla">sede</span><span class="motivo">«Estepa centro» no es una sede de esta escuela.</span></li>
+      <li><span class="ref">Fila 87 · n.º 1932</span><span class="pastilla">telefono</span><span class="motivo">Falta el teléfono.</span></li>
+      <li><span class="ref">Fila 120 · n.º 20877</span><span class="pastilla">grupo</span><span class="motivo">No hay ningún grupo «Infantil L-X 17:00» en Mollina.</span></li>
+    </ul>
+    <button type="button" class="pie-lista">Ver los 12</button>
+  </section>
+  <section class="lista" aria-labelledby="e11-avi">
+    <header><h2 id="e11-avi">Avisos</h2><span>31 filas</span></header>
+    <ul>
+      <li><span class="ref">Fila 9 · n.º 20112</span><span class="pastilla">direccion</span><span class="motivo">Sin dirección: entrará como «Pendiente».</span></li>
+      <li><span class="ref">Fila 33 · n.º 18764</span><span class="pastilla">grado</span><span class="motivo">Menor con 1 DAN: entrará como 1 PUM.</span></li>
+      <li><span class="ref">Fila 51 · n.º 20455</span><span class="pastilla">tarifa</span><span class="motivo">Sin tarifa: no tendrá importe de mensualidad.</span></li>
+    </ul>
+    <button type="button" class="pie-lista">Ver los 31</button>
+  </section>
+</div>
+<div class="barra">
+  <p class="resumen"><strong class="peligro">12 filas con errores.</strong> Corrige la hoja y vuelve a ensayar.</p>
+  <button type="button" class="btn btn--secundario">Cancelar</button>
+  <button type="button" class="btn btn--principal">Ensayar otra vez</button>
+</div>
+</div>
+</section>
+
+<section class="notas" aria-labelledby="notas-t">
+<h2 id="notas-t">Notas</h2>
+<ul>
+  <li>«Cargar» solo aparece tras un ensayo limpio de esa misma hoja.</li>
+  <li>Un solo botón principal por estado.</li>
+  <li>Los avisos van en gris porque el ocre está reservado a dinero que se debe o vence.</li>
+  <li>Las filas se identifican por número de fila y número de federación, nunca por nombre ni DNI.</li>
+  <li>La hoja con errores se genera al momento y no se guarda en el servidor.</li>
+  <li>Patrones reutilizados: «Nueva escuela» (cabecera, bloques, barra), «Material de examen» (subida) y «Registro de acciones» (listas).</li>
+  <li>Los datos del boceto son inventados.</li>
+</ul>
+</section>
+</main>
+</body>
+</html>
