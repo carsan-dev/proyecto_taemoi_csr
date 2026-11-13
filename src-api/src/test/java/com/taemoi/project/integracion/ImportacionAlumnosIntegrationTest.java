@@ -6,7 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Row;
@@ -47,6 +52,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
@@ -68,6 +75,7 @@ import com.taemoi.project.repositories.UsuarioRepository;
 import com.taemoi.project.services.CatalogoLegadoTaemoi;
 import com.taemoi.project.services.EmailService;
 import com.taemoi.project.services.GrupoService;
+import com.taemoi.project.services.JwtService;
 import com.taemoi.project.services.ProductosCatalogoService;
 import com.taemoi.project.utils.MensualidadUtils;
 
@@ -104,7 +112,9 @@ class ImportacionAlumnosIntegrationTest extends MySqlIntegrationTest {
 	@Autowired JdbcTemplate jdbc;
 	@Autowired UsuarioRepository usuarios;
 	@Autowired PasswordEncoder encoder;
-	@Autowired GrupoService grupos;
+	/** Espía: los tests de fallo a mitad de escritura hacen fallar el alta en un grupo de una fila. */
+	@MockitoSpyBean GrupoService grupos;
+	@Autowired JwtService jwt;
 	@Autowired TransaccionEnEscuela enEscuela;
 	@Autowired ProductosCatalogoService productosCatalogo;
 	@Autowired AlumnoRepository alumnoRepository;
@@ -320,6 +330,15 @@ class ImportacionAlumnosIntegrationTest extends MySqlIntegrationTest {
 		JsonNode ampliada = enviar("carga", e.org(), new HojaDePrueba().fila(f1).fila(f3).fila(f2).xlsx(), 200);
 		assertEquals(1, ampliada.get("creados").asInt());
 		assertEquals(2, ampliada.get("yaCargados").asInt());
+		// Las ya cargadas, listadas solo con su fila y su número de federación.
+		JsonNode yaCargadas = ampliada.get("yaCargadas");
+		assertEquals(2, yaCargadas.size(), ampliada.toString());
+		assertEquals(List.of(2, 4), List.of(yaCargadas.get(0).get("fila").asInt(), yaCargadas.get(1).get("fila").asInt()));
+		assertEquals(List.of(f1.get("numero_federacion"), f2.get("numero_federacion")), List.of(
+				yaCargadas.get(0).get("numeroFederacion").asInt(), yaCargadas.get(1).get("numeroFederacion").asInt()));
+		for (JsonNode fila : yaCargadas) {
+			assertEquals(List.of("fila", "numeroFederacion"), nombresDeCampos(fila));
+		}
 		assertEquals(3, contar("SELECT COUNT(*) FROM alumno WHERE organizacion_id = ?", e.org()));
 		assertEquals(3, contar("""
 				SELECT COUNT(DISTINCT ad.numero_licencia) FROM alumno_deporte ad WHERE ad.organizacion_id = ?""", e.org()));
@@ -746,6 +765,201 @@ class ImportacionAlumnosIntegrationTest extends MySqlIntegrationTest {
 				Long.class, e.org()));
 	}
 
+	// ------------------------------------------------------------------ 16. todo o nada con un fallo a mitad de escritura
+
+	@Test
+	void p16_falloAMitadDeEscritura_422_yNoQuedaNada() throws Exception {
+		Escuela e = escuela("p16");
+		Long contadorAntes = contador(e.org());
+		String antes = huella();
+		long auditoriaAntes = maxAuditoria();
+		int segunda = numero();
+		HojaDePrueba hoja = tresFilasConGrupo(e, segunda);
+		// El alta en el grupo de la 2.ª fila falla con un error de negocio de los de siempre: la 1.ª ya está escrita.
+		fallarAlAgregarAlGrupo(new IllegalArgumentException("El alumno ya pertenece a este grupo"));
+
+		JsonNode informe = enviar("carga", e.org(), hoja.xlsx(), 422);
+		assertEquals(0, informe.get("creados").asInt());
+		assertEquals(1, informe.get("errores").size(), informe.toString());
+		JsonNode error = informe.get("errores").get(0);
+		assertEquals(3, error.get("fila").asInt());
+		assertEquals(segunda, error.get("numeroFederacion").asInt());
+		assertEquals("No se ha podido crear el alumno de esta fila. Avisa al administrador.",
+				error.get("motivo").asText());
+		verify(espiaDeGrupos(), times(2)).agregarAlumnoAGrupo(anyLong(), anyLong());
+		noQuedaNada(e, antes, contadorAntes, auditoriaAntes);
+	}
+
+	// ------------------------------------------------------------------ 17. fallo inesperado: 500 y nada escrito
+
+	@Test
+	void p17_falloInesperado_500EnLasTresOperaciones_nadaEscrito_yElLogDaLaCausaSinDatos(CapturedOutput salida)
+			throws Exception {
+		Escuela e = escuela("p17");
+		Long contadorAntes = contador(e.org());
+		String antes = huella();
+		long auditoriaAntes = maxAuditoria();
+		int segunda = numero();
+		HojaDePrueba hoja = tresFilasConGrupo(e, segunda);
+		String secreto = "Secreto" + marca;
+		for (String operacion : OPERACIONES) {
+			fallarAlAgregarAlGrupo(new RuntimeException("fallo que cita " + secreto));
+			MvcResult r = mvc.perform(peticion(operacion, e.org(), hoja.xlsx()).cookie(superadmin)).andReturn();
+			assertEquals(500, r.getResponse().getStatus(), operacion + " " + r.getResponse().getContentAsString());
+			String cuerpo = r.getResponse().getContentAsString();
+			assertEquals("No se ha podido terminar por un fallo inesperado: no se ha escrito nada. Avisa al "
+					+ "administrador.", json.readTree(cuerpo).get("mensaje").asText(), operacion);
+			assertFalse(cuerpo.contains(secreto), cuerpo);
+		}
+		noQuedaNada(e, antes, contadorAntes, auditoriaAntes);
+		// El log dice dónde (fila y número de federación) y da la traza, sin el mensaje ni datos de la hoja.
+		String log = salida.getAll();
+		assertTrue(log.contains("fallo inesperado en la fila 3 (número de federación " + segunda + ")"), log);
+		assertTrue(log.contains("java.lang.RuntimeException"), "Sin la clase de la causa");
+		assertTrue(log.contains("ImportacionAlumnosIntegrationTest"), "Sin la traza");
+		assertFalse(log.contains(secreto), "El log cita el mensaje de la excepción");
+		for (int i = 1; i <= 3; i++) {
+			assertFalse(log.contains(nombre(i)), "El log cita un nombre");
+		}
+
+		// Un error de negocio, en cambio, sigue siendo un error de la fila: 200 en el ensayo, 422 en la carga.
+		fallarAlAgregarAlGrupo(new IllegalArgumentException("El alumno ya pertenece a este grupo"));
+		JsonNode ensayo = enviar("ensayo", e.org(), hoja.xlsx(), 200);
+		assertEquals(List.of("No se ha podido crear el alumno de esta fila. Avisa al administrador."),
+				motivos(ensayo.get("errores")));
+		assertEquals(3, ensayo.get("errores").get(0).get("fila").asInt());
+		fallarAlAgregarAlGrupo(new IllegalArgumentException("El alumno ya pertenece a este grupo"));
+		enviar("carga", e.org(), hoja.xlsx(), 422);
+		assertEquals(0, contar("SELECT COUNT(*) FROM alumno WHERE organizacion_id = ?", e.org()));
+	}
+
+	// ------------------------------------------------------------------ 18. tarifas desactivadas y familiares
+
+	@Test
+	void p18_tarifaDesactivadaError_tarifaFamiliarAvisoYEntraConElImporteGeneral() throws Exception {
+		Escuela e = escuela("p18");
+		jdbc.update("""
+				INSERT INTO tarifa (organizacion_id, disciplina_id, codigo, nombre, importe, activa)
+				VALUES (?, ?, 'IT_APAGADA', 'Apagada IT', 20.00, FALSE)""", e.org(), e.disciplina());
+		jdbc.update("""
+				INSERT INTO tarifa (organizacion_id, disciplina_id, codigo, nombre, importe, importe_adulto, importe_menor,
+				  activa) VALUES (?, ?, 'IT_FAMILIA', 'Familia IT', 40.00, 30.00, 20.00, TRUE)""", e.org(), e.disciplina());
+		// HERMANOS viene de la plantilla del alta: se deja activa y con un importe conocido.
+		assertEquals(1, jdbc.update("""
+				UPDATE tarifa SET importe = 28.00, importe_adulto = NULL, importe_menor = NULL, activa = TRUE,
+				  disciplina_id = NULL WHERE organizacion_id = ? AND codigo = 'HERMANOS'""", e.org()));
+		int familia = numero(), hermanos = numero();
+		JsonNode ensayo = enviar("ensayo", e.org(), new HojaDePrueba()
+				.fila(alumno(numero(), nombre(1), MENOR, "Mollina", "tarifa", "IT_APAGADA"))
+				.fila(alumno(familia, nombre(2), MENOR, "Mollina", "tarifa", "Familia IT"))
+				.fila(alumno(hermanos, nombre(3), MENOR, "Mollina", "tarifa", "HERMANOS")).xlsx(), 200);
+		assertEquals(List.of("La tarifa «IT_APAGADA» está desactivada en esta escuela: actívala antes de cargar."),
+				motivos(ensayo.get("errores")));
+		List<String> familiares = new ArrayList<>();
+		ensayo.get("avisos").forEach(a -> {
+			if ("tarifa".equals(a.get("columna").asText())) {
+				familiares.add(a.get("fila").asInt() + " " + a.get("motivo").asText());
+			}
+		});
+		assertEquals(List.of("3 Tarifa familiar: entra con el importe general; revisa el importe en la ficha.",
+				"4 Tarifa familiar: entra con el importe general; revisa el importe en la ficha."), familiares);
+
+		enviar("carga", e.org(), new HojaDePrueba()
+				.fila(alumno(familia, nombre(2), MENOR, "Mollina", "tarifa", "Familia IT"))
+				.fila(alumno(hermanos, nombre(3), MENOR, "Mollina", "tarifa", "HERMANOS")).xlsx(), 200);
+		assertEquals(40.0, ((Number) deporte(id(e, familia)).get("cuantia_tarifa")).doubleValue());
+		assertEquals(28.0, ((Number) deporte(id(e, hermanos)).get("cuantia_tarifa")).doubleValue());
+	}
+
+	// ------------------------------------------------------------------ 19. superadmin con escuela propia
+
+	@Test
+	void p19_superadminConMembresiaYSesionEnOtraEscuela_todoQuedaEnLaDestino() throws Exception {
+		Escuela destino = escuela("p19a");
+		Escuela suya = escuela("p19b");
+		Usuario cuenta = cuenta("it-i1-superadmin-con-escuela-" + marca + "@example.test");
+		assertEquals(1, jdbc.update("UPDATE usuario SET es_admin_plataforma = TRUE, ultima_organizacion_id = ? "
+				+ "WHERE id = ?", suya.org(), cuenta.getId()));
+		jdbc.update("INSERT INTO membresia (usuario_id, organizacion_id, rol) VALUES (?, ?, 'ADMINISTRADOR')",
+				cuenta.getId(), suya.org());
+		String token = login(cuenta.getEmail());
+		assertEquals(suya.org(), jwt.verificar(token).organizacionId(), "La sesión no es la de su escuela");
+		Cookie sesion = new Cookie("jwt", token);
+		String huellaSuya = huellaDeEscuela(suya.org());
+		String huellaOrg1 = huellaDeEscuela(ORG1);
+		long auditoriaAntes = maxAuditoria();
+
+		// Las dos escuelas tienen sedes, grupos y tarifas con los mismos nombres: una fuga se resolvería con los de la suya.
+		int n1 = numero(), n2 = numero();
+		byte[] hoja = new HojaDePrueba()
+				.fila(alumno(n1, nombre(1), MENOR, "Mollina", "grupo", "Infantil L-X 17:00", "tarifa", "IT_MENSUAL",
+						"tutor_nombre", "Tutora " + marca, "tutor_parentesco", "MADRE", "autorizacion_imagen", "SI"))
+				.fila(alumno(n2, nombre(2), ADULTO, "Estepa", "grupo", "Adultos", "tarifa", "IT_GENERAL", "dni_nie", dni(),
+						"autorizacion_imagen", "NO"))
+				.xlsx();
+		assertEquals(2, enviarCon(sesion, "ensayo", destino.org(), hoja, 200).get("listas").asInt());
+		assertEquals(2, enviarCon(sesion, "carga", destino.org(), hoja, 200).get("creados").asInt());
+
+		assertEquals(2, contar("SELECT COUNT(*) FROM alumno WHERE organizacion_id = ?", destino.org()));
+		assertEquals(huellaSuya, huellaDeEscuela(suya.org()), "Escrito en la escuela de la sesión");
+		assertEquals(huellaOrg1, huellaDeEscuela(ORG1), "Escrito en la organización 1");
+		long id1 = id(destino, n1), id2 = id(destino, n2);
+		assertEquals(destino.mollina(), ((Number) alumnoPorLicencia(destino.org(), n1).get("sede_principal_id"))
+				.longValue());
+		assertEquals(destino.disciplina(), ((Number) deporte(id1).get("disciplina_id")).longValue());
+		assertEquals(destino.tarifaMensual(), ((Number) deporte(id1).get("tarifa_id")).longValue());
+		assertEquals(destino.tarifaGeneral(), ((Number) deporte(id2).get("tarifa_id")).longValue());
+		assertEquals(List.of(destino.grupoInfantil()), gruposDe(id1));
+		assertEquals(destino.turnosInfantil(), turnosDe(id1));
+		assertEquals(List.of(destino.grupoAdultos()), gruposDe(id2));
+		for (String tabla : List.of("alumno_deporte", "tutor", "consentimiento")) {
+			assertEquals(0, contar("SELECT COUNT(*) FROM " + tabla + " WHERE alumno_id IN (?, ?) AND organizacion_id <> ?",
+					id1, id2, destino.org()), tabla);
+		}
+		List<Map<String, Object>> apuntes = auditoriaDesde(auditoriaAntes);
+		assertTrue(apuntes.stream().allMatch(a -> org(a) == destino.org()), apuntes.toString());
+		assertEquals(1, apuntes.stream().filter(a -> "CREATE".equals(a.get("accion"))).count(), apuntes.toString());
+	}
+
+	/** Tres filas válidas de la misma sede y el mismo grupo; la segunda con el número {@code segunda}. */
+	private HojaDePrueba tresFilasConGrupo(Escuela e, int segunda) {
+		HojaDePrueba hoja = new HojaDePrueba();
+		for (int i = 1; i <= 3; i++) {
+			hoja.fila(alumno(i == 2 ? segunda : numero(), nombre(i), MENOR, "Mollina", "grupo", "Infantil L-X 17:00",
+					"tarifa", "IT_MENSUAL", "tutor_nombre", "Tutora " + marca, "tutor_parentesco", "MADRE",
+					"autorizacion_imagen", "SI"));
+		}
+		return hoja;
+	}
+
+	/** La 2.ª llamada al alta en un grupo (la de la 2.ª fila) lanza {@code fallo}; las demás, las de siempre. */
+	private void fallarAlAgregarAlGrupo(RuntimeException fallo) {
+		AtomicInteger llamadas = new AtomicInteger();
+		// Sobre el espía de debajo del proxy transaccional (el stub no debe abrir una transacción).
+		doAnswer(llamada -> {
+			if (llamadas.incrementAndGet() == 2) {
+				throw fallo;
+			}
+			return llamada.callRealMethod();
+		}).when(espiaDeGrupos()).agregarAlumnoAGrupo(anyLong(), anyLong());
+	}
+
+	private GrupoService espiaDeGrupos() {
+		return AopTestUtils.getUltimateTargetObject(grupos);
+	}
+
+	/** Nada escrito: las tablas de p01 iguales, el contador sin consumir y ningún apunte en la escuela. */
+	private void noQuedaNada(Escuela e, String huellaAntes, Long contadorAntes, long auditoriaAntes) {
+		assertEquals(huellaAntes, huella(), "Quedaron filas escritas o cambiadas");
+		assertEquals(contadorAntes == null ? Long.valueOf(0) : contadorAntes, contador(e.org()));
+		assertEquals(0, contar("SELECT COUNT(*) FROM alumno WHERE organizacion_id = ?", e.org()));
+		List<Map<String, Object>> apuntes = auditoriaDesde(auditoriaAntes);
+		assertTrue(apuntes.stream().noneMatch(a -> "CREATE".equals(a.get("accion"))
+				&& String.valueOf(a.get("resumen")).startsWith("PLATAFORMA IMPORTACION_ALUMNOS ")), apuntes.toString());
+		assertTrue(apuntes.stream().noneMatch(a -> org(a) == e.org() && "CREATE".equals(a.get("accion"))),
+				apuntes.toString());
+	}
+
 	// ------------------------------------------------------------------ escuela de prueba
 
 	private Escuela escuela(String etiqueta) throws Exception {
@@ -859,11 +1073,16 @@ class ImportacionAlumnosIntegrationTest extends MySqlIntegrationTest {
 
 	private JsonNode enviar(String operacion, long org, byte[] contenido, int estado, String... parametros)
 			throws Exception {
+		return enviarCon(superadmin, operacion, org, contenido, estado, parametros);
+	}
+
+	private JsonNode enviarCon(Cookie sesion, String operacion, long org, byte[] contenido, int estado,
+			String... parametros) throws Exception {
 		MockMultipartHttpServletRequestBuilder peticion = peticion(operacion, org, contenido);
 		for (int i = 0; i < parametros.length; i += 2) {
 			peticion.param(parametros[i], parametros[i + 1]);
 		}
-		MvcResult r = mvc.perform(peticion.cookie(superadmin)).andReturn();
+		MvcResult r = mvc.perform(peticion.cookie(sesion)).andReturn();
 		assertEquals(estado, r.getResponse().getStatus(), r.getResponse().getContentAsString());
 		return json.readTree(r.getResponse().getContentAsString());
 	}
@@ -1010,6 +1229,12 @@ class ImportacionAlumnosIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(relacion, c.get("firmante_relacion"));
 		assertNull(c.get("firmante_nombre"));
 		assertEquals(otorgado, alumno.get("autorizacion_web"));
+	}
+
+	private static List<String> nombresDeCampos(JsonNode objeto) {
+		List<String> nombres = new ArrayList<>();
+		objeto.fieldNames().forEachRemaining(nombres::add);
+		return nombres;
 	}
 
 	private static List<String> motivos(JsonNode incidencias) {
