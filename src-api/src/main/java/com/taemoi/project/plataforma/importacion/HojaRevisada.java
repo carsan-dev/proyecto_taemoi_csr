@@ -23,7 +23,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
  * Decisión d558.6: el MISMO libro subido, con la columna {@code revisar} de la hoja «Alumnos» reescrita (motivos de
- * error y aviso de cada fila separados por «; », vacía si no hay) y las celdas con error en rojo claro ({@code FFC7CE}).
+ * error y aviso de cada fila separados por «; », «Ya estaba cargada: no se toca.» en las ya cargadas, vacía si no hay
+ * nada) y las celdas con error en rojo claro ({@code FFC7CE}).
  * Las celdas que una pasada anterior dejó en ese rojo y ya no tienen error vuelven a su estilo sin relleno. Se genera en
  * memoria: no se guarda nada.
  *
@@ -35,6 +36,7 @@ public record HojaRevisada(String nombre, byte[] contenido) {
 	public static final String TIPO = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 	static final byte[] ROJO_CLARO = { (byte) 0xFF, (byte) 0xC7, (byte) 0xCE };
+	static final String YA_CARGADA = "Ya estaba cargada: no se toca.";
 	private static final String SEPARADOR = "; ";
 
 	static HojaRevisada de(HojaAlumnos hoja, InformeImportacion informe) {
@@ -48,6 +50,10 @@ public record HojaRevisada(String nombre, byte[] contenido) {
 		}
 		for (Incidencia aviso : informe.avisos()) {
 			motivos.computeIfAbsent(aviso.fila(), f -> new java.util.ArrayList<>()).add(aviso.motivo());
+		}
+		// Las ya cargadas no tienen errores ni avisos: solo la nota, sin celdas en rojo.
+		for (InformeImportacion.FilaYaCargada yaCargada : informe.yaCargadas()) {
+			motivos.computeIfAbsent(yaCargada.fila(), f -> new java.util.ArrayList<>()).add(YA_CARGADA);
 		}
 		try (XSSFWorkbook libro = new XSSFWorkbook(new ByteArrayInputStream(hoja.contenido()));
 				ByteArrayOutputStream salida = new ByteArrayOutputStream()) {

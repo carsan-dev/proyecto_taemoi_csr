@@ -227,8 +227,10 @@ public class ImportacionAlumnosService {
 		List<Incidencia> errores = validadas.stream().flatMap(f -> f.errores().stream()).toList();
 		List<Incidencia> avisos = validadas.stream().flatMap(f -> f.avisos().stream()).toList();
 		int listas = (int) validadas.stream().filter(FilaValidada::lista).count();
-		int yaCargadas = (int) validadas.stream().filter(FilaValidada::yaCargada).count();
-		InformeImportacion informe = new InformeImportacion(validadas.size(), listas, 0, yaCargadas, errores, avisos);
+		List<InformeImportacion.FilaYaCargada> yaCargadas = validadas.stream().filter(FilaValidada::yaCargada)
+				.map(f -> new InformeImportacion.FilaYaCargada(f.fila(), f.numeroFederacion())).toList();
+		InformeImportacion informe = new InformeImportacion(validadas.size(), listas, 0, yaCargadas.size(), errores,
+				avisos, yaCargadas);
 		if (!errores.isEmpty()) {
 			return new Procesado(informe, disciplina);
 		}
@@ -281,7 +283,8 @@ public class ImportacionAlumnosService {
 		List<ContextoEscuela.TarifaRef> tarifasRef = tarifas.findAllByOrderByOrdenAscIdAsc().stream().map(t -> {
 			tarifasPorCodigo.put(t.getCodigo(), t);
 			return new ContextoEscuela.TarifaRef(t.getCodigo(), t.getNombre(),
-					t.getDisciplina() == null ? null : t.getDisciplina().getCodigo());
+					t.getDisciplina() == null ? null : t.getDisciplina().getCodigo(), !Boolean.FALSE.equals(t.getActiva()),
+					tarifasService.requiereRolFamiliar(t) || tarifasService.requiereGrupoFamiliar(t));
 		}).toList();
 		Map<String, Boolean> gradosVistos = new HashMap<>();
 		Set<String> nifs = alumnos.nifsEnOrganizacionActiva().stream().map(NifUtils::normalizeForComparison)

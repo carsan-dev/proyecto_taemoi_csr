@@ -53,6 +53,8 @@ final class ValidacionFilas {
 
 	static final String AVISO_SIN_DIRECCION = "Sin dirección: entrará como «Pendiente».";
 	static final String AVISO_SIN_TARIFA = "Sin tarifa: no tendrá importe de mensualidad.";
+	static final String AVISO_TARIFA_FAMILIAR = "Tarifa familiar: entra con el importe general; revisa el importe en la "
+			+ "ficha.";
 	static final String AVISO_SIN_GRUPO = "Sin grupo: no estará en ningún turno.";
 	static final String AVISO_SIN_CORREO = "Sin correo: la familia no podrá crear su cuenta.";
 	static final String AVISO_ADULTO_SIN_DNI = "Adulto sin DNI/NIE: añádelo cuando lo tengas.";
@@ -355,6 +357,15 @@ final class ValidacionFilas {
 		if (tarifa.disciplina() != null && !tarifa.disciplina().equals(escuela.disciplina())) {
 			r.error(TARIFA, "La tarifa «" + citado(texto) + "» es de otra disciplina.");
 			return null;
+		}
+		if (!tarifa.activa()) {
+			r.error(TARIFA, "La tarifa «" + citado(texto)
+					+ "» está desactivada en esta escuela: actívala antes de cargar.");
+			return null;
+		}
+		if (tarifa.familiar()) {
+			// Sin rol ni grupo familiar: el alta toma el importe general (ImportacionAlumnosService#escribir).
+			r.aviso(TARIFA, AVISO_TARIFA_FAMILIAR);
 		}
 		return tarifa.codigo();
 	}

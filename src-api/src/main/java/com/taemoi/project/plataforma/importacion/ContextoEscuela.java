@@ -28,8 +28,15 @@ record ContextoEscuela(String disciplina, List<SedeRef> sedes, List<GrupoRef> gr
 	record GrupoRef(Long id, String nombre, Long sedeId) {
 	}
 
-	/** {@code disciplina}: código de la disciplina de la tarifa, o {@code null} si vale para cualquiera. */
-	record TarifaRef(String codigo, String nombre, String disciplina) {
+	/**
+	 * Una tarifa de la escuela.
+	 *
+	 * @param disciplina código de la disciplina de la tarifa, o {@code null} si vale para cualquiera
+	 * @param activa     si la escuela la tiene activada
+	 * @param familiar   si es familiar: pide rol familiar ({@code TarifasService#requiereRolFamiliar}, importes por rol)
+	 *                   o grupo familiar ({@code TarifasService#requiereGrupoFamiliar}); el importador no los rellena
+	 */
+	record TarifaRef(String codigo, String nombre, String disciplina, boolean activa, boolean familiar) {
 	}
 
 	/**

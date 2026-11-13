@@ -40,7 +40,7 @@ class HojaRevisadaTest {
 				List.of(new Incidencia(3, 2, "telefono", "El teléfono no es válido: escribe de 9 a 15 cifras."),
 						new Incidencia(3, 2, "sede", "Falta la sede.")),
 				List.of(new Incidencia(2, 1, "direccion", "Sin dirección: entrará como «Pendiente»."),
-						new Incidencia(3, 2, "grupo", "Sin grupo: no estará en ningún turno.")));
+						new Incidencia(3, 2, "grupo", "Sin grupo: no estará en ningún turno.")), List.of());
 
 		HojaRevisada revisada = HojaRevisada.de(hoja, informe);
 		assertEquals("hoja maestra-revisar.xlsx", revisada.nombre());
@@ -74,7 +74,7 @@ class HojaRevisadaTest {
 			libro.write(salida);
 			HojaAlumnos corregida = LectorHojaAlumnos.leer(salida.toByteArray(), revisada.nombre(), XLSX);
 			InformeImportacion segundo = new InformeImportacion(3, 2, 0, 0,
-					List.of(new Incidencia(3, 2, "sede", "Falta la sede.")), List.of());
+					List.of(new Incidencia(3, 2, "sede", "Falta la sede.")), List.of(), List.of());
 			try (XSSFWorkbook otra = new XSSFWorkbook(
 					new ByteArrayInputStream(HojaRevisada.de(corregida, segundo).contenido()))) {
 				Sheet hoja2 = otra.getSheet("Alumnos");
@@ -82,6 +82,28 @@ class HojaRevisadaTest {
 				assertTrue(enRojo(hoja2.getRow(2).getCell(columna("sede"))));
 				assertEquals("Falta la sede.", hoja2.getRow(2).getCell(revisar).getStringCellValue());
 				assertEquals("", hoja2.getRow(1).getCell(revisar).getStringCellValue());
+			}
+		}
+	}
+
+	@Test
+	void yaCargadas_revisarLoDice_sinRojo() throws IOException {
+		byte[] original = new HojaDePrueba()
+				.fila(valores("numero_federacion", 7, "nombre", "Ana", "revisar", "texto viejo"))
+				.fila(valores("numero_federacion", 8, "nombre", "Eva"))
+				.xlsx();
+		HojaAlumnos hoja = LectorHojaAlumnos.leer(original, "hoja.xlsx", XLSX);
+		InformeImportacion informe = new InformeImportacion(2, 1, 0, 1, List.of(), List.of(),
+				List.of(new InformeImportacion.FilaYaCargada(2, 7)));
+		try (XSSFWorkbook libro = new XSSFWorkbook(
+				new ByteArrayInputStream(HojaRevisada.de(hoja, informe).contenido()))) {
+			Sheet alumnos = libro.getSheet("Alumnos");
+			int revisar = columna("revisar");
+			assertEquals("Ya estaba cargada: no se toca.", alumnos.getRow(1).getCell(revisar).getStringCellValue());
+			Cell otra = alumnos.getRow(2).getCell(revisar);
+			assertTrue(otra == null || otra.getStringCellValue().isEmpty());
+			for (Cell celda : alumnos.getRow(1)) {
+				assertFalse(enRojo(celda), "Celda en rojo en una fila ya cargada: " + celda.getColumnIndex());
 			}
 		}
 	}

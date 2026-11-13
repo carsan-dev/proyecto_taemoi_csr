@@ -28,9 +28,12 @@ class ValidacionFilasTest {
 			List.of(new ContextoEscuela.GrupoRef(100L, "Infantil L-X 17:00", 10L),
 					new ContextoEscuela.GrupoRef(101L, "Adultos", 11L),
 					new ContextoEscuela.GrupoRef(102L, "Doble", 11L), new ContextoEscuela.GrupoRef(103L, "doble", 11L)),
-			List.of(new ContextoEscuela.TarifaRef("INFANTIL", "Infantil", "TAEKWONDO"),
-					new ContextoEscuela.TarifaRef("ADULTO", "Adulto general", null),
-					new ContextoEscuela.TarifaRef("PILATES", "Pilates", "PILATES")),
+			List.of(new ContextoEscuela.TarifaRef("INFANTIL", "Infantil", "TAEKWONDO", true, false),
+					new ContextoEscuela.TarifaRef("ADULTO", "Adulto general", null, true, false),
+					new ContextoEscuela.TarifaRef("PILATES", "Pilates", "PILATES", true, false),
+					new ContextoEscuela.TarifaRef("APAGADA", "Tarifa apagada", "TAEKWONDO", false, false),
+					new ContextoEscuela.TarifaRef("PADRES_HIJOS", "Padres e hijos", null, true, true),
+					new ContextoEscuela.TarifaRef("HERMANOS", "Hermanos", "TAEKWONDO", true, true)),
 			codigo -> !codigo.equals("NEGRO_5_DAN"), Set.of("12345678Z"), Set.of(900),
 			email -> email.contains("@") && !email.startsWith("@"));
 
@@ -148,6 +151,23 @@ class ValidacionFilasTest {
 		assertEquals("ADULTO", una(fila("tarifa", "adulto general")).datos().tarifa());
 		assertEquals(List.of("tarifa: La tarifa «PILATES» es de otra disciplina."),
 				motivos(una(fila("tarifa", "PILATES")).errores()));
+	}
+
+	@Test
+	void tarifas_desactivadaEsError_familiarEsAviso() {
+		assertEquals(List.of("tarifa: La tarifa «APAGADA» está desactivada en esta escuela: actívala antes de cargar."),
+				motivos(una(fila("tarifa", "APAGADA")).errores()));
+		assertEquals(List.of("tarifa: La tarifa «tarifa apagada» está desactivada en esta escuela: actívala antes de "
+				+ "cargar."), motivos(una(fila("tarifa", "tarifa apagada")).errores()));
+		for (String familiar : List.of("PADRES_HIJOS", "hermanos", "Padres e hijos")) {
+			FilaValidada f = una(fila("tarifa", familiar));
+			assertTrue(f.lista(), familiar);
+			assertEquals(List.of("tarifa: Tarifa familiar: entra con el importe general; revisa el importe en la ficha."),
+					motivos(f.avisos()), familiar);
+			assertNotNull(f.datos().tarifa(), familiar);
+		}
+		assertEquals("HERMANOS", una(fila("tarifa", "hermanos")).datos().tarifa());
+		assertEquals(List.of(), motivos(una(fila("tarifa", "INFANTIL")).avisos()));
 	}
 
 	@Test
