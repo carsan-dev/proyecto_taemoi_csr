@@ -111,6 +111,8 @@ public record HojaRevisada(String nombre, byte[] contenido) {
 					if (celdaRevisar == null) {
 						celdaRevisar = fila.createCell(revisar);
 					}
+					// Vaciar antes: una cadena en línea (t="inlineStr") conservaría su <is> antiguo junto al valor nuevo.
+					celdaRevisar.setBlank();
 					celdaRevisar.setCellValue(String.join(SEPARADOR, deLaFila));
 				} else if (celdaRevisar != null) {
 					celdaRevisar.setBlank();

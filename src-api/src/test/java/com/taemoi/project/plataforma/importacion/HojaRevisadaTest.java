@@ -15,9 +15,11 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
+import org.openxmlformats.schemas.spreadsheetml.x2006.main.STCellType;
 
 /** Importador de alumnos (fase 4, d558.6): la hoja devuelta con la columna revisar y las celdas con error marcadas. */
 class HojaRevisadaTest {
@@ -105,6 +107,67 @@ class HojaRevisadaTest {
 			for (Cell celda : alumnos.getRow(1)) {
 				assertFalse(enRojo(celda), "Celda en rojo en una fila ya cargada: " + celda.getColumnIndex());
 			}
+		}
+	}
+
+	@Test
+	void revisarEnLinea_conMotivos_sustituyeElTextoViejo_yConservaElEstilo() throws IOException {
+		byte[] original = new HojaDePrueba()
+				.fila(valores("numero_federacion", 1, "nombre", "Ana", "revisar", "x"))
+				.xlsx();
+		byte[] enLinea = revisarEnLinea(original, "texto viejo");
+		HojaAlumnos hoja = LectorHojaAlumnos.leer(enLinea, "hoja.xlsx", XLSX);
+		InformeImportacion informe = new InformeImportacion(1, 0, 0, 0,
+				List.of(new Incidencia(2, 1, "sede", "Falta la sede.")), List.of(), List.of());
+
+		byte[] revisada = HojaRevisada.de(hoja, informe).contenido();
+		try (XSSFWorkbook libro = new XSSFWorkbook(new ByteArrayInputStream(revisada))) {
+			XSSFCell celda = libro.getSheet("Alumnos").getRow(1).getCell(columna("revisar"));
+			assertEquals("Falta la sede.", celda.getStringCellValue());
+			assertFalse(celda.getCTCell().isSetIs(), "Queda la cadena en línea antigua");
+			XSSFCellStyle estilo = celda.getCellStyle();
+			assertEquals(FillPatternType.SOLID_FOREGROUND, estilo.getFillPattern());
+			assertFalse(enRojo(celda));
+		}
+	}
+
+	@Test
+	void revisarEnLinea_sinMotivos_quedaVacia() throws IOException {
+		byte[] original = new HojaDePrueba()
+				.fila(valores("numero_federacion", 1, "nombre", "Ana", "revisar", "x"))
+				.xlsx();
+		HojaAlumnos hoja = LectorHojaAlumnos.leer(revisarEnLinea(original, "texto viejo"), "hoja.xlsx", XLSX);
+		InformeImportacion informe = new InformeImportacion(1, 1, 0, 0, List.of(), List.of(), List.of());
+
+		try (XSSFWorkbook libro = new XSSFWorkbook(
+				new ByteArrayInputStream(HojaRevisada.de(hoja, informe).contenido()))) {
+			XSSFCell celda = libro.getSheet("Alumnos").getRow(1).getCell(columna("revisar"));
+			assertEquals("", celda.getStringCellValue());
+			assertFalse(celda.getCTCell().isSetIs());
+		}
+	}
+
+	/** Deja la celda revisar de la primera fila como cadena en línea (t="inlineStr"), con relleno, y comprueba que se relee así. */
+	private static byte[] revisarEnLinea(byte[] xlsx, String texto) throws IOException {
+		try (XSSFWorkbook libro = new XSSFWorkbook(new ByteArrayInputStream(xlsx))) {
+			XSSFCell celda = libro.getSheet("Alumnos").getRow(1).getCell(columna("revisar"));
+			XSSFCellStyle relleno = libro.createCellStyle();
+			relleno.setFillForegroundColor(new org.apache.poi.xssf.usermodel.XSSFColor(
+					new byte[] { (byte) 0xFF, (byte) 0xFF, (byte) 0x00 }, null));
+			relleno.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+			celda.setCellStyle(relleno);
+			celda.getCTCell().unsetV();
+			celda.getCTCell().setT(STCellType.INLINE_STR);
+			celda.getCTCell().addNewIs().setT(texto);
+			java.io.ByteArrayOutputStream salida = new java.io.ByteArrayOutputStream();
+			libro.write(salida);
+			byte[] bytes = salida.toByteArray();
+			try (XSSFWorkbook releido = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+				XSSFCell c = releido.getSheet("Alumnos").getRow(1).getCell(columna("revisar"));
+				assertTrue(c.getCTCell().isSetIs(), "La celda de prueba no es una cadena en línea");
+				assertEquals(texto, c.getStringCellValue());
+			}
+			return bytes;
 		}
 	}
 
