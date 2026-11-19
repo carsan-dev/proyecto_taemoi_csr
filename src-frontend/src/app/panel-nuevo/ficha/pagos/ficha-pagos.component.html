@@ -39,6 +39,30 @@
           @if (!p.pagado) {
           <button type="button" class="pagos__cobrar" [attr.aria-label]="'Cobrar ' + p.concepto"
             [disabled]="ficha.isPagandoProducto(p.id)" (click)="ficha.pagarProducto(p)">Cobrar</button>
+          } @else if (puedeRevertir(p)) {
+          <div class="pagos__menu-zona" (focusout)="alSalirDeZona($event)">
+            <button type="button" class="pagos__mas" [attr.data-mas]="p.id" [attr.aria-label]="'Más acciones de ' + p.concepto"
+              aria-haspopup="menu" [attr.aria-expanded]="menuAbierto === p.id"
+              [attr.aria-controls]="menuAbierto === p.id ? 'pagos-menu-' + p.id : null" [disabled]="revirtiendo.has(p.id)"
+              (click)="alternarMenu(p.id)" (keydown)="teclaBotonMas($event, p.id)">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.75"></circle>
+                <circle cx="12" cy="12" r="1.75"></circle><circle cx="18.5" cy="12" r="1.75"></circle></svg>
+            </button>
+            @if (menuAbierto === p.id) {
+            <div class="pagos__menu" role="menu" [id]="'pagos-menu-' + p.id" [attr.aria-label]="'Acciones de ' + p.concepto"
+              (keydown)="teclaMenu($event, p.id)">
+              @if (puedeDescargarRecibo(p)) {
+              <button type="button" class="pagos__menu-opcion" role="menuitem" (click)="opcionMenu(p, 'recibo')">
+                <i class="bi bi-download" aria-hidden="true"></i><span>Descargar recibo</span>
+              </button>
+              }
+              <button type="button" class="pagos__menu-opcion pagos__menu-opcion--peligro" role="menuitem" aria-haspopup="dialog"
+                (click)="opcionMenu(p, 'revertir')">
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span>Revertir</span>
+              </button>
+            </div>
+            }
+          </div>
           } @else if (puedeDescargarRecibo(p)) {
           <button type="button" class="pagos__cobrar pagos__recibo" [attr.aria-label]="'Descargar recibo de ' + p.concepto"
             [disabled]="recibos.descargando(p.id)" (click)="descargarRecibo(p)">Descargar recibo</button>

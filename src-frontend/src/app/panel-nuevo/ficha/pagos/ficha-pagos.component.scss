@@ -115,6 +115,93 @@
   }
 }
 
+// Menú «⋯» de la fila: las mismas reglas que el de Tesorería (mismos tokens, 36 px y 44 px en móvil).
+.pagos__menu-zona {
+  position: relative;
+  display: inline-block;
+}
+
+.pagos__mas {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pn-radio-m);
+  background: transparent;
+  color: var(--pn-tinta-2);
+  cursor: pointer;
+  transition: background-color var(--pn-transicion);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover:not(:disabled),
+  &[aria-expanded='true'] {
+    background: var(--pn-marca-primario-suave);
+    color: var(--pn-tinta);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
+
+.pagos__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 240px;
+  padding: 6px;
+  background: var(--pn-superficie);
+  border: 1px solid var(--pn-linea);
+  border-radius: var(--pn-radio-m);
+  box-shadow: var(--pn-sombra-menu);
+  text-align: left;
+}
+
+.pagos__menu-opcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--pn-radio-s);
+  background: transparent;
+  color: var(--pn-tinta);
+  font: var(--pn-secundario);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+
+  i {
+    color: var(--pn-tinta-2);
+  }
+
+  &:hover {
+    background: var(--pn-marca-primario-suave);
+  }
+
+  // Foco por dentro con acento-suave debajo (DESIGN.md, menús).
+  &:focus-visible {
+    outline-offset: -3px;
+    background: var(--pn-acento-suave);
+  }
+}
+
+.pagos__menu-opcion--peligro,
+.pagos__menu-opcion--peligro i {
+  color: var(--pn-peligro);
+}
+
 .pagos__paginacion {
   display: flex;
   align-items: center;
@@ -225,8 +312,14 @@
   }
 
   .pagos__cobrar,
+  .pagos__menu-opcion,
   .pagos__paso {
     min-height: 44px;
+  }
+
+  .pagos__mas {
+    width: 44px;
+    height: 44px;
   }
 
   .pagos__paso {
