@@ -643,7 +643,7 @@ export class FichaAlumnoBase implements OnInit, OnDestroy {
     return this.pagandoProductos.has(productoId);
   }
 
-  private actualizarProductoEnListas(productoActualizado: ProductoAlumnoDTO): void {
+  actualizarProductoEnListas(productoActualizado: ProductoAlumnoDTO): void {
     const index = this.productosAlumno.findIndex((item) => item.id === productoActualizado.id);
     if (index !== -1) {
       this.productosAlumno[index] = productoActualizado;

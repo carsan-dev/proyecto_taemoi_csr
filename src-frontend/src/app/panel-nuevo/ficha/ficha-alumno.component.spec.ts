@@ -1634,7 +1634,7 @@ describe('FichaAlumnoComponent (8b-3b, ficha F1 «Carnet»)', () => {
     itSinReloj('pagos: un cargo devuelto no ofrece recibo', async () => {
       gestionFicha = true;
       await montar(FichaAlumnoComponent, '/alumnosEditar/7?pestana=pagos');
-      const pagos = TestBed.runInInjectionContext(() => new FichaPagosComponent());
+      const pagos = TestBed.createComponent(FichaPagosComponent).componentInstance;
       expect(pagos.puedeDescargarRecibo({ id: 1, pagado: true } as ProductoAlumnoDTO)).toBeTrue();
       expect(pagos.puedeDescargarRecibo({ id: 1, pagado: true, devuelto: true } as ProductoAlumnoDTO)).toBeFalse();
     });
