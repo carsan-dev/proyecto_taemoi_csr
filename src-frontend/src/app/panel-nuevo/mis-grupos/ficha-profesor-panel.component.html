@@ -122,10 +122,10 @@
                 @if (abreHoja(d)) {
                   <button type="button" class="ficha__punta" [attr.data-cinto]="d.deporte" aria-haspopup="dialog"
                     [attr.aria-expanded]="hojaRallas === d.deporte" [attr.aria-label]="etiquetaCinto(d)" (click)="abrirRallas(d)">
-                    <span class="ficha__punta-marco"><pn-cinturon [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" /></span>
+                    <span class="ficha__punta-marco"><pn-cinturon [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" [codigoGrado]="grado.codigo" /></span>
                   </button>{{ grado.texto }}
                 } @else {
-                  <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" />{{ grado.texto }}
+                  <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" [codigoGrado]="grado.codigo" />{{ grado.texto }}
                 }
                 @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="ficha.genero" /> }
                 @if (medias !== null) { <span class="ficha__detalle" data-rallas>{{ textoCuentaRallas(medias) }}</span> }
@@ -242,7 +242,7 @@
             <dd>
               @if (gradoDe(d); as grado) {
                 @let medias = mediasVisibles(d);
-                <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" />{{ grado.texto }}
+                <pn-cinturon class="ficha__cinto" [color1]="grado.color1" [color2]="grado.color2" [medias]="medias" [codigoGrado]="grado.codigo" />{{ grado.texto }}
                 @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="ficha.genero" /> }
                 @if (medias !== null) { <span class="ficha__detalle" data-rallas>{{ textoCuentaRallas(medias) }}</span> }
               } @else {
@@ -265,7 +265,7 @@
   @if (deporteHoja; as d) {
     @if (gradoDe(d); as g) {
       <pn-hoja-rallas [nombre]="nombre" [nombreCorto]="ficha?.nombre ?? ''" [subtitulo]="subtituloHoja(d)"
-        [color1]="g.color1" [color2]="g.color2" [medias]="mediasVisibles(d) ?? 0" [genero]="ficha?.genero ?? null" [enCurso]="rallasEnCurso"
+        [color1]="g.color1" [color2]="g.color2" [medias]="mediasVisibles(d) ?? 0" [genero]="ficha?.genero ?? null" [esApto]="!!d.apto" [enCurso]="rallasEnCurso"
         (paso)="darPaso($event)" (apto)="marcarAptoDesdeHoja()" (cerrar)="cerrarRallas()" />
     }
   }

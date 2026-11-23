@@ -227,12 +227,12 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
   }
 
   /** Grado con el nombre del catálogo («Blanco-amarillo») y su muestra de color; nulo sin grado. */
-  gradoDe(d: DeporteDelAlumno): { texto: string; color1: string; color2: string | null } | null {
+  gradoDe(d: DeporteDelAlumno): { texto: string; color1: string; color2: string | null; codigo: string } | null {
     if (!d.grado) {
       return null;
     }
     const grado = gradoFila(d.grado.codigo, d.deporte);
-    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2 };
+    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2, codigo: grado.codigo };
   }
 
   /** Miga al grupo de origen: su nombre si la ficha ya lo trae; si no, «Mis grupos». */
@@ -382,16 +382,18 @@ export class FichaProfesorPanelComponent implements OnInit, OnChanges {
     const d = this.deporteHoja;
     const antes = d ? mediasVisibles(d) : null;
     const grupoId = this.grupoOrigen;
-    if (!d || antes === null || !grupoId || this.rallasEnCurso) return;
+    const ficha = this.ficha;
+    if (!d || !ficha || antes === null || !grupoId || this.rallasEnCurso) return;
     const deporte = d.deporte;
     this.pasosRallas.darPaso({
-      prefijo: 'profesor', grupoId, alumnoId: this.alumnoId, antes, paso, destruir: this.destruir,
+      prefijo: 'profesor', grupoId, disciplina: d.deporteNombre ?? '', antes, apto: !!d.apto, paso, destruir: this.destruir,
+      alumno: { id: this.alumnoId, nombre: ficha.nombre, apellidos: ficha.apellidos, genero: ficha.genero ?? null },
       poner: (medias, apto) => this.ponerRallas(deporte, medias, apto),
       enCurso: (valor) => (this.rallasEnCurso = valor),
     });
   }
 
-  /** Con las 5 rallas: la hoja se cierra, se confirma y, si sale bien, queda apto y sus rallas a 0. */
+  /** Con las 5 rallas: la hoja se cierra, se confirma y, si sale bien, queda apto (las rallas se quedan). */
   async marcarAptoDesdeHoja(): Promise<void> {
     const d = this.deporteHoja;
     const ficha = this.ficha;

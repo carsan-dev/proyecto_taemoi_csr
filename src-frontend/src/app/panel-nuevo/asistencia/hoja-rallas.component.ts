@@ -24,11 +24,15 @@ import { PasoRallas } from '../../interfaces/asistencia';
 
 let siguienteId = 0;
 
+/** La nota bajo los pasos con las 5 rallas y ya apto. */
+export const NOTA_RALLAS_SE_QUEDAN = 'Las rallas se quedan hasta que cambie de grado.';
+
 /**
  * Hoja de rallas de Pasar lista (decisiones 510-513; boceto `boceto-rallas-cinturon.html`, estados hoja-0 a hoja-5). Se
  * abre al tocar la punta del cinturón: la punta grande (150 × 30), la cuenta y lo que falta, y cuatro pasos («− Una»,
  * «− Media», «+ Media», «+ Una»). Un paso que no cabe va con `aria-disabled` (sigue enfocable) y su nota. Con las 5
- * rallas, «Marcar apto/apta para examen». La forma es la del diálogo del panel (440 px; hoja inferior por debajo de
+ * rallas, «Marcar apto/apta para examen»; si ya es apto, en su lugar la etiqueta «Apto/Apta para examen» junto a la
+ * cuenta y la nota de que las rallas se quedan hasta que cambie de grado. La forma es la del diálogo del panel (440 px; hoja inferior por debajo de
  * 768). Cada paso lo guarda quien la abre, al momento; esta hoja solo pinta y avisa.
  */
 @Component({
@@ -53,6 +57,8 @@ export class HojaRallasComponent implements AfterViewInit, OnChanges, OnDestroy 
   @Input() color2: string | null = null;
   @Input({ required: true }) medias = 0;
   @Input() genero: string | null = null;
+  /** Ya es apto para examen en esta disciplina: sin «Marcar apto» (la salida `apto` es el botón). */
+  @Input() esApto = false;
   /** Un paso en vuelo: los toques se ignoran hasta que acabe. */
   @Input() enCurso = false;
   @Output() readonly paso = new EventEmitter<PasoRallas>();
@@ -75,8 +81,17 @@ export class HojaRallasComponent implements AfterViewInit, OnChanges, OnDestroy 
   get completa(): boolean { return this.medias >= MEDIAS_COMPLETAS; }
   get cuenta(): string { return textoCuentaRallas(this.medias); }
   get falta(): string { return textoFaltaRallas(this.medias); }
-  get nota(): string { return notaPasos(this.medias); }
+  get nota(): string {
+    return this.completa && this.esApto ? NOTA_RALLAS_SE_QUEDAN : notaPasos(this.medias);
+  }
   get textoAptoBoton(): string { return `Marcar ${textoApto(this.genero)} para examen`; }
+  /** «Apto para examen» o «Apta para examen». */
+  get textoAptoEstado(): string {
+    const apto = textoApto(this.genero);
+    return `${apto.charAt(0).toUpperCase()}${apto.slice(1)} para examen`;
+  }
+  /** Con las 5 rallas y ya apto: etiqueta de estado en lugar del botón. */
+  get yaApto(): boolean { return this.completa && this.esApto; }
 
   bloqueado(paso: number): boolean { return pasoBloqueado(this.medias, paso); }
 
@@ -118,7 +133,7 @@ export class HojaRallasComponent implements AfterViewInit, OnChanges, OnDestroy 
   }
 
   marcarApto(): void {
-    if (this.enCurso || !this.completa) return;
+    if (this.enCurso || !this.completa || this.esApto) return;
     this.apto.emit();
   }
 

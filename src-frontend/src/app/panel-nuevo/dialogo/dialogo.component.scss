@@ -89,6 +89,49 @@
   color: var(--pn-atencion);
 }
 
+// Aviso de lo que también se borra: tono de atención del panel, como las pastillas «Pendiente».
+.pn-dialogo__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--pn-radio-m);
+  background: var(--pn-atencion-suave);
+  color: var(--pn-tinta);
+
+  svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    color: var(--pn-atencion);
+  }
+}
+
+.pn-dialogo__aviso-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pn-dialogo__aviso-titulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.pn-dialogo__aviso-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
 .pn-dialogo__campo {
   display: flex;
   flex-direction: column;

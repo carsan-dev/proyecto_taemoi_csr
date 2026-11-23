@@ -459,4 +459,36 @@ describe('ConfirmacionService y DialogoComponent (8b-D1, diálogo y hoja)', () =
     boton('Cancelar').click();
     expect((await promesa).confirmado).toBeFalse();
   });
+
+  itSinReloj('aviso: bloque en tono de atención con su título y una línea por elemento, descrito por el diálogo', async () => {
+    const promesa = abrir({
+      titulo: '¿Quitar media ralla a Lucía?',
+      mensaje: [{ fuerte: 'Lucía Prueba' }, ' se quedará con 4 y media de 5 rallas.'],
+      aviso: {
+        titulo: 'También se borrará su pase pendiente de cobro:',
+        lineas: [['Pase con derecho a examen - TAEKWONDO — 30,00 €'], ['Se le sacará de la convocatoria del 12/12/2026']],
+      },
+      accion: 'Quitar y borrar el pase',
+      destructivo: true,
+    });
+    const d = dialogo()!;
+    const aviso = d.querySelector<HTMLElement>('[data-aviso]')!;
+    expect(aviso).not.toBeNull();
+    expect(aviso.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(aviso.querySelector('.pn-dialogo__aviso-titulo')!.textContent!.trim()).toBe('También se borrará su pase pendiente de cobro:');
+    expect(Array.from(aviso.querySelectorAll('li')).map((li) => li.textContent!.trim())).toEqual([
+      'Pase con derecho a examen - TAEKWONDO — 30,00 €',
+      'Se le sacará de la convocatoria del 12/12/2026',
+    ]);
+    expect(d.getAttribute('aria-describedby')!.split(' ')).toContain(aviso.id);
+    boton('Cancelar').click();
+    expect((await promesa).confirmado).toBeFalse();
+  });
+
+  itSinReloj('sin aviso no pinta el bloque', async () => {
+    const promesa = abrir(BAJA);
+    expect(dialogo()!.querySelector('[data-aviso]')).toBeNull();
+    boton('Cancelar').click();
+    expect((await promesa).confirmado).toBeFalse();
+  });
 });

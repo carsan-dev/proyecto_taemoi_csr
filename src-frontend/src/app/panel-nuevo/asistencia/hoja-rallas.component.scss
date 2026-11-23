@@ -103,6 +103,34 @@
   }
 }
 
+// La cuenta y, si ya es apto, su etiqueta al lado (baja a la línea siguiente si no cabe).
+.rallas-hoja__cuenta-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+// Ya apto con las 5 rallas: etiqueta de estado en el tono de éxito del panel (como la pastilla «Pagado»).
+.rallas-hoja__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--pn-radio-pastilla);
+  background: color-mix(in srgb, var(--pn-bien) 10%, var(--pn-superficie));
+  color: var(--pn-bien);
+  font: var(--pn-etiqueta);
+  white-space: nowrap;
+
+  svg {
+    flex: none;
+    width: 13px;
+    height: 13px;
+  }
+}
+
 .rallas-hoja__falta {
   font: var(--pn-secundario);
   color: var(--pn-tinta-2);

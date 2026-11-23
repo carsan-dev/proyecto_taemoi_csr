@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { CinturonComponent, necesitaHalo } from './cinturon.component';
+import { CinturonComponent, MEDIDAS_CINTURON, franjasDoradas, necesitaHalo } from './cinturon.component';
 
 @Component({
   standalone: true,
   imports: [CinturonComponent],
-  template: `<pn-cinturon [color1]="c1" [color2]="c2" [medias]="medias" [tamano]="tamano" [sinGrado]="sin" />`,
+  template: `<pn-cinturon [color1]="c1" [color2]="c2" [medias]="medias" [tamano]="tamano" [sinGrado]="sin" [codigoGrado]="codigo" />`,
 })
 class AnfitrionComponent {
   c1: string | null = '#FFD700';
@@ -14,6 +14,7 @@ class AnfitrionComponent {
   medias: number | null = null;
   tamano: 'fila' | 'hoja' = 'fila';
   sin = false;
+  codigo: string | null = null;
 }
 
 function pintar(cambios: Partial<AnfitrionComponent> = {}): SVGSVGElement {
@@ -97,5 +98,40 @@ describe('CinturonComponent', () => {
     expect(franjas(svg)).toHaveSize(0);
     expect(svg.querySelector('rect[stroke-dasharray]')).not.toBeNull();
     expect(pintar().querySelector('rect[stroke-dasharray]')).toBeNull();
+  });
+
+  it('PUM y DAN: una raya dorada por cada uno, como una ralla completa, sin rallas negras ni halo', () => {
+    const svg = pintar({ c1: '#000000', codigo: 'NEGRO_3_DAN', tamano: 'hoja' });
+    const doradas = Array.from(svg.querySelectorAll('[data-dorada]'));
+    expect(doradas).toHaveSize(3);
+    expect(rallas(svg)).toHaveSize(0);
+    expect(halos(svg)).toHaveSize(0);
+    const { w, h, ancho, paso, margen } = MEDIDAS_CINTURON.hoja;
+    doradas.forEach((r, k) => {
+      expect(r.getAttribute('fill')).toBe('#D9A12A');
+      expect(Number(r.getAttribute('x'))).toBe(w - 1 - margen - ancho - paso * k);
+      expect(Number(r.getAttribute('y'))).toBe(1);
+      expect(Number(r.getAttribute('width'))).toBe(ancho);
+      expect(Number(r.getAttribute('height'))).toBe(h - 2);
+    });
+    expect(pintar({ c1: '#FF0000', c2: '#000000', codigo: 'ROJO_NEGRO_2_PUM' }).querySelectorAll('[data-dorada]')).toHaveSize(2);
+  });
+
+  it('sin PUM ni DAN, o sin grado: sin rayas doradas', () => {
+    expect(pintar({ codigo: 'AMARILLO', medias: 4 }).querySelectorAll('[data-dorada]')).toHaveSize(0);
+    expect(pintar({ codigo: null }).querySelectorAll('[data-dorada]')).toHaveSize(0);
+    expect(pintar({ c1: null, codigo: 'NEGRO_1_DAN' }).querySelectorAll('[data-dorada]')).toHaveSize(0);
+  });
+
+  it('franjasDoradas: el número del código de PUM o DAN; 0 si no lo es', () => {
+    expect(franjasDoradas('ROJO_NEGRO_2_PUM')).toBe(2);
+    expect(franjasDoradas('NEGRO_3_DAN')).toBe(3);
+    expect(franjasDoradas('ROJO_NEGRO_1_PUM')).toBe(1);
+    expect(franjasDoradas('NEGRO_10_DAN')).toBe(10);
+    expect(franjasDoradas('ROJO_NEGRO')).toBe(0);
+    expect(franjasDoradas('NEGRO_DAN')).toBe(0);
+    expect(franjasDoradas('NEGRO_3_DAN_X')).toBe(0);
+    expect(franjasDoradas(null)).toBe(0);
+    expect(franjasDoradas(undefined)).toBe(0);
   });
 });

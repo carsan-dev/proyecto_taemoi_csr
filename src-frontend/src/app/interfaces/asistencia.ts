@@ -87,6 +87,44 @@ export interface RallasDelAlumno {
   deporte: string;
   mediasRallas: number;
   aptoParaExamen: boolean;
+  /** Al quitar desde las 5 rallas: los pases pendientes de cobro que se han borrado. */
+  pasesBorrados?: PasePendiente[];
+  /** Al quitar desde las 5 rallas: las convocatorias de las que se le ha sacado. */
+  convocatoriasSalidas?: ConvocatoriaAlQuitar[];
+}
+
+/** Un pase de grado pendiente de cobro (de la inscripción de la disciplina del grupo). */
+export interface PasePendiente {
+  id: number;
+  concepto: string;
+  importe: number;
+}
+
+/** Una convocatoria en la que está apuntado; con su cargo, si lo tiene. */
+export interface ConvocatoriaAlQuitar {
+  convocatoriaId: number;
+  /** `yyyy-MM-dd`. */
+  fecha: string;
+  cargoId: number | null;
+  concepto: string | null;
+  importe: number | null;
+}
+
+/** Lo que pasaría al quitar rallas desde las 5 (`GET …/rallas/al-quitar`). */
+export interface RallasAlQuitar {
+  alumnoId: number;
+  deporte: string;
+  mediasRallas: number;
+  aptoParaExamen: boolean;
+  pases: PasePendiente[];
+  convocatorias: ConvocatoriaAlQuitar[];
+}
+
+/** La confirmación de quitar desde las 5 rallas: los ids que se vieron en el aviso. */
+export interface ConfirmacionQuitarApto {
+  confirmarQuitarApto: true;
+  pasesABorrar: number[];
+  convocatoriasASalir: number[];
 }
 
 /** Un paso de la hoja de rallas: −2 («− Una»), −1 («− Media»), +1 («+ Media») o +2 («+ Una»). */

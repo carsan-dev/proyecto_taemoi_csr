@@ -114,7 +114,7 @@
           @for (d of disciplinas; track d.codigo) {
           <li class="ficha__disciplina">
             @if (d.color1) {
-            <pn-cinturon class="ficha__cinto" [color1]="d.color1" [color2]="d.color2" [medias]="d.medias" />
+            <pn-cinturon class="ficha__cinto" [color1]="d.color1" [color2]="d.color2" [medias]="d.medias" [codigoGrado]="d.codigoGrado" />
             } @else {
             <span class="ficha__cinto ficha__cinto--sin" [class]="d.clase" aria-hidden="true"></span>
             }

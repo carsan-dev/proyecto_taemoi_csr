@@ -138,10 +138,10 @@ export class GrupoPanelComponent implements OnInit {
   }
 
   /** Grado con el nombre del catálogo («Blanco-amarillo») y su muestra de color; nulo si no tiene grado. */
-  gradoDe(deporte: DeporteEnLista): { texto: string; color1: string; color2: string | null } | null {
+  gradoDe(deporte: DeporteEnLista): { texto: string; color1: string; color2: string | null; codigo: string } | null {
     if (!deporte.grado) return null;
     const grado = gradoFila(deporte.grado.codigo, deporte.deporte);
-    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2 };
+    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2, codigo: grado.codigo };
   }
 
   /** La foto del avatar; nula sin foto o si no cargó (quedan las iniciales). */

@@ -21,13 +21,13 @@ const AMARILLO: GradoProfesor = { codigo: 'AMARILLO', nombre: 'Amarillo', color1
 
 function alumno(
   id: number, nombre: string,
-  r: { medias?: number | null; aplica?: boolean; puede?: boolean; grado?: GradoProfesor | null; genero?: string | null } = {},
+  r: { medias?: number | null; aplica?: boolean; puede?: boolean; grado?: GradoProfesor | null; genero?: string | null; apto?: boolean } = {},
 ): AlumnoDeLista {
   const aplica = r.aplica ?? true;
   return {
     id, nombre, apellidos: 'Prueba', presente: false, genero: r.genero ?? null, puedeCambiarRallas: r.puede ?? aplica,
     deportes: [{
-      deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: r.grado === undefined ? AMARILLO : r.grado, fechaGrado: null, apto: false,
+      deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: r.grado === undefined ? AMARILLO : r.grado, fechaGrado: null, apto: r.apto ?? false,
       delGrupo: true, mediasRallas: aplica ? (r.medias ?? 0) : null, aplicaRallas: aplica,
     }],
   };
@@ -226,12 +226,12 @@ describe('PasarListaComponent · rallas hacia el examen (decisiones 510-513)', (
     expect(cuenta()).toBe('Sin rallas');
   });
 
-  it('con 10 medias, «Marcar apta para examen» cierra la hoja, confirma y deja apta con las rallas a 0', async () => {
+  it('con 10 medias, «Marcar apta para examen» cierra la hoja, confirma y deja apta con las rallas en 10', async () => {
     crear();
     arrancar({ alumnos: [alumno(1, 'Lucía', { medias: 10, genero: 'FEMENINO' })] });
     confirmar.and.callFake(() => {
       expect(hoja()).toBeNull();
-      return Promise.resolve({ confirmado: true, valor: null, respuesta: { alumnoId: 1, deporte: 'TAEKWONDO', mediasRallas: 0, aptoParaExamen: true } });
+      return Promise.resolve({ confirmado: true, valor: null, respuesta: { alumnoId: 1, deporte: 'TAEKWONDO', mediasRallas: 10, aptoParaExamen: true } });
     });
     abrir(0);
     hoja()!.querySelector<HTMLButtonElement>('[data-apto]')!.click();
@@ -239,16 +239,63 @@ describe('PasarListaComponent · rallas hacia el examen (decisiones 510-513)', (
     fixture.detectChanges();
     const opciones = confirmar.calls.mostRecent().args[0];
     expect(opciones.titulo).toBe('¿Marcar a Lucía apta para examen?');
-    expect(opciones.mensaje).toEqual([{ fuerte: 'Lucía Prueba' }, ' quedará apta para examen en Taekwondo y sus rallas volverán a 0.']);
+    expect(opciones.mensaje).toEqual([
+      { fuerte: 'Lucía Prueba' }, ' quedará apta para examen en Taekwondo. Las rallas se quedan hasta que cambie de grado.',
+    ]);
     expect(opciones.accion).toBe('Marcar apta');
-    expect(avisos.exito).toHaveBeenCalledWith('Lucía queda apta para examen en Taekwondo. Sus rallas vuelven a 0.');
-    expect(items()[0].querySelector('[data-listo]')).toBeNull();
-    expect(cinto(0).querySelectorAll('[data-ralla]').length).toBe(0);
+    expect(avisos.exito).toHaveBeenCalledWith('Lucía queda apta para examen en Taekwondo.');
+    // Las rallas se quedan: el cinturón sigue con las 5 y el distintivo de la fila, uno solo.
+    expect(items()[0].querySelectorAll('[data-listo]').length).toBe(1);
+    expect(cinto(0).querySelectorAll('[data-ralla]').length).toBe(5);
+    // Al volver a abrir la hoja: la etiqueta de apta en lugar del botón.
+    abrir(0);
+    expect(texto(hoja()!.querySelector('[data-apto-estado]'))).toBe('Apta para examen');
+    expect(hoja()!.querySelector('[data-apto]')).toBeNull();
+    fixture.componentInstance.cerrarRallas();
+    fixture.detectChanges();
     // `ejecutar` llama a la ruta de «apto» (sin cuerpo).
     opciones.ejecutar().subscribe();
     const post = http.expectOne(`${base('profesor')}/alumnos/1/rallas/apto`);
     expect(post.request.body).toBeNull();
-    post.flush({ alumnoId: 1, deporte: 'TAEKWONDO', mediasRallas: 0, aptoParaExamen: true });
+    post.flush({ alumnoId: 1, deporte: 'TAEKWONDO', mediasRallas: 10, aptoParaExamen: true });
+  });
+
+  it('con 10 medias y ya apta: la hoja muestra «Apta para examen» junto a la cuenta, sin «Marcar apta», y deja quitar', () => {
+    crear();
+    arrancar({ alumnos: [alumno(1, 'Lucía', { medias: 10, genero: 'FEMENINO', apto: true })] });
+    abrir(0);
+    expect(cuenta()).toBe('5 de 5 rallas');
+    expect(texto(hoja()!.querySelector('[data-apto-estado]'))).toBe('Apta para examen');
+    expect(hoja()!.querySelector('[data-apto]')).toBeNull();
+    expect(texto(hoja()!.querySelector('.rallas-hoja__nota'))).toBe('Las rallas se quedan hasta que cambie de grado.');
+    expect(hoja()!.querySelector('[data-paso="-1"]')!.getAttribute('aria-disabled')).toBeNull();
+    expect(hoja()!.querySelector('[data-paso="-2"]')!.getAttribute('aria-disabled')).toBeNull();
+    expect(hoja()!.querySelector('[data-paso="1"]')!.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('quitar desde 10 siendo apta: pregunta antes, confirma con el pase y, al guardar, deja 4 y media y sin apto', async () => {
+    crear();
+    arrancar({ alumnos: [alumno(1, 'Lucía', { medias: 10, genero: 'FEMENINO', apto: true })] });
+    const pase = { id: 55, concepto: 'Pase con derecho a examen - TAEKWONDO', importe: 30 };
+    confirmar.and.resolveTo({
+      confirmado: true, valor: null,
+      respuesta: { alumnoId: 1, deporte: 'TAEKWONDO', mediasRallas: 9, aptoParaExamen: false, pasesBorrados: [pase], convocatoriasSalidas: [] },
+    });
+    abrir(0);
+    pulsar(-1);
+    // Sin optimismo: sigue en 5 hasta que el servidor conteste.
+    expect(cuenta()).toBe('5 de 5 rallas');
+    http.expectOne(`${base('profesor')}/alumnos/1/rallas/al-quitar`).flush({
+      alumnoId: 1, deporte: 'TAEKWONDO', mediasRallas: 10, aptoParaExamen: true, pases: [pase], convocatorias: [],
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const opciones = confirmar.calls.mostRecent().args[0];
+    expect(opciones.titulo).toBe('¿Quitar media ralla a Lucía?');
+    expect(opciones.accion).toBe('Quitar y borrar el pase');
+    expect(cuenta()).toBe('4 y media de 5 rallas');
+    expect(hoja()!.querySelector('[data-apto-estado]')).toBeNull();
+    expect(avisos.exito).toHaveBeenCalledWith('Lucía ya no está apta para examen. Se ha borrado su pase pendiente.');
   });
 
   it('si «Marcar apto» falla, se avisa y no cambia nada', async () => {

@@ -39,6 +39,12 @@ export type ParteMensaje = string | { fuerte: string };
 /** Un párrafo o una lista de la explicación (8b-D2b: el html de los diálogos de la ficha, sin su maquetación). */
 export type BloqueMensaje = { tipo: 'parrafo'; partes: ParteMensaje[] } | { tipo: 'lista'; elementos: ParteMensaje[][] };
 
+/** Aviso en tono de atención del diálogo: título opcional y una línea por elemento. */
+export interface AvisoDialogo {
+  titulo?: string;
+  lineas: ParteMensaje[][];
+}
+
 /** Tipos de campo del diálogo (8b-D2b). Las pastillas, `role=radiogroup`; el resto, controles nativos. */
 export type TipoCampoDialogo = 'pastillas' | 'select' | 'text' | 'number' | 'date' | 'textarea' | 'email';
 
@@ -96,6 +102,11 @@ export interface OpcionesConfirmacion<R = unknown> {
   ejecutar?: (valor: string | null) => Observable<R>;
   /** Párrafos y listas tras la frase (8b-D2b). */
   bloques?: BloqueMensaje[];
+  /**
+   * Aviso en tono de atención tras la explicación: lo que también se borra o cambia al confirmar (quitar rallas a un
+   * alumno apto con su pase pendiente). Un título opcional y una línea por elemento.
+   */
+  aviso?: AvisoDialogo;
   /** Campos del formulario (8b-D2b). */
   campos?: CampoDialogo[];
   /** Segunda acción («denegar» de SweetAlert2): cierra con `negado`. Destructiva, va en peligro y el foco en «Cancelar». */
@@ -186,6 +197,7 @@ export class DialogoComponent implements AfterViewInit, OnDestroy {
     const ids = [
       this.partes.length ? `${this.id}-mensaje` : null,
       this.opciones.bloques?.length ? `${this.id}-bloques` : null,
+      this.opciones.aviso ? `${this.id}-aviso` : null,
     ].filter((i): i is string => i !== null);
     return ids.length ? ids.join(' ') : null;
   }

@@ -4,7 +4,9 @@ import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ERROR_HANDLED_LOCALLY } from '../../core/http-context';
-import { PasoRallas, PrefijoAsistencia, RallasDelAlumno } from '../../interfaces/asistencia';
+import {
+  ConfirmacionQuitarApto, PasoRallas, PrefijoAsistencia, RallasAlQuitar, RallasDelAlumno,
+} from '../../interfaces/asistencia';
 
 /** Una disciplina en «Rallas hacia el examen» de Configuración. */
 export interface DisciplinaRallas {
@@ -31,12 +33,24 @@ export class RallasService {
     return `${environment.apiUrl}/${grupo}/alumnos/${alumnoId}/rallas`;
   }
 
-  /** Un paso que se guarda al momento; devuelve cómo queda. */
-  paso(prefijo: PrefijoAsistencia, grupoId: number, alumnoId: number, paso: PasoRallas): Observable<RallasDelAlumno> {
-    return this.http.post<RallasDelAlumno>(this.base(prefijo, grupoId, alumnoId), { paso }, this.opciones());
+  /**
+   * Un paso que se guarda al momento; devuelve cómo queda. Al quitar desde las 5 rallas siendo apto (o con pases o
+   * convocatorias), la `confirmacion` lleva los ids que se vieron en el aviso; si algo cambió, el servidor da 409.
+   */
+  paso(
+    prefijo: PrefijoAsistencia, grupoId: number, alumnoId: number, paso: PasoRallas, confirmacion?: ConfirmacionQuitarApto,
+  ): Observable<RallasDelAlumno> {
+    return this.http.post<RallasDelAlumno>(this.base(prefijo, grupoId, alumnoId), { paso, ...confirmacion }, this.opciones());
   }
 
-  /** Con las 5 rallas: apto para examen y rallas a 0, a la vez. */
+  /** Lo que pasaría al quitar desde las 5 rallas: si es apto, sus pases pendientes y sus convocatorias. */
+  alQuitar(prefijo: PrefijoAsistencia, grupoId: number, alumnoId: number): Observable<RallasAlQuitar> {
+    return this.http.get<RallasAlQuitar>(`${this.base(prefijo, grupoId, alumnoId)}/al-quitar`, this.opciones()).pipe(
+      map((r) => ({ ...r, pases: r?.pases ?? [], convocatorias: r?.convocatorias ?? [] })),
+    );
+  }
+
+  /** Con las 5 rallas: apto para examen; las rallas se quedan hasta que cambie de grado. */
   apto(prefijo: PrefijoAsistencia, grupoId: number, alumnoId: number): Observable<RallasDelAlumno> {
     return this.http.post<RallasDelAlumno>(`${this.base(prefijo, grupoId, alumnoId)}/apto`, null, this.opciones());
   }
