@@ -116,14 +116,14 @@ export class PasosRallasService {
     const dejaDeEstar = estado.aptoParaExamen ? ` y dejará de estar ${apto} para examen${enDisciplina}` : '';
     const { pases, convocatorias } = estado;
     const conBorrado = pases.length > 0 || convocatorias.length > 0;
-    const accion = pases.length ? 'Quitar y borrar el pase' : convocatorias.length ? 'Quitar y sacar de la convocatoria' : etiqueta;
+    const accion = pases.length && convocatorias.length ? 'Quitar y borrar' : pases.length ? 'Quitar y borrar el pase' : convocatorias.length ? 'Quitar y sacar de la convocatoria' : etiqueta;
     const r = await this.confirmacion.confirmar<RallasDelAlumno>({
       titulo: `¿${etiqueta} a ${alumno.nombre}?`,
       mensaje: [{ fuerte: nombreCompleto(alumno.nombre, alumno.apellidos) }, ` se quedará con ${quedara}${dejaDeEstar}.`],
       aviso: conBorrado
         ? {
-            titulo: pases.length ? 'También se borrará su pase pendiente de cobro:' : undefined,
-            lineas: [...pases.map(lineaPase), ...convocatorias.map(lineaConvocatoria)],
+            titulo: pases.length && !convocatorias.length ? 'También se borrará su pase pendiente de cobro:' : undefined,
+            lineas: [...pases.map((p) => lineaPase(p, convocatorias.length > 0)), ...convocatorias.map(lineaConvocatoria)],
           }
         : undefined,
       accion,
@@ -190,14 +190,18 @@ export class PasosRallasService {
 }
 
 /** «Pase con derecho a examen - TAEKWONDO — 30,00 €». */
-function lineaPase(p: PasePendiente): ParteMensaje[] {
-  return [`${p.concepto} — ${formatearEuros(Number(p.importe))}`];
+function lineaPase(p: PasePendiente, conConvocatoria = false): ParteMensaje[] {
+  const prefijo = conConvocatoria ? 'Se borrará su pase pendiente de cobro: ' : '';
+  return [`${prefijo}${p.concepto} — ${formatearEuros(Number(p.importe))}`];
 }
 
 /** «Se le sacará de la convocatoria del 12/03/2026 y se borrará su cargo: Examen — 25,00 €». */
 function lineaConvocatoria(c: ConvocatoriaAlQuitar): ParteMensaje[] {
-  const cargo = c.cargoId !== null && c.cargoId !== undefined
-    ? ` y se borrará su cargo: ${c.concepto ?? ''} — ${formatearEuros(Number(c.importe ?? 0))}`
-    : '';
+  let cargo = '';
+  if (c.cargoId !== null && c.cargoId !== undefined) {
+    const concepto = c.concepto ? `: ${c.concepto}` : '';
+    const importe = c.importe !== null && c.importe !== undefined ? ` — ${formatearEuros(Number(c.importe))}` : '';
+    cargo = ` y se borrará su cargo${concepto}${importe}`;
+  }
   return [`Se le sacará de la convocatoria del ${fechaCorta(c.fecha)}${cargo}`];
 }

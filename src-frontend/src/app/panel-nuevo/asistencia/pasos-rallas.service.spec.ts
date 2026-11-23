@@ -162,12 +162,12 @@ describe('PasosRallasService · pasos y apto de la hoja de rallas (decisiones 51
     expect(o.mensaje).toEqual([
       { fuerte: 'Lucía Prueba' }, ' se quedará con 4 y media de 5 rallas y dejará de estar apta para examen en Taekwondo.',
     ]);
-    expect(o.aviso.titulo).toBe('También se borrará su pase pendiente de cobro:');
+    expect(o.aviso.titulo).toBeUndefined();
     expect(o.aviso.lineas.length).toBe(2);
-    expect(o.aviso.lineas[0][0]).toMatch(/^Pase con derecho a examen - TAEKWONDO — 30,00\s€$/);
+    expect(o.aviso.lineas[0][0]).toMatch(/^Se borrará su pase pendiente de cobro: Pase con derecho a examen - TAEKWONDO — 30,00\s€$/);
     expect(o.aviso.lineas[1][0]).toMatch(
       /^Se le sacará de la convocatoria del 12\/12\/2026 y se borrará su cargo: Examen diciembre — 25,00\s€$/);
-    expect(o.accion).toBe('Quitar y borrar el pase');
+    expect(o.accion).toBe('Quitar y borrar');
     expect(o.destructivo).toBeTrue();
 
     const post = http.match(() => true);
@@ -222,6 +222,32 @@ describe('PasosRallasService · pasos y apto de la hoja de rallas (decisiones 51
     expect(o.aviso.lineas).toEqual([['Se le sacará de la convocatoria del 12/12/2026']]);
     expect(o.accion).toBe('Quitar y sacar de la convocatoria');
     expect(o.destructivo).toBeTrue();
+  });
+
+  it('quitar desde 10 con cargo de convocatoria sin importe: no pinta 0,00 €', async () => {
+    confirmar.and.resolveTo({ confirmado: false });
+    paso(10, -1, jasmine.createSpy('poner'), jasmine.createSpy('enCurso'), false);
+    http.expectOne(alQuitar).flush(estado({ aptoParaExamen: false, convocatorias: [
+      { ...convocatoria, cargoId: 7, concepto: 'Examen diciembre', importe: null },
+      { ...convocatoria, cargoId: 8, concepto: null, importe: null },
+    ] }));
+    await esperarDialogo();
+    const o = confirmar.calls.mostRecent().args[0];
+    expect(o.aviso.lineas).toEqual([
+      ['Se le sacará de la convocatoria del 12/12/2026 y se borrará su cargo: Examen diciembre'],
+      ['Se le sacará de la convocatoria del 12/12/2026 y se borrará su cargo'],
+    ]);
+  });
+
+  it('quitar desde 10 solo con pase: mantiene el título y la línea «concepto — importe»', async () => {
+    confirmar.and.resolveTo({ confirmado: false });
+    paso(10, -1, jasmine.createSpy('poner'), jasmine.createSpy('enCurso'), false);
+    http.expectOne(alQuitar).flush(estado({ aptoParaExamen: false, pases: [pase] }));
+    await esperarDialogo();
+    const o = confirmar.calls.mostRecent().args[0];
+    expect(o.aviso.titulo).toBe('También se borrará su pase pendiente de cobro:');
+    expect(o.aviso.lineas[0][0]).toMatch(/^Pase con derecho a examen - TAEKWONDO — 30,00\s€$/);
+    expect(o.accion).toBe('Quitar y borrar el pase');
   });
 
   it('quitar desde 10 cancelado: no guarda ni cambia nada', async () => {

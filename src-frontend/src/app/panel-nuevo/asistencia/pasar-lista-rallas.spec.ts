@@ -170,6 +170,19 @@ describe('PasarListaComponent · rallas hacia el examen (decisiones 510-513)', (
     expect(items()[2].querySelector('[data-listo]')).toBeNull();
   });
 
+  it('con 10 medias y apto, un solo distintivo «Apto/Apta» y nunca «Listo/Lista»', () => {
+    crear();
+    arrancar({ alumnos: [
+      alumno(1, 'Lucía', { medias: 10, genero: 'FEMENINO', apto: true }), alumno(2, 'Marcos', { medias: 10, apto: true }),
+      alumno(3, 'Nora', { medias: 10 }),
+    ] });
+    expect(items()[0].querySelectorAll('[data-listo]').length).toBe(1);
+    expect(texto(items()[0].querySelector('[data-listo]'))).toBe('Apta');
+    expect(texto(items()[1].querySelector('[data-listo]'))).toBe('Apto');
+    expect(items()[0].textContent).not.toContain('para examen');
+    expect(texto(items()[2].querySelector('[data-listo]'))).toBe('Listo para examen');
+  });
+
   it('un paso se guarda al tocar (POST con el paso), optimista: la hoja cambia antes de la respuesta', () => {
     crear();
     arrancar({ alumnos: [alumno(1, 'Adrián', { medias: 4 })] });

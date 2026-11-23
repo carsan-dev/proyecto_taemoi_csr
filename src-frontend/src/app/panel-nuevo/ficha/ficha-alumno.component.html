@@ -128,7 +128,7 @@
               }
               @if (d.medias !== null) {
               <span class="ficha__grado-linea" data-rallas>{{ textoCuentaRallas(d.medias) }}</span>
-              @if (d.medias === 10) {<span class="ficha__listo"><pn-distintivo-examen data-listo [genero]="alumno?.genero" /></span>}
+              @if (d.medias === 10) {<span class="ficha__listo"><pn-distintivo-examen data-listo [genero]="alumno?.genero" [apto]="d.apto" /></span>}
               }
             </span>
           </li>

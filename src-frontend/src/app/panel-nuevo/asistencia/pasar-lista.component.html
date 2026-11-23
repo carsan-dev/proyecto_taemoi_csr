@@ -91,7 +91,7 @@
                 <span class="pasar-lista__grado">
                   @let medias = mediasDe(alumno);
                   <span class="pasar-lista__grado-texto">{{ gradoDe(alumno).texto }}@if (medias !== null) {<span class="pasar-lista__oculto">, {{ textoOcultoRallas(medias) }}</span>}</span>
-                  @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="alumno.genero" /> }
+                  @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="alumno.genero" [apto]="!!deporteDe(alumno)?.apto" /> }
                   @if (estaMarcado(alumno)) { <span class="pasar-lista__grado-presente" aria-hidden="true">Presente</span> }
                 </span>
               </span>

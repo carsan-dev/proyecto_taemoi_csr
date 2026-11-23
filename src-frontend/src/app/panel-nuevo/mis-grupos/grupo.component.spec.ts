@@ -108,6 +108,17 @@ describe('GrupoPanelComponent', () => {
     expect(fila.querySelector('.grupo-profesor__avatar')?.textContent?.trim()).toBe('LR');
   });
 
+  it('rallas: con 10 y apto, solo «Apto» y ningún «Listo para examen»', () => {
+    cargar([
+      { id: 32, nombre: 'Ana', apellidos: 'Gil', deportes: [
+        { deporte: 'TAEKWONDO', deporteNombre: 'Taekwondo', grado: { codigo: 'VERDE', nombre: 'Verde' }, fechaGrado: null, apto: true, delGrupo: true, mediasRallas: 10, aplicaRallas: true },
+      ] },
+    ]);
+    const fila = elemento().querySelector('.grupo-profesor__fila')!;
+    expect(fila.querySelector('[data-listo]')).toBeNull();
+    expect(fila.querySelector('.grupo-profesor__apto')?.textContent?.trim()).toBe('Apto');
+  });
+
   it('rallas: con las 5 y género FEMENINO, «Lista para examen»', () => {
     cargar([
       { id: 31, nombre: 'Marta', apellidos: 'Gil', genero: 'FEMENINO', deportes: [

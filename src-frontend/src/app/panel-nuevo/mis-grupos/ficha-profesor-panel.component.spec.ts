@@ -171,14 +171,21 @@ describe('FichaProfesorPanelComponent', () => {
     expect(bloque.querySelector('[data-listo]')).toBeNull();
   });
 
+  it('rallas: con las 5 y apto, solo «Apto» y no «Listo para examen»', () => {
+    crear({ ...ficha([deporte({ mediasRallas: 10, aplicaRallas: true, apto: true })]), genero: 'FEMENINO' });
+    const marcas = bloqueDe('Taekwondo').querySelectorAll('[data-listo]');
+    expect(marcas.length).toBe(1);
+    expect(marcas[0].textContent?.trim()).toBe('Apta');
+  });
+
   it('rallas: con las 5, «5 de 5 rallas» y «Listo para examen»', () => {
-    crear(ficha([deporte({ mediasRallas: 10, aplicaRallas: true })]));
+    crear(ficha([deporte({ mediasRallas: 10, aplicaRallas: true, apto: false })]));
     expect(bloqueDe('Taekwondo').querySelector('[data-rallas]')?.textContent?.trim()).toBe('5 de 5 rallas');
     expect(bloqueDe('Taekwondo').querySelector('[data-listo]')?.textContent?.trim()).toBe('Listo para examen');
   });
 
   it('rallas: con las 5 y género FEMENINO, «Lista para examen»', () => {
-    crear({ ...ficha([deporte({ mediasRallas: 10, aplicaRallas: true })]), genero: 'FEMENINO' });
+    crear({ ...ficha([deporte({ mediasRallas: 10, aplicaRallas: true, apto: false })]), genero: 'FEMENINO' });
     expect(bloqueDe('Taekwondo').querySelector('[data-listo]')?.textContent?.trim()).toBe('Lista para examen');
   });
 

@@ -137,7 +137,7 @@
                 @if (d.grado) {
                 <pn-cinturon class="alumnos__cinto" [color1]="d.grado.color1" [color2]="d.grado.color2" [medias]="d.medias" [codigoGrado]="d.grado.codigo" />
                 <span class="alumnos__grado">{{ d.grado.nombre }}@if (d.medias !== null) {<span class="alumnos__oculto">, {{ textoOcultoRallas(d.medias) }}</span>}</span>
-                @if (d.medias === 10) { <pn-distintivo-examen data-listo [genero]="f.genero" /> }
+                @if (d.medias === 10) { <pn-distintivo-examen data-listo [genero]="f.genero" [apto]="d.apto" /> }
                 } @else if (d.sinGrado) {
                 <span class="alumnos__grado">sin grado</span>
                 }

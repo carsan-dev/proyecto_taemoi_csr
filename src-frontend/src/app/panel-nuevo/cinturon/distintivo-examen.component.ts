@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { textoListo } from './rallas-textos';
+import { textoApto, textoListo } from './rallas-textos';
 
 /**
  * Distintivo «✓ Listo/Lista para examen» (decisiones 510 y 513; boceto `boceto-rallas-cinturon.html`): con las 5
@@ -37,5 +37,11 @@ import { textoListo } from './rallas-textos';
 export class DistintivoExamenComponent {
   /** `FEMENINO` → «Lista»; cualquier otro valor o sin dato → «Listo». */
   readonly genero = input<string | null | undefined>(null);
-  protected readonly texto = computed(() => textoListo(this.genero()));
+  /** Ya es apto en la disciplina: se muestra solo «Apto/Apta»; «Listo/Lista» es únicamente para quien tiene las 10 medias y no es apto. */
+  readonly apto = input(false);
+  protected readonly texto = computed(() => {
+    if (!this.apto()) return textoListo(this.genero());
+    const t = textoApto(this.genero());
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  });
 }
