@@ -4,11 +4,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,6 +29,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
+import javax.sql.DataSource;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -81,6 +89,7 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	@Autowired GrupoService grupoService;
 	@Autowired AlumnoDeporteRepository inscripciones;
 	@Autowired TransactionTemplate tx;
+	@Autowired DataSource dataSource;
 
 	@MockitoBean JavaMailSender mailSender;
 	@MockitoBean Clock reloj;
@@ -924,6 +933,174 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	}
 
 	@Test
+	void paseConEncargoEnCurso_oConCobroActivo_409_sinCambiarNada() throws Exception {
+		long a = alumno("QUITAENCARGO", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		long pase = cargo(a, pExamenRojo, ad, false);
+		encargoEnCurso(pase);
+		exigir409SinCambios(a, RallasService.PASE_NO_SE_BORRA, List.of(pase), List.of());
+		assertTrue(existeCargo(pase));
+
+		long b = alumno("QUITACOBROACTIVO", e.gA, gAmarillo);
+		long adB = alumnoDeporte(b, e.disciplina);
+		fijar(b, 10);
+		ponerApto(b);
+		long paseB = cargo(b, pExamenRojo, adB, false);
+		cobro(b, paseB, "ACTIVO");
+		exigir409SinCambios(b, RallasService.PASE_NO_SE_BORRA, List.of(paseB), List.of());
+		assertTrue(existeCargo(paseB));
+		assertEquals("ACTIVO",
+				jdbc.queryForObject("SELECT estado FROM cobro WHERE producto_alumno_id = ?", String.class, paseB));
+	}
+
+	@Test
+	void cargoDeConvocatoriaConEncargoEnCurso_oCancelado_409_sinCambiarNada() throws Exception {
+		long a = alumno("QUITACONVENCARGO", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		long conv = convocatoria("2026-11-28", e.disciplina);
+		long cargo = cargo(a, pExamenRojo, null, false);
+		apuntar(a, conv, cargo, ad, "ROJO");
+		encargoEnCurso(cargo);
+		exigir409SinCambios(a, RallasService.CONVOCATORIA_NO_SE_QUITA, List.of(), List.of(conv));
+		assertTrue(apuntado(a, conv));
+		assertTrue(existeCargo(cargo));
+
+		// Cargo del examen cancelado (sin pagar): tampoco se toca; 409 y se resuelve desde gestión.
+		long b = alumno("QUITACONVCANCELADO", e.gA, gAmarillo);
+		long adB = alumnoDeporte(b, e.disciplina);
+		fijar(b, 10);
+		ponerApto(b);
+		long convB = convocatoria("2026-11-28", e.disciplina);
+		long cargoB = cargo(b, pExamenRojo, null, false);
+		jdbc.update("UPDATE producto_alumno SET cancelado_en = NOW(6) WHERE id = ?", cargoB);
+		apuntar(b, convB, cargoB, adB, "ROJO");
+		exigir409SinCambios(b, RallasService.CONVOCATORIA_NO_SE_QUITA, List.of(), List.of(convB));
+		assertTrue(apuntado(b, convB));
+		assertTrue(existeCargo(cargoB));
+	}
+
+	@Test
+	void paseDeOtraEscuela_niSeVeNiSeBorra_yMatriculaPendienteTampoco() throws Exception {
+		long a = alumno("QUITAOTRAESC", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		// Defensa: un cargo de examen de la otra escuela apuntando a esta inscripción (incoherente) no se ve.
+		long rojoOtra = jdbc.queryForObject("""
+				SELECT g.id FROM grado g JOIN disciplina d ON d.sistema_grados_id = g.sistema_grados_id
+				WHERE d.id = ? AND g.codigo = 'ROJO'""", Long.class, otra.disciplina);
+		jdbc.update("""
+				INSERT INTO producto (concepto, precio, codigo, tipo, grado_id, organizacion_id)
+				VALUES ('EXAMEN ROJO RALLAS OTRA', 25.0, 'EXAMEN_ROJO', 'EXAMEN', ?, ?)""", rojoOtra, otra.org);
+		long productoOtra = jdbc.queryForObject(
+				"SELECT id FROM producto WHERE organizacion_id = ? AND codigo = 'EXAMEN_ROJO'", Long.class, otra.org);
+		jdbc.update("""
+				INSERT INTO producto_alumno (alumno_id, producto_id, concepto, precio, cantidad, pagado, fecha_asignacion,
+				  organizacion_id, sede_id, alumno_deporte_id)
+				VALUES (?, ?, 'EXAMEN ROJO RALLAS OTRA', 25.0, 1, FALSE, '2026-10-20', ?, ?, ?)""", a, productoOtra, otra.org,
+				otra.sA, ad);
+		long deOtra = jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE organizacion_id = ?", Long.class,
+				otra.org);
+		// Matrícula pendiente de esta inscripción: no concede grado, no es un pase.
+		jdbc.update("INSERT INTO producto (concepto, precio, organizacion_id) VALUES ('MATRICULA RALLAS', 40.0, ?)", e.org);
+		long pMatricula = jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
+		long matricula = cargo(a, pMatricula, ad, false);
+
+		JsonNode aviso = leer(get(prof(e.gA, a) + "/al-quitar"), tTitular, 200);
+		assertEquals(0, aviso.get("pases").size(), aviso.toString());
+		MvcResult r = peticion(quitar(prof(e.gA, a), -1, true, List.of(deOtra), List.of()), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(RallasService.PASES_CAMBIARON, mensaje(r), "el id de la otra escuela no es de sus pases");
+		assertEquals(10, medias(a));
+
+		JsonNode ok = leer(quitar(prof(e.gA, a), -1, true, List.of(), List.of()), tTitular, 200);
+		assertEquals(0, ok.get("pasesBorrados").size());
+		assertFalse(apto(a));
+		assertTrue(existeCargo(deOtra), "el cargo de la otra escuela sigue");
+		assertTrue(existeCargo(matricula), "la matrícula pendiente sigue");
+	}
+
+	@Test
+	void yaNoApto_niPaseNiConvocatoria_porNingunaVia() throws Exception {
+		long a = alumno("NOAPTOPASE", e.gA, gAmarillo);
+		fijar(a, 10);
+		ponerApto(a);
+		leer(quitar(prof(e.gA, a), -1, true, List.of(), List.of()), tTitular, 200);
+		assertFalse(apto(a));
+		long conv = convocatoria("2026-11-28", e.disciplina);
+
+		assertEquals(400, estado(post("/api/profesor/alumnos/" + a + "/deportes/TAEKWONDO/pase-examen")
+				.contentType(MediaType.APPLICATION_JSON).content("{\"rojoBordado\":false}"), tTitular));
+		MvcResult r = peticion(post("/api/alumnos/" + a + "/deportes/TAEKWONDO/pase-examen")
+				.contentType(MediaType.APPLICATION_JSON).content("{\"rojoBordado\":false}"), tGestor);
+		assertEquals(400, r.getResponse().getStatus());
+		assertTrue(r.getResponse().getContentAsString().contains("no está apto"), r.getResponse().getContentAsString());
+		r = peticion(post("/api/alumnos/" + conv + "/alumno/" + a).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"porRecompensa\":false}"), tGestor);
+		assertEquals(400, r.getResponse().getStatus());
+		assertTrue(r.getResponse().getContentAsString().contains("no está apto"), r.getResponse().getContentAsString());
+		assertEquals(0, cargosDe(a));
+		assertFalse(apuntado(a, conv));
+	}
+
+	@Test
+	void paseDeGestion_esperaAlBloqueoDeLaInscripcion_yVeQueYaNoEsApto() throws Exception {
+		long a = alumno("CARRERAPASE", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		MvcResult r = conFilaBloqueada("SELECT id FROM alumno_deporte WHERE id = ? FOR UPDATE",
+				"UPDATE alumno_deporte SET apto_para_examen = FALSE, medias_rallas = 9 WHERE id = ?", ad,
+				() -> peticion(post("/api/alumnos/" + a + "/deportes/TAEKWONDO/pase-examen")
+						.contentType(MediaType.APPLICATION_JSON).content("{\"rojoBordado\":false}"), tGestor));
+		assertEquals(400, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertTrue(r.getResponse().getContentAsString().contains("no está apto"), r.getResponse().getContentAsString());
+		assertEquals(0, cargosDe(a), "ningún pase vivo sin apto");
+	}
+
+	@Test
+	void apuntarAConvocatoria_esperaAlBloqueoDeLaInscripcion_yVeQueYaNoEsApto() throws Exception {
+		long a = alumno("CARRERACONV", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		long conv = convocatoria("2026-11-28", e.disciplina);
+		MvcResult r = conFilaBloqueada("SELECT id FROM alumno_deporte WHERE id = ? FOR UPDATE",
+				"UPDATE alumno_deporte SET apto_para_examen = FALSE, medias_rallas = 9 WHERE id = ?", ad,
+				() -> peticion(post("/api/alumnos/" + conv + "/alumno/" + a).contentType(MediaType.APPLICATION_JSON)
+						.content("{\"porRecompensa\":false}"), tGestor));
+		assertEquals(400, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertTrue(r.getResponse().getContentAsString().contains("no está apto"), r.getResponse().getContentAsString());
+		assertFalse(apuntado(a, conv), "ninguna convocatoria viva sin apto");
+		assertEquals(0, cargosDe(a));
+	}
+
+	@Test
+	void convocatoriaSinCargo_pagadaALaVez_409_yNoSeBorra() throws Exception {
+		long a = alumno("CARRERALEGADO", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		long conv = convocatoria("2026-11-28", e.disciplina);
+		apuntar(a, conv, null, ad, "ROJO");
+		long inscripcion = jdbc.queryForObject(
+				"SELECT id FROM alumno_convocatoria WHERE alumno_id = ? AND convocatoria_id = ?", Long.class, a, conv);
+		MvcResult r = conFilaBloqueada("SELECT id FROM alumno_convocatoria WHERE id = ? FOR UPDATE",
+				"UPDATE alumno_convocatoria SET pagado = TRUE, fecha_pago = '2026-10-26' WHERE id = ?", inscripcion,
+				() -> peticion(quitar(prof(e.gA, a), -1, true, List.of(), List.of(conv)), tTitular));
+		assertEquals(409, r.getResponse().getStatus(), r.getResponse().getContentAsString());
+		assertEquals(RallasService.CONVOCATORIA_NO_SE_QUITA, mensaje(r));
+		assertTrue(apuntado(a, conv), "la inscripción pagada sigue");
+		assertEquals(10, medias(a));
+		assertTrue(apto(a));
+		assertTrue(registroDe(a).isEmpty());
+	}
+
+	@Test
 	void alQuitar_porRolYRuta() throws Exception {
 		long a = alumno("QUITAROLES", e.gA, gAmarillo);
 		fijar(a, 10);
@@ -1204,6 +1381,94 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	private boolean apuntado(long alumno, long convocatoria) {
 		return jdbc.queryForObject("SELECT COUNT(*) FROM alumno_convocatoria WHERE alumno_id = ? AND convocatoria_id = ?",
 				Integer.class, alumno, convocatoria) == 1;
+	}
+
+	private int cargosDe(long alumno) {
+		return jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE alumno_id = ?", Integer.class, alumno);
+	}
+
+	/** Encargo en curso (PEDIDO) de ese cargo. */
+	private void encargoEnCurso(long cargo) {
+		jdbc.update("""
+				INSERT INTO solicitud (organizacion_id, sede_id, tipo, estado, solicitado_por_usuario_id, solicitado_en,
+				  motivo, producto_id, producto_alumno_id, alumno_id, concepto, importe)
+				SELECT organizacion_id, sede_id, 'ENCARGO', 'PEDIDO', ?, NOW(6), 'IT rallas', producto_id, id, alumno_id,
+				  concepto, 25.00 FROM producto_alumno WHERE id = ?""", titular, cargo);
+	}
+
+	/** El aviso y el paso confirmado dan 409 con ese mensaje y no cambia nada (medias, apto ni registro). */
+	private void exigir409SinCambios(long alumno, String esperado, List<Long> pases, List<Long> convocatorias)
+			throws Exception {
+		MvcResult r = peticion(get(prof(e.gA, alumno) + "/al-quitar"), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(esperado, mensaje(r));
+		r = peticion(quitar(prof(e.gA, alumno), -1, true, pases, convocatorias), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(esperado, mensaje(r));
+		assertEquals(10, medias(alumno));
+		assertTrue(apto(alumno));
+		assertTrue(registroDe(alumno).isEmpty());
+	}
+
+	/**
+	 * Otra transacción (conexión aparte) bloquea una fila ({@code bloquear}) y la cambia ({@code cambiar}) sin confirmar;
+	 * la petición, en otro hilo, tiene que esperar a ese bloqueo. Al verla esperando se confirma el cambio y se devuelve
+	 * la respuesta de la petición.
+	 */
+	private MvcResult conFilaBloqueada(String bloquear, String cambiar, long id, Callable<MvcResult> accion)
+			throws Exception {
+		ExecutorService hilo = Executors.newSingleThreadExecutor();
+		try (Connection bloqueo = dataSource.getConnection()) {
+			bloqueo.setAutoCommit(false);
+			boolean confirmado = false;
+			try {
+				try (PreparedStatement sentencia = bloqueo.prepareStatement(bloquear)) {
+					sentencia.setLong(1, id);
+					sentencia.executeQuery().close();
+				}
+				try (PreparedStatement sentencia = bloqueo.prepareStatement(cambiar)) {
+					sentencia.setLong(1, id);
+					assertEquals(1, sentencia.executeUpdate());
+				}
+				Future<MvcResult> peticion = hilo.submit(accion);
+				esperarBloqueado(peticion);
+				bloqueo.commit();
+				confirmado = true;
+				return peticion.get(60, TimeUnit.SECONDS);
+			} finally {
+				if (!confirmado) {
+					bloqueo.rollback();
+				}
+				bloqueo.setAutoCommit(true);
+			}
+		} finally {
+			hilo.shutdownNow();
+		}
+	}
+
+	/**
+	 * Espera a que MySQL tenga una espera de bloqueo de InnoDB, sin dormir un tiempo fijo. Se mira
+	 * {@code performance_schema.data_lock_waits} con root (en una conexión aparte): {@code information_schema.innodb_trx}
+	 * es una caché que no se refresca si se lee cada menos de 0,1 s, y con este bucle nunca llegaba a verla.
+	 */
+	private void esperarBloqueado(Future<?> tarea) throws Exception {
+		long limite = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+		try (Connection root = DriverManager.getConnection(MYSQL.getJdbcUrl(), "root", MYSQL.getPassword());
+				Statement consulta = root.createStatement()) {
+			while (System.nanoTime() < limite) {
+				try (ResultSet fila = consulta
+						.executeQuery("SELECT COUNT(*) FROM performance_schema.data_lock_waits")) {
+					fila.next();
+					if (fila.getInt(1) > 0) {
+						return;
+					}
+				}
+				if (tarea.isDone()) {
+					fail("Terminó sin esperar el bloqueo de la fila.");
+				}
+			}
+		}
+		fail("Nadie llegó a esperar el bloqueo de la fila.");
 	}
 
 	private static MockHttpServletRequestBuilder quitar(String ruta, int paso, boolean confirmar, List<Long> pases,

@@ -93,6 +93,17 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 			nativeQuery = true)
 	List<Long> bloquearFilaRallas(@Param("id") Long id, @Param("organizacion") Long organizacion);
 
+	/**
+	 * Bloquea (SELECT ... FOR UPDATE) la fila de la inscripción y devuelve su apto confirmado (una lectura con bloqueo
+	 * lee lo último confirmado, también en REPEATABLE READ). Pase de grado y alta en convocatoria: lo llaman antes de
+	 * comprobar el apto, así que bajar las rallas desde las 10 (que bloquea la inscripción primero y quita el apto) no
+	 * puede colarse entre la comprobación y el cargo. Solo en transacción; dentro de la misma transacción, bloquear otra
+	 * vez la misma fila no espera. Vacía si no existe en esa escuela.
+	 */
+	@Query(value = "SELECT apto_para_examen FROM alumno_deporte WHERE id = :id AND organizacion_id = :organizacion "
+			+ "FOR UPDATE", nativeQuery = true)
+	List<Object> bloquearYLeerApto(@Param("id") Long id, @Param("organizacion") Long organizacion);
+
 	/** Rallas a 0 (cambio de grado). 0 filas: ya estaban en 0. */
 	@Modifying
 	@Query(value = """

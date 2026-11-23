@@ -17,6 +17,7 @@ import com.taemoi.project.config.ValidacionRelojConfig;
 import com.taemoi.project.dtos.response.RallasDTOs;
 import com.taemoi.project.entities.AlumnoConvocatoria;
 import com.taemoi.project.entities.ProductoAlumno;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.CobroRepository;
 import com.taemoi.project.repositories.ProductoAlumnoRepository;
 import com.taemoi.project.repositories.SolicitudRepository;
@@ -43,6 +44,9 @@ import jakarta.persistence.EntityManager;
  * sin convocatoria; una convocatoria con la inscripción sin pagar y, si tiene cargo, el cargo sin pagar ni cancelar, sin
  * cobros y sin encargo en curso. Si algo no se puede, 409 y no se cambia nada: no se anulan cobros ni se tocan
  * devoluciones. El derecho a examen del alumno no se toca (un pase sin cobrar nunca lo dio).
+ *
+ * <p><b>Permisos</b> (decisión del propietario): titular y responsable de sede pueden borrar el pase o sacar de la
+ * convocatoria aunque el cargo sea de otra sede (los mismos permisos que dar rallas).
  *
  * <p>Sin dependencias de {@code ProductoAlumnoService}, {@code AlumnoDeporteService} ni {@code AlumnoService}: hay un
  * ciclo de beans con {@link RallasService}.
@@ -157,8 +161,9 @@ public class PendientesAlQuitarRallas {
 
 	/**
 	 * Dentro de la transacción y con la inscripción ya bloqueada: comprueba que los pendientes son EXACTAMENTE los
-	 * confirmados (si no, 409 {@value #PASES_CAMBIARON}), bloquea sus cargos por id ascendente, los vuelve a leer y a
-	 * comprobar (lo mismo, y {@link #exigirQuitables}). Devuelve los pendientes ya bloqueados, sin cambiar nada.
+	 * confirmados (si no, 409 {@value #PASES_CAMBIARON}), bloquea sus cargos por id ascendente y después sus
+	 * inscripciones en convocatorias ({@link #bloquearInscripcionesEnConvocatorias}), los vuelve a leer y a comprobar (lo
+	 * mismo, y {@link #exigirQuitables}). Devuelve los pendientes ya bloqueados, sin cambiar nada.
 	 */
 	public Pendientes bloquearYConfirmar(Long inscripcionId, Long alumnoId, String disciplina, String codigoGrado,
 			Collection<Long> pasesConfirmados, Collection<Long> convocatoriasConfirmadas) {
@@ -176,6 +181,7 @@ public class PendientesAlQuitarRallas {
 			}
 		}
 		Pendientes ahora = buscar(inscripcionId, alumnoId, disciplina, codigoGrado);
+		bloquearInscripcionesEnConvocatorias(ahora.convocatorias());
 		ahora.convocatorias().forEach(em::refresh);
 		exigirConfirmados(ahora, pasesConfirmados, convocatoriasConfirmadas);
 		exigirQuitables(ahora);
@@ -233,6 +239,35 @@ public class PendientesAlQuitarRallas {
 		cobros.alBorrarCargo(cargo);
 		productoAlumnoRepository.delete(cargo);
 		registroCargos.registrar(RegistroAccionesCargos.Accion.CARGO_BORRADO, ruta, cargo.getSedeId(), cargo.getId());
+	}
+
+	/**
+	 * Bloquea ({@code FOR UPDATE}, por id ascendente y con {@code organizacion_id}) las inscripciones en convocatorias,
+	 * DESPUÉS de los cargos: el orden del PUT de la inscripción (cargo y después inscripción), así que no hay ciclo. Una
+	 * inscripción sin cargo (legado) no tiene cargo que bloquear: sin esto, un PUT que la marcara pagada a la vez podía
+	 * acabar borrada igual. La lectura con bloqueo ve lo último confirmado: pagada, 409 {@value #CONVOCATORIA_NO_SE_QUITA};
+	 * alguna ya no existe, 409 {@value #PASES_CAMBIARON}. Después, el llamador relee las entidades y vuelve a comprobar.
+	 */
+	private void bloquearInscripcionesEnConvocatorias(List<AlumnoConvocatoria> inscripciones) {
+		if (inscripciones.isEmpty()) {
+			return;
+		}
+		TreeSet<Long> ids = new TreeSet<>();
+		inscripciones.forEach(inscripcion -> ids.add(inscripcion.getId()));
+		List<?> filas = em.createNativeQuery("""
+				SELECT id, pagado FROM alumno_convocatoria
+				WHERE id IN (:ids) AND organizacion_id = :organizacion
+				ORDER BY id FOR UPDATE""").setParameter("ids", ids).setParameter("organizacion", TenantContext.get())
+				.getResultList();
+		if (filas.size() != ids.size()) {
+			throw new IllegalStateException(PASES_CAMBIARON);
+		}
+		for (Object fila : filas) {
+			Object pagado = ((Object[]) fila)[1];
+			if (Boolean.TRUE.equals(pagado) || (pagado instanceof Number numero && numero.intValue() != 0)) {
+				throw new IllegalStateException(CONVOCATORIA_NO_SE_QUITA);
+			}
+		}
 	}
 
 	private static void quitarDeColeccionCargada(Collection<AlumnoConvocatoria> coleccion, AlumnoConvocatoria inscripcion) {

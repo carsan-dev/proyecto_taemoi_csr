@@ -51,7 +51,9 @@ import jakarta.persistence.EntityManager;
  * en la misma transacción, borra sus pases sin cobrar y lo saca de sus convocatorias pendientes de esa disciplina
  * ({@link PendientesAlQuitarRallas}). Si había apto o algo que borrar, el cliente lo confirma con los ids exactos de
  * {@link #alQuitar} (si no, 409). Si algo no se puede borrar (cobros, encargo, pagado), 409 sin cambiar nada. Orden de
- * bloqueo: inscripción, cargos por id ascendente, {@code UPDATE} y borrados. Desde menos de 10, el apto no se toca.
+ * bloqueo: inscripción, cargos por id ascendente, inscripciones en convocatorias por id ascendente, {@code UPDATE} y
+ * borrados. El pase de grado y el alta en convocatoria también bloquean la inscripción antes de leer el apto. Desde menos
+ * de 10, el apto no se toca.
  *
  * <p>Cada cambio queda en el registro ({@link RegistroAccionesRallas}) en la misma transacción. Escuela: todo se acota
  * por {@code @TenantId} y las sentencias nativas llevan además {@code organizacion_id}.
