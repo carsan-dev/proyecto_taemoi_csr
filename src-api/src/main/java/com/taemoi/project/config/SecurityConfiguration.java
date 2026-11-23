@@ -55,6 +55,8 @@ public class SecurityConfiguration {
 			// Decisión 324: pasar lista en los grupos de sus sedes (@acceso.grupoEnSede).
 			"/api/grupos/{grupoId}/clases", "/api/grupos/{grupoId}/clases/{turnoId}/{fecha}",
 			"/api/grupos/{grupoId}/asistencia/resumen", "/api/grupos/{grupoId}/alumnos/{alumnoId}/asistencia",
+			// Rallas: qué se deshace al bajar desde las 10 medias, en los grupos de sus sedes (@acceso.grupoEnSede).
+			"/api/grupos/{grupoId}/alumnos/{alumnoId}/rallas/al-quitar",
 			"/api/turnos/resumen", "/api/turnos/{turnoId}",
 			// 6-2: sin plantillas ni rutas públicas (sus reglas van antes).
 			"/api/preinscripciones", "/api/preinscripciones/{referencia}",

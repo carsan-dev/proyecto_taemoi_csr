@@ -88,6 +88,7 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	EscuelaConSedesDePrueba e;
 	EscuelaConSedesDePrueba otra;
 	long gBlanco, gAmarillo, gRojo, gPum, gDan, kickboxing, grupoKb;
+	long pExamenRojo, pMensualidad;
 	long titular, ayudante, titularB, propietario, propietarioOtra, titularOtra, familia;
 	String tTitular, tAyudante, tTitularB, tGestor, tPropietario, tResp, tPropietarioOtra, tGestorOtra, tTitularOtra,
 			tFamilia, tRespA;
@@ -105,6 +106,15 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 		kickboxing = jdbc.queryForObject(
 				"SELECT id FROM disciplina WHERE organizacion_id = ? AND codigo = 'KICKBOXING'", Long.class, e.org);
 		grupoKb = grupo(e, "IT rallas KB " + e.marca, "KICKBOXING", e.sA);
+		// Examen que concede ROJO (el pase de AMARILLO) y una mensualidad, que no concede grado.
+		jdbc.update("""
+				INSERT INTO producto (concepto, precio, codigo, tipo, grado_id, organizacion_id)
+				VALUES ('EXAMEN ROJO RALLAS', 25.0, 'EXAMEN_ROJO', 'EXAMEN', ?, ?)""", gRojo, e.org);
+		pExamenRojo = jdbc.queryForObject("SELECT id FROM producto WHERE organizacion_id = ? AND codigo = 'EXAMEN_ROJO'",
+				Long.class, e.org);
+		jdbc.update("INSERT INTO producto (concepto, precio, organizacion_id) VALUES ('MENSUALIDAD RALLAS', 30.0, ?)",
+				e.org);
+		pMensualidad = jdbc.queryForObject("SELECT MAX(id) FROM producto WHERE organizacion_id = ?", Long.class, e.org);
 
 		titular = soloProfesor(e, "titular");
 		asignar(e, titular, e.gA, "TITULAR");
@@ -156,7 +166,10 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	void titular_daYQuitaPasos_yDevuelveElValorNuevo() throws Exception {
 		long a = alumno("PASOS", e.gA, gAmarillo);
 		JsonNode r = leer(paso(prof(e.gA, a), 1), tTitular, 200);
-		assertEquals(Set.of("alumnoId", "deporte", "mediasRallas", "aptoParaExamen"), campos(r));
+		assertEquals(Set.of("alumnoId", "deporte", "mediasRallas", "aptoParaExamen", "pasesBorrados",
+				"convocatoriasSalidas"), campos(r));
+		assertEquals(0, r.get("pasesBorrados").size());
+		assertEquals(0, r.get("convocatoriasSalidas").size());
 		assertEquals(a, r.get("alumnoId").asLong());
 		assertEquals("TAEKWONDO", r.get("deporte").asText());
 		assertEquals(1, r.get("mediasRallas").asInt());
@@ -189,7 +202,9 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 		assertEquals(409, estado(paso(prof(e.gA, a), 1), tTitular), "+1 con 10");
 		assertEquals(409, estado(paso(prof(e.gA, a), 2), tTitular), "+2 con 10");
 		assertEquals(10, medias(a));
-		assertEquals(8, leer(paso(prof(e.gA, a), -2), tTitular, 200).get("mediasRallas").asInt());
+		assertEquals(8, leer(paso(prof(e.gA, a), -2), tTitular, 200).get("mediasRallas").asInt(),
+				"desde 10 sin apto ni pendientes: sin confirmar");
+		assertTrue(registroDe(a).stream().noneMatch(s -> s.startsWith("RALLAS APTO_QUITADO")));
 	}
 
 	@Test
@@ -379,17 +394,23 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 
 		fijar(a, 10);
 		JsonNode ok = leer(post(prof(e.gA, a) + "/apto"), tTitular, 200);
-		assertEquals(0, ok.get("mediasRallas").asInt());
+		assertEquals(10, ok.get("mediasRallas").asInt(), "las rallas se quedan en 10");
 		assertTrue(ok.get("aptoParaExamen").asBoolean());
-		assertEquals(0, medias(a));
+		assertEquals(10, medias(a));
 		assertTrue(apto(a));
-		assertEquals(409, estado(post(prof(e.gA, a) + "/apto"), tTitular), "otra vez: ya no tiene las 10");
-		assertTrue(registroDe(a).stream().anyMatch(s -> s.startsWith("RALLAS APTO_DESDE_HOJA alumno=#" + a)));
+		assertEquals(1, registroDe(a).stream().filter(s -> s.startsWith("RALLAS APTO_DESDE_HOJA alumno=#" + a)).count());
+
+		// Otra vez: 200 idempotente, sin cambiar nada ni registrar.
+		JsonNode otraVez = leer(post(prof(e.gA, a) + "/apto"), tTitular, 200);
+		assertEquals(10, otraVez.get("mediasRallas").asInt());
+		assertTrue(otraVez.get("aptoParaExamen").asBoolean());
+		assertEquals(10, medias(a));
+		assertEquals(1, registroDe(a).stream().filter(s -> s.startsWith("RALLAS APTO_DESDE_HOJA")).count());
 
 		long porGestion = alumno("APTOGEST", e.gA, gAmarillo);
 		fijar(porGestion, 10);
 		assertTrue(leer(post(gest(e.gA, porGestion) + "/apto"), tResp, 200).get("aptoParaExamen").asBoolean());
-		assertEquals(0, medias(porGestion));
+		assertEquals(10, medias(porGestion));
 	}
 
 	@Test
@@ -442,7 +463,7 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 			inscripciones.saveAndFlush(cargada);
 		}));
 		assertTrue(apto(a), "el apto de la hoja sigue");
-		assertEquals(0, medias(a));
+		assertEquals(10, medias(a));
 		assertEquals(42.5, cuantia(ad), "la otra ruta sí guarda lo suyo");
 	}
 
@@ -557,6 +578,371 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 				() -> estado(paso(gest(e.gA, a), 1), tGestor));
 		assertEquals(List.of(200, 409), estados, "solo cabe uno");
 		assertEquals(10, medias(a));
+	}
+
+	// ------------------------------------------------------------------ quitar rallas desde las 10
+
+	@Test
+	void quitarDesde10_conApto_pideConfirmacion_yLuegoQuitaElApto() throws Exception {
+		long a = alumno("QUITAPTO", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+
+		JsonNode aviso = leer(get(prof(e.gA, a) + "/al-quitar"), tTitular, 200);
+		assertEquals(Set.of("alumnoId", "deporte", "mediasRallas", "aptoParaExamen", "pases", "convocatorias"),
+				campos(aviso));
+		assertEquals(a, aviso.get("alumnoId").asLong());
+		assertEquals("TAEKWONDO", aviso.get("deporte").asText());
+		assertEquals(10, aviso.get("mediasRallas").asInt());
+		assertTrue(aviso.get("aptoParaExamen").asBoolean());
+		assertEquals(0, aviso.get("pases").size());
+		assertEquals(0, aviso.get("convocatorias").size());
+
+		MvcResult r = peticion(paso(prof(e.gA, a), -1), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(RallasService.CONFIRMAR_QUITAR_APTO, mensaje(r));
+		r = peticion(quitar(prof(e.gA, a), -1, false, List.of(), List.of()), tTitular);
+		assertEquals(RallasService.CONFIRMAR_QUITAR_APTO, mensaje(r), "confirmar=false");
+		assertEquals(10, medias(a));
+		assertTrue(apto(a));
+		assertTrue(registroDe(a).isEmpty());
+
+		JsonNode ok = leer(quitar(prof(e.gA, a), -1, true, null, null), tTitular, 200);
+		assertEquals(9, ok.get("mediasRallas").asInt());
+		assertFalse(ok.get("aptoParaExamen").asBoolean());
+		assertEquals(0, ok.get("pasesBorrados").size());
+		assertEquals(0, ok.get("convocatoriasSalidas").size());
+		assertEquals(9, medias(a));
+		assertFalse(apto(a));
+		assertEquals(List.of("RALLAS PASO alumno=#" + a + " grupo=#" + e.gA + " alumnoDeporte=#" + ad + " paso=-1 medias=9",
+				"RALLAS APTO_QUITADO alumno=#" + a + " grupo=#" + e.gA + " alumnoDeporte=#" + ad
+						+ " aptoAntes=SI pasesBorrados=0 convocatoriasSalidas=0"),
+				registroDe(a));
+
+		// Ya con 9: el aviso sale vacío y otro paso no pide nada.
+		JsonNode con9 = leer(get(prof(e.gA, a) + "/al-quitar"), tTitular, 200);
+		assertEquals(9, con9.get("mediasRallas").asInt());
+		assertFalse(con9.get("aptoParaExamen").asBoolean());
+
+		// Por gestión, con −2: 8 y sin apto.
+		long g = alumno("QUITAPTOGEST", e.gA, gAmarillo);
+		fijar(g, 10);
+		ponerApto(g);
+		assertTrue(leer(get(gest(e.gA, g) + "/al-quitar"), tResp, 200).get("aptoParaExamen").asBoolean());
+		assertEquals(409, estado(paso(gest(e.gA, g), -2), tResp));
+		JsonNode porGestion = leer(quitar(gest(e.gA, g), -2, true, List.of(), List.of()), tResp, 200);
+		assertEquals(8, porGestion.get("mediasRallas").asInt());
+		assertFalse(apto(g));
+	}
+
+	@Test
+	void quitarDesdeMenosDe10_noTocaElApto_niLosPendientes() throws Exception {
+		long a = alumno("QUITAMENOS", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 6);
+		ponerApto(a);
+		long pase = cargo(a, pExamenRojo, ad, false);
+		JsonNode aviso = leer(get(prof(e.gA, a) + "/al-quitar"), tTitular, 200);
+		assertEquals(6, aviso.get("mediasRallas").asInt());
+		assertTrue(aviso.get("aptoParaExamen").asBoolean());
+		assertEquals(0, aviso.get("pases").size(), "solo con 10");
+		JsonNode ok = leer(paso(prof(e.gA, a), -1), tTitular, 200);
+		assertEquals(5, ok.get("mediasRallas").asInt());
+		assertTrue(ok.get("aptoParaExamen").asBoolean());
+		assertTrue(apto(a));
+		assertTrue(existeCargo(pase));
+	}
+
+	@Test
+	void paseDelProfesor_seBorraAlQuitar_sinTocarElDerechoAExamen() throws Exception {
+		long a = alumno("QUITAPASE", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		jdbc.update("UPDATE alumno SET tiene_derecho_examen = TRUE WHERE id = ?", a);
+		JsonNode creado = leer(post("/api/profesor/alumnos/" + a + "/deportes/TAEKWONDO/pase-examen")
+				.contentType(MediaType.APPLICATION_JSON).content("{\"rojoBordado\":false}"), tTitular, 200);
+		long cargo = creado.get("cargo").get("id").asLong();
+		String concepto = creado.get("cargo").get("concepto").asText();
+
+		JsonNode aviso = leer(get(prof(e.gA, a) + "/al-quitar"), tTitular, 200);
+		assertEquals(1, aviso.get("pases").size());
+		JsonNode pase = aviso.get("pases").get(0);
+		assertEquals(Set.of("id", "concepto", "importe"), campos(pase));
+		assertEquals(cargo, pase.get("id").asLong());
+		assertEquals(concepto, pase.get("concepto").asText());
+		assertEquals(25.0, pase.get("importe").asDouble(), 0.001);
+
+		assertEquals(RallasService.CONFIRMAR_QUITAR_APTO, mensaje(peticion(paso(prof(e.gA, a), -1), tTitular)));
+		assertTrue(existeCargo(cargo));
+
+		JsonNode ok = leer(quitar(prof(e.gA, a), -1, true, List.of(cargo), List.of()), tTitular, 200);
+		assertEquals(9, ok.get("mediasRallas").asInt());
+		assertFalse(ok.get("aptoParaExamen").asBoolean());
+		assertEquals(1, ok.get("pasesBorrados").size());
+		assertEquals(cargo, ok.get("pasesBorrados").get(0).get("id").asLong());
+		assertEquals(concepto, ok.get("pasesBorrados").get(0).get("concepto").asText());
+		assertEquals(25.0, ok.get("pasesBorrados").get(0).get("importe").asDouble(), 0.001);
+		assertFalse(existeCargo(cargo));
+		assertFalse(apto(a));
+		assertEquals(9, medias(a));
+		assertTrue(jdbc.queryForObject("SELECT tiene_derecho_examen FROM alumno WHERE id = ?", Boolean.class, a),
+				"el derecho a examen no se toca");
+		List<Map<String, Object>> borrado = jdbc.queryForList("""
+				SELECT resumen, endpoint, accion FROM auditoria_evento
+				WHERE modulo = 'productos-alumno' AND recurso_id = ? AND resumen LIKE 'CARGO CARGO_BORRADO%'""", cargo);
+		assertEquals(1, borrado.size());
+		assertEquals("CARGO CARGO_BORRADO sede=#" + e.sA + " cargo=#" + cargo, borrado.get(0).get("resumen"));
+		assertEquals(prof(e.gA, a), borrado.get(0).get("endpoint"));
+		assertTrue(registroDe(a).contains("RALLAS APTO_QUITADO alumno=#" + a + " grupo=#" + e.gA + " alumnoDeporte=#" + ad
+				+ " aptoAntes=SI pasesBorrados=1 convocatoriasSalidas=0"), registroDe(a).toString());
+	}
+
+	@Test
+	void idsQueNoCoinciden_oPaseCobradoEntreMedias_409_sinCambiarNada() throws Exception {
+		long a = alumno("QUITAIDS", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		long pase = cargo(a, pExamenRojo, ad, false);
+		long conv = convocatoria("2026-11-14", e.disciplina);
+		apuntar(a, conv, null, ad, "ROJO");
+
+		for (MockHttpServletRequestBuilder peticion : List.of(
+				quitar(prof(e.gA, a), -1, true, List.of(), List.of(conv)),
+				quitar(prof(e.gA, a), -1, true, List.of(pase, 999999999L), List.of(conv)),
+				quitar(prof(e.gA, a), -1, true, List.of(pase), List.of()),
+				quitar(prof(e.gA, a), -1, true, List.of(pase), List.of(conv, 999999999L)),
+				quitar(prof(e.gA, a), -1, true, null, null))) {
+			MvcResult r = peticion(peticion, tTitular);
+			assertEquals(409, r.getResponse().getStatus());
+			assertEquals(RallasService.PASES_CAMBIARON, mensaje(r));
+		}
+		assertEquals(10, medias(a));
+		assertTrue(apto(a));
+		assertTrue(existeCargo(pase));
+		assertTrue(apuntado(a, conv));
+
+		// Se cobra entre el aviso y la confirmación: ya no es pendiente → 409 y nada cambia.
+		assertEquals(1, leer(get(prof(e.gA, a) + "/al-quitar"), tTitular, 200).get("pases").size());
+		jdbc.update("UPDATE producto_alumno SET pagado = TRUE, fecha_pago = '2026-10-26' WHERE id = ?", pase);
+		MvcResult r = peticion(quitar(prof(e.gA, a), -1, true, List.of(pase), List.of(conv)), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(RallasService.PASES_CAMBIARON, mensaje(r));
+		assertEquals(10, medias(a));
+		assertTrue(apto(a));
+		assertTrue(existeCargo(pase));
+		assertTrue(apuntado(a, conv));
+		assertTrue(registroDe(a).isEmpty());
+	}
+
+	@Test
+	void paseConCobroAnulado_409_sinCambiarNada() throws Exception {
+		long a = alumno("QUITACOBRO", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		long pase = cargo(a, pExamenRojo, ad, false);
+		cobro(a, pase, "ANULADO");
+
+		MvcResult r = peticion(get(prof(e.gA, a) + "/al-quitar"), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(RallasService.PASE_NO_SE_BORRA, mensaje(r));
+		r = peticion(quitar(prof(e.gA, a), -1, true, List.of(pase), List.of()), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(RallasService.PASE_NO_SE_BORRA, mensaje(r));
+		assertEquals(10, medias(a));
+		assertTrue(apto(a));
+		assertTrue(existeCargo(pase));
+		assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM cobro WHERE producto_alumno_id = ?", Integer.class, pase));
+	}
+
+	@Test
+	void noSonPasesDeEsaInscripcion_noSeBorran() throws Exception {
+		long a = alumno("QUITAOTROS", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		inscribir(a, gAmarillo, kickboxing);
+		long adKb = alumnoDeporte(a, kickboxing);
+		long otro = alumno("QUITAOTROSB", e.gA, gAmarillo);
+		long adOtro = alumnoDeporte(otro, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		List<Long> ajenos = List.of(
+				cargo(a, pMensualidad, ad, false), // mensualidad pendiente: no concede grado
+				cargo(a, pExamenRojo, null, false), // examen asignado a mano (sin inscripción)
+				cargo(a, pExamenRojo, adKb, false), // pase de otra disciplina del mismo alumno
+				cargo(otro, pExamenRojo, adOtro, false), // pase de otro alumno
+				cargo(otro, pExamenRojo, ad, false), // incoherente: otro alumno con esta inscripción (defensa)
+				cargo(a, pExamenRojo, ad, true)); // pase ya pagado
+		jdbc.update("UPDATE producto_alumno SET pagado = FALSE, fecha_pago = NULL, cancelado_en = NOW(6) WHERE id = ?",
+				cargo(a, pExamenRojo, ad, false)); // pase cancelado
+		JsonNode aviso = leer(get(prof(e.gA, a) + "/al-quitar"), tTitular, 200);
+		assertEquals(0, aviso.get("pases").size(), aviso.toString());
+		JsonNode ok = leer(quitar(prof(e.gA, a), -2, true, List.of(), List.of()), tTitular, 200);
+		assertEquals(8, ok.get("mediasRallas").asInt());
+		for (long cargo : ajenos) {
+			assertTrue(existeCargo(cargo), "cargo " + cargo);
+		}
+	}
+
+	@Test
+	void convocatoriaPendiente_sinCobro_saleYSeBorraSuCargo() throws Exception {
+		long a = alumno("QUITACONV", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		long conCargo = convocatoria("2026-11-14", e.disciplina);
+		long cargo = cargo(a, pExamenRojo, null, false);
+		apuntar(a, conCargo, cargo, ad, "ROJO");
+		long sinCargo = convocatoria("2026-10-26", e.disciplina); // hoy: aún pendiente
+		apuntar(a, sinCargo, null, ad, "ROJO");
+
+		JsonNode aviso = leer(get(gest(e.gA, a) + "/al-quitar"), tGestor, 200);
+		JsonNode convs = aviso.get("convocatorias");
+		assertEquals(2, convs.size(), aviso.toString());
+		JsonNode primera = buscarConvocatoria(convs, conCargo);
+		assertEquals(Set.of("convocatoriaId", "fecha", "cargoId", "concepto", "importe"), campos(primera));
+		assertEquals("2026-11-14", primera.get("fecha").asText());
+		assertEquals(cargo, primera.get("cargoId").asLong());
+		assertEquals("EXAMEN ROJO RALLAS", primera.get("concepto").asText());
+		assertEquals(25.0, primera.get("importe").asDouble(), 0.001);
+		JsonNode segunda = buscarConvocatoria(convs, sinCargo);
+		assertEquals("2026-10-26", segunda.get("fecha").asText());
+		assertTrue(segunda.get("cargoId").isNull());
+		assertTrue(segunda.get("concepto").isNull());
+		assertTrue(segunda.get("importe").isNull());
+
+		assertEquals(RallasService.CONFIRMAR_QUITAR_APTO, mensaje(peticion(paso(gest(e.gA, a), -1), tGestor)));
+		JsonNode ok = leer(quitar(gest(e.gA, a), -1, true, List.of(), List.of(sinCargo, conCargo)), tGestor, 200);
+		assertEquals(2, ok.get("convocatoriasSalidas").size());
+		assertEquals(cargo, buscarConvocatoria(ok.get("convocatoriasSalidas"), conCargo).get("cargoId").asLong());
+		assertFalse(apuntado(a, conCargo));
+		assertFalse(apuntado(a, sinCargo));
+		assertFalse(existeCargo(cargo));
+		assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM convocatoria WHERE id IN (?, ?)", Integer.class,
+				conCargo, sinCargo), "las convocatorias siguen");
+		assertEquals(1, jdbc.queryForObject("""
+				SELECT COUNT(*) FROM auditoria_evento WHERE modulo = 'productos-alumno' AND recurso_id = ?
+				AND resumen LIKE 'CARGO CARGO_BORRADO%'""", Integer.class, cargo));
+		assertFalse(apto(a));
+		assertEquals(9, medias(a));
+		assertTrue(registroDe(a).contains("RALLAS APTO_QUITADO alumno=#" + a + " grupo=#" + e.gA + " alumnoDeporte=#" + ad
+				+ " aptoAntes=SI pasesBorrados=0 convocatoriasSalidas=2"), registroDe(a).toString());
+	}
+
+	@Test
+	void paseYDosConvocatoriasConCargo_todoEnUnaVez() throws Exception {
+		long a = alumno("QUITATODO", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		long pase = cargo(a, pExamenRojo, ad, false);
+		long c1 = convocatoria("2026-11-07", e.disciplina);
+		long cargo1 = cargo(a, pExamenRojo, null, false);
+		apuntar(a, c1, cargo1, ad, "ROJO");
+		long c2 = convocatoria("2026-12-05", e.disciplina);
+		long cargo2 = cargo(a, pExamenRojo, null, false);
+		apuntar(a, c2, cargo2, ad, "ROJO");
+
+		JsonNode ok = leer(quitar(prof(e.gA, a), -2, true, List.of(pase), List.of(c2, c1)), tTitular, 200);
+		assertEquals(8, ok.get("mediasRallas").asInt());
+		assertEquals(1, ok.get("pasesBorrados").size());
+		assertEquals(2, ok.get("convocatoriasSalidas").size());
+		for (long cargo : List.of(pase, cargo1, cargo2)) {
+			assertFalse(existeCargo(cargo), "cargo " + cargo);
+		}
+		assertFalse(apuntado(a, c1));
+		assertFalse(apuntado(a, c2));
+		assertTrue(registroDe(a).contains("RALLAS APTO_QUITADO alumno=#" + a + " grupo=#" + e.gA + " alumnoDeporte=#" + ad
+				+ " aptoAntes=NO pasesBorrados=1 convocatoriasSalidas=2"), registroDe(a).toString());
+	}
+
+	@Test
+	void convocatoriaConCobroOPagada_409_sinCambiarNada() throws Exception {
+		long a = alumno("QUITACONVCOBRO", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		fijar(a, 10);
+		ponerApto(a);
+		long conv = convocatoria("2026-11-21", e.disciplina);
+		long cargo = cargo(a, pExamenRojo, null, false);
+		apuntar(a, conv, cargo, ad, "ROJO");
+		long pase = cargo(a, pExamenRojo, ad, false);
+		cobro(a, cargo, "ANULADO");
+
+		MvcResult r = peticion(get(prof(e.gA, a) + "/al-quitar"), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(RallasService.CONVOCATORIA_NO_SE_QUITA, mensaje(r));
+		r = peticion(quitar(prof(e.gA, a), -1, true, List.of(pase), List.of(conv)), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(RallasService.CONVOCATORIA_NO_SE_QUITA, mensaje(r));
+		assertEquals(10, medias(a));
+		assertTrue(apto(a));
+		assertTrue(existeCargo(cargo));
+		assertTrue(existeCargo(pase), "el pase tampoco se borra");
+		assertTrue(apuntado(a, conv));
+
+		// Pagada sin cobro (legado): igual.
+		long b = alumno("QUITACONVPAGADA", e.gA, gAmarillo);
+		long adB = alumnoDeporte(b, e.disciplina);
+		fijar(b, 10);
+		long convB = convocatoria("2026-11-21", e.disciplina);
+		long cargoB = cargo(b, pExamenRojo, null, true);
+		apuntar(b, convB, cargoB, adB, "ROJO");
+		r = peticion(quitar(prof(e.gA, b), -1, true, List.of(), List.of(convB)), tTitular);
+		assertEquals(409, r.getResponse().getStatus());
+		assertEquals(RallasService.CONVOCATORIA_NO_SE_QUITA, mensaje(r));
+		assertEquals(10, medias(b));
+		assertTrue(apuntado(b, convB));
+		assertTrue(existeCargo(cargoB));
+	}
+
+	@Test
+	void convocatoriaDeOtraDisciplina_celebrada_oYaProcesada_noSeToca() throws Exception {
+		long a = alumno("QUITACONVNO", e.gA, gAmarillo);
+		long ad = alumnoDeporte(a, e.disciplina);
+		inscribir(a, gAmarillo, kickboxing);
+		long adKb = alumnoDeporte(a, kickboxing);
+		fijar(a, 10);
+		ponerApto(a);
+		long deKb = convocatoria("2026-11-14", kickboxing);
+		long cargoKb = cargo(a, pExamenRojo, null, false);
+		apuntar(a, deKb, cargoKb, adKb, "ROJO");
+		long celebrada = convocatoria("2026-10-25", e.disciplina); // ayer
+		long cargoCelebrada = cargo(a, pExamenRojo, null, false);
+		apuntar(a, celebrada, cargoCelebrada, ad, "ROJO");
+		long procesada = convocatoria("2026-11-14", e.disciplina); // ya tiene el grado al que se presentaba
+		apuntar(a, procesada, null, ad, "AMARILLO");
+
+		JsonNode aviso = leer(get(prof(e.gA, a) + "/al-quitar"), tTitular, 200);
+		assertEquals(0, aviso.get("convocatorias").size(), aviso.toString());
+		leer(quitar(prof(e.gA, a), -1, true, List.of(), List.of()), tTitular, 200);
+		assertTrue(apuntado(a, deKb));
+		assertTrue(apuntado(a, celebrada));
+		assertTrue(apuntado(a, procesada));
+		assertTrue(existeCargo(cargoKb));
+		assertTrue(existeCargo(cargoCelebrada));
+	}
+
+	@Test
+	void alQuitar_porRolYRuta() throws Exception {
+		long a = alumno("QUITAROLES", e.gA, gAmarillo);
+		fijar(a, 10);
+		ponerApto(a);
+		MvcResult r = peticion(get(prof(e.gA, a) + "/al-quitar"), tAyudante);
+		assertEquals(403, r.getResponse().getStatus());
+		assertEquals(RallasService.SOLO_TITULAR, mensaje(r));
+		assertEquals(403, estado(quitar(prof(e.gA, a), -1, true, List.of(), List.of()), tAyudante));
+		assertEquals(403, estado(get(prof(e.gA, a) + "/al-quitar"), tTitularB), "no es su grupo");
+		assertEquals(403, estado(get(gest(e.gA, a) + "/al-quitar"), tTitular), "solo-profesor por gestión");
+		assertEquals(404, estado(get(gest(e.gA, a) + "/al-quitar"), tGestorOtra), "otra escuela");
+		for (String token : List.of(tPropietario, tGestor, tResp)) {
+			assertEquals(200, estado(get(gest(e.gA, a) + "/al-quitar"), token));
+		}
+		assertEquals(200, estado(get(prof(e.gA, a) + "/al-quitar"), tTitular));
+		long deB = alumno("QUITAROLESB", e.gB, gAmarillo);
+		assertEquals(403, estado(get(gest(e.gB, deB) + "/al-quitar"), tResp), "responsable de otra sede");
+		assertEquals(10, medias(a));
+		assertTrue(apto(a));
 	}
 
 	// ------------------------------------------------------------------ lectura
@@ -770,6 +1156,76 @@ class RallasIntegrationTest extends MySqlIntegrationTest {
 	private void fijar(long alumno, long disciplina, int medias) {
 		jdbc.update("UPDATE alumno_deporte SET medias_rallas = ? WHERE alumno_id = ? AND disciplina_id = ?", medias,
 				alumno, disciplina);
+	}
+
+	private void ponerApto(long alumno) {
+		jdbc.update("UPDATE alumno_deporte SET apto_para_examen = TRUE WHERE alumno_id = ? AND disciplina_id = ?", alumno,
+				e.disciplina);
+	}
+
+	/** Cargo de un producto, con su concepto, en la sede A; {@code alumnoDeporte} null como los manuales. */
+	private long cargo(long alumno, long producto, Long alumnoDeporte, boolean pagado) {
+		jdbc.update("""
+				INSERT INTO producto_alumno (alumno_id, producto_id, concepto, precio, cantidad, pagado, fecha_asignacion,
+				  fecha_pago, organizacion_id, sede_id, alumno_deporte_id)
+				SELECT ?, p.id, p.concepto, p.precio, 1, ?, '2026-10-20', ?, ?, ?, ? FROM producto p WHERE p.id = ?""",
+				alumno, pagado, pagado ? "2026-10-20" : null, e.org, e.sA, alumnoDeporte, producto);
+		return jdbc.queryForObject("SELECT MAX(id) FROM producto_alumno WHERE alumno_id = ?", Long.class, alumno);
+	}
+
+	private void cobro(long alumno, long cargo, String estado) {
+		jdbc.update("""
+				INSERT INTO cobro (organizacion_id, producto_alumno_id, sede_id, alumno_id, concepto, importe, metodo,
+				  fecha_cobro, origen, estado, anulado_en) VALUES (?, ?, ?, ?, 'CARGO IT RALLAS', 25.00, 'EFECTIVO',
+				  '2026-10-21 12:00:00', 'TESORERIA', ?, ?)""", e.org, cargo, e.sA, alumno, estado,
+				"ANULADO".equals(estado) ? "2026-10-22 12:00:00" : null);
+	}
+
+	private long convocatoria(String fecha, long disciplina) {
+		jdbc.update("INSERT INTO convocatoria (fecha_convocatoria, organizacion_id, disciplina_id) VALUES (?, ?, ?)", fecha,
+				e.org, disciplina);
+		return jdbc.queryForObject("SELECT MAX(id) FROM convocatoria WHERE organizacion_id = ?", Long.class, e.org);
+	}
+
+	private void apuntar(long alumno, long convocatoria, Long cargo, long alumnoDeporte, String gradoSiguiente) {
+		Boolean pagado = cargo == null ? Boolean.FALSE
+				: jdbc.queryForObject("SELECT pagado FROM producto_alumno WHERE id = ?", Boolean.class, cargo);
+		jdbc.update("""
+				INSERT INTO alumno_convocatoria (cuantia_examen, pagado, alumno_id, convocatoria_id, grado_actual,
+				  grado_siguiente, organizacion_id, producto_alumno_id, alumno_deporte_id)
+				VALUES (25, ?, ?, ?, 'AMARILLO', ?, ?, ?, ?)""", pagado, alumno, convocatoria, gradoSiguiente, e.org, cargo,
+				alumnoDeporte);
+	}
+
+	private boolean existeCargo(long cargo) {
+		return jdbc.queryForObject("SELECT COUNT(*) FROM producto_alumno WHERE id = ?", Integer.class, cargo) == 1;
+	}
+
+	private boolean apuntado(long alumno, long convocatoria) {
+		return jdbc.queryForObject("SELECT COUNT(*) FROM alumno_convocatoria WHERE alumno_id = ? AND convocatoria_id = ?",
+				Integer.class, alumno, convocatoria) == 1;
+	}
+
+	private static MockHttpServletRequestBuilder quitar(String ruta, int paso, boolean confirmar, List<Long> pases,
+			List<Long> convocatorias) {
+		StringBuilder cuerpo = new StringBuilder("{\"paso\":").append(paso).append(",\"confirmarQuitarApto\":")
+				.append(confirmar);
+		if (pases != null) {
+			cuerpo.append(",\"pasesABorrar\":").append(pases);
+		}
+		if (convocatorias != null) {
+			cuerpo.append(",\"convocatoriasASalir\":").append(convocatorias);
+		}
+		return post(ruta).contentType(MediaType.APPLICATION_JSON).content(cuerpo.append('}').toString());
+	}
+
+	private static JsonNode buscarConvocatoria(JsonNode lista, long convocatoria) {
+		for (JsonNode c : lista) {
+			if (c.get("convocatoriaId").asLong() == convocatoria) {
+				return c;
+			}
+		}
+		throw new AssertionError("Sin la convocatoria " + convocatoria + " en " + lista);
 	}
 
 	private double cuantia(long alumnoDeporte) {

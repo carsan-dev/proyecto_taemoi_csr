@@ -29,8 +29,13 @@ public class RegistroAccionesRallas {
 	public enum Accion {
 		/** Un paso de la hoja ({@code alumno grupo alumnoDeporte paso medias}: el paso dado y las medias que quedan). */
 		PASO(AuditoriaAccion.UPDATE),
-		/** «Marcar apto para examen» desde la hoja: apto y rallas a 0 ({@code alumno grupo alumnoDeporte}). */
+		/** «Marcar apto para examen» desde la hoja: apto; las rallas se quedan en 10 ({@code alumno grupo alumnoDeporte}). */
 		APTO_DESDE_HOJA(AuditoriaAccion.UPDATE),
+		/**
+		 * Bajar desde las 10 medias con apto o pendientes: el apto se quita y se borra lo pendiente ({@code alumno grupo
+		 * alumnoDeporte aptoAntes pasesBorrados convocatoriasSalidas}; cada cargo borrado va además en su registro).
+		 */
+		APTO_QUITADO(AuditoriaAccion.UPDATE),
 		/** Rallas a 0 al cambiar el grado ({@code alumno alumnoDeporte gradoAnterior gradoNuevo}). */
 		A_CERO_POR_GRADO(AuditoriaAccion.UPDATE),
 		/** Configuración: la disciplina pasa a usar rallas ({@code disciplina}). */
