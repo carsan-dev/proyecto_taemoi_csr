@@ -93,3 +93,27 @@ describe('AlumnosTipoPanelComponent género en «Lista/Listo para examen»', () 
     expect(textos).toEqual(['Lista para examen', 'Listo para examen']);
   });
 });
+
+describe('AlumnosTipoPanelComponent apto en «Alumnos por tipo»', () => {
+  it('con aptoParaExamen solo «Apta/Apto»; sin él, «Lista/Listo para examen»', () => {
+    const alumno = (id: number, genero: string | null, aptoParaExamen: boolean | undefined) => ({
+      id, nombre: 'A' + id, apellidos: 'B', genero, grado: 'Amarillo', codigoGrado: 'AMARILLO', deporte: 'TAEKWONDO',
+      mediasRallas: 10, aplicaRallas: true, activo: true, aptoParaExamen,
+    });
+    TestBed.configureTestingModule({
+      imports: [AlumnosTipoPanelComponent],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(), provideRouter([]),
+        { provide: LecturasPanelService, useValue: { alumnosPorTipo: () => of([
+          alumno(1, 'FEMENINO', true), alumno(2, null, true), alumno(3, 'FEMENINO', false), alumno(4, null, undefined),
+        ]) } },
+        { provide: CatalogoService, useValue: { catalogo: () => CATALOGO, cargar: () => of(null) } },
+        { provide: AuthenticationService, useValue: { usuarioLogueadoCambio: of(false), emailCambio: of(null) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(AlumnosTipoPanelComponent);
+    fixture.detectChanges();
+    const textos = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-listo]')).map((e) => e.textContent?.trim());
+    expect(textos).toEqual(['Apta', 'Apto', 'Lista para examen', 'Listo para examen']);
+  });
+});
