@@ -58,14 +58,51 @@ public interface AlumnoDeporteRepository extends JpaRepository<AlumnoDeporte, Lo
 	int sumarMediasRallas(@Param("id") Long id, @Param("organizacion") Long organizacion, @Param("grado") Long grado,
 			@Param("paso") int paso);
 
-	/** «Marcar apto» desde la hoja: apto y rallas a 0 a la vez, solo si tiene las 10 medias y sigue en ese grado. */
+	/**
+	 * «Marcar apto» desde la hoja: apto, sin tocar las rallas (se quedan en 10), solo si tiene las 10 medias, sigue en
+	 * ese grado y aún no era apto. 0 filas: grado cambiado, menos de 10 medias o ya apto.
+	 */
 	@Modifying
 	@Query(value = """
-			UPDATE alumno_deporte SET apto_para_examen = TRUE, medias_rallas = 0
-			WHERE id = :id AND organizacion_id = :organizacion AND grado_id = :grado AND medias_rallas = 10""",
+			UPDATE alumno_deporte SET apto_para_examen = TRUE
+			WHERE id = :id AND organizacion_id = :organizacion AND grado_id = :grado AND medias_rallas = 10
+			  AND apto_para_examen = FALSE""",
 			nativeQuery = true)
 	int marcarAptoConRallasCompletas(@Param("id") Long id, @Param("organizacion") Long organizacion,
 			@Param("grado") Long grado);
+
+	/**
+	 * Bajar desde las 10 medias ({@code paso} −1 o −2): medias {@code 10 + paso} y sin apto a la vez, solo si sigue con
+	 * 10 medias y en ese grado. Las asignaciones no leen {@code medias_rallas} (MySQL las evalúa de izquierda a derecha
+	 * con el valor ya cambiado). 0 filas: grado o medias cambiados.
+	 */
+	@Modifying
+	@Query(value = """
+			UPDATE alumno_deporte SET apto_para_examen = FALSE, medias_rallas = 10 + :paso
+			WHERE id = :id AND organizacion_id = :organizacion AND grado_id = :grado AND medias_rallas = 10
+			  AND :paso IN (-1, -2)""",
+			nativeQuery = true)
+	int quitarDesdeCompletas(@Param("id") Long id, @Param("organizacion") Long organizacion, @Param("grado") Long grado,
+			@Param("paso") int paso);
+
+	/**
+	 * Bloquea (SELECT ... FOR UPDATE) la fila de la inscripción sin cargar la entidad (rallas: antes de bajar desde las
+	 * 10 medias). Solo en transacción. Vacía si no existe en esa escuela.
+	 */
+	@Query(value = "SELECT id FROM alumno_deporte WHERE id = :id AND organizacion_id = :organizacion FOR UPDATE",
+			nativeQuery = true)
+	List<Long> bloquearFilaRallas(@Param("id") Long id, @Param("organizacion") Long organizacion);
+
+	/**
+	 * Bloquea (SELECT ... FOR UPDATE) la fila de la inscripción y devuelve su apto confirmado (una lectura con bloqueo
+	 * lee lo último confirmado, también en REPEATABLE READ). Pase de grado y alta en convocatoria: lo llaman antes de
+	 * comprobar el apto, así que bajar las rallas desde las 10 (que bloquea la inscripción primero y quita el apto) no
+	 * puede colarse entre la comprobación y el cargo. Solo en transacción; dentro de la misma transacción, bloquear otra
+	 * vez la misma fila no espera. Vacía si no existe en esa escuela.
+	 */
+	@Query(value = "SELECT apto_para_examen FROM alumno_deporte WHERE id = :id AND organizacion_id = :organizacion "
+			+ "FOR UPDATE", nativeQuery = true)
+	List<Object> bloquearYLeerApto(@Param("id") Long id, @Param("organizacion") Long organizacion);
 
 	/** Rallas a 0 (cambio de grado). 0 filas: ya estaban en 0. */
 	@Modifying

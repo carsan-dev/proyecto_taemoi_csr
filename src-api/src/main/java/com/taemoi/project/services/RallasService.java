@@ -43,8 +43,17 @@ import jakarta.persistence.EntityManager;
  * ninguno sale de rango. La columna no se escribe desde la entidad, así que guardar la inscripción por otra ruta no
  * pisa un paso. Si el grado cambió entre la lectura y el paso, 409 sin cambiar nada.
  *
- * <p><b>Apto desde la hoja.</b> Solo con 10 medias: en una sentencia marca el apto de esa disciplina y deja las rallas en
- * 0. Marcar apto por otra vía no toca las rallas. Cambiar el grado las deja en 0 ({@link #ponerACeroPorCambioDeGrado}).
+ * <p><b>Apto desde la hoja.</b> Solo con 10 medias: en una sentencia marca el apto de esa disciplina; las rallas se
+ * quedan en 10. Si ya era apto, 200 sin cambiar nada. Marcar apto por otra vía no toca las rallas. Cambiar el grado las
+ * deja en 0 ({@link #ponerACeroPorCambioDeGrado}).
+ *
+ * <p><b>Bajar desde las 10 medias</b> (−1 o −2 con 10): quita SIEMPRE el apto de esa disciplina (venga de donde venga) y,
+ * en la misma transacción, borra sus pases sin cobrar y lo saca de sus convocatorias pendientes de esa disciplina
+ * ({@link PendientesAlQuitarRallas}). Si había apto o algo que borrar, el cliente lo confirma con los ids exactos de
+ * {@link #alQuitar} (si no, 409). Si algo no se puede borrar (cobros, encargo, pagado), 409 sin cambiar nada. Orden de
+ * bloqueo: inscripción, cargos por id ascendente, inscripciones en convocatorias por id ascendente, {@code UPDATE} y
+ * borrados. El pase de grado y el alta en convocatoria también bloquean la inscripción antes de leer el apto. Desde menos
+ * de 10, el apto no se toca.
  *
  * <p>Cada cambio queda en el registro ({@link RegistroAccionesRallas}) en la misma transacción. Escuela: todo se acota
  * por {@code @TenantId} y las sentencias nativas llevan además {@code organizacion_id}.
@@ -66,20 +75,27 @@ public class RallasService {
 	public static final String CAMBIO_A_LA_VEZ = "El grado ha cambiado mientras tanto. Vuelve a abrir la hoja.";
 	public static final String DISCIPLINA_SIN_RALLAS = "La disciplina no existe o no tiene grados.";
 	public static final String CONFIGURACION_VACIA = "Indica al menos una disciplina.";
+	public static final String CONFIRMAR_QUITAR_APTO = "Al quitar rallas deja de estar apto para examen y se borra lo "
+			+ "pendiente de su examen. Confírmalo para seguir.";
+	public static final String PASES_CAMBIARON = PendientesAlQuitarRallas.PASES_CAMBIARON;
+	public static final String PASE_NO_SE_BORRA = PendientesAlQuitarRallas.PASE_NO_SE_BORRA;
+	public static final String CONVOCATORIA_NO_SE_QUITA = PendientesAlQuitarRallas.CONVOCATORIA_NO_SE_QUITA;
 
 	private final EntityManager em;
 	private final AlcanceActual alcanceActual;
 	private final AsignacionProfesorRepository asignaciones;
 	private final AlumnoDeporteRepository inscripciones;
 	private final RegistroAccionesRallas registro;
+	private final PendientesAlQuitarRallas pendientes;
 
 	public RallasService(EntityManager em, AlcanceActual alcanceActual, AsignacionProfesorRepository asignaciones,
-			AlumnoDeporteRepository inscripciones, RegistroAccionesRallas registro) {
+			AlumnoDeporteRepository inscripciones, RegistroAccionesRallas registro, PendientesAlQuitarRallas pendientes) {
 		this.em = em;
 		this.alcanceActual = alcanceActual;
 		this.asignaciones = asignaciones;
 		this.inscripciones = inscripciones;
 		this.registro = registro;
+		this.pendientes = pendientes;
 	}
 
 	// ------------------------------------------------------------------ pasos y apto desde la hoja
@@ -89,15 +105,37 @@ public class RallasService {
 	 * grupo inexistente 404, sin permiso para cambiar (ayudante) 403, paso no válido 400, alumno fuera del grupo o de
 	 * baja 404, sin la disciplina 404, rallas que no se usan (disciplina apagada, sin grado, PUM o DAN) 409, fuera de 0 a
 	 * 10 o grado cambiado a la vez 409. Devuelve cómo queda.
+	 *
+	 * <p>Con paso negativo y 10 medias, «bajar desde las completas» (ver la clase): pendientes que no se pueden borrar
+	 * 409 {@value #PASE_NO_SE_BORRA} / {@value #CONVOCATORIA_NO_SE_QUITA}; con apto o pendientes y sin
+	 * {@code confirmarQuitarApto} 409 {@value #CONFIRMAR_QUITAR_APTO}; ids distintos de los de ahora 409
+	 * {@value #PASES_CAMBIARON}. En los demás pasos, {@code confirmarQuitarApto}, {@code pasesABorrar} y
+	 * {@code convocatoriasASalir} se ignoran.
 	 */
 	@Transactional(isolation = Isolation.READ_COMMITTED)
-	public RallasDTOs.Estado paso(Via via, Long grupoId, Long alumnoId, Integer paso) {
+	public RallasDTOs.Estado paso(Via via, Long grupoId, Long alumnoId, Integer paso, Boolean confirmarQuitarApto,
+			List<Long> pasesABorrar, List<Long> convocatoriasASalir) {
 		GrupoDeLasRallas grupo = exigirGrupoQuePuedeCambiar(via, grupoId);
 		if (paso == null || !(paso == -2 || paso == -1 || paso == 1 || paso == 2)) {
 			throw new IllegalArgumentException(PASO_NO_VALIDO);
 		}
 		Inscripcion inscripcion = exigirInscripcionConRallas(grupo, grupoId, alumnoId);
 		Long organizacion = TenantContext.get();
+		if (paso < 0) {
+			// Bloqueo de la inscripción antes de decidir el camino: con 10 medias se deshace el apto y lo pendiente.
+			if (inscripciones.bloquearFilaRallas(inscripcion.id(), organizacion).isEmpty()) {
+				throw new NoSuchElementException(SIN_DISCIPLINA);
+			}
+			Object[] bloqueada = leer(inscripcion.id());
+			if (!inscripcion.gradoId().equals(bloqueada[1])) {
+				throw new IllegalStateException(CAMBIO_A_LA_VEZ);
+			}
+			if (((Number) bloqueada[0]).intValue() == 10) {
+				return bajarDesdeCompletas(via, grupoId, alumnoId, paso, grupo, inscripcion,
+						Boolean.TRUE.equals(bloqueada[2]), Boolean.TRUE.equals(confirmarQuitarApto), pasesABorrar,
+						convocatoriasASalir);
+			}
+		}
 		if (inscripciones.sumarMediasRallas(inscripcion.id(), organizacion, inscripcion.gradoId(), paso) == 0) {
 			Object[] ahora = leer(inscripcion.id());
 			if (!inscripcion.gradoId().equals(ahora[1])) {
@@ -118,9 +156,9 @@ public class RallasService {
 	}
 
 	/**
-	 * «Marcar apto para examen» desde la hoja: con las 10 medias, en una sola sentencia, apto en la disciplina del grupo
-	 * y rallas a 0. Mismos códigos que {@link #paso}; con menos de 10 medias, 409 {@value #SOLO_CON_CINCO} sin cambiar
-	 * nada.
+	 * «Marcar apto para examen» desde la hoja: con las 10 medias, en una sola sentencia, apto en la disciplina del grupo;
+	 * las rallas se quedan en 10. Mismos códigos que {@link #paso}; con menos de 10 medias, 409 {@value #SOLO_CON_CINCO}
+	 * sin cambiar nada. Si ya era apto, 200 con el estado y sin registro.
 	 */
 	@Transactional(isolation = Isolation.READ_COMMITTED)
 	public RallasDTOs.Estado marcarApto(Via via, Long grupoId, Long alumnoId) {
@@ -131,7 +169,14 @@ public class RallasService {
 			if (!inscripcion.gradoId().equals(ahora[1])) {
 				throw new IllegalStateException(CAMBIO_A_LA_VEZ);
 			}
-			throw new IllegalStateException(SOLO_CON_CINCO);
+			int medias = ((Number) ahora[0]).intValue();
+			if (medias < 10) {
+				throw new IllegalStateException(SOLO_CON_CINCO);
+			}
+			if (Boolean.TRUE.equals(ahora[2])) {
+				return new RallasDTOs.Estado(alumnoId, grupo.disciplina(), medias, true);
+			}
+			throw new IllegalStateException(CAMBIO_A_LA_VEZ);
 		}
 		Object[] ahora = leer(inscripcion.id());
 		Map<String, Object> valores = new LinkedHashMap<>();
@@ -141,6 +186,73 @@ public class RallasService {
 		registro.registrar(RegistroAccionesRallas.Accion.APTO_DESDE_HOJA, ruta(via, grupoId, alumnoId, "/apto"), valores);
 		return new RallasDTOs.Estado(alumnoId, grupo.disciplina(), ((Number) ahora[0]).intValue(),
 				Boolean.TRUE.equals(ahora[2]));
+	}
+
+	/**
+	 * {@code GET .../rallas/al-quitar}: qué pasaría al quitar rallas ahora. Mismos 403/404/409 que {@link #paso}. Con 10
+	 * medias, los pases y convocatorias que se borrarían (409 si alguno no se puede); con menos, listas vacías. No
+	 * bloquea ni cambia nada: el {@code POST} vuelve a comprobarlo todo con bloqueo.
+	 */
+	@Transactional(readOnly = true)
+	public RallasDTOs.AlQuitar alQuitar(Via via, Long grupoId, Long alumnoId) {
+		GrupoDeLasRallas grupo = exigirGrupoQuePuedeCambiar(via, grupoId);
+		Inscripcion inscripcion = exigirInscripcionConRallas(grupo, grupoId, alumnoId);
+		Object[] ahora = leer(inscripcion.id());
+		int medias = ((Number) ahora[0]).intValue();
+		boolean apto = Boolean.TRUE.equals(ahora[2]);
+		if (medias != 10) {
+			return new RallasDTOs.AlQuitar(alumnoId, grupo.disciplina(), medias, apto, List.of(), List.of());
+		}
+		PendientesAlQuitarRallas.Pendientes afectados = pendientes.buscar(inscripcion.id(), alumnoId, grupo.disciplina(),
+				inscripcion.codigoGrado());
+		pendientes.exigirQuitables(afectados);
+		return new RallasDTOs.AlQuitar(alumnoId, grupo.disciplina(), medias, apto,
+				afectados.pases().stream().map(pendientes::pase).toList(),
+				afectados.convocatorias().stream().map(pendientes::convocatoria).toList());
+	}
+
+	/**
+	 * Paso negativo con la inscripción bloqueada y 10 medias: comprobaciones, cargos bloqueados, medias y apto en una
+	 * sentencia, borrados y registro ({@code PASO} y, si había apto o pendientes, {@code APTO_QUITADO}).
+	 */
+	private RallasDTOs.Estado bajarDesdeCompletas(Via via, Long grupoId, Long alumnoId, int paso, GrupoDeLasRallas grupo,
+			Inscripcion inscripcion, boolean aptoAntes, boolean confirmado, List<Long> pasesABorrar,
+			List<Long> convocatoriasASalir) {
+		PendientesAlQuitarRallas.Pendientes afectados = pendientes.buscar(inscripcion.id(), alumnoId, grupo.disciplina(),
+				inscripcion.codigoGrado());
+		pendientes.exigirQuitables(afectados);
+		boolean pideConfirmar = aptoAntes || !afectados.vacios();
+		if (pideConfirmar && !confirmado) {
+			throw new IllegalStateException(CONFIRMAR_QUITAR_APTO);
+		}
+		PendientesAlQuitarRallas.Pendientes bloqueados = pendientes.bloquearYConfirmar(inscripcion.id(), alumnoId,
+				grupo.disciplina(), inscripcion.codigoGrado(), pasesABorrar, convocatoriasASalir);
+		if (inscripciones.quitarDesdeCompletas(inscripcion.id(), TenantContext.get(), inscripcion.gradoId(), paso) == 0) {
+			throw new IllegalStateException(CAMBIO_A_LA_VEZ);
+		}
+		String ruta = ruta(via, grupoId, alumnoId, "");
+		PendientesAlQuitarRallas.Quitados quitados = pendientes.borrar(bloqueados, ruta);
+		Object[] ahora = leer(inscripcion.id());
+		int medias = ((Number) ahora[0]).intValue();
+		Map<String, Object> valores = new LinkedHashMap<>();
+		valores.put("alumno", alumnoId);
+		valores.put("grupo", grupoId);
+		valores.put("alumnoDeporte", inscripcion.id());
+		valores.put("paso", paso);
+		valores.put("medias", medias);
+		registro.registrar(RegistroAccionesRallas.Accion.PASO, ruta, valores);
+		if (pideConfirmar) {
+			Map<String, Object> quitado = new LinkedHashMap<>();
+			quitado.put("alumno", alumnoId);
+			quitado.put("grupo", grupoId);
+			quitado.put("alumnoDeporte", inscripcion.id());
+			quitado.put("aptoAntes", aptoAntes);
+			quitado.put("pasesBorrados", quitados.pases().size());
+			quitado.put("convocatoriasSalidas", quitados.convocatorias().size());
+			registro.registrar(RegistroAccionesRallas.Accion.APTO_QUITADO, ruta, quitado);
+		}
+		return new RallasDTOs.Estado(alumnoId, grupo.disciplina(), medias, Boolean.TRUE.equals(ahora[2]),
+				quitados.pases(), quitados.convocatorias());
 	}
 
 	// ------------------------------------------------------------------ cambio de grado
@@ -241,8 +353,8 @@ public class RallasService {
 	private record GrupoDeLasRallas(String disciplina, Long sedeId) {
 	}
 
-	/** La inscripción del alumno en la disciplina del grupo y su grado (ya comprobado que lleva rallas). */
-	private record Inscripcion(Long id, Long gradoId) {
+	/** La inscripción del alumno en la disciplina del grupo y su grado, id y código (ya comprobado que lleva rallas). */
+	private record Inscripcion(Long id, Long gradoId, String codigoGrado) {
 	}
 
 	/**
@@ -305,7 +417,7 @@ public class RallasService {
 		if (!ReglaRallas.gradoLlevaRallas((String) fila[2])) {
 			throw new IllegalStateException(GRADO_SIN_RALLAS);
 		}
-		return new Inscripcion((Long) fila[0], (Long) fila[1]);
+		return new Inscripcion((Long) fila[0], (Long) fila[1], (String) fila[2]);
 	}
 
 	/** {@code [medias, gradoId, apto]} confirmados de la inscripción. */

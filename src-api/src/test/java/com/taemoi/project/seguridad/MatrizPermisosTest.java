@@ -453,6 +453,10 @@ class MatrizPermisosTest extends MySqlIntegrationTest {
 		m.put("POST /api/profesor/grupos/{grupoId}/alumnos/{alumnoId}/rallas", rallas + "cadaRol_porSuRuta");
 		m.put("POST /api/profesor/grupos/{grupoId}/alumnos/{alumnoId}/rallas/apto",
 				rallas + "ayudante_soloVe_403_sinCambiarNada");
+		for (String metodo : List.of("GET", "HEAD")) {
+			m.put(metodo + " /api/profesor/grupos/{grupoId}/alumnos/{alumnoId}/rallas/al-quitar",
+					rallas + "alQuitar_porRolYRuta");
+		}
 		return Map.copyOf(m);
 	}
 

@@ -68,6 +68,8 @@ interface DeporteFila {
   grado: GradoFila | null;
   /** Medias rallas hacia el examen (0-10) en el cinturón; null si no se usan. */
   medias: number | null;
+  /** Apto para examen en la disciplina. */
+  apto: boolean;
   /** Disciplina con grados y sin grado asignado: hoy se ve «Sin grado». */
   sinGrado: boolean;
   tiempoConGrado: string;
@@ -701,6 +703,7 @@ export class AlumnosComponent implements OnInit, OnDestroy {
       activo: d.activo !== false,
       grado: conGrados && d.grado ? gradoFila(d.grado, d.deporte) : null,
       medias: conGrados && d.grado ? mediasVisibles(d) : null,
+      apto: d.aptoParaExamen === true,
       sinGrado: conGrados && !d.grado,
       tiempoConGrado: conGrados ? tiempoConGrado(d.fechaGrado, hoy) : '',
       tarifa: this.nombreTarifa(d.tipoTarifa),

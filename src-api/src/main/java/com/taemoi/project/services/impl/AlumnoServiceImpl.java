@@ -61,6 +61,7 @@ import com.taemoi.project.entities.Usuario;
 import com.taemoi.project.exceptions.alumno.AlumnoDuplicadoException;
 import com.taemoi.project.exceptions.alumno.AlumnoNoEncontradoException;
 import com.taemoi.project.exceptions.alumno.DatosAlumnoInvalidosException;
+import com.taemoi.project.organizacion.TenantContext;
 import com.taemoi.project.repositories.AlumnoSaludRepository;
 import com.taemoi.project.repositories.ConsentimientoRepository;
 import com.taemoi.project.repositories.TutorRepository;
@@ -2473,8 +2474,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 				.orElseThrow(() -> new IllegalArgumentException(
 						"El alumno no está activo en el deporte " + convocatoria.getDeporte()));
 
-		// Verify the alumno is eligible for exam in this sport
-		if (!Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+		// Verify the alumno is eligible for exam in this sport: con la inscripción bloqueada y el apto releído (ver
+		// bloquearYReleerApto). Un alumno por petición: solo se bloquea una inscripción por transacción.
+		if (!bloquearYReleerApto(alumnoDeporte)) {
 			throw new IllegalArgumentException("El alumno no está apto para examen en el deporte " + convocatoria.getDeporte());
 		}
 
@@ -2602,8 +2604,9 @@ public class AlumnoServiceImpl implements AlumnoService {
 			throw new IllegalArgumentException("El deporte " + deporte + " no tiene sistema de grados");
 		}
 
-		// Verificar que el alumno está apto para examen en este deporte
-		if (!Boolean.TRUE.equals(alumnoDeporte.getAptoParaExamen())) {
+		// Verificar que el alumno está apto para examen en este deporte, con la inscripción bloqueada y el apto releído
+		// (ver bloquearYReleerApto). En el pase del profesor ya estaba bloqueada: volver a bloquearla no espera.
+		if (!bloquearYReleerApto(alumnoDeporte)) {
 			throw new IllegalArgumentException(
 					"El alumno no está apto para examen en el deporte " + deporte);
 		}
@@ -2640,6 +2643,23 @@ public class AlumnoServiceImpl implements AlumnoService {
 
 		// No actualizar el grado aqui; se actualizara cuando el producto se marque como pagado
 		return productoAlumno;
+	}
+
+	/**
+	 * Pase de grado y alta en convocatoria: bloquea la fila de la inscripción ({@code FOR UPDATE}, con su
+	 * {@code organizacion_id}) y devuelve el apto confirmado, no el de la entidad ya cargada. Bajar las rallas desde las 10
+	 * ({@code RallasService}) bloquea la inscripción ANTES de quitar el apto y borrar los pases y convocatorias
+	 * pendientes; sin este bloqueo, un pase o un alta que leyó el apto antes creaban su cargo después de ese borrado y
+	 * quedaban vivos sin apto. Orden de bloqueo: la inscripción primero (como las rallas y el pase del profesor) y después
+	 * los cargos que se crean, así que no hay ciclo con {@code CobroService#bloquearCargo}.
+	 */
+	private boolean bloquearYReleerApto(AlumnoDeporte alumnoDeporte) {
+		List<Object> apto = alumnoDeporteRepository.bloquearYLeerApto(alumnoDeporte.getId(), TenantContext.get());
+		if (apto.isEmpty()) {
+			return false;
+		}
+		Object valor = apto.get(0);
+		return Boolean.TRUE.equals(valor) || (valor instanceof Number numero && numero.intValue() != 0);
 	}
 
 	/**

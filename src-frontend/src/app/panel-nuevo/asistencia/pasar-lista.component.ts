@@ -413,11 +413,11 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     return alumno.deportes.find((d) => d.delGrupo) ?? alumno.deportes[0] ?? null;
   }
 
-  gradoDe(alumno: AlumnoDeLista): { texto: string; color1: string | null; color2: string | null } {
+  gradoDe(alumno: AlumnoDeLista): { texto: string; color1: string | null; color2: string | null; codigo: string | null } {
     const deporte = this.deporteDe(alumno);
-    if (!deporte?.grado) return { texto: 'Sin grado', color1: null, color2: null };
+    if (!deporte?.grado) return { texto: 'Sin grado', color1: null, color2: null, codigo: null };
     const grado = gradoFila(deporte.grado.codigo, deporte.deporte);
-    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2 };
+    return { texto: gradoParaFrase(grado), color1: grado.color1, color2: grado.color2, codigo: grado.codigo };
   }
 
   // ------------------------------------------------------------------ rallas hacia el examen (decisiones 510-513)
@@ -467,14 +467,16 @@ export class PasarListaComponent implements OnInit, ConCambiosSinGuardar {
     const alumno = this.alumnoHoja;
     const antes = alumno ? this.mediasDe(alumno) : null;
     if (!alumno || antes === null || this.rallasEnCurso) return;
+    const deporte = this.deporteDe(alumno);
     this.pasosRallas.darPaso({
-      prefijo: this.prefijo, grupoId: this.grupoId, alumnoId: alumno.id, antes, paso, destruir: this.destruir,
+      prefijo: this.prefijo, grupoId: this.grupoId, alumno, disciplina: deporte?.deporteNombre ?? '', antes,
+      apto: !!deporte?.apto, paso, destruir: this.destruir,
       poner: (medias, apto) => this.ponerRallas(alumno.id, medias, apto),
       enCurso: (valor) => (this.rallasEnCurso = valor),
     });
   }
 
-  /** Con las 5 rallas: la hoja se cierra, se confirma y, si sale bien, queda apto y sus rallas a 0. */
+  /** Con las 5 rallas: la hoja se cierra, se confirma y, si sale bien, queda apto (las rallas se quedan). */
   async marcarAptoDesdeHoja(): Promise<void> {
     const alumno = this.alumnoHoja;
     if (!alumno || this.rallasEnCurso || this.mediasDe(alumno) !== 10) return;

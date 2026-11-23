@@ -31,6 +31,18 @@ function luminancia(hex: string): number | null {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+/** Color de las rayas de PUM y DAN: dorado cálido, tirando a ocre, como el bordado. */
+export const COLOR_DORADO = '#D9A12A';
+
+/**
+ * Rayas doradas de un PUM o DAN, del código del grado: `ROJO_NEGRO_2_PUM` → 2, `NEGRO_3_DAN` → 3. Cualquier otro grado
+ * (o sin código), 0.
+ */
+export function franjasDoradas(codigoGrado: string | null | undefined): number {
+  const m = /_(\d+)_(PUM|DAN)$/.exec(codigoGrado ?? '');
+  return m ? Number(m[1]) : 0;
+}
+
 /** Halo blanco solo donde el negro no llega a 3:1 sobre el color (el azul). */
 export function necesitaHalo(hex: string): boolean {
   const l = luminancia(hex);
@@ -40,7 +52,8 @@ export function necesitaHalo(hex: string): boolean {
 /**
  * Cinturón común del panel nuevo (decisión 511 y 513): SVG de 56×14 (`fila`) o 150×30 (`hoja`). Un color, o dos franjas
  * horizontales (color 2 arriba, color 1 abajo). Las rallas (`medias`, de 0 a 10; `null` = sin rallas) son siempre negras,
- * desde el extremo derecho, y la media ralla es la mitad de abajo. PUM y DAN no llevan rallas: quien lo usa pasa `null`.
+ * desde el extremo derecho, y la media ralla es la mitad de abajo. PUM y DAN no llevan rallas (quien lo usa pasa `null`),
+ * sino una raya dorada por cada PUM o DAN, sacada de `codigoGrado`, con la misma forma que una ralla completa.
  * El SVG es decorativo (`aria-hidden`): el texto accesible lo pone quien lo usa.
  */
 @Component({
@@ -61,6 +74,9 @@ export function necesitaHalo(hex: string): boolean {
     } @else {
     @for (r of fondo(); track $index) {
     <rect data-franja [attr.x]="r.x" [attr.y]="r.y" [attr.width]="r.w" [attr.height]="r.h" [attr.fill]="r.fill" />
+    }
+    @for (r of doradas(); track $index) {
+    <rect data-dorada [attr.x]="r.x" [attr.y]="r.y" [attr.width]="r.w" [attr.height]="r.h" [attr.fill]="r.fill" />
     }
     @for (r of rallas(); track $index) {
     <rect [attr.data-ralla]="r.fill === '#000' ? '' : null" [attr.data-halo]="r.fill === '#fff' ? '' : null"
@@ -94,6 +110,8 @@ export class CinturonComponent {
   readonly tamano = input<TamanoCinturon>('fila');
   /** Sin grado: recuadro blanco con borde discontinuo. */
   readonly sinGrado = input(false);
+  /** Código del grado (`NEGRO_3_DAN`): en PUM y DAN, una raya dorada por cada uno. */
+  readonly codigoGrado = input<string | null | undefined>(null);
 
   protected readonly medida = computed(() => MEDIDAS_CINTURON[this.tamano()] ?? MEDIDAS_CINTURON.fila);
   protected readonly vacio = computed(() => this.sinGrado() || !this.color1());
@@ -110,6 +128,17 @@ export class CinturonComponent {
           { x: 1, y: 1 + mitad, w: w - 2, h: mitad, fill: c1 },
         ]
       : [{ x: 1, y: 1, w: w - 2, h: alto, fill: c1 }];
+  });
+
+  /** Las rayas de PUM y DAN: como las rallas completas (ancho, paso, margen y alto), en dorado y sin halo. */
+  protected readonly doradas = computed<Rect[]>(() => {
+    const n = franjasDoradas(this.codigoGrado());
+    if (this.vacio() || n === 0) {
+      return [];
+    }
+    const { w, h, ancho, paso, margen } = this.medida();
+    const x0 = w - 1 - margen - ancho;
+    return Array.from({ length: n }, (_, k) => ({ x: x0 - paso * k, y: 1, w: ancho, h: h - 2, fill: COLOR_DORADO }));
   });
 
   protected readonly rallas = computed<Rect[]>(() => {

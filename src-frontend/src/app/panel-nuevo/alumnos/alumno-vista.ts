@@ -164,13 +164,15 @@ export interface GradoFila {
   /** Colores del cinturón (`<pn-cinturon>`): `color1` abajo, `color2` arriba o `null`. */
   color1: string;
   color2: string | null;
+  /** Código del grado (`NEGRO_3_DAN`): las rayas doradas de PUM y DAN en `<pn-cinturon>`. */
+  codigo: string;
 }
 
 export function gradoFila(codigo: string, deporte: string): GradoFila {
   const { color1, color2 } = coloresCinturon(codigo, deporte);
   // El texto de hoy: el nombre del catálogo o, si el código no está en él, el código sin guiones bajos.
   const nombreDetalle = getGradoNombreParaDeporte(codigo, deporte).replace(/_+/g, ' ');
-  return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, color1, color2 };
+  return { nombre: nombreDetalle.toLocaleLowerCase('es-ES'), nombreDetalle, color1, color2, codigo };
 }
 
 /** El grado dentro de una frase, con mayúscula inicial: «Blanco», «Naranja-verde», «Negro 1º dan». */

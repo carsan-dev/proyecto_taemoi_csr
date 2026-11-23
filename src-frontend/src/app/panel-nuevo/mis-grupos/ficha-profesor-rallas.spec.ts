@@ -197,11 +197,11 @@ describe('FichaProfesorPanelComponent · rallas desde la ficha (decisión 514)',
     expect(texto(hoja()!.querySelector('.rallas-hoja__nota'))).toBe('Aún no tiene rallas.');
   });
 
-  it('con 10 medias, «Marcar apta» cierra la hoja, confirma y deja apta con las rallas a 0', async () => {
+  it('con 10 medias, «Marcar apta» cierra la hoja, confirma y deja apta con las rallas en 10', async () => {
     crear(ficha([deporte({ mediasRallas: 10 })], {}, 'FEMENINO'));
     confirmar.and.callFake(() => {
       expect(hoja()).toBeNull();
-      return Promise.resolve({ confirmado: true, valor: null, respuesta: { alumnoId: 3, deporte: 'TAEKWONDO', mediasRallas: 0, aptoParaExamen: true } });
+      return Promise.resolve({ confirmado: true, valor: null, respuesta: { alumnoId: 3, deporte: 'TAEKWONDO', mediasRallas: 10, aptoParaExamen: true } });
     });
     abrir();
     const apto = hoja()!.querySelector<HTMLButtonElement>('[data-apto]')!;
@@ -211,15 +211,47 @@ describe('FichaProfesorPanelComponent · rallas desde la ficha (decisión 514)',
     fixture.detectChanges();
     const opciones = confirmar.calls.mostRecent().args[0];
     expect(opciones.titulo).toBe('¿Marcar a Ana apta para examen?');
-    expect(opciones.mensaje).toEqual([{ fuerte: 'Ana Prueba Ficticia' }, ' quedará apta para examen en Taekwondo y sus rallas volverán a 0.']);
-    expect(avisos.exito).toHaveBeenCalledWith('Ana queda apta para examen en Taekwondo. Sus rallas vuelven a 0.');
-    expect(cambios[cambios.length - 1]).toEqual({ alumnoId: 3, deporte: 'TAEKWONDO', medias: 0, apto: true });
-    expect(bloqueDe('Taekwondo').querySelector('[data-listo]')).toBeNull();
-    expect(texto(bloqueDe('Taekwondo').querySelector('[data-rallas]'))).toBe('Sin rallas');
+    expect(opciones.mensaje).toEqual([
+      { fuerte: 'Ana Prueba Ficticia' }, ' quedará apta para examen en Taekwondo. Las rallas se quedan hasta que cambie de grado.',
+    ]);
+    expect(avisos.exito).toHaveBeenCalledWith('Ana queda apta para examen en Taekwondo.');
+    expect(cambios[cambios.length - 1]).toEqual({ alumnoId: 3, deporte: 'TAEKWONDO', medias: 10, apto: true });
+    expect(texto(bloqueDe('Taekwondo').querySelector('[data-rallas]'))).toBe('5 de 5 rallas');
+    // Al volver a abrir la hoja: la etiqueta de apta en lugar del botón.
+    abrir();
+    expect(texto(hoja()!.querySelector('[data-apto-estado]'))).toBe('Apta para examen');
+    expect(hoja()!.querySelector('[data-apto]')).toBeNull();
+    fixture.componentInstance.cerrarRallas();
+    fixture.detectChanges();
     opciones.ejecutar().subscribe();
     const post = http.expectOne(`${url}/apto`);
     expect(post.request.body).toBeNull();
-    post.flush({ alumnoId: 3, deporte: 'TAEKWONDO', mediasRallas: 0, aptoParaExamen: true });
+    post.flush({ alumnoId: 3, deporte: 'TAEKWONDO', mediasRallas: 10, aptoParaExamen: true });
+  });
+
+  it('quitar desde 10 siendo apta: consulta, confirma y deja 4 de 5 sin apto; avisa a la lista', async () => {
+    crear(ficha([deporte({ mediasRallas: 10, apto: true })], {}, 'FEMENINO'));
+    confirmar.and.resolveTo({
+      confirmado: true, valor: null,
+      respuesta: { alumnoId: 3, deporte: 'TAEKWONDO', mediasRallas: 8, aptoParaExamen: false, pasesBorrados: [], convocatoriasSalidas: [] },
+    });
+    abrir();
+    hoja()!.querySelector<HTMLButtonElement>('[data-paso="-2"]')!.click();
+    fixture.detectChanges();
+    http.expectOne(`${url}/al-quitar`).flush({
+      alumnoId: 3, deporte: 'TAEKWONDO', mediasRallas: 10, aptoParaExamen: true, pases: [], convocatorias: [],
+    });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const opciones = confirmar.calls.mostRecent().args[0];
+    expect(opciones.titulo).toBe('¿Quitar una ralla a Ana?');
+    expect(opciones.mensaje).toEqual([
+      { fuerte: 'Ana Prueba Ficticia' }, ' se quedará con 4 de 5 rallas y dejará de estar apta para examen en Taekwondo.',
+    ]);
+    expect(opciones.accion).toBe('Quitar una ralla');
+    expect(cuenta()).toBe('4 de 5 rallas');
+    expect(cambios[cambios.length - 1]).toEqual({ alumnoId: 3, deporte: 'TAEKWONDO', medias: 8, apto: false });
+    expect(avisos.exito).toHaveBeenCalledWith('Ana ya no está apta para examen.');
   });
 
   it('si «Marcar apto» falla, se avisa y no cambia nada', async () => {

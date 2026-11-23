@@ -171,15 +171,30 @@ public class ProfesorController {
 	// Solo el TITULAR del grupo (o quien además es propietario, gestor o responsable de la sede del grupo); el ayudante,
 	// 403. Grupo ajeno: 403, como pasar lista. Códigos en RallasService#paso.
 
-	/** Un paso de la hoja ({@code {"paso": -2|-1|1|2}}), guardado al momento. Devuelve cómo queda. */
+	/**
+	 * Un paso de la hoja ({@code {"paso": -2|-1|1|2}}), guardado al momento. Bajar desde las 10 medias pide además la
+	 * confirmación con los ids de {@code al-quitar} ({@link PasoRallasRequest}). Devuelve cómo queda.
+	 */
 	@PostMapping("/grupos/{grupoId}/alumnos/{alumnoId}/rallas")
 	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
 	public ResponseEntity<RallasDTOs.Estado> pasoRallas(@PathVariable Long grupoId, @PathVariable Long alumnoId,
 			@RequestBody(required = false) PasoRallasRequest cuerpo) {
-		return ResponseEntity.ok(rallas.paso(Via.PROFESOR, grupoId, alumnoId, cuerpo == null ? null : cuerpo.paso()));
+		return ResponseEntity.ok(cuerpo == null ? rallas.paso(Via.PROFESOR, grupoId, alumnoId, null, null, null, null)
+				: rallas.paso(Via.PROFESOR, grupoId, alumnoId, cuerpo.paso(), cuerpo.confirmarQuitarApto(),
+						cuerpo.pasesABorrar(), cuerpo.convocatoriasASalir()));
 	}
 
-	/** «Marcar apto para examen» desde la hoja: solo con las 5 rallas; apto y rallas a 0 a la vez. */
+	/**
+	 * Qué pasaría al quitar rallas ahora: con 10 medias, el apto y los pases y convocatorias que se borrarían al
+	 * confirmar. Mismo acceso que el paso (el ayudante, 403).
+	 */
+	@GetMapping("/grupos/{grupoId}/alumnos/{alumnoId}/rallas/al-quitar")
+	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
+	public ResponseEntity<RallasDTOs.AlQuitar> alQuitarRallas(@PathVariable Long grupoId, @PathVariable Long alumnoId) {
+		return ResponseEntity.ok(rallas.alQuitar(Via.PROFESOR, grupoId, alumnoId));
+	}
+
+	/** «Marcar apto para examen» desde la hoja: solo con las 5 rallas; apto, y las rallas se quedan en 10. */
 	@PostMapping("/grupos/{grupoId}/alumnos/{alumnoId}/rallas/apto")
 	@PreAuthorize("@acceso.grupoDeMisGrupos(#grupoId)")
 	public ResponseEntity<RallasDTOs.Estado> aptoDesdeRallas(@PathVariable Long grupoId, @PathVariable Long alumnoId) {

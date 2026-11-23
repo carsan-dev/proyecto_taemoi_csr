@@ -106,15 +106,31 @@ public class GrupoAsistenciaController {
 	// Mismo acceso que guardar la lista. El servicio no pide más: propietario, gestor y responsable de la sede del grupo
 	// pueden cambiar rallas. Códigos en RallasService#paso.
 
-	/** Un paso de la hoja ({@code {"paso": -2|-1|1|2}}), guardado al momento. Devuelve cómo queda. */
+	/**
+	 * Un paso de la hoja ({@code {"paso": -2|-1|1|2}}), guardado al momento. Bajar desde las 10 medias pide además la
+	 * confirmación con los ids de {@code al-quitar} ({@link PasoRallasRequest}). Devuelve cómo queda.
+	 */
 	@PostMapping("/alumnos/{alumnoId}/rallas")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
 	public ResponseEntity<RallasDTOs.Estado> pasoRallas(@PathVariable @NonNull Long grupoId, @PathVariable Long alumnoId,
 			@RequestBody(required = false) PasoRallasRequest cuerpo) {
-		return ResponseEntity.ok(rallas.paso(Via.GESTION, grupoId, alumnoId, cuerpo == null ? null : cuerpo.paso()));
+		return ResponseEntity.ok(cuerpo == null ? rallas.paso(Via.GESTION, grupoId, alumnoId, null, null, null, null)
+				: rallas.paso(Via.GESTION, grupoId, alumnoId, cuerpo.paso(), cuerpo.confirmarQuitarApto(),
+						cuerpo.pasesABorrar(), cuerpo.convocatoriasASalir()));
 	}
 
-	/** «Marcar apto para examen» desde la hoja: solo con las 5 rallas; apto y rallas a 0 a la vez. */
+	/**
+	 * Qué pasaría al quitar rallas ahora: con 10 medias, el apto y los pases y convocatorias que se borrarían al
+	 * confirmar. Mismo acceso que el paso.
+	 */
+	@GetMapping("/alumnos/{alumnoId}/rallas/al-quitar")
+	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
+	public ResponseEntity<RallasDTOs.AlQuitar> alQuitarRallas(@PathVariable @NonNull Long grupoId,
+			@PathVariable Long alumnoId) {
+		return ResponseEntity.ok(rallas.alQuitar(Via.GESTION, grupoId, alumnoId));
+	}
+
+	/** «Marcar apto para examen» desde la hoja: solo con las 5 rallas; apto, y las rallas se quedan en 10. */
 	@PostMapping("/alumnos/{alumnoId}/rallas/apto")
 	@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_MANAGER','ROLE_RESPONSABLE_SEDE') and @acceso.grupoEnSede(#grupoId,'EDITAR')")
 	public ResponseEntity<RallasDTOs.Estado> aptoDesdeRallas(@PathVariable @NonNull Long grupoId,

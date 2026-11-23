@@ -16,7 +16,7 @@ describe('HojaRallasComponent (hoja de rallas, decisiones 510-513)', () => {
   const deshabilitados = () =>
     Array.from(dialogo().querySelectorAll<HTMLButtonElement>('[data-paso]')).filter((b) => b.getAttribute('aria-disabled') === 'true').map((b) => texto(b));
 
-  function crear(medias: number, extra: Partial<{ genero: string | null; enCurso: boolean }> = {}): void {
+  function crear(medias: number, extra: Partial<{ genero: string | null; enCurso: boolean; apto: boolean }> = {}): void {
     fixture = TestBed.createComponent(HojaRallasComponent);
     fixture.componentRef.setInput('nombre', 'Lucía Romero Gil');
     fixture.componentRef.setInput('nombreCorto', 'Lucía');
@@ -25,6 +25,7 @@ describe('HojaRallasComponent (hoja de rallas, decisiones 510-513)', () => {
     fixture.componentRef.setInput('medias', medias);
     fixture.componentRef.setInput('genero', extra.genero ?? null);
     fixture.componentRef.setInput('enCurso', extra.enCurso ?? false);
+    fixture.componentRef.setInput('esApto', extra.apto ?? false);
     pasos = [];
     aptos = 0;
     cierres = 0;
@@ -157,4 +158,35 @@ describe('HojaRallasComponent (hoja de rallas, decisiones 510-513)', () => {
     expect(cierres).toBe(1);
     expect(dialogo().style.transform).toBe('');
   }));
+
+  it('con 10 medias y ya apta: etiqueta «Apta para examen» junto a la cuenta, sin botón y con quitar activo', () => {
+    crear(10, { genero: 'FEMENINO', apto: true });
+    const estado = dialogo().querySelector('[data-apto-estado]');
+    expect(texto(estado)).toBe('Apta para examen');
+    expect(estado!.closest('.rallas-hoja__cuenta-linea')!.querySelector('[data-cuenta]')).not.toBeNull();
+    expect(estado!.querySelector('svg')).not.toBeNull();
+    expect(dialogo().querySelector('[data-apto]')).toBeNull();
+    expect(deshabilitados()).toEqual(['+ Media', '+ Una']);
+    expect(texto(dialogo().querySelector('.rallas-hoja__nota'))).toBe('Las rallas se quedan hasta que cambie de grado.');
+    paso(-1).click();
+    expect(pasos).toEqual([-1]);
+    fixture.componentInstance.marcarApto();
+    expect(aptos).toBe(0);
+  });
+
+  it('con 10 medias y sin apto: el botón, sin etiqueta; con menos de 10 y apto, ni etiqueta ni nota de que se quedan', () => {
+    crear(10, { genero: null });
+    expect(dialogo().querySelector('[data-apto-estado]')).toBeNull();
+    expect(texto(dialogo().querySelector('[data-apto]'))).toBe('Marcar apto para examen');
+    fixture.destroy();
+    fixture.nativeElement.remove();
+    crear(9, { apto: true });
+    expect(dialogo().querySelector('[data-apto-estado]')).toBeNull();
+    expect(texto(dialogo().querySelector('.rallas-hoja__nota'))).toBe('Solo cabe media ralla más.');
+  });
+
+  it('ya apto en masculino: «Apto para examen»', () => {
+    crear(10, { apto: true });
+    expect(texto(dialogo().querySelector('[data-apto-estado]'))).toBe('Apto para examen');
+  });
 });

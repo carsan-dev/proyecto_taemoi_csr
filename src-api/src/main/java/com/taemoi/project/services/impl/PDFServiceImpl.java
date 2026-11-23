@@ -272,7 +272,7 @@ public class PDFServiceImpl implements PDFService {
 				+ " .cinturon.doble .inferior { bottom: 0; border-bottom-left-radius: 0.5mm;"
 				+ " border-bottom-right-radius: 0.5mm; }"
 				+ " .raya { position: absolute; top: 50%; transform: translateY(-50%); height: 80%;"
-				+ " background-color: #FFD700; z-index: 10; }"
+				+ " background-color: #D9A12A; z-index: 10; }"
 				+ " .grado-nombre, .categoria-nombre { display: inline-block; vertical-align: middle; font-family: "
 				+ EstiloPdf.TITULOS + "; font-weight: 700; font-size: 10.5pt; color: " + EstiloPdf.TINTA
 				+ "; white-space: nowrap; }"

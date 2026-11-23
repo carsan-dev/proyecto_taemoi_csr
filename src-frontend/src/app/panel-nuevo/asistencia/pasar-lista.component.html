@@ -91,7 +91,7 @@
                 <span class="pasar-lista__grado">
                   @let medias = mediasDe(alumno);
                   <span class="pasar-lista__grado-texto">{{ gradoDe(alumno).texto }}@if (medias !== null) {<span class="pasar-lista__oculto">, {{ textoOcultoRallas(medias) }}</span>}</span>
-                  @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="alumno.genero" /> }
+                  @if (medias === 10) { <pn-distintivo-examen data-listo [genero]="alumno.genero" [apto]="!!deporteDe(alumno)?.apto" /> }
                   @if (estaMarcado(alumno)) { <span class="pasar-lista__grado-presente" aria-hidden="true">Presente</span> }
                 </span>
               </span>
@@ -134,11 +134,11 @@
             @if (abreHoja(alumno)) {
               <button type="button" class="pasar-lista__cinto" [attr.data-cinto]="alumno.id" aria-haspopup="dialog"
                 [attr.aria-expanded]="hojaRallas === alumno.id" [attr.aria-label]="etiquetaCinto(alumno)" (click)="abrirRallas(alumno)">
-                <span class="pasar-lista__cinto-marco"><pn-cinturon [color1]="cinto.color1" [color2]="cinto.color2" [medias]="mediasDe(alumno)" /></span>
+                <span class="pasar-lista__cinto-marco"><pn-cinturon [color1]="cinto.color1" [color2]="cinto.color2" [medias]="mediasDe(alumno)" [codigoGrado]="cinto.codigo" /></span>
               </button>
             } @else {
               <span class="pasar-lista__cinto" aria-hidden="true">
-                <span class="pasar-lista__cinto-marco"><pn-cinturon [color1]="cinto.color1" [color2]="cinto.color2" [medias]="mediasDe(alumno)" [sinGrado]="!cinto.color1" /></span>
+                <span class="pasar-lista__cinto-marco"><pn-cinturon [color1]="cinto.color1" [color2]="cinto.color2" [medias]="mediasDe(alumno)" [sinGrado]="!cinto.color1" [codigoGrado]="cinto.codigo" /></span>
               </span>
             }
           </li>
@@ -195,7 +195,7 @@
   @if (alumnoHoja; as a) {
     @let g = gradoDe(a);
     <pn-hoja-rallas [nombre]="nombreCompleto(a.nombre, a.apellidos)" [nombreCorto]="a.nombre" [subtitulo]="subtituloHoja(a)"
-      [color1]="g.color1" [color2]="g.color2" [medias]="mediasDe(a) ?? 0" [genero]="a.genero ?? null" [enCurso]="rallasEnCurso"
+      [color1]="g.color1" [color2]="g.color2" [medias]="mediasDe(a) ?? 0" [genero]="a.genero ?? null" [esApto]="!!deporteDe(a)?.apto" [enCurso]="rallasEnCurso"
       (paso)="darPaso($event)" (apto)="marcarAptoDesdeHoja()" (cerrar)="cerrarRallas()" />
   }
 

@@ -15,6 +15,9 @@ final class CinturonesPdf {
 	private CinturonesPdf() {
 	}
 
+	/** Color de las rayas de PUM/DAN (una por PUM/DAN) en todos los PDF; sin halo. */
+	static final String COLOR_RAYA = "#D9A12A";
+
 	/** Cinturón en línea (celdas de grado, convocatorias, competidores, mensualidades); vacío sin cinturón. */
 	static String inline(Cinturon c, int width, int height) {
 		if (c == null) {
@@ -55,7 +58,7 @@ final class CinturonesPdf {
 			int rightOffset = initialMargin + i * (stripeWidth + gap);
 			html.append("<div style='position: absolute; right:").append(rightOffset).append("px; width:")
 					.append(stripeWidth)
-					.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: #FFD700; z-index: 10;'></div>");
+					.append("px; top: 50%; transform: translateY(-50%); height: 80%; background-color: ").append(COLOR_RAYA).append("; z-index: 10;'></div>");
 		}
 	}
 
@@ -109,6 +112,7 @@ final class CinturonesPdf {
 				return "<td><div class='cinturon-split' style='position: relative;'>"
 						+ "<div class='cinturon-half-superior' style='background-color: " + c.superior() + ";'></div>"
 						+ "<div class='cinturon-half-inferior' style='background-color: " + c.inferior() + ";'></div>"
+						+ rallasDoradas(c.franjas())
 						+ "<div style='position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10;'>"
 						+ "<span style='color: #ffffff; font-weight: 700; font-size: 7pt;'>" + c.franjas() + "º</span>"
 						+ "</div></div></td>";
@@ -118,7 +122,9 @@ final class CinturonesPdf {
 					+ c.inferior() + ";'></div></div></td>";
 		}
 		if (c.franjas() > 0) {
-			return "<td class='cinturon-negro' style='background: " + c.inferior() + ";'>" + c.franjas() + "º</td>";
+			return "<td class='cinturon-negro' style='background: " + c.inferior() + ";'>"
+					+ "<div class='cinturon-split' style='position: relative;'>" + rallasDoradas(c.franjas())
+					+ c.franjas() + "º</div></td>";
 		}
 		return "<td style='background: " + c.inferior() + ";'></td>";
 	}
@@ -167,6 +173,17 @@ final class CinturonesPdf {
 			}
 		}
 		return html.append("</div></td>").toString();
+	}
+
+	/** Rayas doradas de PUM/DAN con la forma de las rallas de examen (mismo ancho, paso y margen, alto completo). */
+	private static String rallasDoradas(int franjas) {
+		StringBuilder html = new StringBuilder();
+		for (int k = 0; k < franjas; k++) {
+			html.append("<div class='raya-dorada' style='position: absolute; background-color: ").append(COLOR_RAYA)
+					.append("; right: ").append(mm(RALLA_MARGEN_MM + RALLA_PASO_MM * k)).append("; width: ")
+					.append(mm(RALLA_ANCHO_MM)).append("; top: 0; height: 100%;'></div>");
+		}
+		return html.toString();
 	}
 
 	private static void ralla(StringBuilder html, double derechaMm, String arriba, String alto) {

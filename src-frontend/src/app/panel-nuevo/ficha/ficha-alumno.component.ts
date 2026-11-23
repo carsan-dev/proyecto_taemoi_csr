@@ -53,6 +53,10 @@ export interface DisciplinaCarnet {
   linea: string;
   /** Medias rallas hacia el examen (0-10); null si no se usan (decisiones 510-513). */
   medias: number | null;
+  /** Apto para examen en la disciplina. */
+  apto: boolean;
+  /** Código del grado: las rayas doradas de PUM y DAN; null sin grado. */
+  codigoGrado: string | null;
 }
 
 type Estado = 'cargando' | 'listo' | 'error';
@@ -406,6 +410,8 @@ export class FichaAlumnoComponent extends FichaAlumnoBase implements OnInit, OnD
       color2: vista ? vista.color2 : null,
       linea: lineaGrado(grado, conGrados && d.grado ? tiempoConGrado(d.fechaGrado, hoy) : ''),
       medias: vista ? mediasVisibles(d) : null,
+      apto: d.aptoParaExamen === true,
+      codigoGrado: vista ? vista.codigo : null,
     };
   }
 
