@@ -147,24 +147,24 @@ class CambioTarifasProductosIntegrationTest extends MySqlIntegrationTest {
 
 	/**
 	 * Alta con los campos de deporte único (sin cuantía: la calcula el servidor desde la tarifa) y
-	 * mensualidad del deporte: el cargo cobra la cuantía de valores-actuales.md §6 y la inscripción
-	 * guarda tarifa_id.
+	 * mensualidad del deporte: el cargo cobra la cuantía de valores-actuales.md §6, con la subida de
+	 * 2 € de taekwondo y kickboxing de V32_10, y la inscripción guarda tarifa_id.
 	 */
 	@Test
 	void mensualidad_cobraLaCuantiaDeCadaTarifaHeredada() {
 		Object[][] casos = {
-				{ "ADULTO", "TAEKWONDO", "NINGUNO", 30.0 },
-				{ "ADULTO_GRUPO", "TAEKWONDO", "NINGUNO", 20.0 },
+				{ "ADULTO", "TAEKWONDO", "NINGUNO", 32.0 },
+				{ "ADULTO_GRUPO", "TAEKWONDO", "NINGUNO", 22.0 },
 				{ "FAMILIAR", "TAEKWONDO", "NINGUNO", 0.0 },
-				{ "INFANTIL", "TAEKWONDO", "NINGUNO", 28.0 },
-				{ "INFANTIL_GRUPO", "TAEKWONDO", "NINGUNO", 20.0 },
-				{ "HERMANOS", "TAEKWONDO", "NINGUNO", 26.0 },
-				{ "PADRES_HIJOS", "TAEKWONDO", "PADRE", 28.0 },
-				{ "PADRES_HIJOS", "TAEKWONDO", "MADRE", 28.0 },
-				{ "PADRES_HIJOS", "TAEKWONDO", "HIJO", 26.0 },
-				{ "PADRES_HIJOS", "TAEKWONDO", "HIJA", 26.0 },
+				{ "INFANTIL", "TAEKWONDO", "NINGUNO", 30.0 },
+				{ "INFANTIL_GRUPO", "TAEKWONDO", "NINGUNO", 22.0 },
+				{ "HERMANOS", "TAEKWONDO", "NINGUNO", 28.0 },
+				{ "PADRES_HIJOS", "TAEKWONDO", "PADRE", 30.0 },
+				{ "PADRES_HIJOS", "TAEKWONDO", "MADRE", 30.0 },
+				{ "PADRES_HIJOS", "TAEKWONDO", "HIJO", 28.0 },
+				{ "PADRES_HIJOS", "TAEKWONDO", "HIJA", 28.0 },
 				{ "PADRES_HIJOS", "TAEKWONDO", "NINGUNO", 0.0 },
-				{ "KICKBOXING", "KICKBOXING", "NINGUNO", 30.0 },
+				{ "KICKBOXING", "KICKBOXING", "NINGUNO", 32.0 },
 				{ "PILATES", "PILATES", "NINGUNO", 30.0 },
 				{ "DEFENSA_PERSONAL_FEMENINA", "DEFENSA_PERSONAL_FEMENINA", "NINGUNO", 25.0 } };
 		Map<String, Double> esperado = new LinkedHashMap<>();
