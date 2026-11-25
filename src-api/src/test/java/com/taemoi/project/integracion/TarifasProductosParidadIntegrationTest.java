@@ -66,6 +66,9 @@ import com.taemoi.project.services.TarifasService;
  * <p>Antes de comparar se asegura que existe un producto por cada nombre conocido (en producción
  * los crea la gestión, no una semilla) y se repite V24, que es repetible.
  *
+ * <p>SUBIDA DE V32_10: desde la mensualidad de enero de 2027 las tarifas de taekwondo y kickboxing de la
+ * organización 1 cuestan 2 € más que en {@link TarifaConfig} (ver {@link #trasV32_10}).
+ *
  * <p>DIVERGENCIA DELIBERADA: el grado que activa un producto se resuelve por enlace y es el
  * correcto; {@code TipoGrado.fromProductoExamen} (contains) devuelve el grado de color anterior
  * para intermedios y PUM. Ver {@link #DIVERGENCIAS_GRADO}.
@@ -101,6 +104,16 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 		DIVERGENCIAS_GRADO.put("DERECHO A EXAMEN ROJO/NEGRO 1º PUM", new String[] { "ROJO", "ROJO_NEGRO_1_PUM" });
 		DIVERGENCIAS_GRADO.put("DERECHO A EXAMEN ROJO/NEGRO 2º PUM", new String[] { "ROJO", "ROJO_NEGRO_2_PUM" });
 		DIVERGENCIAS_GRADO.put("DERECHO DE CAMBIO A ROJO BORDADO POR RECOMPENSA", new String[] { null, "ROJO" });
+	}
+
+	/** Tarifas de la organización 1 que V32_10 sube 2 € (todos sus importes distintos de 0). */
+	private static final Set<TipoTarifa> SUBEN_EN_V32_10 = Set.of(TipoTarifa.INFANTIL, TipoTarifa.ADULTO,
+			TipoTarifa.KICKBOXING, TipoTarifa.HERMANOS, TipoTarifa.ADULTO_GRUPO, TipoTarifa.INFANTIL_GRUPO,
+			TipoTarifa.PADRES_HIJOS);
+
+	/** Importe de {@link TarifaConfig} con la subida de 2 € de V32_10 (PADRES_HIJOS sin rol sigue en 0). */
+	private static double trasV32_10(TipoTarifa tipo, double legado) {
+		return SUBEN_EN_V32_10.contains(tipo) && legado > 0 ? legado + 2 : legado;
 	}
 
 	@Autowired TarifaConfig tarifaConfig;
@@ -179,27 +192,31 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
 			int comparadas = 0;
 			for (TipoTarifa tipo : TipoTarifa.values()) {
-				igualImporte(tarifaConfig.obtenerCuantia(tipo), tarifas.obtenerImporte(tipo.name()), tipo.name());
+				igualImporte(trasV32_10(tipo, tarifaConfig.obtenerCuantia(tipo)), tarifas.obtenerImporte(tipo.name()),
+						tipo.name());
 				for (RolFamiliar rol : ROLES_Y_NULO) {
-					igualImporte(tarifaConfig.obtenerCuantiaConRol(tipo, rol), tarifas.obtenerImporte(tipo.name(), rol),
-							tipo + "/" + rol);
+					igualImporte(trasV32_10(tipo, tarifaConfig.obtenerCuantiaConRol(tipo, rol)),
+							tarifas.obtenerImporte(tipo.name(), rol), tipo + "/" + rol);
 					comparadas++;
 				}
 			}
 			assertEquals(TipoTarifa.values().length * ROLES_Y_NULO.size(), comparadas);
-			// Literal: la representación de PADRES_HIJOS y HERMANOS.
+			// Literal: la representación de PADRES_HIJOS y HERMANOS (con la subida de V32_10).
 			Tarifa padresHijos = tarifas.obtenerPorCodigo("PADRES_HIJOS");
 			assertEquals(new BigDecimal("0.00"), padresHijos.getImporte());
-			assertEquals(new BigDecimal("28.00"), padresHijos.getImporteAdulto());
-			assertEquals(new BigDecimal("26.00"), padresHijos.getImporteMenor());
+			assertEquals(new BigDecimal("30.00"), padresHijos.getImporteAdulto());
+			assertEquals(new BigDecimal("28.00"), padresHijos.getImporteMenor());
 			Tarifa hermanos = tarifas.obtenerPorCodigo("HERMANOS");
-			assertEquals(new BigDecimal("26.00"), hermanos.getImporte());
+			assertEquals(new BigDecimal("28.00"), hermanos.getImporte());
 			assertNull(hermanos.getImporteAdulto());
 			assertNull(hermanos.getImporteMenor());
 		});
 	}
 
-	/** Mismas tarifas e importes que TarifaConfig; desde V30, en el orden de tarifa.orden (el de crear-alumno). */
+	/**
+	 * Mismas tarifas e importes que TarifaConfig (con la subida de V32_10); desde V30, en el orden de tarifa.orden (el de
+	 * crear-alumno).
+	 */
 	@Test
 	void listado_igualQueObtenerTodasLasCuantias_enElOrdenDeV30() {
 		TenantContext.ejecutarCon(ORG_TAEMOI, () -> {
@@ -212,7 +229,8 @@ class TarifasProductosParidadIntegrationTest extends MySqlIntegrationTest {
 					nuevas.stream().map(Tarifa::getCodigo).toList());
 			assertEquals(nuevas.size(), legado.size());
 			for (Tarifa t : nuevas) {
-				igualImporte(legado.get(TipoTarifa.valueOf(t.getCodigo())), t.getImporte(), t.getCodigo());
+				TipoTarifa tipo = TipoTarifa.valueOf(t.getCodigo());
+				igualImporte(trasV32_10(tipo, legado.get(tipo)), t.getImporte(), t.getCodigo());
 				assertTrue(tarifaConfig.tieneCuantiaDefinida(TipoTarifa.valueOf(t.getCodigo())));
 			}
 		});

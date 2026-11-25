@@ -196,8 +196,9 @@ class CatalogoControllerIntegrationTest extends MySqlIntegrationTest {
 			assertEquals("Padres e Hijos", padresHijos.get("nombre").asText());
 			assertEquals("TAEKWONDO", padresHijos.get("disciplina").asText());
 			assertEquals(0, padresHijos.get("importe").decimalValue().compareTo(java.math.BigDecimal.ZERO));
-			assertEquals(0, padresHijos.get("importeAdulto").decimalValue().compareTo(new java.math.BigDecimal("28.00")));
-			assertEquals(0, padresHijos.get("importeMenor").decimalValue().compareTo(new java.math.BigDecimal("26.00")));
+			// Con la subida de 2 € de V32_10 (antes 28 y 26).
+			assertEquals(0, padresHijos.get("importeAdulto").decimalValue().compareTo(new java.math.BigDecimal("30.00")));
+			assertEquals(0, padresHijos.get("importeMenor").decimalValue().compareTo(new java.math.BigDecimal("28.00")));
 			assertEquals(7, padresHijos.get("orden").asInt());
 			assertTrue(padresHijos.get("requiereRolFamiliar").asBoolean());
 			assertFalse(padresHijos.get("requiereGrupoFamiliar").asBoolean());
